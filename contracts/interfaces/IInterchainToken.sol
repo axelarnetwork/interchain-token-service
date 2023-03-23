@@ -12,7 +12,7 @@ interface IERC20Named is IERC20 {
         string calldata destinationChain,
         string calldata recipient,
         uint256 amount,
-        uint256 transferType, // on hold for now 
+        uint256 transferType, // on hold for now
         bytes calldata metadata
     ) external payable;
 
@@ -22,7 +22,7 @@ interface IERC20Named is IERC20 {
         string calldata destinationChain,
         string calldata recipient,
         uint256 amount,
-        uint256 transferType, // on hold for now 
+        uint256 transferType, // on hold for now
         bytes calldata metadata
     ) external payable;
 }

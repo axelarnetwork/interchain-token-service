@@ -78,7 +78,7 @@ interface IInterchainTokenLinker {
 
     function registerRemoteGatewayToken(string calldata symbol, bytes32 tokenId, string calldata origin) external;
 
-    // These two are meant to be called by tokens to have this service facilitate the token transfers for them.    
+    // These two are meant to be called by tokens to have this service facilitate the token transfers for them.
     function sendSelf(address from, string memory destinationChain, bytes memory to, uint256 amount) external payable;
 
     function callContractWithSelf(
@@ -88,5 +88,4 @@ interface IInterchainTokenLinker {
         uint256 amount,
         bytes calldata data
     ) external payable;
-
 }

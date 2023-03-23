@@ -12,15 +12,12 @@ interface IERC20BurnableMintable is IERC20Named, IOwnable {
     error NotSelf();
 
     function name() external view returns (string memory);
+
     function symbol() external view returns (string memory);
+
     function decimals() external view returns (uint8);
 
-    function setup(
-        string memory name_, 
-        string memory symbol_, 
-        uint8 decimals_, 
-        address owner
-    ) external;
+    function setup(string memory name_, string memory symbol_, uint8 decimals_, address owner) external;
 
     function mint(address to, uint256 amount) external;
 
