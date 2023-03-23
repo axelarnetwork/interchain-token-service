@@ -11,11 +11,13 @@ import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.s
 import { ITokenDeployer } from '../interfaces/ITokenDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 
+import { LinkedTokenData } from '../libraries/LinkedTokenData.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
 contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, EternalStorage {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
+    using LinkedTokenData for bytes32;
 
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
@@ -123,8 +125,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     function getTokenAddress(bytes32 tokenId) public view returns (address) {
-        //TODO: implement token data
-        //return getTokenData(tokenId).getAddress();
+        return getTokenData(tokenId).getAddress();
         return address(0);
     }
 
