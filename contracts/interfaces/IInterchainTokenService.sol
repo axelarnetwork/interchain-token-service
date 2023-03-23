@@ -4,8 +4,8 @@ pragma solidity 0.8.9;
 
 import { ITokenDeployer } from './ITokenDeployer.sol';
 
-interface IInterchainTokenLinker {
-    error TokenLinkerZeroAddress();
+interface IInterchainTokenService {
+    error TokenServiceZeroAddress();
     error TransferFailed();
     error TransferFromFailed();
     error MintFailed();
@@ -17,6 +17,7 @@ interface IInterchainTokenLinker {
     error LengthMismatch();
     error NotSelf();
     error TokenDeploymentFailed();
+    error ExceedMintLimit(bytes32 tokenId);
 
     event Sending(string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event SendingWithData(string destinationChain, bytes destinationAddress, uint256 indexed amount, address indexed from, bytes data);
