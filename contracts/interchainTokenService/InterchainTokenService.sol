@@ -126,7 +126,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function getTokenAddress(bytes32 tokenId) public view returns (address) {
         return getTokenData(tokenId).getAddress();
-        return address(0);
     }
 
     function getOriginTokenId(address tokenAddress) public view returns (bytes32) {
