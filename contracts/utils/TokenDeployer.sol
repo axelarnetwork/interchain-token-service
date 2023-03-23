@@ -10,12 +10,10 @@ import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol
 contract TokenDeployer is ITokenDeployer {
     Create3Deployer public immutable deployer;
     address public immutable bytecodeServer;
-    address public immutable tokenImplementation;
 
-    constructor(address deployer_, address bytecodeServer_, address tokenImplementation_) {
+    constructor(address deployer_, address bytecodeServer_) {
         deployer = Create3Deployer(deployer_);
         bytecodeServer = bytecodeServer_;
-        tokenImplementation = tokenImplementation_;
     }
 
     function _getBytecode() internal view returns (bytes memory bytecode) {
