@@ -34,7 +34,7 @@ contract TokenDeployer is ITokenDeployer {
         }
     }
 
-    function deployToken(        
+    function deployToken(
         string calldata name,
         string calldata symbol,
         uint8 decimals,
