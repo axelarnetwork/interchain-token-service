@@ -9,7 +9,6 @@ const Token = require('../artifacts/contracts/utils/ERC20BurnableMintable.sol/ER
 const TokenProxy = require('../artifacts/contracts/proxies/TokenProxy.sol/TokenProxy.json');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 const { setJSON } = require('@axelar-network/axelar-local-dev');
-const { ContractFactory } = require('ethers');
 const chains = require(`../info/${process.env.ENV}.json`);
 
 async function deployTokenDeployer(chain, wallet) {
