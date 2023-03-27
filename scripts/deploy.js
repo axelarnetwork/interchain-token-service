@@ -9,6 +9,7 @@ const Token = require('../artifacts/contracts/utils/ERC20BurnableMintable.sol/ER
 const TokenProxy = require('../artifacts/contracts/proxies/TokenProxy.sol/TokenProxy.json');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 const { setJSON } = require('@axelar-network/axelar-local-dev');
+const { deployCreate3Contract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const chains = require(`../info/${process.env.ENV}.json`);
 
 async function deployTokenDeployer(chain, wallet) {
@@ -31,6 +32,16 @@ async function deployTokenDeployer(chain, wallet) {
 
     setJSON(chains, `./info/${process.env.ENV}.json`);
     return tokenDeployer;
+}
+
+async function deployTokenLinker(chain, wallet) {
+    await deployCreate3Contract(chain.create3Deployer, wallet, InterchainTokenService, 'interchainTokenService', [
+        chain.gateway,
+        chain.gaswService,
+        address linkerRouterAddress_,
+        chain.tokenDeployer,
+        chain.name,
+    ])
 }
 
 module.exports = {

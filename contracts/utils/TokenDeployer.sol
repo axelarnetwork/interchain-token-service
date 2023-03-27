@@ -42,7 +42,7 @@ contract TokenDeployer is ITokenDeployer {
         bytes32 salt
     ) external payable returns (address tokenAddress) {
         bytes memory args = abi.encode(tokenImplementation, name, symbol, decimals, owner);
-        // convert args to calldata to handle more easily in the function
+        // convert args to calldata by doing an external call to handle more easily in the function
         bytes memory bytecode = this.getBytecode(args);
         tokenAddress = deployer.deploy(bytecode, salt);
     }
