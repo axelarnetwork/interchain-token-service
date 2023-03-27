@@ -26,7 +26,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
     ITokenDeployer public immutable tokenDeployer;
-    address public immutable tokenImplementationAddress;
 
     bytes32 internal constant PREFIX_TOKEN_DATA = keccak256('itl-token-data');
     bytes32 internal constant PREFIX_ORIGINAL_CHAIN = keccak256('itl-original-chain');
@@ -42,7 +41,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         address gasServiceAddress_,
         address linkerRouterAddress_,
         address tokenDeployerAddress_,
-        address tokenAddress_,
         string memory chainName_
     ) AxelarExecutable(gatewayAddress_) {
         if (gatewayAddress_ == address(0) || gasServiceAddress_ == address(0) || linkerRouterAddress_ == address(0))
@@ -50,7 +48,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         gasService = IAxelarGasService(gasServiceAddress_);
         linkerRouter = ILinkerRouter(linkerRouterAddress_);
         tokenDeployer = ITokenDeployer(tokenDeployerAddress_);
-        tokenImplementationAddress = tokenAddress_;
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -145,7 +142,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string[] calldata destinationChains,
         uint256[] calldata gasValues
     ) external payable {
-        //TODO: Implement.
+        _deployToken(tokenName, tokenSymbol, decimals, owner, salt);
+        // TODO: Implement remote deployments.
     }
 
     function registerOriginToken(address tokenAddress) external returns (bytes32 tokenId) {
@@ -306,5 +304,28 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         }
         IERC20Named(tokenData.getAddress()).approve(address(gateway), amount);
         gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+    }
+        
+    function _deployToken(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        address owner,
+        bytes32 salt
+    ) internal returns (address tokenAddress) {
+        (bool success, bytes memory data) = address(tokenDeployer).delegatecall(
+            abi.encodeWithSelector(
+                tokenDeployer.deployToken.selector,
+                tokenName, 
+                tokenSymbol, 
+                decimals,
+                owner, 
+                salt
+            )
+        );
+        if (!success) revert TokenDeploymentFailed();
+        tokenAddress = abi.decode(data, (address));
+
+        emit TokenDeployed(tokenAddress, tokenName, tokenSymbol, decimals, owner);
     }
 }

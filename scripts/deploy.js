@@ -13,6 +13,7 @@ const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scri
 const { setJSON } = require('@axelar-network/axelar-local-dev');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { Contract } = require('ethers');
+const { deployCreate3Contract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const chains = require(`../info/${process.env.ENV}.json`);
 
 const interchainTokenServiceKey = 'interchainTokenServiceKey';
@@ -55,6 +56,9 @@ async function deployLinkerRouter(chain, wallet) {
     setJSON(chains, `./info/${process.env.ENV}.json`);
 
     return new Contract(linkerRouterProxy.address, LinkerRouter.abi, wallet);
+}
+async function deployTokenLinker(chain, wallet) {
+    
 }
 
 module.exports = {
