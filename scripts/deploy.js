@@ -3,13 +3,19 @@
 require('dotenv').config();
 
 const TokenDeployer = require('../artifacts/contracts/utils/TokenDeployer.sol/TokenDeployer.json');
+const LinkerRouter = require('../artifacts/contracts/linkerRouter/LinkerRouter.sol/LinkerRouter.json');
+const LinkerRouterProxy = require('../artifacts/contracts/proxies/LinkerRouterProxy.sol/LinkerRouterProxy.json');
 
 const BytecodeServer = require('../artifacts/contracts/utils/BytecodeServer.sol/BytecodeServer.json');
 const Token = require('../artifacts/contracts/utils/ERC20BurnableMintable.sol/ERC20BurnableMintable.json');
 const TokenProxy = require('../artifacts/contracts/proxies/TokenProxy.sol/TokenProxy.json');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 const { setJSON } = require('@axelar-network/axelar-local-dev');
+const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
+const { Contract } = require('ethers');
 const chains = require(`../info/${process.env.ENV}.json`);
+
+const interchainTokenServiceKey = 'interchainTokenServiceKey';
 
 async function deployTokenDeployer(chain, wallet) {
     if (chain.tokenDeployer) return;
@@ -33,6 +39,25 @@ async function deployTokenDeployer(chain, wallet) {
     return tokenDeployer;
 }
 
+async function deployLinkerRouter(chain, wallet) {
+    if (chain.linkerRouter) return;
+
+    console.log(`Deploying Linker Router.`);
+    const interchainTokenServiceAddress = getCreate3Address(chain.create3Deployer, wallet, interchainTokenServiceKey);
+    const linkerRouter = await deployContract(wallet, LinkerRouter, [interchainTokenServiceAddress, [], []]);
+    console.log(`Deployed at: ${linkerRouter.address}`);
+
+    console.log(`Deploying Linker Router Proxy.`);
+    const linkerRouterProxy = await deployContract(wallet, LinkerRouterProxy, [linkerRouter.address, wallet.address]);
+    chain.linkerRouter = linkerRouterProxy.address;
+    console.log(`Deployed at: ${linkerRouterProxy.address}`);
+
+    setJSON(chains, `./info/${process.env.ENV}.json`);
+
+    return new Contract(linkerRouterProxy.address, LinkerRouter.abi, wallet);
+}
+
 module.exports = {
     deployTokenDeployer,
+    deployLinkerRouter,
 };

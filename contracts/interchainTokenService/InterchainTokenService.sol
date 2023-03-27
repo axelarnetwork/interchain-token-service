@@ -202,7 +202,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     // UTILITY FUNCTIONS
-        function _transfer(address tokenAddress, address destinationaddress, uint256 amount) internal {
+    function _transfer(address tokenAddress, address destinationaddress, uint256 amount) internal {
         (bool success, bytes memory returnData) = tokenAddress.call(
             abi.encodeWithSelector(IERC20.transfer.selector, destinationaddress, amount)
         );
@@ -221,9 +221,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     function _mint(address tokenAddress, address destinationaddress, uint256 amount) internal {
-        (bool success, ) = tokenAddress.call(
-            abi.encodeWithSelector(IERC20BurnableMintable.mint.selector, destinationaddress, amount)
-        );
+        (bool success, ) = tokenAddress.call(abi.encodeWithSelector(IERC20BurnableMintable.mint.selector, destinationaddress, amount));
 
         if (!success || tokenAddress.code.length == 0) revert MintFailed();
     }
@@ -250,7 +248,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     function _takeToken(bytes32 tokenId, address from, uint256 amount) internal {
         bytes32 tokenData = getTokenData(tokenId);
         address tokenAddress = tokenData.getAddress();
-        if (tokenData.isOrigin() || tokenData.isGateway()) { 
+        if (tokenData.isOrigin() || tokenData.isGateway()) {
             _transferFrom(tokenAddress, from, amount);
         } else {
             _burn(tokenAddress, from, amount);
