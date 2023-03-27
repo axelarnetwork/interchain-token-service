@@ -1,18 +1,14 @@
 'use strict';
 
 const chai = require('chai');
-const {
-    getDefaultProvider,
-    Contract,
-    Wallet,
-} = require('ethers');
+const { getDefaultProvider, Contract, Wallet } = require('ethers');
 const { expect } = chai;
 const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 require('dotenv').config();
 const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
-const { createAndExport } = require('@axelar-network/axelar-local-dev');
+const { createAndExport, stopAll } = require('@axelar-network/axelar-local-dev');
 
 let chain;
 let wallet;
@@ -42,6 +38,10 @@ before(async () => {
     const { deployTokenDeployer } = require('../scripts/deploy.js');
 
     tokenDeployer = await deployTokenDeployer(chain, wallet);
+});
+
+after(async () => {
+    await stopAll();
 });
 
 describe('Token', () => {
