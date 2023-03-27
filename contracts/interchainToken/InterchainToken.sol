@@ -2,19 +2,19 @@
 
 pragma solidity 0.8.9;
 
-import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
+import { ERC20 } from '../utils/ERC20.sol';
 
-/**
- * @dev Interface of the ERC20 standard as defined in the EIP.
- */
-interface IInterchainToken is IERC20 {
+contract InterchainToken is IInterchainToken, ERC20 {
     function interchainTransfer(
         string calldata destinationChain,
         string calldata recipient,
         uint256 amount,
         uint256 transferType, // on hold for now
         bytes calldata metadata
-    ) external payable;
+    ) external payable {
+        //TODO: add implementation
+    }
 
     // Send a token cross-chain from an account that has an approval to spend from `sender`'s balance
     function interchainTransferFrom(
@@ -24,5 +24,7 @@ interface IInterchainToken is IERC20 {
         uint256 amount,
         uint256 transferType, // on hold for now
         bytes calldata metadata
-    ) external payable;
+    ) external payable {
+        //TODO: add implementation
+    }
 }
