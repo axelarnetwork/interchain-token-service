@@ -6,11 +6,15 @@ const TokenDeployer = require('../artifacts/contracts/utils/TokenDeployer.sol/To
 const LinkerRouter = require('../artifacts/contracts/linkerRouter/LinkerRouter.sol/LinkerRouter.json');
 const LinkerRouterProxy = require('../artifacts/contracts/proxies/LinkerRouterProxy.sol/LinkerRouterProxy.json');
 
+const TokenService = require('../artifacts/contracts/interchainTokenService/InterchainTokenService.sol/InterchainTokenService.json');
+const TokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
+
 const BytecodeServer = require('../artifacts/contracts/utils/BytecodeServer.sol/BytecodeServer.json');
 const Token = require('../artifacts/contracts/utils/ERC20BurnableMintable.sol/ERC20BurnableMintable.json');
 const TokenProxy = require('../artifacts/contracts/proxies/TokenProxy.sol/TokenProxy.json');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 const { setJSON } = require('@axelar-network/axelar-local-dev');
+const { deployCreate3Upgradable } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { Contract } = require('ethers');
 const { deployCreate3Contract } = require('@axelar-network/axelar-gmp-sdk-solidity');
@@ -19,7 +23,7 @@ const chains = require(`../info/${process.env.ENV}.json`);
 const interchainTokenServiceKey = 'interchainTokenServiceKey';
 
 async function deployTokenDeployer(chain, wallet) {
-    if (chain.tokenDeployer) return;
+    if (chain.tokenDeployer) return new Contract(chain.tokenDeployer, TokenDeployer.abi, wallet);
 
     console.log(`Deploying ERC20BurnableMintable.`);
     const token = await deployContract(wallet, Token, []);
@@ -41,7 +45,7 @@ async function deployTokenDeployer(chain, wallet) {
 }
 
 async function deployLinkerRouter(chain, wallet) {
-    if (chain.linkerRouter) return;
+    if (chain.linkerRouter) return new Contract(chain.linkerRouter, LinkerRouter.abi, wallet);;
 
     console.log(`Deploying Linker Router.`);
     const interchainTokenServiceAddress = getCreate3Address(chain.create3Deployer, wallet, interchainTokenServiceKey);
@@ -57,11 +61,23 @@ async function deployLinkerRouter(chain, wallet) {
 
     return new Contract(linkerRouterProxy.address, LinkerRouter.abi, wallet);
 }
-async function deployTokenLinker(chain, wallet) {
-    
+
+async function deployTokenService(chain, wallet) {
+    const tokenService = await deployCreate3Upgradable(
+        chain.create3Deployer,
+        wallet,
+        TokenService,
+        TokenServiceProxy,
+        [chain.gateway, chain.gasService, chain.linkerRouter, chain.tokenDeployer, chain.name],
+        [],
+        '0x',
+        interchainTokenServiceKey,
+    );
+    return tokenService;
 }
 
 module.exports = {
     deployTokenDeployer,
     deployLinkerRouter,
+    deployTokenService,
 };

@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.9;
 import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol';
+import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
@@ -18,7 +19,7 @@ import { IInterTokenExecutable } from '../interfaces/IInterTokenExecutable.sol';
 import { LinkedTokenData } from '../libraries/LinkedTokenData.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
-contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, EternalStorage {
+contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, EternalStorage, Upgradable {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using LinkedTokenData for bytes32;
@@ -32,6 +33,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     bytes32 internal constant PREFIX_TOKEN_ID = keccak256('itl-token-id');
     bytes32 internal constant PREFIX_TOKEN_MINT_LIMIT = keccak256('itl-token-mint-limit');
     bytes32 internal constant PREFIX_TOKEN_MINT_AMOUNT = keccak256('itl-token-mint-amount');
+    // keccak256('interchain-token-service')-1
+    bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
 
     bytes32 public immutable chainNameHash;
     bytes32 public immutable chainName;
@@ -133,6 +136,17 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         return keccak256(abi.encode(chainNameHash, tokenAddress));
     }
 
+    function getDeploymentSalt(address sender, bytes32 salt) public pure returns (bytes32 deploymentSalt) {
+        deploymentSalt = keccak256(abi.encode(sender, salt));
+    }
+
+    function getDeploymentAddress(address sender, bytes32 salt) public view returns (address deployment) {
+        salt = getDeploymentSalt(sender, salt);
+        deployment = tokenDeployer.getDeploymentAddress(salt);
+    }
+
+    /* EXTERNAL FUNCTIONS */
+
     function deployInterchainToken(
         string calldata tokenName,
         string calldata tokenSymbol,
@@ -142,6 +156,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string[] calldata destinationChains,
         uint256[] calldata gasValues
     ) external payable {
+        salt = getDeploymentSalt(msg.sender, salt);
         _deployToken(tokenName, tokenSymbol, decimals, owner, salt);
         // TODO: Implement remote deployments.
     }
@@ -305,7 +320,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         IERC20Named(tokenData.getAddress()).approve(address(gateway), amount);
         gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
-        
+
     function _deployToken(
         string memory tokenName,
         string memory tokenSymbol,
@@ -314,14 +329,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes32 salt
     ) internal returns (address tokenAddress) {
         (bool success, bytes memory data) = address(tokenDeployer).delegatecall(
-            abi.encodeWithSelector(
-                tokenDeployer.deployToken.selector,
-                tokenName, 
-                tokenSymbol, 
-                decimals,
-                owner, 
-                salt
-            )
+            abi.encodeWithSelector(tokenDeployer.deployToken.selector, tokenName, tokenSymbol, decimals, owner, salt)
         );
         if (!success) revert TokenDeploymentFailed();
         tokenAddress = abi.decode(data, (address));
