@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 'use strict';
 
 require('dotenv').config();
@@ -38,4 +36,3 @@ async function deployTokenDeployer(chain, wallet) {
 module.exports = {
     deployTokenDeployer,
 };
->>>>>>> Stashed changes
