@@ -11,12 +11,7 @@ contract ERC20BurnableMintable is ERC20, Ownable, IERC20BurnableMintable {
     string public symbol;
     uint8 public decimals;
 
-    function setup(
-        string memory name_,
-        string memory symbol_, 
-        uint8 decimals_, 
-        address owner
-    ) external {
+    function setup(string memory name_, string memory symbol_, uint8 decimals_, address owner) external {
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
