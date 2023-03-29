@@ -12,7 +12,7 @@ let wallet;
 let otherWallet;
 let linkerRouter;
 let interChainTokenServiceAddress;
-let otherRemoteAddress = 'any string as an address';
+const otherRemoteAddress = 'any string as an address';
 const otherChain = 'Chain Name';
 
 async function setupLocal(toFund) {
@@ -51,10 +51,10 @@ describe('LinkerRouter', () => {
         const remoteAddress = await linkerRouter.getRemoteAddress(otherChain);
         expect(remoteAddress).to.equal(interChainTokenServiceAddress.toLowerCase());
     });
-    it('Should be able to validate remote addresses properly.', async() => {
+    it('Should be able to validate remote addresses properly.', async () => {
         expect(await linkerRouter.validateSender(otherChain, otherRemoteAddress)).to.equal(false);
         expect(await linkerRouter.validateSender(otherChain, interChainTokenServiceAddress)).to.equal(true);
-    })
+    });
     it('Should not be able to add a custom remote address as not the owner', async () => {
         expect(linkerRouter.connect(otherWallet).addTrustedAddress(otherChain, otherRemoteAddress)).to.be.revertedWith('NotOwner()');
     });
@@ -62,10 +62,10 @@ describe('LinkerRouter', () => {
         await linkerRouter.addTrustedAddress(otherChain, otherRemoteAddress);
         expect(await linkerRouter.getRemoteAddress(otherChain)).to.equal(otherRemoteAddress);
     });
-    it('Should be able to validate remote addresses properly.', async() => {
+    it('Should be able to validate remote addresses properly.', async () => {
         expect(await linkerRouter.validateSender(otherChain, otherRemoteAddress)).to.equal(true);
         expect(await linkerRouter.validateSender(otherChain, interChainTokenServiceAddress)).to.equal(false);
-    })
+    });
     it('Should not be able to remove a custom remote address as not the owner', async () => {
         expect(linkerRouter.connect(otherWallet).removeTrustedAddress(otherChain)).to.be.revertedWith('NotOwner()');
     });
@@ -73,10 +73,10 @@ describe('LinkerRouter', () => {
         await linkerRouter.removeTrustedAddress(otherChain);
         expect(await linkerRouter.getRemoteAddress(otherChain)).to.equal(interChainTokenServiceAddress.toLowerCase());
     });
-    it('Should be able to validate remote addresses properly.', async() => {
+    it('Should be able to validate remote addresses properly.', async () => {
         expect(await linkerRouter.validateSender(otherChain, otherRemoteAddress)).to.equal(false);
         expect(await linkerRouter.validateSender(otherChain, interChainTokenServiceAddress)).to.equal(true);
-    })
+    });
     it('Should have chains as not gateway supported by default', async () => {
         expect(await linkerRouter.supportedByGateway(otherChain)).to.equal(false);
     });
