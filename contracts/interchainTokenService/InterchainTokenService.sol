@@ -144,7 +144,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function getDeploymentAddress(address sender, bytes32 salt) public view returns (address deployment) {
         salt = getDeploymentSalt(sender, salt);
-        deployment = tokenDeployer.getDeploymentAddress(salt);
+        deployment = tokenDeployer.getDeploymentAddress(address(this), salt);
     }
 
     /* EXTERNAL FUNCTIONS */
@@ -159,21 +159,28 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint256[] calldata /*gasValues*/
     ) external payable {
         salt = getDeploymentSalt(msg.sender, salt);
-        _deployToken(tokenName, tokenSymbol, decimals, owner, salt);
+        address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, owner, salt);
+        _registerToken(tokenAddress);
         // TODO: Implement remote deployments.
     }
 
-    // solhint-disable-next-line no-empty-blocks
     function registerOriginToken(address tokenAddress) external returns (bytes32 tokenId) {
-        //TODO: Implement.
+        _validateOriginToken(tokenAddress);
+        (tokenId, ) = _registerToken(tokenAddress);
     }
 
     function registerOriginTokenAndDeployRemoteTokens(
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
+    )
+        external
+        payable
+        returns (
+            bytes32 tokenId
+        )
     // solhint-disable-next-line no-empty-blocks
-    ) external payable returns (bytes32 tokenId) {
+    {
         //TODO: Implement.
     }
 
@@ -192,8 +199,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string memory destinationChain,
         bytes memory to,
         uint256 amount,
-        bytes calldata data
-    // solhint-disable-next-line no-empty-blocks
+        bytes calldata data // solhint-disable-next-line no-empty-blocks
     ) external payable {
         //TODO: Implement.
     }
@@ -219,8 +225,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string memory destinationChain,
         bytes memory to,
         uint256 amount,
-        bytes calldata data
-    // solhint-disable-next-line no-empty-blocks
+        bytes calldata data // solhint-disable-next-line no-empty-blocks
     ) external payable {
         //TODO: Implement.
     }
@@ -351,5 +356,22 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         tokenAddress = abi.decode(data, (address));
 
         emit TokenDeployed(tokenAddress, tokenName, tokenSymbol, decimals, owner);
+    }
+
+    function _registerToken(address tokenAddress) internal returns (bytes32 tokenId, bytes32 tokenData) {
+        if (getTokenId(tokenAddress) != bytes32(0)) revert AlreadyRegistered();
+        tokenId = getOriginTokenId(tokenAddress);
+        if (getTokenData(tokenId) != bytes32(0)) revert AlreadyRegistered();
+        tokenData = LinkedTokenData.createTokenData(tokenAddress, true);
+        _setTokenData(tokenId, tokenData);
+        _setTokenId(tokenAddress, tokenId);
+        emit TokenRegistered(tokenId, tokenAddress, true, false, false);
+    }
+
+    function _validateOriginToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
+        IERC20Named token = IERC20Named(tokenAddress);
+        name = token.name();
+        symbol = token.symbol();
+        decimals = token.decimals();
     }
 }

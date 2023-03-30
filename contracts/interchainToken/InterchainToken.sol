@@ -6,14 +6,12 @@ import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ERC20 } from '../utils/ERC20.sol';
 
 contract InterchainToken is IInterchainToken, ERC20 {
-    
     function interchainTransfer(
         string calldata destinationChain,
         string calldata recipient,
         uint256 amount,
         uint256 transferType, // on hold for now
-        bytes calldata metadata
-    // solhint-disable-next-line no-empty-blocks
+        bytes calldata metadata // solhint-disable-next-line no-empty-blocks
     ) external payable {
         //TODO: add implementation
     }
@@ -25,8 +23,7 @@ contract InterchainToken is IInterchainToken, ERC20 {
         string calldata recipient,
         uint256 amount,
         uint256 transferType, // on hold for now
-        bytes calldata metadata
-    // solhint-disable-next-line no-empty-blocks
+        bytes calldata metadata // solhint-disable-next-line no-empty-blocks
     ) external payable {
         //TODO: add implementation
     }

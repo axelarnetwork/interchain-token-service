@@ -49,7 +49,7 @@ describe('Token', () => {
     const name = 'Test Token';
     const symbol = 'TT';
     const decimals = 13;
-    const key = `asdasdasd`;
+    const key = `tokenDeployerKey`;
     const salt = keccak256(defaultAbiCoder.encode(['string'], [key]));
     const amount = 12345;
 
@@ -73,17 +73,16 @@ describe('Token', () => {
     });
 
     it('Should not be able to mint as not the owner', async () => {
-        expect(token.connect(otherWallet).mint(wallet.address, amount)).to.be.revertedWith('NotOwner()');
+        await expect(token.connect(otherWallet).mint(wallet.address, amount)).to.be.reverted;
     });
 
     it('Should not be able to burn as not the owner', async () => {
         await token.approve(otherWallet.address, amount);
-        expect(token.connect(otherWallet).burnFrom(wallet.address, amount)).to.be.revertedWith('NotOwner()');
+        await expect(token.connect(otherWallet).burnFrom(wallet.address, amount)).to.be.reverted;
     });
 
     it('Should not be able to burn without approval', async () => {
-        // This reverts because of integer underflow so we do not expect a specific error;
-        expect(token.burnFrom(wallet.address, amount)).to.be.reverted;
+        await expect(token.burnFrom(wallet.address, amount)).to.be.reverted;
     });
     it('Should be able to burn as the owner with approval', async () => {
         await token.approve(wallet.address, amount);

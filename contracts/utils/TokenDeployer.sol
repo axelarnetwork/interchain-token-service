@@ -20,8 +20,8 @@ contract TokenDeployer is ITokenDeployer {
     }
 
     // this function assumes that the sender will delegatecall to deploy tokens, which is the case.
-    function getDeploymentAddress(bytes32 salt) external view returns (address deployment) {
-        deployment = deployer.deployedAddress(msg.sender, salt);
+    function getDeploymentAddress(address deployerAddress, bytes32 salt) external view returns (address deployment) {
+        deployment = deployer.deployedAddress(deployerAddress, salt);
     }
 
     function getBytecode(bytes calldata args) external view returns (bytes memory bytecode) {
