@@ -27,6 +27,7 @@ contract TokenDeployer is ITokenDeployer {
     function getBytecode(bytes calldata args) external view returns (bytes memory bytecode) {
         uint256 bytecodeLen;
         address server = bytecodeServer;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             bytecodeLen := extcodesize(server)
         }
@@ -34,6 +35,7 @@ contract TokenDeployer is ITokenDeployer {
         uint256 totalLen = argsLen + bytecodeLen;
         bytecode = new bytes(totalLen);
         uint256 start = bytecodeLen + 32;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             extcodecopy(server, add(bytecode, 32), 0, bytecodeLen)
             calldatacopy(add(bytecode, start), args.offset, argsLen)

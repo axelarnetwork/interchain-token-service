@@ -17,7 +17,6 @@ const { setJSON } = require('@axelar-network/axelar-local-dev');
 const { deployCreate3Upgradable } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { Contract } = require('ethers');
-const { deployCreate3Contract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const chains = require(`../info/${process.env.ENV}.json`);
 
 const interchainTokenServiceKey = 'interchainTokenServiceKey';

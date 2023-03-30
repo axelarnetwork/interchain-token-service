@@ -32,6 +32,7 @@ library LinkedTokenData {
         uint256 length = getSymbolLength(tokenData);
         symbol = new string(length);
         bytes32 stringData = tokenData << 8;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             mstore(add(symbol, 0x20), stringData)
         }
