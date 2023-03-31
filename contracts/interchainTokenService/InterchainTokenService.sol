@@ -140,12 +140,12 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         return keccak256(abi.encode(chainNameHash, tokenAddress));
     }
 
-    function getDeploymentSalt(address sender, bytes32 salt) public pure returns (bytes32 deploymentSalt) {
-        deploymentSalt = keccak256(abi.encode(sender, salt));
+    function getInterchainTokenId(address sender, bytes32 salt) public view returns (bytes32) {
+        return keccak256(abi.encode(chainNameHash, sender, salt));
     }
 
     function getDeploymentAddress(address sender, bytes32 salt) public view returns (address deployment) {
-        salt = getDeploymentSalt(sender, salt);
+        salt = getInterchainTokenId(sender, salt);
         deployment = tokenDeployer.getDeploymentAddress(address(this), salt);
     }
 
@@ -160,31 +160,27 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string[] calldata destinationChains,
         uint256[] calldata gasValues
     ) external payable {
-        salt = keccak256(abi.encode(msg.sender, salt));
-        address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, owner, salt);
-        (bytes32 tokenId, bytes32 tokenData) = _registerToken(tokenAddress);
+        bytes32 tokenId = getInterchainTokenId(msg.sender, salt);
+        address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, owner, tokenId);
+        bytes32 tokenData = _registerToken(tokenAddress, tokenId);
         string memory symbol = _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
         if (gateway.tokenAddresses(symbol) == tokenAddress) revert GatewayToken();
     }
 
     function registerOriginToken(address tokenAddress) external returns (bytes32 tokenId) {
         _validateOriginToken(tokenAddress);
-        (tokenId, ) = _registerToken(tokenAddress);
+        tokenId = getOriginTokenId(tokenAddress);
+        _registerToken(tokenAddress, tokenId);
     }
 
     function registerOriginTokenAndDeployRemoteTokens(
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    )
-        external
-        payable
-        returns (
-            bytes32 tokenId
-        )
-    {
+    ) external payable returns (bytes32 tokenId) {
         bytes32 tokenData;
-        (tokenId, tokenData) = _registerToken(tokenAddress);
+        tokenId = getOriginTokenId(tokenAddress);
+        tokenData = _registerToken(tokenAddress, tokenId);
         string memory symbol = _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
         if (gateway.tokenAddresses(symbol) == tokenAddress) revert GatewayToken();
     }
@@ -431,9 +427,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         emit TokenDeployed(tokenAddress, tokenName, tokenSymbol, decimals, owner);
     }
 
-    function _registerToken(address tokenAddress) internal returns (bytes32 tokenId, bytes32 tokenData) {
+    function _registerToken(address tokenAddress, bytes32 tokenId) internal returns (bytes32 tokenData) {
         if (getTokenId(tokenAddress) != bytes32(0)) revert AlreadyRegistered();
-        tokenId = getOriginTokenId(tokenAddress);
         if (getTokenData(tokenId) != bytes32(0)) revert AlreadyRegistered();
         tokenData = LinkedTokenData.createTokenData(tokenAddress, true);
         _setTokenData(tokenId, tokenData);
@@ -469,7 +464,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         (bool success, ) = address(this).call(payload);
         if (!success) revert ExecutionFailed();
     }
-    
+
     function _deployRemoteTokens(
         string[] calldata destinationChains,
         uint256[] calldata gasValues,

@@ -46,7 +46,7 @@ interface IInterchainTokenService {
 
     function getOriginTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
-    function getDeploymentSalt(address sender, bytes32 salt) external pure returns (bytes32 deploymentSalt);
+    function getInterchainTokenId(address sender, bytes32 salt) external view returns (bytes32);
 
     function getDeploymentAddress(address sender, bytes32 salt) external view returns (address deployment);
 

@@ -8,41 +8,33 @@ require('dotenv').config();
 const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
-const { createAndExport, stopAll } = require('@axelar-network/axelar-local-dev');
+const { stopAll, createNetwork, networks } = require('@axelar-network/axelar-local-dev');
 
 let chain;
 let wallet;
 let otherWallet;
 let tokenDeployer;
+const n = 1;
 
 async function setupLocal(toFund) {
-    await createAndExport({
-        chainOutputPath: './info/local.json',
-        accountsToFund: toFund,
-        relayInterval: 100,
-        chains: ['Ethereum'],
-    });
-    chain = require('../info/local.json')[0];
+    for (let i = 0; i < n; i++) {
+        const network = await createNetwork({ port: 8510 + i });
+        const user = network.userWallets[0];
+
+        for (const account of toFund) {
+            await user
+                .sendTransaction({
+                    to: account,
+                    value: BigInt(100e18),
+                })
+                .then((tx) => tx.wait());
+        }
+    }
+    
+    const network = networks[0];
+    chain = network.getCloneInfo();
+    chain.rpc = `http://localhost:${network.port}`;
 }
-
-before(async () => {
-    const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
-    const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
-    const deployerAddress = new Wallet(deployerKey).address;
-    const otherAddress = new Wallet(otherKey).address;
-    const toFund = [deployerAddress, otherAddress];
-    await setupLocal(toFund);
-    const provider = getDefaultProvider(chain.rpc);
-    wallet = new Wallet(deployerKey, provider);
-    otherWallet = new Wallet(otherKey, provider);
-    const { deployTokenDeployer } = require('../scripts/deploy.js');
-
-    tokenDeployer = await deployTokenDeployer(chain, wallet);
-});
-
-after(async () => {
-    await stopAll();
-});
 
 describe('Token', () => {
     let token;
@@ -52,6 +44,25 @@ describe('Token', () => {
     const key = `tokenDeployerKey`;
     const salt = keccak256(defaultAbiCoder.encode(['string'], [key]));
     const amount = 12345;
+
+    before(async () => {
+        const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
+        const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
+        const deployerAddress = new Wallet(deployerKey).address;
+        const otherAddress = new Wallet(otherKey).address;
+        const toFund = [deployerAddress, otherAddress];
+        await setupLocal(toFund);
+        const provider = getDefaultProvider(chain.rpc);
+        wallet = new Wallet(deployerKey, provider);
+        otherWallet = new Wallet(otherKey, provider);
+        const { deployTokenDeployer } = require('../scripts/deploy.js');
+
+        tokenDeployer = await deployTokenDeployer(chain, wallet);
+    });
+
+    after(async () => {
+        await stopAll();
+    });
 
     before(async () => {
         await tokenDeployer.deployToken(name, symbol, decimals, wallet.address, salt);

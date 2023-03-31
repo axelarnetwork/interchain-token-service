@@ -2,7 +2,17 @@
 
 pragma solidity 0.8.9;
 
+import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol';
+
 interface ITokenDeployer {
+    function deployer() external view returns (Create3Deployer);
+
+    function bytecodeServer() external view returns (address);
+
+    function tokenImplementation() external view returns (address);
+
+    function thisAddress() external view returns (ITokenDeployer);
+
     function deployToken(
         string calldata name,
         string calldata symbol,
