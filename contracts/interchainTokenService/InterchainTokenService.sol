@@ -157,13 +157,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint8 decimals,
         address owner,
         bytes32 salt,
-        string[] calldata /*destinationChains*/,
-        uint256[] calldata /*gasValues*/
+        string[] calldata destinationChains,
+        uint256[] calldata gasValues
     ) external payable {
-        salt = getDeploymentSalt(msg.sender, salt);
+        salt = keccak256(abi.encode(msg.sender, salt));
         address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, owner, salt);
-        _registerToken(tokenAddress);
-        // TODO: Implement remote deployments.
+        (bytes32 tokenId, bytes32 tokenData) = _registerToken(tokenAddress);
+        string memory symbol = _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
+        if (gateway.tokenAddresses(symbol) == tokenAddress) revert GatewayToken();
     }
 
     function registerOriginToken(address tokenAddress) external returns (bytes32 tokenId) {
@@ -175,14 +176,23 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    ) external payable returns (bytes32 tokenId) // solhint-disable-next-line no-empty-blocks
+    )
+        external
+        payable
+        returns (
+            bytes32 tokenId
+        )
     {
-        //TODO: Implement.
+        bytes32 tokenData;
+        (tokenId, tokenData) = _registerToken(tokenAddress);
+        string memory symbol = _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
+        if (gateway.tokenAddresses(symbol) == tokenAddress) revert GatewayToken();
     }
 
-    // solhint-disable-next-line no-empty-blocks
     function deployRemoteTokens(bytes32 tokenId, string[] calldata destinationChains, uint256[] calldata gasValues) external payable {
-        //TODO: Implement.
+        bytes32 tokenData = getTokenData(tokenId);
+        if (!tokenData.isOrigin()) revert NotOriginToken();
+        _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
     }
 
     // solhint-disable-next-line no-empty-blocks
@@ -236,7 +246,25 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint8 decimals,
         bool isGateway // solhint-disable-next-line no-empty-blocks
     ) public onlySelf {
-        //TODO: Implement.
+        {
+            bytes32 tokenData = getTokenData(tokenId);
+            if (tokenData != bytes32(0)) {
+                if (isGateway && !tokenData.isGateway()) {
+                    _setTokenData(tokenId, LinkedTokenData.createRemoteGatewayTokenData(tokenData.getAddress()));
+                    return;
+                }
+                revert AlreadyRegistered();
+            }
+        }
+        address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, address(this), tokenId);
+        if (isGateway) {
+            _setTokenData(tokenId, LinkedTokenData.createRemoteGatewayTokenData(tokenAddress));
+        } else {
+            _setTokenData(tokenId, LinkedTokenData.createTokenData(tokenAddress, false));
+        }
+        _setTokenId(tokenAddress, tokenId);
+        _setOriginalChain(tokenId, origin);
+        emit TokenRegistered(tokenId, tokenAddress, false, false, isGateway);
     }
 
     function selfGiveToken(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount) public onlySelf {
@@ -440,5 +468,32 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = address(this).call(payload);
         if (!success) revert ExecutionFailed();
+    }
+    
+    function _deployRemoteTokens(
+        string[] calldata destinationChains,
+        uint256[] calldata gasValues,
+        bytes32 tokenId,
+        bytes32 tokenData
+    ) internal returns (string memory) {
+        (string memory name, string memory symbol, uint8 decimals) = _validateOriginToken(tokenData.getAddress());
+        uint256 length = destinationChains.length;
+        if (gasValues.length != length) revert LengthMismatch();
+        for (uint256 i; i < length; ++i) {
+            uint256 gasValue = gasValues[i];
+            if (tokenData.isGateway() && linkerRouter.supportedByGateway(destinationChains[i])) revert GatewayToken();
+            bytes memory payload = abi.encodeWithSelector(
+                this.selfDeployToken.selector,
+                tokenId,
+                chainName.toTrimmedString(),
+                name,
+                symbol,
+                decimals,
+                tokenData.isGateway()
+            );
+            _callContract(destinationChains[i], payload, gasValues[i]);
+            emit RemoteTokenRegisterInitialized(tokenId, destinationChains[i], gasValue);
+        }
+        return symbol;
     }
 }

@@ -72,6 +72,7 @@ async function deployTokenService(chain, wallet) {
         '0x',
         interchainTokenServiceKey,
     );
+    chain.interchainTokenService = tokenService.address;
     return tokenService;
 }
 
