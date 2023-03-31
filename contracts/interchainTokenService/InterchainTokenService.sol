@@ -16,6 +16,7 @@ import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 import { IInterTokenExecutable } from '../interfaces/IInterTokenExecutable.sol';
 
+import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { LinkedTokenData } from '../libraries/LinkedTokenData.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
@@ -23,6 +24,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using LinkedTokenData for bytes32;
+    using AddressBytesUtils for bytes;
 
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
@@ -228,6 +230,54 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes calldata data // solhint-disable-next-line no-empty-blocks
     ) external payable {
         //TODO: Implement.
+    }
+    /* ONLY SELF FUNCTIONS */
+
+    function selfDeployToken(
+        bytes32 tokenId,
+        string memory origin,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 decimals,
+        bool isGateway // solhint-disable-next-line no-empty-blocks
+    ) public onlySelf {
+        //TODO: Implement.
+    }
+
+    function selfGiveToken(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount) public onlySelf {
+        _giveToken(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount);
+    }
+
+    function selfGiveTokenWithData(
+        bytes32 tokenId,
+        string calldata sourceChain,
+        bytes calldata sourceAddress,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) public onlySelf {
+        _giveTokenWithData(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount, sourceChain, sourceAddress, data);
+    }
+
+    function selfSendToken(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount // solhint-disable-next-line no-empty-blocks
+    ) public onlySelf {
+        // TODO: Implement
+    }
+
+    function selfSendTokenWithData(
+        bytes32 tokenId,
+        string calldata sourceChain,
+        bytes calldata sourceAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data // solhint-disable-next-line no-empty-blocks
+    ) public onlySelf {
+        // TODO: Implement
     }
 
     // UTILITY FUNCTIONS
