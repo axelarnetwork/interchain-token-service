@@ -175,13 +175,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    )
-        external
-        payable
-        returns (
-            bytes32 tokenId
-        )
-    // solhint-disable-next-line no-empty-blocks
+    ) external payable returns (bytes32 tokenId) // solhint-disable-next-line no-empty-blocks
     {
         //TODO: Implement.
     }
@@ -231,6 +225,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     ) external payable {
         //TODO: Implement.
     }
+
     /* ONLY SELF FUNCTIONS */
 
     function selfDeployToken(
@@ -423,5 +418,27 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         name = token.name();
         symbol = token.symbol();
         decimals = token.decimals();
+    }
+
+    /* EXECUTE AND EXECUTE WITH TOKEN */
+
+    function _execute(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal override {
+        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = address(this).call(payload);
+        if (!success) revert ExecutionFailed();
+    }
+
+    function _executeWithToken(
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata /*symbol*/,
+        uint256 /*amount*/
+    ) internal override {
+        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = address(this).call(payload);
+        if (!success) revert ExecutionFailed();
     }
 }

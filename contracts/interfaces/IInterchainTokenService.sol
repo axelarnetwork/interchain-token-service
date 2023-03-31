@@ -18,6 +18,7 @@ interface IInterchainTokenService {
     error NotSelf();
     error TokenDeploymentFailed();
     error ExceedMintLimit(bytes32 tokenId);
+    error ExecutionFailed();
 
     event Sending(string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event SendingWithData(string destinationChain, bytes destinationAddress, uint256 indexed amount, address indexed from, bytes data);
