@@ -192,18 +192,20 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function sendToken(bytes32 tokenId, string memory destinationChain, bytes memory to, uint256 amount) external payable {
-        //TODO: Implement.
+    function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
+        _takeToken(tokenId, msg.sender, amount);
+        _sendToken(tokenId, destinationChain, to, amount);
     }
 
     function callContractWithInterToken(
         bytes32 tokenId,
-        string memory destinationChain,
-        bytes memory to,
+        string calldata destinationChain,
+        bytes calldata to,
         uint256 amount,
-        bytes calldata data // solhint-disable-next-line no-empty-blocks
+        bytes calldata data
     ) external payable {
-        //TODO: Implement.
+        _takeToken(tokenId, msg.sender, amount);
+        _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
     // solhint-disable-next-line no-empty-blocks
@@ -374,7 +376,18 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         } else {
             _mint(tokenAddress, destinationaddress, amount);
         }
-        IInterTokenExecutable(destinationaddress).exectuteWithInterToken(tokenAddress, sourceChain, sourceAddress, amount, data);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool executionSuccessful, ) = destinationaddress.call(
+            abi.encodeWithSelector(
+                IInterTokenExecutable.exectuteWithInterToken.selector,
+                tokenAddress,
+                sourceChain,
+                sourceAddress,
+                amount,
+                data
+            )
+        );
+        emit ReceivingWithData(sourceChain, destinationaddress, amount, sourceAddress, data, executionSuccessful);
     }
 
     function _callContract(string memory destinationChain, bytes memory payload, uint256 gasValue) internal {
@@ -490,5 +503,53 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             emit RemoteTokenRegisterInitialized(tokenId, destinationChains[i], gasValue);
         }
         return symbol;
+    }
+
+    function _sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata destinationaddress, uint256 amount) internal {
+        bytes32 tokenData = getTokenData(tokenId);
+        bytes memory payload;
+        // solhint-disable-next-line no-empty-blocks
+        if (tokenData.isGateway()) {
+            // TODO: implement gateway logic.
+            // solhint-disable-next-line no-empty-blocks
+        } else if (tokenData.isRemoteGateway()) {
+            // TODO: implement remote gateway logic.
+        } else {
+            payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+            _callContract(destinationChain, payload, msg.value);
+        }
+        emit Sending(destinationChain, destinationaddress, amount);
+    }
+
+    function _sendTokenWithData(
+        bytes32 tokenId,
+        string memory sourceChain,
+        bytes memory sourceAddress,
+        string calldata destinationChain,
+        bytes calldata destinationaddress,
+        uint256 amount,
+        bytes calldata data
+    ) internal {
+        bytes32 tokenData = getTokenData(tokenId);
+        bytes memory payload;
+        // solhint-disable-next-line no-empty-blocks
+        if (tokenData.isGateway()) {
+            // TODO: implement gateway logic.
+            // solhint-disable-next-line no-empty-blocks
+        } else if (tokenData.isRemoteGateway()) {
+            // TODO: implement remote gateway logic.
+        } else {
+            payload = abi.encodeWithSelector(
+                this.selfGiveTokenWithData.selector,
+                tokenId,
+                sourceChain,
+                sourceAddress,
+                destinationaddress,
+                amount,
+                data
+            );
+            _callContract(destinationChain, payload, msg.value);
+        }
+        emit SendingWithData(destinationChain, destinationaddress, amount, msg.sender, data);
     }
 }

@@ -27,8 +27,9 @@ interface IInterchainTokenService {
         string sourceChain,
         address indexed destinationAddress,
         uint256 indexed amount,
-        address indexed from,
-        bytes data
+        bytes from,
+        bytes data,
+        bool executionSuccessful
     );
     event TokenRegistered(bytes32 indexed tokenId, address indexed tokenAddress, bool native, bool gateway, bool remoteGateway);
     event TokenDeployed(address indexed tokenAddress, string name, string symbol, uint8 decimals, address indexed owner);
@@ -70,12 +71,12 @@ interface IInterchainTokenService {
 
     function deployRemoteTokens(bytes32 tokenId, string[] calldata destinationChains, uint256[] calldata gasValues) external payable;
 
-    function sendToken(bytes32 tokenId, string memory destinationChain, bytes memory to, uint256 amount) external payable;
+    function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable;
 
     function callContractWithInterToken(
         bytes32 tokenId,
-        string memory destinationChain,
-        bytes memory to,
+        string calldata destinationChain,
+        bytes calldata to,
         uint256 amount,
         bytes calldata data
     ) external payable;

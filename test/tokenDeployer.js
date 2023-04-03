@@ -30,7 +30,7 @@ async function setupLocal(toFund) {
                 .then((tx) => tx.wait());
         }
     }
-    
+
     const network = networks[0];
     chain = network.getCloneInfo();
     chain.rpc = `http://localhost:${network.port}`;
