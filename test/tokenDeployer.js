@@ -1,11 +1,7 @@
 'use strict';
 
 const chai = require('chai');
-const {
-    getDefaultProvider,
-    Contract,
-    Wallet,
-} = require('ethers');
+const { getDefaultProvider, Contract, Wallet } = require('ethers');
 const { expect } = chai;
 const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 require('dotenv').config();
