@@ -2,7 +2,6 @@
 
 require('dotenv').config();
 
-const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { deployTokenService, deployLinkerRouter, deployTokenDeployer } = require('../scripts/deploy.js');
 const { createNetwork, networks, relay, evmRelayer, logger, stopAll, deployContract } = require('@axelar-network/axelar-local-dev');
 const {
@@ -11,10 +10,13 @@ const {
         Contract,
         Wallet,
         constants: { AddressZero },
+        utils: {
+            keccak256,
+            defaultAbiCoder,
+        }
     },
 } = require('hardhat');
 const { expect } = require('chai');
-
 const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 const ITokenService = require('../artifacts/contracts/interfaces/IInterchainTokenService.sol/IInterchainTokenService.json');
 const ITokenDeployer = require('../artifacts/contracts/interfaces/ITokenDeployer.sol/ITokenDeployer.json');
@@ -116,7 +118,15 @@ describe('TokenService', () => {
     it('Should be able to deploy a native interchain token', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
-        await tokenService.deployInterchainToken(name, symbol, decimals, wallet.address, salt, [], []);
+        await expect(tokenService.deployInterchainToken(name, symbol, decimals, wallet.address, salt, [], [])).to.emit(
+            tokenService, 'TokenDeployed'
+        ).withArgs(
+            tokenAddress, name, symbol, decimals, wallet.address
+        ).and.to.emit(
+            tokenService, 'TokenRegistered'
+        ).withArgs(
+            tokenId, tokenAddress, true, false, false
+        );
         token = new Contract(tokenAddress, Token.abi, wallet);
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
@@ -144,7 +154,11 @@ describe('TokenService', () => {
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);
         expect(await token.owner()).to.equal(wallet.address);
-        await tokenService.registerOriginToken(tokenAddress);
+        await expect(tokenService.registerOriginToken(tokenAddress)).to.emit(
+            tokenService, 'TokenRegistered'
+        ).withArgs(
+            tokenId, tokenAddress, true, false, false
+        );
 
         expect(await tokenService.getTokenId(tokenAddress)).to.equal(tokenId);
         expect(await tokenService.getTokenAddress(tokenId)).to.equal(tokenAddress);
@@ -176,8 +190,15 @@ describe('TokenService', () => {
         const [, tokenId] = await getTokenData(0, salt, false);
         const destinationChains = [chains[1].name, chains[2].name];
         const gasValues = [1e7, 1e7];
-        await tokenService.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 });
-
+        await expect(tokenService.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 })).to.emit(
+            tokenService, 'RemoteTokenRegisterInitialized'
+        ).withArgs(
+            tokenId, destinationChains[0], gasValues[0]
+        ).and.to.emit(
+            tokenService, 'RemoteTokenRegisterInitialized'
+        ).withArgs(
+            tokenId, destinationChains[1], gasValues[1]
+        );
         await relay();
 
         for (const i of [1, 2]) {
@@ -199,7 +220,15 @@ describe('TokenService', () => {
         const [, tokenId] = await getTokenData(0, salt, true);
         const destinationChains = [chains[1].name, chains[2].name];
         const gasValues = [1e7, 1e7];
-        await tokenService.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 });
+        await expect(tokenService.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 })).to.emit(
+            tokenService, 'RemoteTokenRegisterInitialized'
+        ).withArgs(
+            tokenId, destinationChains[0], gasValues[0]
+        ).and.to.emit(
+            tokenService, 'RemoteTokenRegisterInitialized'
+        ).withArgs(
+            tokenId, destinationChains[1], gasValues[1]
+        );
 
         await relay();
 
@@ -226,7 +255,20 @@ describe('TokenService', () => {
 
         const destinationChains = [chains[1].name, chains[2].name];
         const gasValues = [1e7, 1e7];
-        await tokenService.registerOriginTokenAndDeployRemoteTokens(tokenAddress, destinationChains, gasValues, { value: 2e7 });
+
+        await expect(tokenService.registerOriginTokenAndDeployRemoteTokens(tokenAddress, destinationChains, gasValues, { value: 2e7 })).to.emit(
+            tokenService, 'TokenRegistered'
+        ).withArgs(
+            tokenId, tokenAddress, true, false, false
+        ).and.to.emit(
+            tokenService, 'RemoteTokenRegisterInitialized'
+        ).withArgs(
+            tokenId, destinationChains[0], gasValues[0]
+        ).and.to.emit(
+            tokenService, 'RemoteTokenRegisterInitialized'
+        ).withArgs(
+            tokenId, destinationChains[1], gasValues[1]
+        );
 
         expect(await tokenService.getTokenId(tokenAddress)).to.equal(tokenId);
         expect(await tokenService.getTokenAddress(tokenId)).to.equal(tokenAddress);
@@ -241,7 +283,7 @@ describe('TokenService', () => {
         }
     });
 
-    it('Should be able to deploy and interchain token and deploy remote tokens in one go', async () => {
+    it('Should be able to deploy an interchain token and deploy remote tokens in one go', async () => {
         const newSalt = keccak256('0x1234567890');
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, newSalt, true);
@@ -249,9 +291,25 @@ describe('TokenService', () => {
         const destinationChains = [chains[1].name, chains[2].name];
         const gasValues = [1e7, 1e7];
 
-        await tokenService.deployInterchainToken(name, symbol, decimals, wallet.address, newSalt, destinationChains, gasValues, {
+        await expect(tokenService.deployInterchainToken(name, symbol, decimals, wallet.address, newSalt, destinationChains, gasValues, {
             value: 2e7,
-        });
+        })).to.emit(
+            tokenService, 'TokenDeployed'
+        ).withArgs(
+            tokenAddress, name, symbol, decimals, wallet.address
+        ).and.to.emit(
+            tokenService, 'TokenRegistered'
+        ).withArgs(
+            tokenId, tokenAddress, true, false, false
+        ).and.to.emit(
+            tokenService, 'RemoteTokenRegisterInitialized'
+        ).withArgs(
+            tokenId, destinationChains[0], gasValues[0]
+        ).and.to.emit(
+            tokenService, 'RemoteTokenRegisterInitialized'
+        ).withArgs(
+            tokenId, destinationChains[1], gasValues[1]
+        );
 
         expect(await tokenService.getTokenId(tokenAddress)).to.equal(tokenId);
         expect(await tokenService.getTokenAddress(tokenId)).to.equal(tokenAddress);
@@ -269,7 +327,11 @@ describe('TokenService', () => {
         const [wallet] = loadChain(0);
         const [tokenAddress] = await getTokenData(0, salt, true);
         const token = new Contract(tokenAddress, Token.abi, wallet);
-        await token.mint(wallet.address, amount1);
+        expect(await token.mint(wallet.address, amount1)).to.emit(
+            token, 'Transfer'
+        ).withArgs(
+           AddressZero, wallet.address, amount1
+        );
         expect(Number(await token.balanceOf(wallet.address))).to.equal(amount1);
     });
     it('Should not be able to send some token to another chain without approval', async () => {
@@ -284,7 +346,11 @@ describe('TokenService', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
 
-        await tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 });
+        await expect(tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 })).to.emit(
+            tokenService, 'Sending'
+        ).withArgs(
+            chains[1].name, wallet.address.toLowerCase(), amount1
+        );
 
         await relay();
 
@@ -312,7 +378,11 @@ describe('TokenService', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
 
-        await tokenService.sendToken(tokenId, chains[2].name, wallet.address, amount1, { value: 1e6 });
+        await expect(tokenService.sendToken(tokenId, chains[2].name, wallet.address, amount1, { value: 1e6 })).to.emit(
+            tokenService, 'Sending'
+        ).withArgs(
+            chains[2].name, wallet.address.toLowerCase(), amount1
+        );
 
         await relay();
 
@@ -330,7 +400,11 @@ describe('TokenService', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
 
-        await tokenService.sendToken(tokenId, chains[0].name, wallet.address, amount1, { value: 1e6 });
+        await expect(tokenService.sendToken(tokenId, chains[0].name, wallet.address, amount1, { value: 1e6 })).to.emit(
+            tokenService, 'Sending'
+        ).withArgs(
+            chains[0].name, wallet.address.toLowerCase(), amount1
+        );
 
         await relay();
 
@@ -363,14 +437,18 @@ describe('TokenService', () => {
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
-
-        await tokenService.callContractWithInterToken(
+        const payload = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
+        await expect(tokenService.callContractWithInterToken(
             tokenId,
             chains[1].name,
             chains[1].executable.address,
             amount1,
-            defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]),
+            payload,
             { value: 1e6 },
+        )).to.emit(
+            tokenService, 'SendingWithData'
+        ).withArgs(
+            chains[1].name, chains[1].executable.address.toLowerCase(), amount1, wallet.address, payload
         );
 
         await relay();
@@ -408,14 +486,19 @@ describe('TokenService', () => {
         const tokenAddress = await tokenService.getTokenAddress(tokenId);
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
+        const payload = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
 
-        await tokenService.callContractWithInterToken(
+        await expect(tokenService.callContractWithInterToken(
             tokenId,
             chains[2].name,
             wallet.address,
             amount1,
-            defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]),
+            payload,
             { value: 1e6 },
+        )).to.emit(
+            tokenService, 'SendingWithData'
+        ).withArgs(
+            chains[2].name, wallet.address.toLowerCase(), amount1, wallet.address, payload
         );
         await relay();
 
