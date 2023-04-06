@@ -25,21 +25,6 @@ async function setupLocal(toFund) {
     chain = require('../info/local.json')[0];
 }
 
-before(async () => {
-    const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
-    const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
-    const deployerAddress = new Wallet(deployerKey).address;
-    const otherAddress = new Wallet(otherKey).address;
-    const toFund = [deployerAddress, otherAddress];
-    await setupLocal(toFund);
-    const provider = getDefaultProvider(chain.rpc);
-    wallet = new Wallet(deployerKey, provider);
-    otherWallet = new Wallet(otherKey, provider);
-    const { deployTokenDeployer } = require('../scripts/deploy.js');
-
-    tokenDeployer = await deployTokenDeployer(chain, wallet);
-});
-
 describe('Token', () => {
     let token;
     const name = 'Test Token';
@@ -50,6 +35,19 @@ describe('Token', () => {
     const amount = 12345;
 
     before(async () => {
+        const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
+        const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
+        const deployerAddress = new Wallet(deployerKey).address;
+        const otherAddress = new Wallet(otherKey).address;
+        const toFund = [deployerAddress, otherAddress];
+        await setupLocal(toFund);
+        const provider = getDefaultProvider(chain.rpc);
+        wallet = new Wallet(deployerKey, provider);
+        otherWallet = new Wallet(otherKey, provider);
+        const { deployTokenDeployer } = require('../scripts/deploy.js');
+    
+        tokenDeployer = await deployTokenDeployer(chain, wallet);
+
         await tokenDeployer.deployToken(name, symbol, decimals, wallet.address, salt);
         const deployer = new Contract(chain.create3Deployer, Create3Deployer.abi, wallet);
         const tokenAddress = await deployer.deployedAddress(tokenDeployer.address, salt);
@@ -80,7 +78,7 @@ describe('Token', () => {
     it('Should not be able to burn without approval', async () => {
         await expect(token.burnFrom(wallet.address, amount)).to.be.reverted;
     });
-    
+
     it('Should be able to burn as the owner with approval', async () => {
         await token.approve(wallet.address, amount);
         await token.burnFrom(wallet.address, amount);
