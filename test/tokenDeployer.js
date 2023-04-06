@@ -78,7 +78,7 @@ describe('Token', () => {
     it('Should not be able to burn without approval', async () => {
         await expect(token.burnFrom(wallet.address, amount)).to.be.reverted;
     });
-    
+
     it('Should be able to burn as the owner with approval', async () => {
         await token.approve(wallet.address, amount);
         await token.burnFrom(wallet.address, amount);
