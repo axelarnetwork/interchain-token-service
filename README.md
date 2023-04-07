@@ -161,3 +161,13 @@ When receiving calls from a remote Interchain token Linker the following behavio
     - calls `proccessToken(tokenId, amount)` of the destination address after transferring the token.
 
 ## Contract Design 
+
+There are two nuances when it comes to the smart contract design, deploying potentially different contracts with to the same address, and differentiating between remote messages.
+
+### Deploying potentially different contracts to the same address
+
+This can in general easily be achieved by using [create3](https://github.com/axelarnetwork/axelar-gmp-sdk-solidity). However to do so we need to have access to the bytecode of the deployed contract at runtime, without having anyone pass it in. Loading it from storage would be way to costly, and the author of this has no idea if it is possible to store it in the bytecode of a the contract trying to do the deployment and accessing it at runtime (`immutable` variables do this, but they cannot have variable length and must be 32 bytes). To circumvent this we will use a contract that will have its entire bytecode be the deployment bytecode, which can be accesses by using `address.code` for a reasonable gas price.
+
+### Differentiating between remote messages
+
+Having multiple different commands be executed remotely is easily achievable but there are a few ways to go about it. Basically the payload will have to begin with a certain number of bytes that explain what the operation is. To do this we can either use 32 bytes, and `abi.decode(uing256)` to get only the selector, and have a large `if...else...else...then` section, or use the first 4 bytes as a solidity function selector and use different functions that can only be called by the contract itself. The second design is selected here as it is considered more elegant.
