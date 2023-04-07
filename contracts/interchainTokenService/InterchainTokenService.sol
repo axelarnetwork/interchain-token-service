@@ -12,6 +12,7 @@ import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.s
 import { ITokenDeployer } from '../interfaces/ITokenDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+import { IERC20Named } from '../interfaces/IERC20Named.sol';
 import { IInterTokenExecutable } from '../interfaces/IInterTokenExecutable.sol';
 
 import { LinkedTokenData } from '../libraries/LinkedTokenData.sol';
@@ -274,5 +275,38 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             _mint(tokenAddress, destinationaddress, amount);
         }
         IInterTokenExecutable(destinationaddress).exectuteWithInterToken(tokenAddress, sourceChain, sourceAddress, amount, data);
+    }
+
+    function _callContract(string memory destinationChain, bytes memory payload, uint256 gasValue) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCall{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                msg.sender
+            );
+        }
+        gateway.callContract(destinationChain, destinationAddress, payload);
+    }
+
+    function _callContractWithToken(string memory destinationChain, bytes32 tokenData, uint256 amount, bytes memory payload) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        uint256 gasValue = msg.value;
+        string memory symbol = tokenData.getSymbol();
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                msg.sender
+            );
+        }
+        IERC20Named(tokenData.getAddress()).approve(address(gateway), amount);
+        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
 }
