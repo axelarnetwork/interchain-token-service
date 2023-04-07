@@ -1,5 +1,5 @@
 node_modules
 artifacts
-./info/local.json
 cache
 .env
+info/local.json
