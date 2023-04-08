@@ -4,12 +4,16 @@ pragma solidity 0.8.9;
 import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
+import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 import { EternalStorage } from '@axelar-network/axelar-cgp-solidity/contracts/EternalStorage.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenDeployer } from '../interfaces/ITokenDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
+import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+import { IERC20Named } from '../interfaces/IERC20Named.sol';
+import { IInterTokenExecutable } from '../interfaces/IInterTokenExecutable.sol';
 
 import { LinkedTokenData } from '../libraries/LinkedTokenData.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
@@ -195,5 +199,114 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes calldata data
     ) external payable {
         //TODO: Implement.
+    }
+
+    // UTILITY FUNCTIONS
+        function _transfer(address tokenAddress, address destinationaddress, uint256 amount) internal {
+        (bool success, bytes memory returnData) = tokenAddress.call(
+            abi.encodeWithSelector(IERC20.transfer.selector, destinationaddress, amount)
+        );
+        bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
+
+        if (!transferred || tokenAddress.code.length == 0) revert TransferFailed();
+    }
+
+    function _transferFrom(address tokenAddress, address from, uint256 amount) internal {
+        (bool success, bytes memory returnData) = tokenAddress.call(
+            abi.encodeWithSelector(IERC20.transferFrom.selector, from, address(this), amount)
+        );
+        bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
+
+        if (!transferred || tokenAddress.code.length == 0) revert TransferFromFailed();
+    }
+
+    function _mint(address tokenAddress, address destinationaddress, uint256 amount) internal {
+        (bool success, ) = tokenAddress.call(
+            abi.encodeWithSelector(IERC20BurnableMintable.mint.selector, destinationaddress, amount)
+        );
+
+        if (!success || tokenAddress.code.length == 0) revert MintFailed();
+    }
+
+    function _burn(address tokenAddress, address from, uint256 amount) internal {
+        (bool success, ) = tokenAddress.call(abi.encodeWithSelector(IERC20BurnableMintable.burnFrom.selector, from, amount));
+
+        if (!success || tokenAddress.code.length == 0) revert BurnFailed();
+    }
+
+    function _giveToken(bytes32 tokenId, address destinationaddress, uint256 amount) internal {
+        _setTokenMintAmount(tokenId, getTokenMintAmount(tokenId) + amount);
+
+        bytes32 tokenData = getTokenData(tokenId);
+        address tokenAddress = tokenData.getAddress();
+
+        if (tokenData.isOrigin() || tokenData.isGateway()) {
+            _transfer(tokenAddress, destinationaddress, amount);
+        } else {
+            _mint(tokenAddress, destinationaddress, amount);
+        }
+    }
+
+    function _takeToken(bytes32 tokenId, address from, uint256 amount) internal {
+        bytes32 tokenData = getTokenData(tokenId);
+        address tokenAddress = tokenData.getAddress();
+        if (tokenData.isOrigin() || tokenData.isGateway()) { 
+            _transferFrom(tokenAddress, from, amount);
+        } else {
+            _burn(tokenAddress, from, amount);
+        }
+    }
+
+    function _giveTokenWithData(
+        bytes32 tokenId,
+        address destinationaddress,
+        uint256 amount,
+        string calldata sourceChain,
+        bytes memory sourceAddress,
+        bytes memory data
+    ) internal {
+        _setTokenMintAmount(tokenId, getTokenMintAmount(tokenId) + amount);
+
+        bytes32 tokenData = getTokenData(tokenId);
+        address tokenAddress = tokenData.getAddress();
+        if (tokenData.isOrigin() || tokenData.isGateway()) {
+            _transfer(tokenAddress, destinationaddress, amount);
+        } else {
+            _mint(tokenAddress, destinationaddress, amount);
+        }
+        IInterTokenExecutable(destinationaddress).exectuteWithInterToken(tokenAddress, sourceChain, sourceAddress, amount, data);
+    }
+
+    function _callContract(string memory destinationChain, bytes memory payload, uint256 gasValue) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCall{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                msg.sender
+            );
+        }
+        gateway.callContract(destinationChain, destinationAddress, payload);
+    }
+
+    function _callContractWithToken(string memory destinationChain, bytes32 tokenData, uint256 amount, bytes memory payload) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        uint256 gasValue = msg.value;
+        string memory symbol = tokenData.getSymbol();
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                msg.sender
+            );
+        }
+        IERC20Named(tokenData.getAddress()).approve(address(gateway), amount);
+        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
 }
