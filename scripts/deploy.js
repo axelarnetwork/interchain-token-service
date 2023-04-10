@@ -18,7 +18,7 @@ const chains = require(`../info/${process.env.ENV}.json`);
 const interchainTokenServiceKey = 'interchainTokenServiceKey';
 
 async function deployTokenDeployer(chain, wallet) {
-    if (chain.tokenDeployer) return;
+    if (chain.tokenDeployer) return new Contract(chain.tokenDeployer, TokenDeployer.abi, wallet);
 
     console.log(`Deploying ERC20BurnableMintable.`);
     const token = await deployContract(wallet, Token, []);

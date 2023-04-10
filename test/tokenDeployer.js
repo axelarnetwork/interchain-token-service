@@ -17,28 +17,13 @@ let tokenDeployer;
 
 async function setupLocal(toFund) {
     await createAndExport({
-        chainOutputPath: './info/local.json',
+        chainOutputPath: './info/local0.json',
         accountsToFund: toFund,
         relayInterval: 100,
         chains: ['Ethereum'],
     });
-    chain = require('../info/local.json')[0];
+    chain = require('../info/local0.json')[0];
 }
-
-before(async () => {
-    const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
-    const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
-    const deployerAddress = new Wallet(deployerKey).address;
-    const otherAddress = new Wallet(otherKey).address;
-    const toFund = [deployerAddress, otherAddress];
-    await setupLocal(toFund);
-    const provider = getDefaultProvider(chain.rpc);
-    wallet = new Wallet(deployerKey, provider);
-    otherWallet = new Wallet(otherKey, provider);
-    const { deployTokenDeployer } = require('../scripts/deploy.js');
-
-    tokenDeployer = await deployTokenDeployer(chain, wallet);
-});
 
 after(async () => {
     await stopAll();
