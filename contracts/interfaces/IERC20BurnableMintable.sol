@@ -9,7 +9,7 @@ import { IOwnable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/inte
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IERC20BurnableMintable is IERC20Named, IOwnable {
-    error NotSelf();
+    error NotProxy();
 
     function name() external view returns (string memory);
 
@@ -17,7 +17,7 @@ interface IERC20BurnableMintable is IERC20Named, IOwnable {
 
     function decimals() external view returns (uint8);
 
-    function setup(string memory name_, string memory symbol_, uint8 decimals_, address owner) external;
+    function setup(bytes calldata setupParams) external;
 
     function mint(address to, uint256 amount) external;
 
