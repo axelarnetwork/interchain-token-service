@@ -22,6 +22,7 @@ const Test = require('../artifacts/contracts/test/TokenLinkerExecutableTest.sol/
 logger.log = (args) => {};
 
 const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
+const notOwnerKey = keccak256(defaultAbiCoder.encode(['string'], ['not-owner']));
 let chains;
 const n = 3;
 
@@ -93,9 +94,16 @@ describe('TokenService', () => {
     const salt = keccak256(defaultAbiCoder.encode(['string'], [key]));
     const amount1 = 123456;
 
+    const gatewayTokenName = 'GatewayToken';
+    const gatewayTokenSymbol = 'GT';
+    const gatewayTokenDecimals = 18;
+    const gatewayTokenSalt = keccak256(defaultAbiCoder.encode(['string'], ['gatewayToken']));
+    let gatewayTokenAddress, remoteGatewayTokenAddress;
+
     before(async () => {
         const deployerAddress = new Wallet(deployerKey).address;
-        const toFund = [deployerAddress];
+        const notOwnerAddress = new Wallet(notOwnerKey).address;
+        const toFund = [deployerAddress, notOwnerAddress];
         await setupLocal(toFund);
 
         for (const chain of chains) {
@@ -457,5 +465,61 @@ describe('TokenService', () => {
 
         expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
+    });
+
+    it.only('Should deploy a gateway token to two chains', async () => {
+        const [wallet,, tokenDeployer] = loadChain(0);
+        await tokenDeployer.deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, wallet.address, gatewayTokenSalt);
+        [gatewayTokenAddress] = await getTokenData(0, gatewayTokenSalt, false);
+        await networks[0].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0, gatewayTokenAddress);
+        expect(await networks[0].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(gatewayTokenAddress);
+        const remoteGatewayToken = await networks[1].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0);
+        remoteGatewayTokenAddress = remoteGatewayToken.address;
+        expect(await networks[1].gateway.tokenAddresses(gatewayTokenSymbol)).to.not.equal(AddressZero);
+        expect(await networks[2].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(AddressZero);
+    });
+
+    it.only('Should not be able to register gateway tokens as not the owner', async () => {
+        const [wallet, tokenService] = loadChain(0);
+        const notOwner = new Wallet(notOwnerKey, wallet.provider);
+        await expect(tokenService.connect(notOwner).registerOriginGatewayToken(gatewayTokenSymbol)).to.be.reverted;
+        await expect(tokenService.connect(notOwner).registerRemoteGatewayToken(gatewayTokenSymbol, keccak256('0x'), 'Anything')).to.be.reverted;
+    });
+
+    it.only('Should not be able to register gateway tokens that are not gateway tokens', async () => {
+        const [, tokenService] = loadChain(0);
+        const newSymbol = 'NS';
+
+        await expect(tokenService.registerOriginGatewayToken(newSymbol)).to.be.reverted;
+        await expect(tokenService.registerRemoteGatewayToken(newSymbol, keccak256('0x'), 'Anything')).to.be.reverted;
+    });
+
+    it.only('Should be able to register the origin token', async () => {
+        const [, tokenService] = loadChain(0);
+        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
+
+        await tokenService.registerOriginGatewayToken(gatewayTokenSymbol);
+        expect(await tokenService.getTokenAddress(tokenId)).to.equal(gatewayTokenAddress);
+        expect(await tokenService.getTokenId(gatewayTokenAddress)).to.equal(tokenId);
+
+        expect(await tokenService.isOriginToken(tokenId)).to.equal(true);
+        expect(await tokenService.isGatewayToken(tokenId)).to.equal(true);
+        expect(await tokenService.isRemoteGatewayToken(tokenId)).to.equal(false);
+        expect(await tokenService.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
+    });
+
+
+    it.only('Should be able to register the remote token', async () => {
+        const [, tokenService] = loadChain(1);
+        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
+
+        await tokenService.registerRemoteGatewayToken(gatewayTokenSymbol, tokenId, chains[0].name);
+        expect(await tokenService.getTokenAddress(tokenId)).to.equal(remoteGatewayTokenAddress);
+        expect(await tokenService.getTokenId(remoteGatewayTokenAddress)).to.equal(tokenId);
+
+        expect(await tokenService.isOriginToken(tokenId)).to.equal(false);
+        expect(await tokenService.isGatewayToken(tokenId)).to.equal(true);
+        expect(await tokenService.isRemoteGatewayToken(tokenId)).to.equal(false);
+        expect(await tokenService.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
     });
 });

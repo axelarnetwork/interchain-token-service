@@ -94,6 +94,34 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     function _setTokenData(bytes32 tokenId, bytes32 tokenData) internal {
         _setUint(_getTokenDataKey(tokenId), uint256(tokenData));
     }
+        
+    function isOriginToken(bytes32 tokenId) external view returns (bool) {
+        bytes32 tokenData = getTokenData(tokenId);
+        if(tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        
+        return tokenData.isOrigin();
+    }
+
+    function isGatewayToken(bytes32 tokenId) external view returns (bool) {
+        bytes32 tokenData = getTokenData(tokenId);
+        if(tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        
+        return tokenData.isGateway();
+    }
+
+    function getGatewayTokenSymbol(bytes32 tokenId) external view returns (string memory symbol) {
+        bytes32 tokenData = getTokenData(tokenId);
+        if(!tokenData.isGateway()) revert NotGatewayToken();
+
+        symbol = tokenData.getSymbol();
+    }
+
+    function isRemoteGatewayToken(bytes32 tokenId) external view returns (bool) {
+        bytes32 tokenData = getTokenData(tokenId);
+        if(tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        
+        return tokenData.isRemoteGateway();
+    }
 
     function getOriginalChain(bytes32 tokenId) public view returns (string memory originalChain) {
         bytes32 originalChainBytes = bytes32(getUint(_getOriginalChainKey(tokenId)));
@@ -190,6 +218,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (!tokenData.isOrigin()) revert NotOriginToken();
         _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
     }
+    
 
     // solhint-disable-next-line no-empty-blocks
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
@@ -208,14 +237,22 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    function registerOriginGatewayToken(string calldata symbol) external returns (bytes32 tokenId) {
-        //TODO: Implement.
+    function registerOriginGatewayToken(string calldata symbol) external onlyOwner returns (bytes32 tokenId) {
+        address tokenAddress = gateway.tokenAddresses(symbol);
+        if (tokenAddress == address(0)) revert NotGatewayToken();
+        tokenId = getOriginTokenId(tokenAddress);
+        _setTokenData(tokenId, LinkedTokenData.createGatewayTokenData(tokenAddress, true, symbol));
+        _setTokenId(tokenAddress, tokenId);
+        emit TokenRegistered(tokenId, tokenAddress, true, true, false);
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    function registerRemoteGatewayToken(string calldata symbol, bytes32 tokenId, string calldata origin) external {
-        //TODO: Implement.
+    function registerRemoteGatewayToken(string calldata symbol, bytes32 tokenId, string calldata origin) external onlyOwner {
+        address tokenAddress = gateway.tokenAddresses(symbol);
+        if (tokenAddress == address(0)) revert NotGatewayToken();
+        _setTokenData(tokenId, LinkedTokenData.createGatewayTokenData(tokenAddress, false, symbol));
+        _setTokenId(tokenAddress, tokenId);
+        _setOriginalChain(tokenId, origin);
+        emit TokenRegistered(tokenId, tokenAddress, false, true, false);
     }
 
     // These two are meant to be called by tokens to have this service facilitate the token transfers for them.
@@ -507,6 +544,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function _sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata destinationaddress, uint256 amount) internal {
         bytes32 tokenData = getTokenData(tokenId);
+        if(tokenData == bytes32(0)) revert NotRegistered(tokenId);
         bytes memory payload;
         // solhint-disable-next-line no-empty-blocks
         if (tokenData.isGateway()) {

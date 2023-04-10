@@ -11,6 +11,7 @@ interface IInterchainTokenService {
     error MintFailed();
     error BurnFailed();
     error NotOriginToken();
+    error NotRegistered(bytes32 tokenId);
     error AlreadyRegistered();
     error NotGatewayToken();
     error GatewayToken();
@@ -36,6 +37,14 @@ interface IInterchainTokenService {
     event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
 
     function getTokenData(bytes32 tokenId) external view returns (bytes32 tokenData);
+
+    function isOriginToken(bytes32 tokenId) external view returns (bool);
+
+    function isGatewayToken(bytes32 tokenId) external view returns (bool);
+
+    function isRemoteGatewayToken(bytes32 tokenId) external view returns (bool);
+
+    function getGatewayTokenSymbol(bytes32 tokenId) external view returns (string memory symbol);
 
     function getOriginalChain(bytes32 tokenId) external view returns (string memory origin);
 
