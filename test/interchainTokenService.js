@@ -467,8 +467,8 @@ describe('TokenService', () => {
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
     });
 
-    it.only('Should deploy a gateway token to two chains', async () => {
-        const [wallet,, tokenDeployer] = loadChain(0);
+    it('Should deploy a gateway token to two chains', async () => {
+        const [wallet, , tokenDeployer] = loadChain(0);
         await tokenDeployer.deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, wallet.address, gatewayTokenSalt);
         [gatewayTokenAddress] = await getTokenData(0, gatewayTokenSalt, false);
         await networks[0].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0, gatewayTokenAddress);
@@ -479,14 +479,15 @@ describe('TokenService', () => {
         expect(await networks[2].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(AddressZero);
     });
 
-    it.only('Should not be able to register gateway tokens as not the owner', async () => {
+    it('Should not be able to register gateway tokens as not the owner', async () => {
         const [wallet, tokenService] = loadChain(0);
         const notOwner = new Wallet(notOwnerKey, wallet.provider);
         await expect(tokenService.connect(notOwner).registerOriginGatewayToken(gatewayTokenSymbol)).to.be.reverted;
-        await expect(tokenService.connect(notOwner).registerRemoteGatewayToken(gatewayTokenSymbol, keccak256('0x'), 'Anything')).to.be.reverted;
+        await expect(tokenService.connect(notOwner).registerRemoteGatewayToken(gatewayTokenSymbol, keccak256('0x'), 'Anything')).to.be
+            .reverted;
     });
 
-    it.only('Should not be able to register gateway tokens that are not gateway tokens', async () => {
+    it('Should not be able to register gateway tokens that are not gateway tokens', async () => {
         const [, tokenService] = loadChain(0);
         const newSymbol = 'NS';
 
@@ -494,7 +495,7 @@ describe('TokenService', () => {
         await expect(tokenService.registerRemoteGatewayToken(newSymbol, keccak256('0x'), 'Anything')).to.be.reverted;
     });
 
-    it.only('Should be able to register the origin token', async () => {
+    it('Should be able to register the origin token', async () => {
         const [, tokenService] = loadChain(0);
         const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
 
@@ -508,8 +509,7 @@ describe('TokenService', () => {
         expect(await tokenService.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
     });
 
-
-    it.only('Should be able to register the remote token', async () => {
+    it('Should be able to register the remote token', async () => {
         const [, tokenService] = loadChain(1);
         const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
 

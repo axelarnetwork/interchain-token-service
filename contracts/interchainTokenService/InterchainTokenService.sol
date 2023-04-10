@@ -94,32 +94,32 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     function _setTokenData(bytes32 tokenId, bytes32 tokenData) internal {
         _setUint(_getTokenDataKey(tokenId), uint256(tokenData));
     }
-        
+
     function isOriginToken(bytes32 tokenId) external view returns (bool) {
         bytes32 tokenData = getTokenData(tokenId);
-        if(tokenData == bytes32(0)) revert NotRegistered(tokenId);
-        
+        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+
         return tokenData.isOrigin();
     }
 
     function isGatewayToken(bytes32 tokenId) external view returns (bool) {
         bytes32 tokenData = getTokenData(tokenId);
-        if(tokenData == bytes32(0)) revert NotRegistered(tokenId);
-        
+        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+
         return tokenData.isGateway();
     }
 
     function getGatewayTokenSymbol(bytes32 tokenId) external view returns (string memory symbol) {
         bytes32 tokenData = getTokenData(tokenId);
-        if(!tokenData.isGateway()) revert NotGatewayToken();
+        if (!tokenData.isGateway()) revert NotGatewayToken();
 
         symbol = tokenData.getSymbol();
     }
 
     function isRemoteGatewayToken(bytes32 tokenId) external view returns (bool) {
         bytes32 tokenData = getTokenData(tokenId);
-        if(tokenData == bytes32(0)) revert NotRegistered(tokenId);
-        
+        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+
         return tokenData.isRemoteGateway();
     }
 
@@ -218,7 +218,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (!tokenData.isOrigin()) revert NotOriginToken();
         _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
     }
-    
 
     // solhint-disable-next-line no-empty-blocks
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
@@ -544,7 +543,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function _sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata destinationaddress, uint256 amount) internal {
         bytes32 tokenData = getTokenData(tokenId);
-        if(tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
         bytes memory payload;
         // solhint-disable-next-line no-empty-blocks
         if (tokenData.isGateway()) {
