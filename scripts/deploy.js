@@ -13,7 +13,6 @@ const BytecodeServer = require('../artifacts/contracts/utils/BytecodeServer.sol/
 const Token = require('../artifacts/contracts/utils/ERC20BurnableMintable.sol/ERC20BurnableMintable.json');
 const TokenProxy = require('../artifacts/contracts/proxies/TokenProxy.sol/TokenProxy.json');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
-const { setJSON } = require('@axelar-network/axelar-local-dev');
 const { deployCreate3Upgradable } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { Contract } = require('ethers');
