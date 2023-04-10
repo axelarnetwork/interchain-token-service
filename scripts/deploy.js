@@ -17,7 +17,6 @@ const { setJSON } = require('@axelar-network/axelar-local-dev');
 const { deployCreate3Upgradable } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { Contract } = require('ethers');
-const chains = require(`../info/${process.env.ENV}.json`);
 
 const interchainTokenServiceKey = 'interchainTokenServiceKey';
 
@@ -39,7 +38,6 @@ async function deployTokenDeployer(chain, wallet) {
     chain.tokenDeployer = tokenDeployer.address;
     console.log(`Deployed at: ${tokenDeployer.address}`);
 
-    setJSON(chains, `./info/${process.env.ENV}.json`);
     return tokenDeployer;
 }
 
@@ -55,8 +53,6 @@ async function deployLinkerRouter(chain, wallet) {
     const linkerRouterProxy = await deployContract(wallet, LinkerRouterProxy, [linkerRouter.address, wallet.address]);
     chain.linkerRouter = linkerRouterProxy.address;
     console.log(`Deployed at: ${linkerRouterProxy.address}`);
-
-    setJSON(chains, `./info/${process.env.ENV}.json`);
 
     return new Contract(linkerRouterProxy.address, LinkerRouter.abi, wallet);
 }
