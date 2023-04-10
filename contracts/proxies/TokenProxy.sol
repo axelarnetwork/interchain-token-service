@@ -17,7 +17,7 @@ contract TokenProxy is FixedProxy {
     {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = implementationAddress.delegatecall(
-            abi.encodeWithSelector(IERC20BurnableMintable.setup.selector, name, symbol, decimals, owner)
+            abi.encodeWithSelector(IERC20BurnableMintable.setup.selector, abi.encode(name, symbol, decimals, owner))
         );
         if (!success) revert SetupFailed();
     }

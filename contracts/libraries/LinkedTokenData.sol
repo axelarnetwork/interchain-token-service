@@ -3,6 +3,8 @@
 pragma solidity 0.8.9;
 
 library LinkedTokenData {
+    error SymbolTooLong();
+
     bytes32 public constant IS_ORIGIN_MASK = bytes32(uint256(0x80 << 248));
     bytes32 public constant IS_GATEWAY_MASK = bytes32(uint256(0x40 << 248));
     bytes32 public constant IS_REMOTE_GATEWAY_MASK = bytes32(uint256(0x20 << 248));
@@ -41,8 +43,6 @@ library LinkedTokenData {
         tokenData = bytes32(uint256(uint160(tokenAddress)));
         if (origin) tokenData |= IS_ORIGIN_MASK;
     }
-
-    error SymbolTooLong();
 
     function createGatewayTokenData(address tokenAddress, bool origin, string memory symbol) internal pure returns (bytes32 tokenData) {
         tokenData = bytes32(uint256(uint160(tokenAddress))) | IS_GATEWAY_MASK;
