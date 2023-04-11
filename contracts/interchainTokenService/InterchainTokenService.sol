@@ -255,19 +255,22 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     // These two are meant to be called by tokens to have this service facilitate the token transfers for them.
-    // solhint-disable-next-line no-empty-blocks
-    function sendSelf(address from, string memory destinationChain, bytes memory to, uint256 amount) external payable {
-        //TODO: Implement.
+    function sendSelf(address from, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
+        bytes32 tokenId = getTokenId(msg.sender);
+        _takeToken(tokenId, from, amount);
+        _sendToken(tokenId, destinationChain, to, amount);
     }
 
     function callContractWithSelf(
         address from,
-        string memory destinationChain,
-        bytes memory to,
+        string calldata destinationChain,
+        bytes calldata to,
         uint256 amount,
-        bytes calldata data // solhint-disable-next-line no-empty-blocks
+        bytes calldata data
     ) external payable {
-        //TODO: Implement.
+        bytes32 tokenId = getTokenId(msg.sender);
+        _takeToken(tokenId, from, amount);
+        _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
     /* ONLY SELF FUNCTIONS */

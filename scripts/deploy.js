@@ -10,7 +10,7 @@ const TokenService = require('../artifacts/contracts/interchainTokenService/Inte
 const TokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
 
 const BytecodeServer = require('../artifacts/contracts/utils/BytecodeServer.sol/BytecodeServer.json');
-const Token = require('../artifacts/contracts/utils/ERC20BurnableMintable.sol/ERC20BurnableMintable.json');
+const Token = require('../artifacts/contracts/interchainToken/InterchainToken.sol/InterchainToken.json');
 const TokenProxy = require('../artifacts/contracts/proxies/TokenProxy.sol/TokenProxy.json');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 const { deployCreate3Upgradable } = require('@axelar-network/axelar-gmp-sdk-solidity');
@@ -22,8 +22,9 @@ const interchainTokenServiceKey = 'interchainTokenServiceKey';
 async function deployTokenDeployer(chain, wallet) {
     if (chain.tokenDeployer) return new Contract(chain.tokenDeployer, TokenDeployer.abi, wallet);
 
+    const interchainTokenServiceAddress = getCreate3Address(chain.create3Deployer, wallet, interchainTokenServiceKey);
     console.log(`Deploying ERC20BurnableMintable.`);
-    const token = await deployContract(wallet, Token, []);
+    const token = await deployContract(wallet, Token, [interchainTokenServiceAddress]);
     chain.tokenImplementation = token.address;
     console.log(`Deployed at: ${token.address}`);
 
