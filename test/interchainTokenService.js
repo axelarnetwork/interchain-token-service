@@ -60,11 +60,13 @@ describe('TokenService', () => {
         expect(await tokenService.getTokenId(deploymentAddress)).to.equal(tokenId);
         expect(await tokenService.getTokenAddress(tokenId)).to.equal(deploymentAddress);
     });
+
     it('Should be not able to register an origin token that does not exist', async () => {
         const tokenAddress = await tokenDeployer.getDeploymentAddress(tokenDeployer.address, salt);
 
         await expect(tokenService.registerOriginToken(tokenAddress)).to.be.reverted;
     });
+
     it('Should be able to register an origin token', async () => {
         await tokenDeployer.deployToken(name, symbol, decimals, wallet.address, salt);
         const tokenAddress = await tokenDeployer.getDeploymentAddress(tokenDeployer.address, salt);
@@ -79,6 +81,7 @@ describe('TokenService', () => {
         expect(await tokenService.getTokenId(tokenAddress)).to.equal(tokenId);
         expect(await tokenService.getTokenAddress(tokenId)).to.equal(tokenAddress);
     });
+
     it('Should be not able to register an origin token that has already been registered', async () => {
         const tokenAddress = await tokenDeployer.getDeploymentAddress(tokenDeployer.address, salt);
         await expect(tokenService.registerOriginToken(tokenAddress)).to.be.reverted;

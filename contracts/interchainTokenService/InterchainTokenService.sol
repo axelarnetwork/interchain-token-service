@@ -157,10 +157,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes32 salt,
         string[] calldata /*destinationChains*/,
         uint256[] calldata /*gasValues*/
-    ) external payable {
+    ) external payable returns (bytes32 tokenId) {
         salt = getDeploymentSalt(msg.sender, salt);
         address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, owner, salt);
-        _registerToken(tokenAddress);
+        (tokenId, ) = _registerToken(tokenAddress);
         // TODO: Implement remote deployments.
     }
 
@@ -173,13 +173,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    )
-        external
-        payable
-        returns (
-            bytes32 tokenId
-        )
-    // solhint-disable-next-line no-empty-blocks
+    ) external payable returns (bytes32 tokenId) // solhint-disable-next-line no-empty-blocks
     {
         //TODO: Implement.
     }
