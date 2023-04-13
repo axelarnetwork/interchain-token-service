@@ -503,7 +503,7 @@ describe('TokenService', () => {
         expect(await tokenService.getTokenAddress(tokenId)).to.equal(gatewayTokenAddress);
         expect(await tokenService.getTokenId(gatewayTokenAddress)).to.equal(tokenId);
 
-        expect(await tokenService.isOriginToken(tokenId)).to.equal(true);
+        expect(await tokenService.isOriginToken(tokenId)).to.be.true;
         expect(await tokenService.isGatewayToken(tokenId)).to.equal(true);
         expect(await tokenService.isRemoteGatewayToken(tokenId)).to.equal(false);
         expect(await tokenService.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
