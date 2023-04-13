@@ -12,7 +12,7 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     bytes32 public immutable addressHash;
     mapping(string => bytes32) public remoteAddressHashes;
     mapping(string => string) public remoteAddresses;
-    address public immutable interChainTokenServiceAddress;
+    address public immutable interchainTokenServiceAddress;
     mapping(string => bool) public supportedByGateway;
 
     // bytes32(uint256(keccak256('remote-address-validator')) - 1)
