@@ -29,16 +29,6 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
         }
     }
 
-    function temp(string calldata sourceChain, string calldata sourceAddress) external view returns (bytes32) {
-        string memory sourceAddressLC = _lowerCase(sourceAddress);
-        bytes32 sourceAddressHash = keccak256(bytes(sourceAddressLC));
-        if(sourceAddressHash == interchainTokenServiceAddressHash) {
-            return sourceAddressHash;
-        }
-        return sourceAddressHash;
-        //return sourceAddressHash == remoteAddressHashes[sourceChain];
-    }
-
     function _lowerCase(string memory s) internal pure returns (string memory) {
         uint256 length = bytes(s).length;
         for (uint256 i; i < length; i++) {
