@@ -48,6 +48,8 @@ interface IInterchainTokenService {
 
     function getOriginalChain(bytes32 tokenId) external view returns (string memory origin);
 
+    function isCustomInterchainToken(bytes32 tokenId) external view returns (bool);
+
     function getTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
     function tokenDeployer() external view returns (ITokenDeployer);
@@ -57,6 +59,8 @@ interface IInterchainTokenService {
     function getOriginTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
     function getInterchainTokenId(address sender, bytes32 salt) external view returns (bytes32);
+
+    function getCustomInterchainTokenId(address tokenAddress) external pure returns (bytes32);
 
     function getDeploymentAddress(address sender, bytes32 salt) external view returns (address deployment);
 
@@ -71,6 +75,8 @@ interface IInterchainTokenService {
     ) external payable;
 
     function registerOriginToken(address tokenAddress) external returns (bytes32 tokenId);
+
+    function registerSelfAsInterchainToken() external returns (bytes32 tokenId);
 
     function registerOriginTokenAndDeployRemoteTokens(
         address tokenAddress,

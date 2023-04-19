@@ -18,12 +18,15 @@ const Token = require('../artifacts/contracts/interfaces/IInterchainToken.sol/II
 const ITokenService = require('../artifacts/contracts/interfaces/IInterchainTokenService.sol/IInterchainTokenService.json');
 const ITokenDeployer = require('../artifacts/contracts/interfaces/ITokenDeployer.sol/ITokenDeployer.json');
 const Test = require('../artifacts/contracts/test/TokenLinkerExecutableTest.sol/TokenLinkerExecutableTest.json');
+const TestToken = require('../artifacts/contracts/test/InterchainTokenTest.sol/InterchainTokenTest.json');
+const { deployCreate3Contract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 
 logger.log = (args) => {};
 
 const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
 const notOwnerKey = keccak256(defaultAbiCoder.encode(['string'], ['not-owner']));
 let chains;
+let interchainTokenAddress;
 const n = 3;
 
 async function setupLocal(toFund) {
@@ -257,5 +260,66 @@ describe('Token', () => {
         expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
         expect(await chains[1].executable.val()).to.equal(val);
+    });
+
+    it('Should be deploy some test tokens', async () => {
+        const names = ['Token Name 0', 'Token Name 1'];
+        const symbols = ['TN0', 'TN1'];
+        const decimals = [6, 18];
+        const supplies = [1e6, 1e7];
+        const tokens = [null, null];
+
+        for (let i = 0; i < 2; i++) {
+            const [wallet, tokenService] = loadChain(i);
+            tokens[i] = await deployCreate3Contract(chains[i].create3Deployer, wallet, TestToken, 'test-token', [
+                chains[i].interchainTokenService,
+                names[i],
+                symbols[i],
+                decimals[i],
+                wallet.address,
+                supplies[i],
+            ]);
+            interchainTokenAddress = tokens[i].address;
+            const tokenId = await tokenService.getCustomInterchainTokenId(interchainTokenAddress);
+
+            expect(await tokens[i].name()).to.equal(names[i]);
+            expect(await tokens[i].symbol()).to.equal(symbols[i]);
+            expect(await tokens[i].decimals()).to.equal(decimals[i]);
+            expect(await tokens[i].balanceOf(wallet.address)).to.equal(supplies[i]);
+            expect(await tokenService.getTokenId(tokens[i].address)).to.equal(tokenId);
+            expect(await tokenService.getTokenAddress(tokenId)).to.equal(tokens[i].address);
+            expect(await tokenService.isCustomInterchainToken(tokenId)).to.be.true;
+        }
+    });
+    it('Should not be able to register an interchain token', async () => {
+        for (let i = 0; i < 2; i++) {
+            const [, tokenService] = loadChain(i);
+            await expect(tokenService.registerOriginToken(interchainTokenAddress)).to.be.reverted;
+        }
+    });
+    it('Should be able to send some token back and forth', async () => {
+        const amounts = [123, 456];
+
+        const tokens = [0, 1].map((i) => {
+            const [wallet] = loadChain(i);
+            return new Contract(interchainTokenAddress, TestToken.abi, wallet);
+        });
+        const balances = await Promise.all(tokens.map(async (token) => await token.balanceOf(token.signer.address)));
+
+        const [wallet0, tokenService0] = loadChain(0);
+        const [wallet1, tokenService1] = loadChain(0);
+
+        await expect(tokens[0].interchainTransfer(chains[1].name, wallet1.address, amounts[0], '0x', { value: 1e6 }))
+            .to.emit(tokenService0, 'Sending')
+            .withArgs(chains[1].name, wallet1.address.toLowerCase(), amounts[0]);
+
+        await expect(tokens[1].interchainTransfer(chains[0].name, wallet0.address, amounts[1], '0x', { value: 1e6 }))
+            .to.emit(tokenService1, 'Sending')
+            .withArgs(chains[0].name, wallet0.address.toLowerCase(), amounts[1]);
+
+        await relay();
+
+        expect(Number(await tokens[0].balanceOf(wallet0.address))).to.equal(balances[0] - amounts[0] + amounts[1]);
+        expect(Number(await tokens[1].balanceOf(wallet1.address))).to.equal(balances[1] - amounts[1] + amounts[0]);
     });
 });

@@ -35,6 +35,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     bytes32 internal constant PREFIX_TOKEN_ID = keccak256('itl-token-id');
     bytes32 internal constant PREFIX_TOKEN_MINT_LIMIT = keccak256('itl-token-mint-limit');
     bytes32 internal constant PREFIX_TOKEN_MINT_AMOUNT = keccak256('itl-token-mint-amount');
+    bytes32 internal constant PREFIX_CUSTOM_INTERCHAIN_TOKEN_ID = keccak256('itl-custom-interchain-token-id');
     // keccak256('interchain-token-service')-1
     // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
@@ -123,6 +124,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         return tokenData.isRemoteGateway();
     }
 
+    function isCustomInterchainToken(bytes32 tokenId) external view returns (bool) {
+        bytes32 tokenData = getTokenData(tokenId);
+        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+
+        if (tokenData.isOrigin()) return false;
+
+        bytes32 originalChainBytes = bytes32(getUint(_getOriginalChainKey(tokenId)));
+        return originalChainBytes == bytes32(0);
+    }
+
     function getOriginalChain(bytes32 tokenId) public view returns (string memory originalChain) {
         bytes32 originalChainBytes = bytes32(getUint(_getOriginalChainKey(tokenId)));
         originalChain = originalChainBytes.toTrimmedString();
@@ -172,6 +183,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         return keccak256(abi.encode(chainNameHash, sender, salt));
     }
 
+    function getCustomInterchainTokenId(address tokenAddress) public pure returns (bytes32) {
+        return keccak256(abi.encode(PREFIX_CUSTOM_INTERCHAIN_TOKEN_ID, tokenAddress));
+    }
+
     function getDeploymentAddress(address sender, bytes32 salt) public view returns (address deployment) {
         salt = getInterchainTokenId(sender, salt);
         deployment = tokenDeployer.getDeploymentAddress(address(this), salt);
@@ -190,7 +205,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     ) external payable {
         bytes32 tokenId = getInterchainTokenId(msg.sender, salt);
         address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, owner, tokenId);
-        bytes32 tokenData = _registerToken(tokenAddress, tokenId);
+        bytes32 tokenData = _registerToken(tokenAddress, tokenId, true);
         string memory symbol = _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
         if (gateway.tokenAddresses(symbol) == tokenAddress) revert GatewayToken();
     }
@@ -198,7 +213,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     function registerOriginToken(address tokenAddress) external returns (bytes32 tokenId) {
         _validateOriginToken(tokenAddress);
         tokenId = getOriginTokenId(tokenAddress);
-        _registerToken(tokenAddress, tokenId);
+        _registerToken(tokenAddress, tokenId, true);
+    }
+
+    // Tokens have to register themselves (typically in the constructor).
+    // This is done to prevent malicious actors from registering tokens as Interchain tokens which would lock them from ever being registered as origin tokens in the future.
+    function registerSelfAsInterchainToken() external returns (bytes32 tokenId) {
+        address tokenAddress = msg.sender;
+        tokenId = getCustomInterchainTokenId(tokenAddress);
+        _registerToken(tokenAddress, tokenId, false);
     }
 
     function registerOriginTokenAndDeployRemoteTokens(
@@ -208,7 +231,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     ) external payable returns (bytes32 tokenId) {
         bytes32 tokenData;
         tokenId = getOriginTokenId(tokenAddress);
-        tokenData = _registerToken(tokenAddress, tokenId);
+        tokenData = _registerToken(tokenAddress, tokenId, true);
         string memory symbol = _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
         if (gateway.tokenAddresses(symbol) == tokenAddress) revert GatewayToken();
     }
@@ -380,7 +403,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
         bytes32 tokenData = getTokenData(tokenId);
         address tokenAddress = tokenData.getAddress();
-
         if (tokenData.isOrigin() || tokenData.isGateway()) {
             _transfer(tokenAddress, destinationaddress, amount);
         } else {
@@ -479,13 +501,13 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         emit TokenDeployed(tokenAddress, tokenName, tokenSymbol, decimals, owner);
     }
 
-    function _registerToken(address tokenAddress, bytes32 tokenId) internal returns (bytes32 tokenData) {
+    function _registerToken(address tokenAddress, bytes32 tokenId, bool origin) internal returns (bytes32 tokenData) {
         if (getTokenId(tokenAddress) != bytes32(0)) revert AlreadyRegistered();
         if (getTokenData(tokenId) != bytes32(0)) revert AlreadyRegistered();
-        tokenData = LinkedTokenData.createTokenData(tokenAddress, true);
+        tokenData = LinkedTokenData.createTokenData(tokenAddress, origin);
         _setTokenData(tokenId, tokenData);
         _setTokenId(tokenAddress, tokenId);
-        emit TokenRegistered(tokenId, tokenAddress, true, false, false);
+        emit TokenRegistered(tokenId, tokenAddress, origin, false, false);
     }
 
     function _validateOriginToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
