@@ -49,7 +49,7 @@ describe('Token', () => {
         wallet = new Wallet(deployerKey, provider);
         otherWallet = new Wallet(otherKey, provider);
         const { deployTokenDeployer } = require('../scripts/deploy.js');
-    
+
         tokenDeployer = await deployTokenDeployer(chain, wallet);
 
         await tokenDeployer.deployToken(name, symbol, decimals, wallet.address, salt);

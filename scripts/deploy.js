@@ -41,7 +41,7 @@ async function deployTokenDeployer(chain, wallet) {
 }
 
 async function deployLinkerRouter(chain, wallet) {
-    if (chain.linkerRouter) return new Contract(chain.linkerRouter, LinkerRouter.abi, wallet);;
+    if (chain.linkerRouter) return new Contract(chain.linkerRouter, LinkerRouter.abi, wallet);
 
     console.log(`Deploying Linker Router.`);
     const interchainTokenServiceAddress = getCreate3Address(chain.create3Deployer, wallet, interchainTokenServiceKey);

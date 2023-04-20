@@ -26,10 +26,7 @@ async function setupLocal(toFund) {
     chain = require('../info/local1.json')[0];
 }
 
-
-
 describe('LinkerRouter', () => {
-
     before(async () => {
         const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
         const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
@@ -41,11 +38,11 @@ describe('LinkerRouter', () => {
         wallet = new Wallet(deployerKey, provider);
         otherWallet = new Wallet(otherKey, provider);
         const { deployLinkerRouter } = require('../scripts/deploy.js');
-    
+
         linkerRouter = await deployLinkerRouter(chain, wallet);
         interChainTokenServiceAddress = await linkerRouter.interChainTokenServiceAddress();
     });
-    
+
     after(async () => {
         await stopAll();
     });
