@@ -12,7 +12,8 @@ contract InterchainToken is IInterchainToken, ERC20 {
         uint256 amount,
         uint256 transferType, // on hold for now
         bytes calldata metadata
-    ) external payable {
+    ) external payable // solhint-disable-next-line no-empty-blocks
+    {
         //TODO: add implementation
     }
 
@@ -24,7 +25,8 @@ contract InterchainToken is IInterchainToken, ERC20 {
         uint256 amount,
         uint256 transferType, // on hold for now
         bytes calldata metadata
-    ) external payable {
+    ) external payable // solhint-disable-next-line no-empty-blocks
+    {
         //TODO: add implementation
     }
 }
