@@ -8,7 +8,7 @@ require('dotenv').config();
 const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
-const { createAndExport } = require('@axelar-network/axelar-local-dev');
+const { createAndExport, stopAll } = require('@axelar-network/axelar-local-dev');
 
 let chain;
 let wallet;
@@ -17,13 +17,17 @@ let tokenDeployer;
 
 async function setupLocal(toFund) {
     await createAndExport({
-        chainOutputPath: './info/local.json',
+        chainOutputPath: './info/local0.json',
         accountsToFund: toFund,
         relayInterval: 100,
         chains: ['Ethereum'],
     });
-    chain = require('../info/local.json')[0];
+    chain = require('../info/local0.json')[0];
 }
+
+after(async () => {
+    await stopAll();
+});
 
 describe('Token', () => {
     let token;
