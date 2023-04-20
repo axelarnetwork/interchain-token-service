@@ -118,7 +118,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _setUint(_getTokenMintLimitKey(tokenId), mintLimit);
     }
 
-    function getTokenMintAmount(bytes32 tokenId) public view returns (uint256 amount) {
+    function getTokenMintAmount(bytes32 tokenId) internal view returns (uint256 amount) {
         // solhint-disable-next-line not-rely-on-time
         amount = getUint(_getTokenMintAmountKey(tokenId, block.timestamp / 6 hours));
     }
@@ -138,7 +138,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         return keccak256(abi.encode(chainNameHash, tokenAddress));
     }
 
-    function getDeploymentSalt(address sender, bytes32 salt) public pure returns (bytes32 deploymentSalt) {
+    function getDeploymentSalt(address sender, bytes32 salt) internal pure returns (bytes32 deploymentSalt) {
         deploymentSalt = keccak256(abi.encode(sender, salt));
     }
 
@@ -173,7 +173,12 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    ) external payable returns (bytes32 tokenId) // solhint-disable-next-line no-empty-blocks
+    )
+        external
+        payable
+        returns (
+            bytes32 tokenId // solhint-disable-next-line no-empty-blocks
+        )
     {
         //TODO: Implement.
     }
