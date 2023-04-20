@@ -58,7 +58,7 @@ describe('LinkerRouter', () => {
     });
 
     it('Should not be able to add a custom remote address as not the owner', async () => {
-        expect(linkerRouter.connect(otherWallet).addTrustedAddress(otherChain, otherRemoteAddress)).to.be.revertedWith('NotOwner()');
+        await expect(linkerRouter.connect(otherWallet).addTrustedAddress(otherChain, otherRemoteAddress)).to.be.reverted;
     });
 
     it('Should be able to add a custom remote address as the owner', async () => {
@@ -70,7 +70,7 @@ describe('LinkerRouter', () => {
     });
 
     it('Should not be able to remove a custom remote address as not the owner', async () => {
-        expect(linkerRouter.connect(otherWallet).removeTrustedAddress(otherChain)).to.be.revertedWith('NotOwner()');
+        await expect(linkerRouter.connect(otherWallet).removeTrustedAddress(otherChain)).to.be.reverted;
     });
 
     it('Should be able to remove a custom remote address as the owner', async () => {
@@ -88,7 +88,7 @@ describe('LinkerRouter', () => {
     });
 
     it('Should not be able to add a chain as gateway supported as not the onwer', async () => {
-        expect(linkerRouter.connect(otherWallet).addGatewaySupportedChains([otherChain])).to.be.revertedWith('NotOwner()');
+        await expect(linkerRouter.connect(otherWallet).addGatewaySupportedChains([otherChain])).to.be.reverted;
     });
 
     it('Should be able to add a chain as gateway supported as the onwer', async () => {
@@ -97,7 +97,7 @@ describe('LinkerRouter', () => {
     });
 
     it('Should not be able to remove a chain as gateway supported as not the onwer', async () => {
-        expect(linkerRouter.connect(otherWallet).removeGatewaySupportedChains([otherChain])).to.be.revertedWith('NotOwner()');
+        await expect(linkerRouter.connect(otherWallet).removeGatewaySupportedChains([otherChain])).to.be.reverted;
     });
 
     it('Should be able to remove a chain as gateway supported as the onwer', async () => {

@@ -34,7 +34,7 @@ describe('Token', () => {
     const name = 'Test Token';
     const symbol = 'TT';
     const decimals = 13;
-    const key = `asdasdasd`;
+    const key = `tokenDeployerKey`;
     const salt = keccak256(defaultAbiCoder.encode(['string'], [key]));
     const amount = 12345;
 
