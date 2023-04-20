@@ -177,8 +177,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         external
         payable
         returns (
-            bytes32 tokenId // solhint-disable-next-line no-empty-blocks
-        )
+            bytes32 tokenId 
+        ) // solhint-disable-next-line no-empty-blocks
     {
         //TODO: Implement.
     }
