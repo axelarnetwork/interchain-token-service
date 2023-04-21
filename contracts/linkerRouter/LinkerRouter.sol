@@ -42,7 +42,7 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     function validateSender(string calldata sourceChain, string calldata sourceAddress) external view returns (bool) {
         string memory sourceAddressLC = _lowerCase(sourceAddress);
         bytes32 sourceAddressHash = keccak256(bytes(sourceAddressLC));
-        if(sourceAddressHash == interchainTokenServiceAddressHash) {
+        if (sourceAddressHash == interchainTokenServiceAddressHash) {
             return true;
         }
         return sourceAddressHash == remoteAddressHashes[sourceChain];
