@@ -244,11 +244,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         //TODO: Implement.
     }
 
-    function selfGiveToken(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount) public onlySelf {
-        _giveToken(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount);
+    function selfTransferOrMint(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount) public onlySelf {
+        _transferOrMint(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount);
     }
 
-    function selfGiveTokenWithData(
+    function selfTransferOrMintWithData(
         bytes32 tokenId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
@@ -256,7 +256,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint256 amount,
         bytes calldata data
     ) public onlySelf {
-        _giveTokenWithData(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount, sourceChain, sourceAddress, data);
+        _transferOrMintWithData(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount, sourceChain, sourceAddress, data);
     }
 
     function selfSendToken(
@@ -315,7 +315,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (!success || tokenAddress.code.length == 0) revert BurnFailed();
     }
 
-    function _giveToken(bytes32 tokenId, address destinationaddress, uint256 amount) internal {
+    function _transferOrMint(bytes32 tokenId, address destinationaddress, uint256 amount) internal {
         _setTokenMintAmount(tokenId, getTokenMintAmount(tokenId) + amount);
 
         bytes32 tokenData = getTokenData(tokenId);
@@ -328,7 +328,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         }
     }
 
-    function _takeToken(bytes32 tokenId, address from, uint256 amount) internal {
+    function _transferOrBurnFrom(bytes32 tokenId, address from, uint256 amount) internal {
         bytes32 tokenData = getTokenData(tokenId);
         address tokenAddress = tokenData.getAddress();
         if (tokenData.isOrigin() || tokenData.isGateway()) {
@@ -338,7 +338,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         }
     }
 
-    function _giveTokenWithData(
+    function _transferOrMintWithData(
         bytes32 tokenId,
         address destinationaddress,
         uint256 amount,
