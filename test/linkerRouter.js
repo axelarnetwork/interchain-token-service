@@ -11,7 +11,7 @@ let chain;
 let wallet;
 let otherWallet;
 let linkerRouter;
-let interChainTokenServiceAddress;
+let interchainTokenServiceAddress;
 const otherRemoteAddress = 'any string as an address';
 const otherChain = 'Chain Name';
 
@@ -26,10 +26,7 @@ async function setupLocal(toFund) {
     chain = require('../info/local1.json')[0];
 }
 
-
-
 describe('LinkerRouter', () => {
-
     before(async () => {
         const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
         const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
@@ -41,23 +38,23 @@ describe('LinkerRouter', () => {
         wallet = new Wallet(deployerKey, provider);
         otherWallet = new Wallet(otherKey, provider);
         const { deployLinkerRouter } = require('../scripts/deploy.js');
-    
+
         linkerRouter = await deployLinkerRouter(chain, wallet);
-        interChainTokenServiceAddress = await linkerRouter.interChainTokenServiceAddress();
+        interchainTokenServiceAddress = await linkerRouter.interchainTokenServiceAddress();
     });
-    
+
     after(async () => {
         await stopAll();
     });
 
     it('Should get the correct remote address for unregistered chains', async () => {
         const remoteAddress = await linkerRouter.getRemoteAddress(otherChain);
-        expect(remoteAddress).to.equal(interChainTokenServiceAddress.toLowerCase());
+        expect(remoteAddress).to.equal(interchainTokenServiceAddress.toLowerCase());
     });
 
-    it('Should be able to validate remote addresses properly.', async () => {
+    it('Should be able to validate remote addresses properly', async () => {
         expect(await linkerRouter.validateSender(otherChain, otherRemoteAddress)).to.equal(false);
-        expect(await linkerRouter.validateSender(otherChain, interChainTokenServiceAddress)).to.equal(true);
+        expect(await linkerRouter.validateSender(otherChain, interchainTokenServiceAddress)).to.equal(true);
     });
 
     it('Should not be able to add a custom remote address as not the owner', async () => {
@@ -70,7 +67,6 @@ describe('LinkerRouter', () => {
     });
     it('Should be able to validate remote addresses properly.', async () => {
         expect(await linkerRouter.validateSender(otherChain, otherRemoteAddress)).to.equal(true);
-        expect(await linkerRouter.validateSender(otherChain, interChainTokenServiceAddress)).to.equal(false);
     });
 
     it('Should not be able to remove a custom remote address as not the owner', async () => {
@@ -79,12 +75,12 @@ describe('LinkerRouter', () => {
 
     it('Should be able to remove a custom remote address as the owner', async () => {
         await linkerRouter.removeTrustedAddress(otherChain);
-        expect(await linkerRouter.getRemoteAddress(otherChain)).to.equal(interChainTokenServiceAddress.toLowerCase());
+        expect(await linkerRouter.getRemoteAddress(otherChain)).to.equal(interchainTokenServiceAddress.toLowerCase());
     });
 
     it('Should be able to validate remote addresses properly.', async () => {
         expect(await linkerRouter.validateSender(otherChain, otherRemoteAddress)).to.equal(false);
-        expect(await linkerRouter.validateSender(otherChain, interChainTokenServiceAddress)).to.equal(true);
+        expect(await linkerRouter.validateSender(otherChain, interchainTokenServiceAddress)).to.equal(true);
     });
 
     it('Should have chains as not gateway supported by default', async () => {

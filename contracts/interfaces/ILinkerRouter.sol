@@ -10,7 +10,7 @@ interface ILinkerRouter {
 
     function validateSender(string calldata sourceChain, string calldata sourceAddress) external view returns (bool);
 
-    function addTrustedAddress(string calldata sourceChain, string calldata sourceAddress) external;
+    function addTrustedAddress(string memory sourceChain, string memory sourceAddress) external;
 
     function removeTrustedAddress(string calldata sourceChain) external;
 

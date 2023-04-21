@@ -46,8 +46,6 @@ interface IInterchainTokenService {
 
     function getOriginTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
-    function getDeploymentSalt(address sender, bytes32 salt) external pure returns (bytes32 deploymentSalt);
-
     function getDeploymentAddress(address sender, bytes32 salt) external view returns (address deployment);
 
     function deployInterchainToken(
@@ -58,7 +56,7 @@ interface IInterchainTokenService {
         bytes32 salt,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    ) external payable;
+    ) external payable returns (bytes32 tokenId);
 
     function registerOriginToken(address tokenAddress) external returns (bytes32 tokenId);
 
