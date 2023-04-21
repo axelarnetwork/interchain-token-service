@@ -240,7 +240,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string calldata tokenName,
         string calldata tokenSymbol,
         uint8 decimals,
-        bool isGateway // solhint-disable-next-line no-empty-blocks
+        bool isGateway
     ) public onlySelf {
         {
             bytes32 tokenData = getTokenData(tokenId);
@@ -415,11 +415,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string memory tokenSymbol,
         uint8 decimals,
         address owner,
-        bytes32 salt
+        bytes32 tokenId
     ) internal returns (address tokenAddress) {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory data) = address(tokenDeployer).delegatecall(
-            abi.encodeWithSelector(tokenDeployer.deployToken.selector, tokenName, tokenSymbol, decimals, owner, salt)
+            abi.encodeWithSelector(tokenDeployer.deployToken.selector, tokenName, tokenSymbol, decimals, owner, tokenId)
         );
         if (!success) revert TokenDeploymentFailed();
         tokenAddress = abi.decode(data, (address));
@@ -486,7 +486,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
                 decimals,
                 tokenData.isGateway()
             );
-            _callContract(destinationChains[i], payload, gasValues[i]);
+            _callContract(destinationChains[i], payload, gasValue);
             emit RemoteTokenRegisterInitialized(tokenId, destinationChains[i], gasValue);
         }
         return symbol;
