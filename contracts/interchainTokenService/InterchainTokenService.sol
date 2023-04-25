@@ -346,9 +346,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
-        uint256 amount // solhint-disable-next-line no-empty-blocks
+        uint256 amount
     ) public onlySelf {
-        // TODO: Implement
+        _sendToken(tokenId, destinationChain, destinationAddress, amount);
     }
 
     function selfSendTokenWithData(
@@ -358,9 +358,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata data // solhint-disable-next-line no-empty-blocks
+        bytes calldata data
     ) public onlySelf {
-        // TODO: Implement
+        _sendTokenWithData(tokenId, sourceChain, sourceAddress, destinationChain, destinationAddress, amount, data);
     }
 
     // UTILITY FUNCTIONS
@@ -570,12 +570,26 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes32 tokenData = getTokenData(tokenId);
         if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
         bytes memory payload;
-        // solhint-disable-next-line no-empty-blocks
+
         if (tokenData.isGateway()) {
-            // TODO: implement gateway logic.
-            // solhint-disable-next-line no-empty-blocks
+            if (linkerRouter.supportedByGateway(destinationChain)) {
+                payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+                _callContractWithToken(destinationChain, tokenData, amount, payload);
+            } else if (tokenData.isOrigin()) {
+                payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+                _callContract(destinationChain, payload, msg.value);
+            } else {
+                payload = abi.encodeWithSelector(this.selfSendToken.selector, tokenId, destinationChain, destinationaddress, amount);
+                _callContractWithToken(getOriginalChain(tokenId), tokenData, amount, payload);
+            }
         } else if (tokenData.isRemoteGateway()) {
-            // TODO: implement remote gateway logic.
+            if (keccak256(bytes(destinationChain)) == keccak256(bytes(getOriginalChain(tokenId)))) {
+                payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+                _callContract(destinationChain, payload, msg.value);
+            } else {
+                payload = abi.encodeWithSelector(this.selfSendToken.selector, tokenId, destinationChain, destinationaddress, amount);
+                _callContract(getOriginalChain(tokenId), payload, msg.value);
+            }
         } else {
             payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
             _callContract(destinationChain, payload, msg.value);
@@ -594,12 +608,68 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     ) internal {
         bytes32 tokenData = getTokenData(tokenId);
         bytes memory payload;
-        // solhint-disable-next-line no-empty-blocks
+
         if (tokenData.isGateway()) {
-            // TODO: implement gateway logic.
-            // solhint-disable-next-line no-empty-blocks
+            if (linkerRouter.supportedByGateway(destinationChain)) {
+                payload = abi.encodeWithSelector(
+                    this.selfGiveTokenWithData.selector,
+                    tokenId,
+                    sourceChain,
+                    sourceAddress,
+                    destinationaddress,
+                    amount,
+                    data
+                );
+                _callContractWithToken(destinationChain, tokenData, amount, payload);
+            } else if (tokenData.isOrigin()) {
+                payload = abi.encodeWithSelector(
+                    this.selfGiveTokenWithData.selector,
+                    tokenId,
+                    sourceChain,
+                    sourceAddress,
+                    destinationaddress,
+                    amount,
+                    data
+                );
+                _callContract(destinationChain, payload, msg.value);
+            } else {
+                payload = abi.encodeWithSelector(
+                    this.selfSendTokenWithData.selector,
+                    tokenId,
+                    sourceChain,
+                    sourceAddress,
+                    destinationChain,
+                    destinationaddress,
+                    amount,
+                    data
+                );
+                _callContractWithToken(getOriginalChain(tokenId), tokenData, amount, payload);
+            }
         } else if (tokenData.isRemoteGateway()) {
-            // TODO: implement remote gateway logic.
+            if (keccak256(bytes(destinationChain)) == keccak256(bytes(getOriginalChain(tokenId)))) {
+                payload = abi.encodeWithSelector(
+                    this.selfGiveTokenWithData.selector,
+                    tokenId,
+                    sourceChain,
+                    sourceAddress,
+                    destinationaddress,
+                    amount,
+                    data
+                );
+                _callContract(destinationChain, payload, msg.value);
+            } else {
+                payload = abi.encodeWithSelector(
+                    this.selfSendTokenWithData.selector,
+                    tokenId,
+                    sourceChain,
+                    sourceAddress,
+                    destinationChain,
+                    destinationaddress,
+                    amount,
+                    data
+                );
+                _callContract(getOriginalChain(tokenId), payload, msg.value);
+            }
         } else {
             payload = abi.encodeWithSelector(
                 this.selfGiveTokenWithData.selector,

@@ -15,9 +15,11 @@ const {
 } = require('hardhat');
 const { expect } = require('chai');
 const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
+const LinkerRouter = require('../artifacts/contracts/linkerRouter/LinkerRouter.sol/LinkerRouter.json');
 const ITokenService = require('../artifacts/contracts/interfaces/IInterchainTokenService.sol/IInterchainTokenService.json');
 const ITokenDeployer = require('../artifacts/contracts/interfaces/ITokenDeployer.sol/ITokenDeployer.json');
 const Test = require('../artifacts/contracts/test/TokenLinkerExecutableTest.sol/TokenLinkerExecutableTest.json');
+const { IAxelarExecutable } = require('@axelar-network/axelar-local-dev/dist/contracts/index.js');
 
 logger.log = (args) => {};
 
@@ -521,5 +523,138 @@ describe('TokenService', () => {
         expect(await tokenService.isGatewayToken(tokenId)).to.equal(true);
         expect(await tokenService.isRemoteGatewayToken(tokenId)).to.equal(false);
         expect(await tokenService.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
+    });
+
+    it('Should not be able to deploy the gateway token to a the chain that has the token', async () => {
+        const [, tokenService] = loadChain(0);
+        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
+
+        await expectRelayRevert(tokenService.deployRemoteTokens(tokenId, [chains[1].name], [1e7], { value: 1e7 }));
+    });
+
+    it('Should be able to deploy the gateway token to a third chain', async () => {
+        const [, tokenService] = loadChain(0);
+        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
+
+        await tokenService.deployRemoteTokens(tokenId, [chains[2].name], [1e7], { value: 1e7 });
+
+        await relay();
+
+        const [, remoteTokenService] = loadChain(2);
+        expect(await remoteTokenService.getTokenAddress(tokenId)).to.not.equal(AddressZero);
+
+        expect(await remoteTokenService.isOriginToken(tokenId)).to.equal(false);
+        expect(await remoteTokenService.isGatewayToken(tokenId)).to.equal(false);
+        expect(await remoteTokenService.isRemoteGatewayToken(tokenId)).to.equal(true);
+    });
+
+    it('Should be able to add gateway supported chains to the linker routers', async () => {
+        for (let i = 0; i < 3; i++) {
+            const [wallet, tokenService] = loadChain(i);
+            const linkerRouter = new Contract(await tokenService.linkerRouter(), LinkerRouter.abi, wallet);
+
+            const names = [];
+
+            for (let j = 0; j < 2; j++) {
+                if (i === j) continue;
+                names.push(chains[j].name);
+            }
+
+            await linkerRouter.addGatewaySupportedChains(names);
+
+            for (let j = 0; j < 3; j++) {
+                if (i === j) continue;
+                expect(await linkerRouter.supportedByGateway(chains[j].name)).to.equal(j < 2);
+            }
+        }
+    });
+
+    it('Should be able send some token to every chain from the origin chain', async () => {
+        const amount = 1e6;
+        const [wallet, tokenService] = loadChain(0);
+        const [tokenAddress, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
+
+        const originToken = new Contract(tokenAddress, Token.abi, wallet);
+
+        await originToken.mint(wallet.address, 2 * amount);
+
+        await originToken.approve(tokenService.address, 2 * amount);
+
+        for (let i = 1; i < 3; i++) {
+            await tokenService.sendToken(tokenId, chains[i].name, wallet.address, amount, { value: 1e6 });
+
+            await relay();
+
+            const [remoteWallet, remoteService] = loadChain(i);
+
+            const remoteTokenAddress = await remoteService.getTokenAddress(tokenId);
+
+            const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
+
+            expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount);
+        }
+    });
+
+    it('Should be able send some token to every other chain from the other chains', async () => {
+        const amount = 1e5;
+        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
+
+        for (let i = 1; i < 3; i++) {
+            const [wallet, tokenService] = loadChain(i);
+
+            const tokenAddress = await tokenService.getTokenAddress(tokenId);
+            const token = new Contract(tokenAddress, Token.abi, wallet);
+
+            await token.approve(tokenService.address, 2 * amount);
+
+            for (let j = 0; j < 3; j++) {
+                if (i === j) continue;
+
+                const [remoteWallet, remoteService] = loadChain(j);
+
+                const otherTokenAddress = await remoteService.getTokenAddress(tokenId);
+
+                const otherToken = new Contract(otherTokenAddress, Token.abi, remoteWallet);
+                const balance = Number(await otherToken.balanceOf(wallet.address));
+
+                await tokenService.sendToken(tokenId, chains[j].name, wallet.address, amount, { value: 1e6 });
+
+                await relay();
+
+                if (i + j === 3) {
+                    await relay();
+                    let commands;
+
+                    if (i === 1) {
+                        commands = evmRelayer.relayData.callContract;
+                    } else {
+                        commands = evmRelayer.relayData.callContractWithToken;
+                    }
+                    
+                    const commandIds = Object.keys(commands);
+                    commands = Object.values(commands);
+
+                    const payload = commands[commands.length - 1].payload;
+                    const commandId = commandIds[commandIds.length - 1];
+
+                    const executable = new Contract(remoteService.address, IAxelarExecutable.abi, remoteWallet);
+
+                    if (i === 1) {
+                        await executable.execute(commandId, chains[0].name, remoteService.address, payload);
+                    } else {
+                        await executable.executeWithToken(
+                            commandId,
+                            chains[0].name,
+                            remoteService.address,
+                            payload,
+                            await token.symbol(),
+                            amount,
+                        );
+                    }
+                }
+
+                expect(Number(await otherToken.balanceOf(wallet.address))).to.equal(balance + amount);
+            }
+        }
     });
 });
