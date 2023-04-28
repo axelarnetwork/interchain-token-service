@@ -12,7 +12,7 @@ interface IInterchainTokenService {
     error MintFailed();
     error BurnFailed();
     error NotOriginToken();
-    error NotRegistered(bytes32 tokenId);
+    error NotRegistered();
     error AlreadyRegistered();
     error NotGatewayToken();
     error GatewayToken();
@@ -89,6 +89,12 @@ interface IInterchainTokenService {
 
     function deployRemoteTokens(bytes32 tokenId, string[] calldata destinationChains, uint256[] calldata gasValues) external payable;
 
+    function getTokenMintLimit(bytes32 tokenId) external view returns(uint256 mintLimit);
+
+    function setTokenMintLimit(bytes32 tokenId, uint256 mintLimit) external;
+
+    function setSelfMintLimit(uint256 mintLimit) external;
+    
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable;
 
     function callContractWithInterToken(

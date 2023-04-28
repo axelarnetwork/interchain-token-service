@@ -98,14 +98,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function isOriginToken(bytes32 tokenId) external view returns (bool) {
         bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        if (tokenData == bytes32(0)) revert NotRegistered();
 
         return tokenData.isOrigin();
     }
 
     function isGatewayToken(bytes32 tokenId) external view returns (bool) {
         bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        if (tokenData == bytes32(0)) revert NotRegistered();
 
         return tokenData.isGateway();
     }
@@ -119,14 +119,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function isRemoteGatewayToken(bytes32 tokenId) external view returns (bool) {
         bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        if (tokenData == bytes32(0)) revert NotRegistered();
 
         return tokenData.isRemoteGateway();
     }
 
     function isCustomInterchainToken(bytes32 tokenId) external view returns (bool) {
         bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        if (tokenData == bytes32(0)) revert NotRegistered();
 
         if (tokenData.isOrigin()) return false;
 
@@ -259,6 +259,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
+    function setTokenMintLimit(bytes32 tokenId, uint256 mintLimit) external onlyOwner {
+        _setTokenMintLimit(tokenId, mintLimit);
+    }
+
+    function setSelfMintLimit(uint256 mintLimit) external {
+        bytes32 tokenId = getTokenId(msg.sender);
+        if(tokenId == bytes32(0)) revert NotRegistered(); 
+        _setTokenMintLimit(tokenId, mintLimit);
+    }
+
     function registerOriginGatewayToken(string calldata symbol) external onlyOwner returns (bytes32 tokenId) {
         address tokenAddress = gateway.tokenAddresses(symbol);
         if (tokenAddress == address(0)) revert NotGatewayToken();
@@ -281,7 +291,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     function sendSelf(address from, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
         bytes32 tokenId = getTokenId(msg.sender);
         _transferOrBurnFrom(tokenId, from, amount);
-        (tokenId, from, amount);
+        
         _sendToken(tokenId, destinationChain, to, amount);
     }
 
@@ -558,7 +568,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function _sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata destinationaddress, uint256 amount) internal {
         bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered(tokenId);
+        if (tokenData == bytes32(0)) revert NotRegistered();
         bytes memory payload;
 
         if (tokenData.isGateway()) {
