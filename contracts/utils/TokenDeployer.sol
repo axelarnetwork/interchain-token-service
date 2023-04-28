@@ -13,6 +13,7 @@ contract TokenDeployer is ITokenDeployer {
     ITokenDeployer public immutable thisAddress;
 
     constructor(address deployer_, address bytecodeServer_, address tokenImplementation_) {
+        if (deployer_ == address(0) || bytecodeServer_ == address(0) || tokenImplementation_ == address(0)) revert AddressZero();
         deployer = Create3Deployer(deployer_);
         bytecodeServer = bytecodeServer_;
         tokenImplementation = tokenImplementation_;

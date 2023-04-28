@@ -5,6 +5,8 @@ pragma solidity 0.8.9;
 import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol';
 
 interface ITokenDeployer {
+    error AddressZero();
+
     function deployer() external view returns (Create3Deployer);
 
     function bytecodeServer() external view returns (address);

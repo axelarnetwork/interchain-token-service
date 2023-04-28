@@ -280,7 +280,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     // These two are meant to be called by tokens to have this service facilitate the token transfers for them.
     function sendSelf(address from, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
         bytes32 tokenId = getTokenId(msg.sender);
-        _transferOrBurnFrom(tokenId, from, amount);(tokenId, from, amount);
+        _transferOrBurnFrom(tokenId, from, amount);
+        (tokenId, from, amount);
         _sendToken(tokenId, destinationChain, to, amount);
     }
 
@@ -398,11 +399,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (!success || tokenAddress.code.length == 0) revert BurnFailed();
     }
 
-    function _transferOrMint(bytes32 tokenId, address destinationaddress, uint256 amount) internal {
+    function _transferOrMint(bytes32 tokenId, address destinationaddress, uint256 amount) internal returns (address tokenAddress) {
         _setTokenMintAmount(tokenId, getTokenMintAmount(tokenId) + amount);
 
         bytes32 tokenData = getTokenData(tokenId);
-        address tokenAddress = tokenData.getAddress();
+        tokenAddress = tokenData.getAddress();
         if (tokenData.isOrigin() || tokenData.isGateway()) {
             _transfer(tokenAddress, destinationaddress, amount);
         } else {
@@ -428,15 +429,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes memory sourceAddress,
         bytes memory data
     ) internal {
-        _setTokenMintAmount(tokenId, getTokenMintAmount(tokenId) + amount);
-
-        bytes32 tokenData = getTokenData(tokenId);
-        address tokenAddress = tokenData.getAddress();
-        if (tokenData.isOrigin() || tokenData.isGateway()) {
-            _transfer(tokenAddress, destinationaddress, amount);
-        } else {
-            _mint(tokenAddress, destinationaddress, amount);
-        }
+        address tokenAddress = _transferOrMint(tokenId, destinationaddress, amount);
         // solhint-disable-next-line avoid-low-level-calls
         (bool executionSuccessful, ) = destinationaddress.call(
             abi.encodeWithSelector(
@@ -533,10 +526,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string calldata /*symbol*/,
         uint256 /*amount*/
     ) internal override {
-        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = address(this).call(payload);
-        if (!success) revert ExecutionFailed();
+        _execute(sourceChain, sourceAddress, payload);
     }
 
     function _deployRemoteTokens(
@@ -573,10 +563,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
         if (tokenData.isGateway()) {
             if (linkerRouter.supportedByGateway(destinationChain)) {
-                payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+                payload = abi.encodeWithSelector(this.selfTransferOrMint.selector, tokenId, destinationaddress, amount);
                 _callContractWithToken(destinationChain, tokenData, amount, payload);
             } else if (tokenData.isOrigin()) {
-                payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+                payload = abi.encodeWithSelector(this.selfTransferOrMint.selector, tokenId, destinationaddress, amount);
                 _callContract(destinationChain, payload, msg.value);
             } else {
                 payload = abi.encodeWithSelector(this.selfSendToken.selector, tokenId, destinationChain, destinationaddress, amount);
@@ -584,7 +574,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             }
         } else if (tokenData.isRemoteGateway()) {
             if (keccak256(bytes(destinationChain)) == keccak256(bytes(getOriginalChain(tokenId)))) {
-                payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+                payload = abi.encodeWithSelector(this.selfTransferOrMint.selector, tokenId, destinationaddress, amount);
                 _callContract(destinationChain, payload, msg.value);
             } else {
                 payload = abi.encodeWithSelector(this.selfSendToken.selector, tokenId, destinationChain, destinationaddress, amount);
@@ -612,7 +602,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (tokenData.isGateway()) {
             if (linkerRouter.supportedByGateway(destinationChain)) {
                 payload = abi.encodeWithSelector(
-                    this.selfGiveTokenWithData.selector,
+                    this.selfTransferOrMintWithData.selector,
                     tokenId,
                     sourceChain,
                     sourceAddress,
@@ -623,7 +613,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
                 _callContractWithToken(destinationChain, tokenData, amount, payload);
             } else if (tokenData.isOrigin()) {
                 payload = abi.encodeWithSelector(
-                    this.selfGiveTokenWithData.selector,
+                    this.selfTransferOrMintWithData.selector,
                     tokenId,
                     sourceChain,
                     sourceAddress,
@@ -648,7 +638,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         } else if (tokenData.isRemoteGateway()) {
             if (keccak256(bytes(destinationChain)) == keccak256(bytes(getOriginalChain(tokenId)))) {
                 payload = abi.encodeWithSelector(
-                    this.selfGiveTokenWithData.selector,
+                    this.selfTransferOrMintWithData.selector,
                     tokenId,
                     sourceChain,
                     sourceAddress,

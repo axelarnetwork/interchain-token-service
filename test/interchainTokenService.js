@@ -138,7 +138,7 @@ describe('TokenService', () => {
         expect(await tokenService.getTokenId(tokenAddress)).to.equal(tokenId);
         expect(await tokenService.getTokenAddress(tokenId)).to.equal(tokenAddress);
     });
-    
+
     it('Should not be able to deploy a native interchain token with the same sender and salt', async () => {
         const [wallet, tokenService] = loadChain(0);
         await expect(tokenService.deployInterchainToken(name, symbol, decimals, wallet.address, salt, [], [])).to.be.reverted;
@@ -633,7 +633,7 @@ describe('TokenService', () => {
                     } else {
                         commands = evmRelayer.relayData.callContractWithToken;
                     }
-                    
+
                     const commandIds = Object.keys(commands);
                     commands = Object.values(commands);
 
