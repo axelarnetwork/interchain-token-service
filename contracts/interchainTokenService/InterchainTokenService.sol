@@ -280,7 +280,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     // These two are meant to be called by tokens to have this service facilitate the token transfers for them.
     function sendSelf(address from, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
         bytes32 tokenId = getTokenId(msg.sender);
-        _takeToken(tokenId, from, amount);
+        _transferOrBurnFrom(tokenId, from, amount);(tokenId, from, amount);
         _sendToken(tokenId, destinationChain, to, amount);
     }
 
@@ -292,7 +292,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes calldata data
     ) external payable {
         bytes32 tokenId = getTokenId(msg.sender);
-        _takeToken(tokenId, from, amount);
+        _transferOrBurnFrom(tokenId, from, amount);
         _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
