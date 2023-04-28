@@ -124,12 +124,14 @@ describe('TokenService', () => {
         const [wallet, tokenService] = loadChain(0);
         await expect(tokenService.deployInterchainToken(name, symbol, decimals, wallet.address, salt, [], [])).to.be.reverted;
     });
+
     it('Should be not able to register an origin token that does not exist', async () => {
         const [, tokenService] = loadChain(0);
         const [tokenAddress] = await getTokenData(0, salt, false);
 
         await expect(tokenService.registerOriginToken(tokenAddress)).to.be.reverted;
     });
+
     it('Should be able to register an origin token', async () => {
         const [wallet, tokenService, tokenDeployer] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, false);

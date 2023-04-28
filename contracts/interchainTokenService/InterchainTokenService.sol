@@ -120,7 +120,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _setUint(_getTokenMintLimitKey(tokenId), mintLimit);
     }
 
-    function getTokenMintAmount(bytes32 tokenId) public view returns (uint256 amount) {
+    function getTokenMintAmount(bytes32 tokenId) internal view returns (uint256 amount) {
         // solhint-disable-next-line not-rely-on-time
         amount = getUint(_getTokenMintAmountKey(tokenId, block.timestamp / 6 hours));
     }
@@ -159,8 +159,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes32 salt,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    ) external payable {
-        bytes32 tokenId = getInterchainTokenId(msg.sender, salt);
+    ) external payable returns (bytes32 tokenId) {
+        tokenId = getInterchainTokenId(msg.sender, salt);
         address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, owner, tokenId);
         bytes32 tokenData = _registerToken(tokenAddress, tokenId);
         string memory symbol = _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
@@ -263,11 +263,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         emit TokenRegistered(tokenId, tokenAddress, false, false, isGateway);
     }
 
-    function selfGiveToken(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount) public onlySelf {
-        _giveToken(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount);
+    function selfTransferOrMint(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount) public onlySelf {
+        _transferOrMint(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount);
     }
 
-    function selfGiveTokenWithData(
+    function selfTransferOrMintWithData(
         bytes32 tokenId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
@@ -275,7 +275,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint256 amount,
         bytes calldata data
     ) public onlySelf {
-        _giveTokenWithData(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount, sourceChain, sourceAddress, data);
+        _transferOrMintWithData(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount, sourceChain, sourceAddress, data);
     }
 
     function selfSendToken(
@@ -334,7 +334,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (!success || tokenAddress.code.length == 0) revert BurnFailed();
     }
 
-    function _giveToken(bytes32 tokenId, address destinationaddress, uint256 amount) internal {
+    function _transferOrMint(bytes32 tokenId, address destinationaddress, uint256 amount) internal {
         _setTokenMintAmount(tokenId, getTokenMintAmount(tokenId) + amount);
 
         bytes32 tokenData = getTokenData(tokenId);
@@ -347,7 +347,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         }
     }
 
-    function _takeToken(bytes32 tokenId, address from, uint256 amount) internal {
+    function _transferOrBurnFrom(bytes32 tokenId, address from, uint256 amount) internal {
         bytes32 tokenData = getTokenData(tokenId);
         address tokenAddress = tokenData.getAddress();
         if (tokenData.isOrigin() || tokenData.isGateway()) {
@@ -357,7 +357,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         }
     }
 
-    function _giveTokenWithData(
+    function _transferOrMintWithData(
         bytes32 tokenId,
         address destinationaddress,
         uint256 amount,

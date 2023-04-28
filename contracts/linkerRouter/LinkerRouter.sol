@@ -9,39 +9,32 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     using StringToAddress for string;
     using AddressToString for address;
 
-    bytes32 public immutable addressHash;
     mapping(string => bytes32) public remoteAddressHashes;
     mapping(string => string) public remoteAddresses;
-    address public immutable interChainTokenServiceAddress;
+    address public immutable interchainTokenServiceAddress;
+    bytes32 public immutable interchainTokenServiceAddressHash;
     mapping(string => bool) public supportedByGateway;
 
     // bytes32(uint256(keccak256('remote-address-validator')) - 1)
     // solhint-disable-next-line const-name-snakecase
     bytes32 public constant override contractId = 0x5d9f4d5e6bb737c289f92f2a319c66ba484357595194acb7c2122e48550eda7c;
 
-    constructor(address tokenLinkerAddress_, string[] memory trustedChainNames, string[] memory trustedAddresses) {
-        if (tokenLinkerAddress_ == address(0)) revert ZeroAddress();
-        interChainTokenServiceAddress = tokenLinkerAddress_;
+    constructor(address _interchainTokenServiceAddress, string[] memory trustedChainNames, string[] memory trustedAddresses) {
+        if (_interchainTokenServiceAddress == address(0)) revert ZeroAddress();
+        interchainTokenServiceAddress = _interchainTokenServiceAddress;
         uint256 length = trustedChainNames.length;
         if (length != trustedAddresses.length) revert LengthMismatch();
-        addressHash = keccak256(bytes(_lowerCase(interChainTokenServiceAddress.toString())));
+        interchainTokenServiceAddressHash = keccak256(bytes(_lowerCase(interchainTokenServiceAddress.toString())));
         for (uint256 i; i < length; ++i) {
-            string memory chainName = trustedChainNames[i];
-            if (bytes(chainName).length == 0) revert ZeroStringLength();
-            string memory remoteAddress = _lowerCase(trustedAddresses[i]);
-            if (bytes(remoteAddress).length == 0) revert ZeroStringLength();
-            remoteAddresses[chainName] = remoteAddress;
-            bytes32 remoteAddressHash = keccak256(bytes(remoteAddress));
-            remoteAddressHashes[chainName] = remoteAddressHash;
+            addTrustedAddress(trustedChainNames[i], trustedAddresses[i]);
         }
     }
 
     function _lowerCase(string memory s) internal pure returns (string memory) {
         uint256 length = bytes(s).length;
-        bytes memory tmp = bytes(s);
         for (uint256 i; i < length; i++) {
-            uint8 b = uint8(tmp[i]);
-            if ((b >= 65) && (b <= 70)) tmp[i] = bytes1(b + uint8(32));
+            uint8 b = uint8(bytes(s)[i]);
+            if ((b >= 65) && (b <= 70)) bytes(s)[i] = bytes1(b + uint8(32));
         }
         return s;
     }
@@ -49,23 +42,23 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     function validateSender(string calldata sourceChain, string calldata sourceAddress) external view returns (bool) {
         string memory sourceAddressLC = _lowerCase(sourceAddress);
         bytes32 sourceAddressHash = keccak256(bytes(sourceAddressLC));
-        bytes32 remoteAddressHash = remoteAddressHashes[sourceChain];
-        if (remoteAddressHash == bytes32(0)) {
-            if (sourceAddressHash == addressHash) return true;
-        } else {
-            if (sourceAddressHash == remoteAddressHash) return true;
+        if (sourceAddressHash == interchainTokenServiceAddressHash) {
+            return true;
         }
-        return false;
+        return sourceAddressHash == remoteAddressHashes[sourceChain];
     }
 
-    function addTrustedAddress(string calldata sourceChain, string calldata sourceAddress) external onlyOwner {
-        remoteAddressHashes[sourceChain] = keccak256(bytes(_lowerCase(sourceAddress)));
-        remoteAddresses[sourceChain] = sourceAddress;
+    function addTrustedAddress(string memory chain, string memory addr) public onlyOwner {
+        if (bytes(chain).length == 0) revert ZeroStringLength();
+        if (bytes(addr).length == 0) revert ZeroStringLength();
+        remoteAddressHashes[chain] = keccak256(bytes(_lowerCase(addr)));
+        remoteAddresses[chain] = addr;
     }
 
-    function removeTrustedAddress(string calldata sourceChain) external onlyOwner {
-        remoteAddressHashes[sourceChain] = bytes32(0);
-        remoteAddresses[sourceChain] = '';
+    function removeTrustedAddress(string calldata chain) external onlyOwner {
+        if (bytes(chain).length == 0) revert ZeroStringLength();
+        remoteAddressHashes[chain] = bytes32(0);
+        remoteAddresses[chain] = '';
     }
 
     function addGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
@@ -85,7 +78,7 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     function getRemoteAddress(string calldata chainName) external view returns (string memory remoteAddress) {
         remoteAddress = remoteAddresses[chainName];
         if (bytes(remoteAddress).length == 0) {
-            remoteAddress = interChainTokenServiceAddress.toString();
+            remoteAddress = interchainTokenServiceAddress.toString();
         }
     }
 }
