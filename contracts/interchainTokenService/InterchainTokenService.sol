@@ -159,7 +159,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _setUint(_getTokenMintLimitKey(tokenId), mintLimit);
     }
 
-    function getTokenMintAmount(bytes32 tokenId) public view returns (uint256 amount) {
+    function getTokenMintAmount(bytes32 tokenId) internal view returns (uint256 amount) {
         // solhint-disable-next-line not-rely-on-time
         amount = getUint(_getTokenMintAmountKey(tokenId, block.timestamp / 6 hours));
     }
@@ -202,8 +202,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes32 salt,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    ) external payable {
-        bytes32 tokenId = getInterchainTokenId(msg.sender, salt);
+    ) external payable returns (bytes32 tokenId) {
+        tokenId = getInterchainTokenId(msg.sender, salt);
         address tokenAddress = _deployToken(tokenName, tokenSymbol, decimals, owner, tokenId);
         bytes32 tokenData = _registerToken(tokenAddress, tokenId, true);
         string memory symbol = _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
@@ -244,7 +244,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     // solhint-disable-next-line no-empty-blocks
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
-        _takeToken(tokenId, msg.sender, amount);
+        _transferOrBurnFrom(tokenId, msg.sender, amount);
         _sendToken(tokenId, destinationChain, to, amount);
     }
 
@@ -255,7 +255,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint256 amount,
         bytes calldata data
     ) external payable {
-        _takeToken(tokenId, msg.sender, amount);
+        _transferOrBurnFrom(tokenId, msg.sender, amount);
         _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
@@ -280,7 +280,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     // These two are meant to be called by tokens to have this service facilitate the token transfers for them.
     function sendSelf(address from, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
         bytes32 tokenId = getTokenId(msg.sender);
-        _takeToken(tokenId, from, amount);
+        _transferOrBurnFrom(tokenId, from, amount);(tokenId, from, amount);
         _sendToken(tokenId, destinationChain, to, amount);
     }
 
@@ -292,7 +292,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes calldata data
     ) external payable {
         bytes32 tokenId = getTokenId(msg.sender);
-        _takeToken(tokenId, from, amount);
+        _transferOrBurnFrom(tokenId, from, amount);
         _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
@@ -304,7 +304,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string calldata tokenName,
         string calldata tokenSymbol,
         uint8 decimals,
-        bool isGateway // solhint-disable-next-line no-empty-blocks
+        bool isGateway
     ) public onlySelf {
         {
             bytes32 tokenData = getTokenData(tokenId);
@@ -327,11 +327,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         emit TokenRegistered(tokenId, tokenAddress, false, false, isGateway);
     }
 
-    function selfGiveToken(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount) public onlySelf {
-        _giveToken(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount);
+    function selfTransferOrMint(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount) public onlySelf {
+        _transferOrMint(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount);
     }
 
-    function selfGiveTokenWithData(
+    function selfTransferOrMintWithData(
         bytes32 tokenId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
@@ -339,7 +339,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint256 amount,
         bytes calldata data
     ) public onlySelf {
-        _giveTokenWithData(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount, sourceChain, sourceAddress, data);
+        _transferOrMintWithData(tokenId, AddressBytesUtils.toAddress(destinationAddress), amount, sourceChain, sourceAddress, data);
     }
 
     function selfSendToken(
@@ -398,7 +398,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (!success || tokenAddress.code.length == 0) revert BurnFailed();
     }
 
-    function _giveToken(bytes32 tokenId, address destinationaddress, uint256 amount) internal {
+    function _transferOrMint(bytes32 tokenId, address destinationaddress, uint256 amount) internal {
         _setTokenMintAmount(tokenId, getTokenMintAmount(tokenId) + amount);
 
         bytes32 tokenData = getTokenData(tokenId);
@@ -410,7 +410,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         }
     }
 
-    function _takeToken(bytes32 tokenId, address from, uint256 amount) internal {
+    function _transferOrBurnFrom(bytes32 tokenId, address from, uint256 amount) internal {
         bytes32 tokenData = getTokenData(tokenId);
         address tokenAddress = tokenData.getAddress();
         if (tokenData.isOrigin() || tokenData.isGateway()) {
@@ -420,7 +420,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         }
     }
 
-    function _giveTokenWithData(
+    function _transferOrMintWithData(
         bytes32 tokenId,
         address destinationaddress,
         uint256 amount,
@@ -489,11 +489,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         string memory tokenSymbol,
         uint8 decimals,
         address owner,
-        bytes32 salt
+        bytes32 tokenId
     ) internal returns (address tokenAddress) {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory data) = address(tokenDeployer).delegatecall(
-            abi.encodeWithSelector(tokenDeployer.deployToken.selector, tokenName, tokenSymbol, decimals, owner, salt)
+            abi.encodeWithSelector(tokenDeployer.deployToken.selector, tokenName, tokenSymbol, decimals, owner, tokenId)
         );
         if (!success) revert TokenDeploymentFailed();
         tokenAddress = abi.decode(data, (address));
@@ -560,7 +560,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
                 decimals,
                 tokenData.isGateway()
             );
-            _callContract(destinationChains[i], payload, gasValues[i]);
+            _callContract(destinationChains[i], payload, gasValue);
             emit RemoteTokenRegisterInitialized(tokenId, destinationChains[i], gasValue);
         }
         return symbol;
@@ -591,7 +591,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
                 _callContract(getOriginalChain(tokenId), payload, msg.value);
             }
         } else {
-            payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+            payload = abi.encodeWithSelector(this.selfTransferOrMint.selector, tokenId, destinationaddress, amount);
             _callContract(destinationChain, payload, msg.value);
         }
         emit Sending(destinationChain, destinationaddress, amount);
@@ -672,7 +672,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             }
         } else {
             payload = abi.encodeWithSelector(
-                this.selfGiveTokenWithData.selector,
+                this.selfTransferOrMintWithData.selector,
                 tokenId,
                 sourceChain,
                 sourceAddress,

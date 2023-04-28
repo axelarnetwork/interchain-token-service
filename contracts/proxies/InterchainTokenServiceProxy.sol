@@ -15,6 +15,7 @@ contract InterchainTokenServiceProxy is FinalProxy {
 
     // solhint-disable-next-line no-empty-blocks
     function contractId() internal pure override returns (bytes32) {
+        // keccak256('interchain-token-service')-1
         return 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
     }
 }
