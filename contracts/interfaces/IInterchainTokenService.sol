@@ -68,7 +68,7 @@ interface IInterchainTokenService {
         bytes32 salt,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
-    ) external payable;
+    ) external payable returns (bytes32 tokenId);
 
     function registerOriginToken(address tokenAddress) external returns (bytes32 tokenId);
 
