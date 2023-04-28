@@ -193,7 +193,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     // solhint-disable-next-line no-empty-blocks
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
-        _takeToken(tokenId, msg.sender, amount);
+        _transferOrBurnFrom(tokenId, msg.sender, amount);
         _sendToken(tokenId, destinationChain, to, amount);
     }
 
@@ -204,7 +204,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint256 amount,
         bytes calldata data
     ) external payable {
-        _takeToken(tokenId, msg.sender, amount);
+        _transferOrBurnFrom(tokenId, msg.sender, amount);
         _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
@@ -515,7 +515,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         } else if (tokenData.isRemoteGateway()) {
             // TODO: implement remote gateway logic.
         } else {
-            payload = abi.encodeWithSelector(this.selfGiveToken.selector, tokenId, destinationaddress, amount);
+            payload = abi.encodeWithSelector(this.selfTransferOrMint.selector, tokenId, destinationaddress, amount);
             _callContract(destinationChain, payload, msg.value);
         }
         emit Sending(destinationChain, destinationaddress, amount);
@@ -540,7 +540,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             // TODO: implement remote gateway logic.
         } else {
             payload = abi.encodeWithSelector(
-                this.selfGiveTokenWithData.selector,
+                this.selfTransferOrMintWithData.selector,
                 tokenId,
                 sourceChain,
                 sourceAddress,
