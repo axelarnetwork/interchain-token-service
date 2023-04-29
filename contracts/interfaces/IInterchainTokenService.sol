@@ -21,18 +21,36 @@ interface IInterchainTokenService {
     error TokenDeploymentFailed();
     error ExceedMintLimit(bytes32 tokenId);
     error ExecutionFailed();
+    error AlreadyExpressExecuted();
+    error InvalidSelector();
 
-    event Sending(string destinationChain, bytes destinationAddress, uint256 indexed amount);
-    event SendingWithData(string destinationChain, bytes destinationAddress, uint256 indexed amount, address indexed from, bytes data);
-    event Receiving(string sourceChain, address indexed destinationAddress, uint256 indexed amount);
+    event Sending(string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 indexed sendHash);
+    event SendingWithData(address sourceAddress, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes data, bytes32 indexed sendHash);
+    event Receiving(bytes32 indexed tokenId, address indexed destinationAddress, uint256 amount, bytes32 sendHash);
     event ReceivingWithData(
+        bytes32 indexed tokenId,
         string sourceChain,
         address indexed destinationAddress,
-        uint256 indexed amount,
+        uint256 amount,
         bytes from,
         bytes data,
+        bytes32 indexed sendHash,
         bool executionSuccessful
     );
+    event ExpressExecuted(bytes32 indexed tokenId, address indexed destinationAddress, uint256 amount, bytes32 sendHash, address expressCaller);
+    event ExpressExecutedWithData(
+        bytes32 indexed tokenId,
+        string sourceChain,
+        bytes sourceAddress,
+        address indexed destinationAddress,
+        uint256 amount,
+        bytes data,
+        bytes32 indexed sendHash,
+        bool executionSuccessful,
+        address expressCaller
+    );
+    event ExpressExecutionFulfilled(address indexed destinationAddress, uint256 amount, bytes32 indexed sendHash);
+
     event TokenRegistered(bytes32 indexed tokenId, address indexed tokenAddress, bool native, bool gateway, bool remoteGateway);
     event TokenDeployed(address indexed tokenAddress, string name, string symbol, uint8 decimals, address indexed owner);
     event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
@@ -119,4 +137,16 @@ interface IInterchainTokenService {
         uint256 amount,
         bytes calldata data
     ) external payable;
+
+    function expressExecute(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external;
+
+    function expressExecuteWithToken(
+        bytes32 tokenId,
+        string calldata sourceChain,
+        bytes calldata sourceAddress,
+        address destinationAddress,
+        uint256 amount,
+        bytes calldata data,
+        bytes32 sendHash
+    ) external;
 }

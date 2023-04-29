@@ -328,9 +328,12 @@ describe('TokenService', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
 
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 }))
             .to.emit(tokenService, 'Sending')
-            .withArgs(chains[1].name, wallet.address.toLowerCase(), amount1);
+            .withArgs(chains[1].name, wallet.address.toLowerCase(), amount1, sendHash);
 
         await relay();
 
@@ -358,9 +361,12 @@ describe('TokenService', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
 
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(tokenService.sendToken(tokenId, chains[2].name, wallet.address, amount1, { value: 1e6 }))
             .to.emit(tokenService, 'Sending')
-            .withArgs(chains[2].name, wallet.address.toLowerCase(), amount1);
+            .withArgs(chains[2].name, wallet.address.toLowerCase(), amount1, sendHash);
 
         await relay();
 
@@ -371,6 +377,7 @@ describe('TokenService', () => {
         expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
     });
+
     it('Should be able to send some token back to the original chain', async () => {
         const [wallet, tokenService] = loadChain(2);
         const [, tokenId] = await getTokenData(0, salt, true);
@@ -378,9 +385,12 @@ describe('TokenService', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
 
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(tokenService.sendToken(tokenId, chains[0].name, wallet.address, amount1, { value: 1e6 }))
             .to.emit(tokenService, 'Sending')
-            .withArgs(chains[0].name, wallet.address.toLowerCase(), amount1);
+            .withArgs(chains[0].name, wallet.address.toLowerCase(), amount1, sendHash);
 
         await relay();
 
@@ -391,6 +401,62 @@ describe('TokenService', () => {
         expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
     });
+
+    for(let i=0;i<3;i++) {
+        let j = (i+1) % 3;
+        it('Should be able to express send some token to another chain', async () => {
+            const otherKey = keccak256('0x05968796');
+            const [wallet, tokenService] = loadChain(i);
+            const [, tokenId] = await getTokenData(0, salt, true);
+            const tokenAddress = await tokenService.getTokenAddress(tokenId);
+            const amount = amount1 / 2;
+            const token = new Contract(tokenAddress, Token.abi, wallet);
+            await token.approve(tokenService.address, amount1);
+    
+            let blockNumber = await wallet.provider.getBlockNumber();
+            let sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+    
+            await expect(tokenService.sendToken(tokenId, chains[j].name, wallet.address, amount, { value: 1e6 }))
+                .to.emit(tokenService, 'Sending')
+                .withArgs(chains[j].name, wallet.address.toLowerCase(), amount, sendHash);
+    
+            await relay();
+    
+            const [remoteWallet, remoteTokenService] = loadChain(j);
+            const remoteTokenAddress = await remoteTokenService.getTokenAddress(tokenId);
+            const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
+            const otherWallet = new Wallet(otherKey, remoteWallet.provider);
+    
+            expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount);
+            expect(Number(await token.balanceOf(wallet.address))).to.equal(amount1 - amount);
+    
+            blockNumber = await wallet.provider.getBlockNumber();
+            sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+    
+            await expect(tokenService.sendToken(tokenId, chains[j].name, otherWallet.address, amount, { value: 1e6 }))
+                .to.emit(tokenService, 'Sending')
+                .withArgs(chains[j].name, otherWallet.address.toLowerCase(), amount, sendHash);
+    
+            await remoteToken.approve(remoteTokenService.address, amount);
+
+            await remoteTokenService.expressExecute(tokenId, otherWallet.address, amount, sendHash);
+    
+            expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(0);
+            expect(Number(await remoteToken.balanceOf(otherWallet.address))).to.equal(amount);
+            expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
+    
+            await relay();
+    
+            expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount);
+            expect(Number(await remoteToken.balanceOf(otherWallet.address))).to.equal(amount);
+            expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
+    
+            await remoteWallet.sendTransaction({to: otherWallet.address, value: BigInt(1e17)});
+    
+            await remoteToken.connect(otherWallet).transfer(wallet.address, amount);
+        });
+    }
+
     it('Should not be able to send some token with data to another chain without approval', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(0);
@@ -414,13 +480,17 @@ describe('TokenService', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
         const payload = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
+
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(
             tokenService.callContractWithInterToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
                 value: 1e6,
             }),
         )
             .to.emit(tokenService, 'SendingWithData')
-            .withArgs(chains[1].name, chains[1].executable.address.toLowerCase(), amount1, wallet.address, payload);
+            .withArgs(wallet.address, chains[1].name, chains[1].executable.address.toLowerCase(), amount1, payload, sendHash);
 
         await relay();
 
@@ -459,9 +529,12 @@ describe('TokenService', () => {
         await token.approve(tokenService.address, amount1);
         const payload = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
 
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(tokenService.callContractWithInterToken(tokenId, chains[2].name, wallet.address, amount1, payload, { value: 1e6 }))
             .to.emit(tokenService, 'SendingWithData')
-            .withArgs(chains[2].name, wallet.address.toLowerCase(), amount1, wallet.address, payload);
+            .withArgs(wallet.address, chains[2].name, wallet.address.toLowerCase(), amount1, payload, sendHash);
         await relay();
 
         const [remoteWallet, remoteTokenService] = loadChain(2);
@@ -713,6 +786,4 @@ describe('TokenService', () => {
 
         await expectRelayRevert(tokenService.sendToken(tokenId, chains[1].name, wallet.address, mintLimit, { value: 1e6 }));
     });
-
-    it.only()
 });
