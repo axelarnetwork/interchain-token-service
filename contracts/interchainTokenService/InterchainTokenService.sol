@@ -265,7 +265,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function setSelfMintLimit(uint256 mintLimit) external {
         bytes32 tokenId = getTokenId(msg.sender);
-        if(tokenId == bytes32(0)) revert NotRegistered(); 
+        if (tokenId == bytes32(0)) revert NotRegistered();
         _setTokenMintLimit(tokenId, mintLimit);
     }
 
@@ -291,7 +291,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     function sendSelf(address from, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
         bytes32 tokenId = getTokenId(msg.sender);
         _transferOrBurnFrom(tokenId, from, amount);
-        
+
         _sendToken(tokenId, destinationChain, to, amount);
     }
 

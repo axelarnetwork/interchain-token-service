@@ -661,24 +661,17 @@ describe('TokenService', () => {
         }
     });
 
-    it.only('Should be able to set a mint limit for a new token', async() => {
+    it('Should be able to set a mint limit for a new token', async () => {
         const salt = keccak256('0x96858473');
         const mintLimit = 125;
         const [wallet, tokenService] = loadChain(0);
 
-        await tokenService.deployInterchainToken(
-            'Mint Limit Test', 
-            'MLT', 
-            18, 
-            wallet.address, 
-            salt, 
-            [chains[1].name],
-            [1e7],
-            {value: 1e7}
-        );
-        
+        await tokenService.deployInterchainToken('Mint Limit Test', 'MLT', 18, wallet.address, salt, [chains[1].name], [1e7], {
+            value: 1e7,
+        });
+
         await relay();
-        
+
         const [, tokenId] = await getTokenData(0, salt, true);
         expect(await tokenService.getTokenMintLimit(tokenId)).to.equal(0);
 
@@ -695,7 +688,7 @@ describe('TokenService', () => {
         expect(await remoteTokenService.getTokenMintLimit(tokenId)).to.equal(mintLimit);
     });
 
-    it.only('Should be able to sent up to the mint limit but no more', async() => {
+    it('Should be able to sent up to the mint limit but no more', async () => {
         const salt = keccak256('0x96858473');
         const mintLimit = 125;
         const [wallet, tokenService] = loadChain(0);
@@ -703,11 +696,11 @@ describe('TokenService', () => {
 
         const token = new Contract(tokenAddress, Token.abi, wallet);
 
-        await token.mint(wallet.address, mintLimit*2);
+        await token.mint(wallet.address, mintLimit * 2);
 
-        await token.approve(tokenService.address, mintLimit*2);
+        await token.approve(tokenService.address, mintLimit * 2);
 
-        await tokenService.sendToken(tokenId, chains[1].name, wallet.address, mintLimit, {value: 1e6});
+        await tokenService.sendToken(tokenId, chains[1].name, wallet.address, mintLimit, { value: 1e6 });
 
         await relay();
 
@@ -718,6 +711,6 @@ describe('TokenService', () => {
 
         expect(await remoteToken.balanceOf(wallet.address)).to.equal(mintLimit);
 
-        await expectRelayRevert(tokenService.sendToken(tokenId, chains[1].name, wallet.address, mintLimit, {value: 1e6}));
+        await expectRelayRevert(tokenService.sendToken(tokenId, chains[1].name, wallet.address, mintLimit, { value: 1e6 }));
     });
 });
