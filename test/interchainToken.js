@@ -152,9 +152,12 @@ describe('Token', () => {
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
         const token = new Contract(tokenAddress, Token.abi, wallet);
 
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(token.interchainTransfer(chains[1].name, wallet.address, amount1, '0x', { value: 1e6 }))
             .to.emit(tokenService, 'Sending')
-            .withArgs(chains[1].name, wallet.address.toLowerCase(), amount1);
+            .withArgs(chains[1].name, wallet.address.toLowerCase(), amount1, sendHash);
 
         await relay();
 
@@ -184,9 +187,12 @@ describe('Token', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
 
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(tokenService.sendToken(tokenId, chains[2].name, wallet.address, amount1, { value: 1e6 }))
             .to.emit(tokenService, 'Sending')
-            .withArgs(chains[2].name, wallet.address.toLowerCase(), amount1);
+            .withArgs(chains[2].name, wallet.address.toLowerCase(), amount1, sendHash);
 
         await relay();
 
@@ -205,9 +211,12 @@ describe('Token', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
 
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(tokenService.sendToken(tokenId, chains[0].name, wallet.address, amount1, { value: 1e6 }))
             .to.emit(tokenService, 'Sending')
-            .withArgs(chains[0].name, wallet.address.toLowerCase(), amount1);
+            .withArgs(chains[0].name, wallet.address.toLowerCase(), amount1, sendHash);
 
         await relay();
 
@@ -243,13 +252,17 @@ describe('Token', () => {
         const token = new Contract(tokenAddress, Token.abi, wallet);
         await token.approve(tokenService.address, amount1);
         const payload = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
+
+        const blockNumber = await wallet.provider.getBlockNumber();
+        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
+
         await expect(
             tokenService.callContractWithInterToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
                 value: 1e6,
             }),
         )
             .to.emit(tokenService, 'SendingWithData')
-            .withArgs(chains[1].name, chains[1].executable.address.toLowerCase(), amount1, wallet.address, payload);
+            .withArgs(wallet.address, chains[1].name, chains[1].executable.address.toLowerCase(), amount1, payload, sendHash);
 
         await relay();
 
@@ -307,15 +320,21 @@ describe('Token', () => {
         const balances = await Promise.all(tokens.map(async (token) => await token.balanceOf(token.signer.address)));
 
         const [wallet0, tokenService0] = loadChain(0);
-        const [wallet1, tokenService1] = loadChain(0);
+        const [wallet1, tokenService1] = loadChain(1);
+
+        let blockNumber = await wallet0.provider.getBlockNumber();
+        let sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, await tokenService0.getTokenId(tokens[0].address), wallet0.address]));
 
         await expect(tokens[0].interchainTransfer(chains[1].name, wallet1.address, amounts[0], '0x', { value: 1e6 }))
             .to.emit(tokenService0, 'Sending')
-            .withArgs(chains[1].name, wallet1.address.toLowerCase(), amounts[0]);
-
+            .withArgs(chains[1].name, wallet1.address.toLowerCase(), amounts[0], sendHash);
+            
+        blockNumber = await wallet1.provider.getBlockNumber();
+        sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, await tokenService1.getTokenId(tokens[1].address), wallet1.address]));
+    
         await expect(tokens[1].interchainTransfer(chains[0].name, wallet0.address, amounts[1], '0x', { value: 1e6 }))
             .to.emit(tokenService1, 'Sending')
-            .withArgs(chains[0].name, wallet0.address.toLowerCase(), amounts[1]);
+            .withArgs(chains[0].name, wallet0.address.toLowerCase(), amounts[1], sendHash);
 
         await relay();
 
