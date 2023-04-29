@@ -720,4 +720,6 @@ describe('TokenService', () => {
 
         await expectRelayRevert(tokenService.sendToken(tokenId, chains[1].name, wallet.address, mintLimit, {value: 1e6}));
     });
+
+    it.only()
 });

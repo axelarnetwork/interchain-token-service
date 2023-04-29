@@ -36,6 +36,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     bytes32 internal constant PREFIX_TOKEN_MINT_LIMIT = keccak256('itl-token-mint-limit');
     bytes32 internal constant PREFIX_TOKEN_MINT_AMOUNT = keccak256('itl-token-mint-amount');
     bytes32 internal constant PREFIX_CUSTOM_INTERCHAIN_TOKEN_ID = keccak256('itl-custom-interchain-token-id');
+    bytes32 internal constant PREFIX_EXPRESS_SEND_TOKEN = keccak256('itl-express-send-token');
+    bytes32 internal constant PREFIX_EXPRESS_SEND_TOKEN_WITH_DATA = keccak256('itl-express-send-token-with-data');
     // keccak256('interchain-token-service')-1
     // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
@@ -84,6 +86,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function _getTokenMintAmountKey(bytes32 tokenId, uint256 epoch) internal pure returns (bytes32 key) {
         key = keccak256(abi.encode(PREFIX_TOKEN_MINT_AMOUNT, tokenId, epoch));
+    }
+
+    function _getExpressSendTokenKey(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal pure returns (bytes32 key) {
+        key = keccak256(abi.encode(PREFIX_EXPRESS_SEND_TOKEN, sourceChain, sourceAddress, payload));
+    }
+
+    function _getExpressSendTokenWithDataKey(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal pure returns (bytes32 key) {
+        key = keccak256(abi.encode(PREFIX_EXPRESS_SEND_TOKEN_WITH_DATA, sourceChain, sourceAddress, payload));
     }
 
     /* GETTERS AND SETTERS*/
@@ -190,6 +200,22 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     function getDeploymentAddress(address sender, bytes32 salt) public view returns (address deployment) {
         salt = getInterchainTokenId(sender, salt);
         deployment = tokenDeployer.getDeploymentAddress(address(this), salt);
+    }
+
+    function _setExpressSendToken(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload, address expressCaller) internal {
+        _setAddress(_getExpressSendTokenKey(sourceChain, sourceAddress, payload), expressCaller);
+    }
+
+    function _setExpressSendTokenWithData(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload, address expressCaller) internal {
+        _setAddress(_getExpressSendTokenWithDataKey(sourceChain, sourceAddress, payload), expressCaller);
+    }
+
+    function getExpressSendToken(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal view returns (address expressCaller) {
+        expressCaller = getAddress(_getExpressSendTokenKey(sourceChain, sourceAddress, payload));
+    }
+
+    function getExpressSendTokenWithData(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal view returns (address expressCaller) {
+        expressCaller = getAddress(_getExpressSendTokenWithDataKey(sourceChain, sourceAddress, payload));
     }
 
     /* EXTERNAL FUNCTIONS */
@@ -307,6 +333,17 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _sendTokenWithData(tokenId, chainName.toTrimmedString(), AddressBytesUtils.toBytes(msg.sender), destinationChain, to, amount, data);
     }
 
+    function expressExecute(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) external returns (bytes4) {
+        if( getExpressSendToken(sourceChain, sourceAddress, payload) != address(0) ) revert ('AlreadyExpressExecuted()');
+        bytes4 selector;
+
+        assembly {
+            selector := calldataload(add(payload.offset, 32))
+        }
+
+        return selector;
+    }
+
     /* ONLY SELF FUNCTIONS */
 
     function selfDeployToken(
@@ -375,6 +412,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     // UTILITY FUNCTIONS
+
     function _transfer(address tokenAddress, address destinationaddress, uint256 amount) internal {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returnData) = tokenAddress.call(
@@ -385,10 +423,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (!transferred || tokenAddress.code.length == 0) revert TransferFailed();
     }
 
-    function _transferFrom(address tokenAddress, address from, uint256 amount) internal {
+    function _transferFrom(address tokenAddress, address from, address to, uint256 amount) internal {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returnData) = tokenAddress.call(
-            abi.encodeWithSelector(IERC20.transferFrom.selector, from, address(this), amount)
+            abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, amount)
         );
         bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
 
@@ -425,7 +463,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes32 tokenData = getTokenData(tokenId);
         address tokenAddress = tokenData.getAddress();
         if (tokenData.isOrigin() || tokenData.isGateway()) {
-            _transferFrom(tokenAddress, from, amount);
+            _transferFrom(tokenAddress, from, address(this), amount);
         } else {
             _burn(tokenAddress, from, amount);
         }
@@ -518,25 +556,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         name = token.name();
         symbol = token.symbol();
         decimals = token.decimals();
-    }
-
-    /* EXECUTE AND EXECUTE WITH TOKEN */
-
-    function _execute(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal override {
-        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = address(this).call(payload);
-        if (!success) revert ExecutionFailed();
-    }
-
-    function _executeWithToken(
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata /*symbol*/,
-        uint256 /*amount*/
-    ) internal override {
-        _execute(sourceChain, sourceAddress, payload);
     }
 
     function _deployRemoteTokens(
@@ -683,5 +702,24 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             _callContract(destinationChain, payload, msg.value);
         }
         emit SendingWithData(destinationChain, destinationaddress, amount, msg.sender, data);
+    }
+
+    /* EXECUTE AND EXECUTE WITH TOKEN */
+
+    function _execute(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal override {
+        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = address(this).call(payload);
+        if (!success) revert ExecutionFailed();
+    }
+
+    function _executeWithToken(
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata /*symbol*/,
+        uint256 /*amount*/
+    ) internal override {
+        _execute(sourceChain, sourceAddress, payload);
     }
 }
