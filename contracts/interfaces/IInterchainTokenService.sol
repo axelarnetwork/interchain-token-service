@@ -25,7 +25,14 @@ interface IInterchainTokenService {
     error InvalidSelector();
 
     event Sending(string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 indexed sendHash);
-    event SendingWithData(address sourceAddress, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes data, bytes32 indexed sendHash);
+    event SendingWithData(
+        address sourceAddress,
+        string destinationChain,
+        bytes destinationAddress,
+        uint256 indexed amount,
+        bytes data,
+        bytes32 indexed sendHash
+    );
     event Receiving(bytes32 indexed tokenId, address indexed destinationAddress, uint256 amount, bytes32 sendHash);
     event ReceivingWithData(
         bytes32 indexed tokenId,
@@ -37,7 +44,13 @@ interface IInterchainTokenService {
         bytes32 indexed sendHash,
         bool executionSuccessful
     );
-    event ExpressExecuted(bytes32 indexed tokenId, address indexed destinationAddress, uint256 amount, bytes32 sendHash, address expressCaller);
+    event ExpressExecuted(
+        bytes32 indexed tokenId,
+        address indexed destinationAddress,
+        uint256 amount,
+        bytes32 sendHash,
+        address expressCaller
+    );
     event ExpressExecutedWithData(
         bytes32 indexed tokenId,
         string sourceChain,

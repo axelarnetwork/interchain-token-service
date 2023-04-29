@@ -429,7 +429,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         address tokenAddress = getTokenAddress(tokenId);
         _transferFrom(tokenAddress, msg.sender, destinationAddress, amount);
         // solhint-disable-next-line avoid-low-level-calls
-        (bool executionSuccessful,) = destinationAddress.call(
+        (bool executionSuccessful, ) = destinationAddress.call(
             abi.encodeWithSelector(
                 IInterTokenExecutable.exectuteWithInterToken.selector,
                 tokenAddress,
@@ -439,7 +439,17 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
                 data
             )
         );
-        emit ExpressExecutedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, executionSuccessful, msg.sender);
+        emit ExpressExecutedWithData(
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data,
+            sendHash,
+            executionSuccessful,
+            msg.sender
+        );
     }
 
     /* ONLY SELF FUNCTIONS */
@@ -506,16 +516,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             }
         }
         bool executionSuccessful = _transferOrMintWithData(tokenId, dest, amount, sourceChain, sourceAddress, data);
-        emit ReceivingWithData(
-            tokenId,
-            sourceChain,
-            dest,
-            amount,
-            sourceAddress,
-            data,
-            sendHash,
-            executionSuccessful
-        );
+        emit ReceivingWithData(tokenId, sourceChain, dest, amount, sourceAddress, data, sendHash, executionSuccessful);
     }
 
     function selfSendToken(
