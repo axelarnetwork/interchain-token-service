@@ -540,7 +540,9 @@ describe('TokenService', () => {
         const blockNumber = await wallet.provider.getBlockNumber();
         const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
 
-        await expect(tokenService.callContractWithInterchainToken(tokenId, chains[2].name, wallet.address, amount1, payload, { value: 1e6 }))
+        await expect(
+            tokenService.callContractWithInterchainToken(tokenId, chains[2].name, wallet.address, amount1, payload, { value: 1e6 }),
+        )
             .to.emit(tokenService, 'SendingWithData')
             .withArgs(wallet.address, chains[2].name, wallet.address.toLowerCase(), amount1, payload, sendHash);
         await relay();

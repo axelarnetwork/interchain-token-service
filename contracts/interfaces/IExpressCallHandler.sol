@@ -11,13 +11,14 @@ interface IExpressCallHandler {
         uint256 amount,
         bytes32 sendHash,
         address expressCaller
-    );    
+    );
     event ExpressExecutionFulfilled(
         bytes32 indexed tokenId,
         address indexed destinationAddress,
         uint256 amount,
         bytes32 sendHash,
-        address expressCaller);
+        address expressCaller
+    );
 
     event ExpressExecutedWithData(
         bytes32 indexed tokenId,
@@ -29,7 +30,7 @@ interface IExpressCallHandler {
         bytes32 indexed sendHash,
         bool executionSuccessful,
         address expressCaller
-    );    
+    );
     event ExpressExecutionWithDataFulfilled(
         bytes32 indexed tokenId,
         string sourceChain,

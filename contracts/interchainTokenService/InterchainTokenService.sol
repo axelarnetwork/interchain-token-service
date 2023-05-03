@@ -341,7 +341,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     function expressExecute(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external {
-        if (expressCallHandler.getExpressSendToken(tokenId, destinationAddress, amount, sendHash) != address(0)) revert AlreadyExpressExecuted();
+        if (expressCallHandler.getExpressSendToken(tokenId, destinationAddress, amount, sendHash) != address(0))
+            revert AlreadyExpressExecuted();
         expressCallHandler.setExpressSendToken(tokenId, destinationAddress, amount, sendHash, msg.sender);
         address tokenAddress = getTokenAddress(tokenId);
         _transferFrom(tokenAddress, msg.sender, destinationAddress, amount);
@@ -356,9 +357,27 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes calldata data,
         bytes32 sendHash
     ) external {
-        if (expressCallHandler.getExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash) != address(0))
-            revert AlreadyExpressExecuted();
-        expressCallHandler.setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, msg.sender);
+        if (
+            expressCallHandler.getExpressSendTokenWithData(
+                tokenId,
+                sourceChain,
+                sourceAddress,
+                destinationAddress,
+                amount,
+                data,
+                sendHash
+            ) != address(0)
+        ) revert AlreadyExpressExecuted();
+        expressCallHandler.setExpressSendTokenWithData(
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data,
+            sendHash,
+            msg.sender
+        );
         address tokenAddress = getTokenAddress(tokenId);
         _transferFrom(tokenAddress, msg.sender, destinationAddress, amount);
         // solhint-disable-next-line avoid-low-level-calls
@@ -372,7 +391,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
                 data
             )
         );
-        if(!executionSuccessful) revert ExecutionFailed();
+        if (!executionSuccessful) revert ExecutionFailed();
     }
 
     /* ONLY SELF FUNCTIONS */
@@ -428,7 +447,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     ) public onlySelf {
         address dest = destinationAddress.toAddress();
         {
-            address expressCaller = expressCallHandler.popExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, dest, amount, data, sendHash);
+            address expressCaller = expressCallHandler.popExpressSendTokenWithData(
+                tokenId,
+                sourceChain,
+                sourceAddress,
+                dest,
+                amount,
+                data,
+                sendHash
+            );
             if (expressCaller != address(0)) {
                 _transferOrMint(tokenId, expressCaller, amount);
                 return;
@@ -776,7 +803,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             _callContract(destinationChain, payload, msg.value);
         }
     }
-   
+
     /* EXECUTE AND EXECUTE WITH TOKEN */
 
     function _execute(

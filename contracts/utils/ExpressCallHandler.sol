@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 
 import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
 
-contract ExpressCallHandler is IExpressCallHandler{
+contract ExpressCallHandler is IExpressCallHandler {
     mapping(bytes32 => address) private expressGiveToken;
     mapping(bytes32 => address) private expressGiveTokenWithData;
     address public immutable interchainTokenServiceAddress;
@@ -14,7 +14,7 @@ contract ExpressCallHandler is IExpressCallHandler{
     }
 
     modifier onlyService() {
-        if(msg.sender != interchainTokenServiceAddress) revert NotService();
+        if (msg.sender != interchainTokenServiceAddress) revert NotService();
         _;
     }
 
@@ -36,9 +36,7 @@ contract ExpressCallHandler is IExpressCallHandler{
         bytes calldata data,
         bytes32 sendHash
     ) internal pure returns (bytes32 key) {
-        key = keccak256(
-            abi.encode(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)
-        );
+        key = keccak256(abi.encode(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash));
     }
 
     function setExpressSendToken(
@@ -47,7 +45,7 @@ contract ExpressCallHandler is IExpressCallHandler{
         uint256 amount,
         bytes32 sendHash,
         address expressCaller
-    ) external onlyService() {
+    ) external onlyService {
         expressGiveToken[_getExpressSendTokenKey(tokenId, destinationAddress, amount, sendHash)] = expressCaller;
     }
 
@@ -60,8 +58,10 @@ contract ExpressCallHandler is IExpressCallHandler{
         bytes calldata data,
         bytes32 sendHash,
         address expressCaller
-    ) external onlyService() {
-        expressGiveTokenWithData[_getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)] = expressCaller;
+    ) external onlyService {
+        expressGiveTokenWithData[
+            _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)
+        ] = expressCaller;
     }
 
     function getExpressSendToken(
@@ -82,8 +82,11 @@ contract ExpressCallHandler is IExpressCallHandler{
         bytes calldata data,
         bytes32 sendHash
     ) external view returns (address expressCaller) {
-        expressCaller = expressGiveTokenWithData[_getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)];
+        expressCaller = expressGiveTokenWithData[
+            _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)
+        ];
     }
+
     function popExpressSendToken(
         bytes32 tokenId,
         address destinationAddress,
@@ -92,7 +95,7 @@ contract ExpressCallHandler is IExpressCallHandler{
     ) external onlyService returns (address expressCaller) {
         bytes32 key = _getExpressSendTokenKey(tokenId, destinationAddress, amount, sendHash);
         expressCaller = expressGiveToken[key];
-        if(expressCaller != address(0)) {
+        if (expressCaller != address(0)) {
             expressGiveToken[key] = address(0);
         }
     }
@@ -108,7 +111,7 @@ contract ExpressCallHandler is IExpressCallHandler{
     ) external onlyService returns (address expressCaller) {
         bytes32 key = _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
         expressCaller = expressGiveTokenWithData[key];
-        if(expressCaller != address(0)) {
+        if (expressCaller != address(0)) {
             expressGiveTokenWithData[key] = address(0);
         }
     }
