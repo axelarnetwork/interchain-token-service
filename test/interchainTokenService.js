@@ -410,7 +410,8 @@ describe('TokenService', () => {
             ),
         ).to.be.reverted;
     });
-    it('Should be able to send some token with data to a non-executable', async () => {
+   
+     it('Should be able to send some token with data to a non-executable', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(1);
         const [, tokenId] = await getTokenData(0, salt, true);
