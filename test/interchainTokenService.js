@@ -268,7 +268,7 @@ describe('TokenService', () => {
             expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
         }
     });
-    
+
     it('Should be able to mint some token as the owner', async () => {
         const [wallet] = loadChain(0);
         const [tokenAddress] = await getTokenData(0, salt, true);
@@ -276,14 +276,14 @@ describe('TokenService', () => {
         await token.mint(wallet.address, amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(amount1);
     });
-    
+
     it('Should not be able to send some token to another chain without approval', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [, tokenId] = await getTokenData(0, salt, true);
 
         await expect(tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 })).to.be.reverted;
     });
-    
+
     it('Should be able to send some token to another chain', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
@@ -301,8 +301,8 @@ describe('TokenService', () => {
         expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
     });
- 
-       it('Should not be able to send some token to another chain with insufficient balance', async () => {
+
+    it('Should not be able to send some token to another chain with insufficient balance', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
         const token = new Contract(tokenAddress, Token.abi, wallet);
@@ -364,8 +364,8 @@ describe('TokenService', () => {
             ),
         ).to.be.reverted;
     });
-   
-     it('Should be able to send some token with data to another chain', async () => {
+
+    it('Should be able to send some token with data to another chain', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
@@ -391,7 +391,7 @@ describe('TokenService', () => {
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
         expect(await chains[1].executable.val()).to.equal(val);
     });
-    
+
     it('Should not be able to send some token with data to another chain with insufficient balance', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(0);
@@ -410,8 +410,8 @@ describe('TokenService', () => {
             ),
         ).to.be.reverted;
     });
-   
-     it('Should be able to send some token with data to a non-executable', async () => {
+
+    it('Should be able to send some token with data to a non-executable', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(1);
         const [, tokenId] = await getTokenData(0, salt, true);
