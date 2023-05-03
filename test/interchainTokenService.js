@@ -307,6 +307,7 @@ describe('TokenService', () => {
             expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
         }
     });
+
     it('Should be able to mint some token as the owner', async () => {
         const [wallet] = loadChain(0);
         const [tokenAddress] = await getTokenData(0, salt, true);
@@ -316,12 +317,14 @@ describe('TokenService', () => {
             .withArgs(AddressZero, wallet.address, amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(amount1);
     });
+
     it('Should not be able to send some token to another chain without approval', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [, tokenId] = await getTokenData(0, salt, true);
 
         await expect(tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 })).to.be.reverted;
     });
+
     it('Should be able to send some token to another chain', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
@@ -344,6 +347,7 @@ describe('TokenService', () => {
         expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
     });
+
     it('Should not be able to send some token to another chain with insufficient balance', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
@@ -463,7 +467,7 @@ describe('TokenService', () => {
         const [, tokenId] = await getTokenData(0, salt, true);
 
         await expect(
-            tokenService.callContractWithInterToken(
+            tokenService.callContractWithInterchainToken(
                 tokenId,
                 chains[1].name,
                 chains[1].executable.address,
@@ -473,6 +477,7 @@ describe('TokenService', () => {
             ),
         ).to.be.reverted;
     });
+
     it('Should be able to send some token with data to another chain', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(0);
@@ -485,7 +490,7 @@ describe('TokenService', () => {
         const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
 
         await expect(
-            tokenService.callContractWithInterToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
+            tokenService.callContractWithInterchainToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
                 value: 1e6,
             }),
         )
@@ -502,6 +507,7 @@ describe('TokenService', () => {
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
         expect(await chains[1].executable.val()).to.equal(val);
     });
+
     it('Should not be able to send some token with data to another chain with insufficient balance', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(0);
@@ -510,7 +516,7 @@ describe('TokenService', () => {
         await token.approve(tokenService.address, amount1);
 
         await expect(
-            tokenService.callContractWithInterToken(
+            tokenService.callContractWithInterchainToken(
                 tokenId,
                 chains[1].name,
                 chains[1].executable.address,
@@ -520,6 +526,7 @@ describe('TokenService', () => {
             ),
         ).to.be.reverted;
     });
+
     it('Should be able to send some token with data to a non-executable', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(1);
@@ -532,7 +539,7 @@ describe('TokenService', () => {
         const blockNumber = await wallet.provider.getBlockNumber();
         const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
 
-        await expect(tokenService.callContractWithInterToken(tokenId, chains[2].name, wallet.address, amount1, payload, { value: 1e6 }))
+        await expect(tokenService.callContractWithInterchainToken(tokenId, chains[2].name, wallet.address, amount1, payload, { value: 1e6 }))
             .to.emit(tokenService, 'SendingWithData')
             .withArgs(wallet.address, chains[2].name, wallet.address.toLowerCase(), amount1, payload, sendHash);
         await relay();
