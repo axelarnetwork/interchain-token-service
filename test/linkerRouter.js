@@ -36,7 +36,7 @@ async function setupLocal(toFund) {
     chain.rpc = `http://localhost:${network.port}`;
 }
 
-describe('LinkerRouter', () => {
+describe.only('LinkerRouter', () => {
     before(async () => {
         const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
         const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
@@ -44,6 +44,7 @@ describe('LinkerRouter', () => {
         const otherAddress = new Wallet(otherKey).address;
         const toFund = [deployerAddress, otherAddress];
         await setupLocal(toFund);
+        console.log(chain);
         const provider = getDefaultProvider(chain.rpc);
         wallet = new Wallet(deployerKey, provider);
         otherWallet = new Wallet(otherKey, provider);

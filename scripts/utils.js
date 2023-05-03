@@ -1,12 +1,12 @@
-const { Wallet, getDefaultProvider, Contract } = require("ethers");
+const { Wallet, getDefaultProvider, Contract } = require('ethers');
 
 const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 const ITokenService = require('../artifacts/contracts/interfaces/IInterchainTokenService.sol/IInterchainTokenService.json');
 const ITokenDeployer = require('../artifacts/contracts/interfaces/ITokenDeployer.sol/ITokenDeployer.json');
 const Test = require('../artifacts/contracts/test/TokenLinkerExecutableTest.sol/TokenLinkerExecutableTest.json');
 const { IAxelarExecutable } = require('@axelar-network/axelar-local-dev/dist/contracts/index.js');
-const { deployLinkerRouter, deployTokenDeployer, deployTokenService } = require("./deploy");
-const { createNetwork, networks, deployContract, relay, evmRelayer } = require("@axelar-network/axelar-local-dev");
+const { deployLinkerRouter, deployTokenDeployer, deployTokenService, deployExpressCallHandler } = require('./deploy');
+const { createNetwork, networks, deployContract, relay, evmRelayer } = require('@axelar-network/axelar-local-dev');
 
 async function setupLocal(toFund, n) {
     for (let i = 0; i < n; i++) {
@@ -36,12 +36,11 @@ async function prepareChain(chain, ownerKey, otherKey) {
     chain.ownerWallet = new Wallet(ownerKey, chain.provider);
     chain.otherWallet = new Wallet(otherKey, chain.provider);
 
-    
     await deployLinkerRouter(chain, chain.ownerWallet);
     await deployTokenDeployer(chain, chain.ownerWallet);
+    await deployExpressCallHandler(chain, chain.ownerWallet);
     await deployTokenService(chain, chain.ownerWallet);
     chain.executable = await deployContract(chain.ownerWallet, Test);
-
 
     chain.service = new Contract(chain.interchainTokenService, ITokenService.abi, chain.ownerWallet);
     chain.deployer = new Contract(chain.tokenDeployer, ITokenDeployer.abi, chain.ownerWallet);
@@ -49,8 +48,8 @@ async function prepareChain(chain, ownerKey, otherKey) {
 
 async function deployToken(chain, name, symbol, decimals, owner, salt, options = {}) {
     let tokenAddress, tokenId;
-    remoteDeployments = options.remoteDeployments || []
-    if(options.fromService) {
+    remoteDeployments = options.remoteDeployments || [];
+    if (options.fromService) {
         await chain.service.deployInterchainToken(
             name,
             symbol,
@@ -59,7 +58,7 @@ async function deployToken(chain, name, symbol, decimals, owner, salt, options =
             salt,
             remoteDeployments,
             remoteDeployments.map(() => 1e7),
-            {value: 1e7*remoteDeployments.length},
+            { value: 1e7 * remoteDeployments.length },
         );
         tokenAddress = await chain.service.getDeploymentAddress(chain.ownerWallet.address, salt);
         tokenId = await chain.service.getInterchainTokenId(chain.ownerWallet.address, salt);
@@ -67,14 +66,14 @@ async function deployToken(chain, name, symbol, decimals, owner, salt, options =
         await chain.deployer.deployToken(name, symbol, decimals, owner, salt);
         tokenAddress = await chain.deployer.getDeploymentAddress(chain.deployer.address, salt);
         tokenId = await chain.service.getOriginTokenId(tokenAddress);
-        if(options.register) {
-            if(options.remoteDeployments) {
+        if (options.register) {
+            if (options.remoteDeployments) {
                 await chain.service.registerOriginTokenAndDeployRemoteTokens(
                     tokenAddress,
                     remoteDeployments,
                     remoteDeployments.map(() => 1e7),
-                    {value: 1e7*remoteDeployments.length},
-                )
+                    { value: 1e7 * remoteDeployments.length },
+                );
             } else {
                 await chain.service.registerToken(tokenAddress);
             }
@@ -93,8 +92,8 @@ async function relayRevert(tx, withToken = false, n = 1) {
 
     for (let i = 0; i < n; i++) {
         const command = contractCalls[contractCalls.length - 1 - i];
-        if(command.transactionHash != transactionHash) return false;
-        if(command.execution) return false;
+        if (command.transactionHash != transactionHash) return false;
+        if (command.execution) return false;
     }
     return true;
 }
@@ -121,16 +120,16 @@ async function relayAndFulfill(remoteWallet) {
     const m2 = Object.values(evmRelayer.relayData.callContractWithToken).length;
 
     let commands = evmRelayer.relayData.callContract;
-    for(let i=n1; i<n2; i++) {
+    for (let i = n1; i < n2; i++) {
         const commandId = Object.keys(commands)[i];
         const command = commands[commandId];
         const payload = command.payload;
-        
+
         const executable = new Contract(command.destinationContractAddress, IAxelarExecutable.abi, remoteWallet);
         await executable.execute(commandId, command.from, command.sourceAddress, payload);
-    } 
+    }
     commands = evmRelayer.relayData.callContractWithToken;
-    for(let i=m1; i<m2; i++) {
+    for (let i = m1; i < m2; i++) {
         const commandId = Object.keys(commands)[i];
         const command = commands[commandId];
         const payload = command.payload;
@@ -155,4 +154,4 @@ module.exports = {
     relayRevert,
     getTokenData,
     relayAndFulfill,
-}
+};

@@ -44,25 +44,6 @@ interface IInterchainTokenService {
         bytes32 indexed sendHash,
         bool executionSuccessful
     );
-    event ExpressExecuted(
-        bytes32 indexed tokenId,
-        address indexed destinationAddress,
-        uint256 amount,
-        bytes32 sendHash,
-        address expressCaller
-    );
-    event ExpressExecutedWithData(
-        bytes32 indexed tokenId,
-        string sourceChain,
-        bytes sourceAddress,
-        address indexed destinationAddress,
-        uint256 amount,
-        bytes data,
-        bytes32 indexed sendHash,
-        bool executionSuccessful,
-        address expressCaller
-    );
-    event ExpressExecutionFulfilled(address indexed destinationAddress, uint256 amount, bytes32 indexed sendHash);
 
     event TokenRegistered(bytes32 indexed tokenId, address indexed tokenAddress, bool native, bool gateway, bool remoteGateway);
     event TokenDeployed(address indexed tokenAddress, string name, string symbol, uint8 decimals, address indexed owner);
@@ -128,7 +109,7 @@ interface IInterchainTokenService {
 
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable;
 
-    function callContractWithInterToken(
+    function callContractWithInterchainToken(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata to,

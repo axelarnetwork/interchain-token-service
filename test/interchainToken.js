@@ -2,7 +2,7 @@
 
 require('dotenv').config();
 
-const { deployTokenService, deployLinkerRouter, deployTokenDeployer } = require('../scripts/deploy.js');
+const { deployTokenService, deployLinkerRouter, deployTokenDeployer, deployExpressCallHandler } = require('../scripts/deploy.js');
 const { createNetwork, networks, relay, logger, stopAll, deployContract } = require('@axelar-network/axelar-local-dev');
 const {
     ethers: {
@@ -94,6 +94,7 @@ describe('Token', () => {
             const wallet = new Wallet(deployerKey, provider);
             await deployLinkerRouter(chain, wallet);
             await deployTokenDeployer(chain, wallet);
+            await deployExpressCallHandler(chain, wallet);
             await deployTokenService(chain, wallet);
             chain.executable = await deployContract(wallet, Test);
         }
@@ -234,7 +235,7 @@ describe('Token', () => {
         const [, tokenId] = await getTokenData(0, salt, true);
 
         await expect(
-            tokenService.callContractWithInterToken(
+            tokenService.callContractWithInterchainToken(
                 tokenId,
                 chains[1].name,
                 chains[1].executable.address,
@@ -257,7 +258,7 @@ describe('Token', () => {
         const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
 
         await expect(
-            tokenService.callContractWithInterToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
+            tokenService.callContractWithInterchainToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
                 value: 1e6,
             }),
         )
@@ -323,15 +324,25 @@ describe('Token', () => {
         const [wallet1, tokenService1] = loadChain(1);
 
         let blockNumber = await wallet0.provider.getBlockNumber();
-        let sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, await tokenService0.getTokenId(tokens[0].address), wallet0.address]));
+        let sendHash = keccak256(
+            defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'address'],
+                [blockNumber + 1, await tokenService0.getTokenId(tokens[0].address), wallet0.address],
+            ),
+        );
 
         await expect(tokens[0].interchainTransfer(chains[1].name, wallet1.address, amounts[0], '0x', { value: 1e6 }))
             .to.emit(tokenService0, 'Sending')
             .withArgs(chains[1].name, wallet1.address.toLowerCase(), amounts[0], sendHash);
-            
+
         blockNumber = await wallet1.provider.getBlockNumber();
-        sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, await tokenService1.getTokenId(tokens[1].address), wallet1.address]));
-    
+        sendHash = keccak256(
+            defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'address'],
+                [blockNumber + 1, await tokenService1.getTokenId(tokens[1].address), wallet1.address],
+            ),
+        );
+
         await expect(tokens[1].interchainTransfer(chains[0].name, wallet0.address, amounts[1], '0x', { value: 1e6 }))
             .to.emit(tokenService1, 'Sending')
             .withArgs(chains[0].name, wallet0.address.toLowerCase(), amounts[1], sendHash);
