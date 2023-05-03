@@ -489,7 +489,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         if (expressCaller != address(0)) {
             _setExpressSendToken(tokenId, dest, amount, sendHash, address(0));
             _transferOrMint(tokenId, expressCaller, amount);
-            emit ExpressExecutionFulfilled(dest, amount, sendHash);
+            //emit ExpressExecutionFulfilled(dest, amount, sendHash);
         } else {
             _transferOrMint(tokenId, dest, amount);
             emit Receiving(tokenId, dest, amount, sendHash);
@@ -511,7 +511,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             if (expressCaller != address(0)) {
                 _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, dest, amount, data, sendHash, address(0));
                 _transferOrMint(tokenId, expressCaller, amount);
-                emit ExpressExecutionFulfilled(dest, amount, sendHash);
+                //emit ExpressExecutionFulfilled(dest, amount, sendHash);
                 return;
             }
         }

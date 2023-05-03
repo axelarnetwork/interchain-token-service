@@ -16,8 +16,9 @@ const {
 const { expect } = require('chai');
 const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 const LinkerRouter = require('../artifacts/contracts/linkerRouter/LinkerRouter.sol/LinkerRouter.json');
-const { IAxelarExecutable } = require('@axelar-network/axelar-local-dev/dist/contracts/index.js');
-const { setupLocal, prepareChain, deployToken, getTokenData } = require('../scripts/utils.js');
+const TestToken = require('../artifacts/contracts/test/InterchainTokenTest.sol/InterchainTokenTest.json');
+const { setupLocal, prepareChain, deployToken, getTokenData, expectRelayRevert, relayRevert, relayAndFulfill } = require('../scripts/utils.js');
+const { deployCreate3Contract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 
 logger.log = (args) => {};
 
@@ -48,14 +49,14 @@ describe('TokenService', () => {
         await stopAll();
     });
 
-    describe.only('Deployments', () => {    
+    describe('Deployments and Registrations', () => {    
         let token;
         const name = 'Test Token';
         const symbol = 'TT';
         const decimals = 13;
         const key = `tokenServiceKey`;
-        let wallet, chain, remoteChain;
-        const salt = keccak256(defaultAbiCoder.encode(['string'], [key]));
+        let wallet, chain, remoteChain, tokenId;
+        let salt = keccak256(defaultAbiCoder.encode(['string'], [key]));
 
         before(async () => {
             chain = chains[0];
@@ -90,7 +91,7 @@ describe('TokenService', () => {
         });
 
         it('Should be able to register an origin token', async () => {
-            const [token, tokenId] = await deployToken(chain, name, symbol, decimals, wallet.address, salt);
+            [token, tokenId] = await deployToken(chain, name, symbol, decimals, wallet.address, salt);
             
             expect(await token.name()).to.equal(name);
             expect(await token.symbol()).to.equal(symbol);
@@ -105,625 +106,534 @@ describe('TokenService', () => {
         });
 
         it('Should not be able to register an origin token that has already been registered', async () => {
-            const [tokenAddress] = await getTokenData(chain, wallet.address, salt, false);
-            await expect(chain.service.registerOriginToken(tokenAddress)).to.be.reverted;
+            await expect(chain.service.registerOriginToken(token.address)).to.be.reverted;
         });
 
         it('Should not be able to register an origin token and deploy remote tokens if that token has already been registered', async () => {
-            const [tokenAddress] = await getTokenData(chain, wallet.address, salt, false);
-            await expect(chain.service.registerOriginTokenAndDeployRemoteTokens(tokenAddress, [], [])).to.be.reverted;
+            await expect(chain.service.registerOriginTokenAndDeployRemoteTokens(token.address, [], [])).to.be.reverted;
+        });
+
+        it('Should be able to deploy a remote token for the origin token', async () => {
+            const destinationChains = [chains[1].name, chains[2].name];
+            const gasValues = [1e7, 1e7];
+            await expect(chain.service.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 }))
+                .to.emit(chain.service, 'RemoteTokenRegisterInitialized')
+                .withArgs(tokenId, destinationChains[0], gasValues[0])
+                .and.to.emit(chain.service, 'RemoteTokenRegisterInitialized')
+                .withArgs(tokenId, destinationChains[1], gasValues[1]);
+            await relay();
+    
+            for (const i of [1, 2]) {
+                const remoteTokenAddress = await chains[i].service.getTokenAddress(tokenId);
+                expect(remoteTokenAddress).to.not.equal(AddressZero);
+                expect(await chains[i].service.getTokenId(remoteTokenAddress)).to.equal(tokenId);
+            }
         });
 
         it('Should not be able to register an origin token if that token is remote', async () => {
-            const [, tokenId] = await getTokenData(chain. wallet.address, salt, false);
-            const tokenAddress = remoteChain.service.getTokenAddress(tokenId);
+            const tokenAddress = await remoteChain.service.getTokenAddress(tokenId);
             await expect(remoteChain.service.registerOriginToken(tokenAddress, [], [])).to.be.reverted;
         });
 
         it('Should not be able to register an origin token and deploy remote tokens if that token is remote', async () => {
-            const [, tokenId] = await getTokenData(chain, wallet.address, salt, false);
-            const tokenAddress = remoteChain.service.getTokenAddress(tokenId);
+            const tokenAddress = await remoteChain.service.getTokenAddress(tokenId);
             await expect(remoteChain.service.registerOriginTokenAndDeployRemoteTokens(tokenAddress, [], [])).to.be.reverted;
+        });
+
+        it('Should not be able to deploy a remote token for the origin token again', async () => {
+            const destinationChains = [chains[1].name, chains[2].name];
+            const gasValues = [1e7, 1e7];
+            expect(await relayRevert(chain.service.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 }), false, 2)).to.be.true;
+        });
+
+        it('Should be able to deploy a remote token for the origin token deployed at the service', async () => {    
+            [, tokenId] = await getTokenData(chain, wallet.address, salt, true);
+            const destinationChains = [chains[1].name, chains[2].name];
+            const gasValues = [1e7, 1e7];
+            await expect(chain.service.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 }))
+                .to.emit(chain.service, 'RemoteTokenRegisterInitialized')
+                .withArgs(tokenId, destinationChains[0], gasValues[0])
+                .and.to.emit(chain.service, 'RemoteTokenRegisterInitialized')
+                .withArgs(tokenId, destinationChains[1], gasValues[1]);
+    
+            await relay();
+    
+            for (const i of [1, 2]) {
+                const remoteTokenAddress = await chains[i].service.getTokenAddress(tokenId);
+                expect(remoteTokenAddress).to.not.equal(AddressZero);
+                expect(await chains[i].service.getTokenId(remoteTokenAddress)).to.equal(tokenId);
+            }
+        });
+
+        it('Should not be able to deploy a remote token for the origin token again', async () => {
+            const destinationChains = [chains[1].name, chains[2].name];
+            const gasValues = [1e7, 1e7];
+            expect(await relayRevert(chain.service.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 }), false, 2)).to.be.true;
+        });
+
+
+        it('Should be able to register a token and deploy remote tokens in one go', async () => {
+            salt = keccak256('0x1234567890');
+            const [token, tokenId] = await deployToken(chain, name, symbol, decimals, wallet.address, salt);
+
+            const destinationChains = [chains[1].name, chains[2].name];
+            const gasValues = [1e7, 1e7];
+
+            await expect(chain.service.registerOriginTokenAndDeployRemoteTokens(token.address, destinationChains, gasValues, { value: 2e7 }))
+                .to.emit(chain.service, 'TokenRegistered')
+                .withArgs(tokenId, token.address, true, false, false)
+                .and.to.emit(chain.service, 'RemoteTokenRegisterInitialized')
+                .withArgs(tokenId, destinationChains[0], gasValues[0])
+                .and.to.emit(chain.service, 'RemoteTokenRegisterInitialized')
+                .withArgs(tokenId, destinationChains[1], gasValues[1]);
+
+            expect(await chain.service.getTokenId(token.address)).to.equal(tokenId);
+            expect(await chain.service.getTokenAddress(tokenId)).to.equal(token.address);
+
+            await relay();
+
+            for (const i of [1, 2]) {
+                const tokenService = chains[i].service;
+                const remoteTokenAddress = await tokenService.getTokenAddress(tokenId);
+                expect(remoteTokenAddress).to.not.equal(AddressZero);
+                expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
+            }
+        });
+
+        it('Should be able to deploy an interchain token and deploy remote tokens in one go', async () => {
+            const [tokenAddress, tokenId] = await getTokenData(chain, wallet.address, salt, true);
+
+            const destinationChains = [chains[1].name, chains[2].name];
+            const gasValues = [1e7, 1e7];
+
+            await expect(
+                chain.service.deployInterchainToken(name, symbol, decimals, wallet.address, salt, destinationChains, gasValues, {
+                    value: 2e7,
+                }),
+            )
+                .to.emit(chain.service, 'TokenDeployed')
+                .withArgs(tokenAddress, name, symbol, decimals, wallet.address)
+                .and.to.emit(chain.service, 'TokenRegistered')
+                .withArgs(tokenId, tokenAddress, true, false, false)
+                .and.to.emit(chain.service, 'RemoteTokenRegisterInitialized')
+                .withArgs(tokenId, destinationChains[0], gasValues[0])
+                .and.to.emit(chain.service, 'RemoteTokenRegisterInitialized')
+                .withArgs(tokenId, destinationChains[1], gasValues[1]);
+
+            expect(await chain.service.getTokenId(tokenAddress)).to.equal(tokenId);
+            expect(await chain.service.getTokenAddress(tokenId)).to.equal(tokenAddress);
+
+            await relay();
+
+            for (const i of [1, 2]) {
+                const tokenService = chains[i].service;
+                const remoteTokenAddress = await tokenService.getTokenAddress(tokenId);
+                expect(remoteTokenAddress).to.equal(tokenAddress);
+                expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
+            }
+        });
+
+        describe('Gateway Tokens', () => {
+            const gatewayTokenName = 'Gateway Token';
+            const gatewayTokenSymbol = 'GT';
+            const gatewayTokenDecimals = 18;
+            let tokenId, gatewayTokenAddress, remoteGatewayTokenAddress, chain;
+            before(async () => {
+                chain = chains[0];
+                let token;
+                [token, tokenId] = await deployToken(chain, gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, chain.ownerWallet.address, gatewayTokenSalt);
+                
+                await networks[0].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0, token.address);
+                expect(await networks[0].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(token.address);
+                const remoteGatewayToken = await networks[1].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0);
+                gatewayTokenAddress = token.address;
+                remoteGatewayTokenAddress = remoteGatewayToken.address;
+                expect(await networks[1].gateway.tokenAddresses(gatewayTokenSymbol)).to.not.equal(AddressZero);
+                expect(await networks[2].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(AddressZero);
+            });
+        
+            it('Should not be able to register gateway tokens as not the owner', async () => {
+                await expect(chain.service.connect(chain.otherWallet).registerOriginGatewayToken(gatewayTokenSymbol)).to.be.reverted;
+                await expect(chain.service.connect(chain.otherWallet).registerRemoteGatewayToken(gatewayTokenSymbol, keccak256('0x'), 'Anything')).to.be
+                    .reverted;
+            });
+        
+            it('Should not be able to register gateway tokens that are not gateway tokens', async () => {
+                const newSymbol = 'NS';
+        
+                await expect(chain.service.registerOriginGatewayToken(newSymbol)).to.be.reverted;
+                await expect(chain.service.registerRemoteGatewayToken(newSymbol, keccak256('0x'), 'Anything')).to.be.reverted;
+            });
+        
+            it('Should be able to register the origin token', async () => {
+                await chain.service.registerOriginGatewayToken(gatewayTokenSymbol);
+                expect(await chain.service.getTokenAddress(tokenId)).to.equal(gatewayTokenAddress);
+                expect(await chain.service.getTokenId(gatewayTokenAddress)).to.equal(tokenId);
+        
+                expect(await chain.service.isOriginToken(tokenId)).to.be.true;
+                expect(await chain.service.isGatewayToken(tokenId)).to.equal(true);
+                expect(await chain.service.isRemoteGatewayToken(tokenId)).to.false;
+                expect(await chain.service.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
+            });
+        
+            it('Should be able to register the remote token', async () => {
+                const tokenService = chains[1].service;
+                await tokenService.registerRemoteGatewayToken(gatewayTokenSymbol, tokenId, chains[0].name);
+                expect(await tokenService.getTokenAddress(tokenId)).to.equal(remoteGatewayTokenAddress);
+                expect(await tokenService.getTokenId(remoteGatewayTokenAddress)).to.equal(tokenId);
+        
+                expect(await tokenService.isOriginToken(tokenId)).to.equal(false);
+                expect(await tokenService.isGatewayToken(tokenId)).to.equal(true);
+                expect(await tokenService.isRemoteGatewayToken(tokenId)).to.equal(false);
+                expect(await tokenService.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
+            });
+        
+            it('Should not be able to deploy the gateway token to a the chain that has the token', async () => {
+                expect(await relayRevert(chain.service.deployRemoteTokens(tokenId, [chains[1].name], [1e7], { value: 1e7 }))).to.be.true;
+            });
+        
+            it('Should be able to deploy the gateway token to a third chain', async () => {
+                await chain.service.deployRemoteTokens(tokenId, [chains[2].name], [1e7], { value: 1e7 });
+        
+                await relay();
+        
+                const remoteTokenService = chains[2].service;
+                expect(await remoteTokenService.getTokenAddress(tokenId)).to.not.equal(AddressZero);
+        
+                expect(await remoteTokenService.isOriginToken(tokenId)).to.equal(false);
+                expect(await remoteTokenService.isGatewayToken(tokenId)).to.equal(false);
+                expect(await remoteTokenService.isRemoteGatewayToken(tokenId)).to.equal(true);
+            });
+        
+        })
+    })
+
+
+    const titles = [
+        'for a token deployed at the service',
+        'for a custon origin token with service remote deployments',
+        'for custom tokens everywhere',
+        'for a gateway token'
+    ];
+    const amount = 1234;
+    const prepares = [
+        async() => {
+            const chain = chains[0];
+            const [token, tokenId] = await deployToken(chain, 'Name', 'Symbol', 18, chain.ownerWallet.address, keccak256('0x123487'), {
+                fromService: true,
+                remoteDeployments: [chains[1].name, chains[2].name],
+            });
+            await token.mint(chain.ownerWallet.address, amount*2);
+            return tokenId;
+        },
+        async() => {
+            const chain = chains[0];
+            const [token, tokenId] = await deployToken(chain, 'Name', 'Symbol', 18, chain.ownerWallet.address, keccak256('0x123487'), {
+                fromService: false,
+                register: true,
+                remoteDeployments: [chains[1].name, chains[2].name],
+            });
+            await token.mint(chain.ownerWallet.address, amount*2);
+            
+            return tokenId;
+        },
+        async() => {
+            let tokenId;
+            for(let i=0; i<3; i++) {
+                const chain = chains[i];
+                const token = await deployCreate3Contract(
+                    chain.create3Deployer, 
+                    chain.ownerWallet, 
+                    TestToken, 
+                    'customToken', 
+                        [
+                        chain.service.address,
+                        'Name',
+                        'Symbol',
+                        18,
+                        chain.ownerWallet.address,
+                        i==0 ? amount*2 : 0
+                    ],
+                );
+                
+                if(i==0) tokenId = await chain.service.getTokenId(token.address);
+            }
+            return tokenId;
+        },
+        async() => {
+            const gatewayTokenName = 'Gateway Token Name';
+            const gatewayTokenSymbol = 'GTN';
+            const gatewayTokenDecimals = 18;
+            const chain = chains[0];
+            const [token] = await deployToken(chain, gatewayTokenName, gatewayTokenSymbol, 18, chain.ownerWallet.address, keccak256('0x12348779'), {
+                fromService: false,
+                register: false,
+            });
+
+            await networks[0].deployToken(gatewayTokenName, gatewayTokenSymbol, 18, 0, token.address);
+            expect(await networks[0].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(token.address);
+            const remoteGatewayToken = await networks[1].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0);
+            remoteGatewayTokenAddress = remoteGatewayToken.address;
+            expect(await networks[1].gateway.tokenAddresses(gatewayTokenSymbol)).to.not.equal(AddressZero);
+            expect(await networks[2].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(AddressZero);
+
+            await chain.service.registerOriginGatewayToken(gatewayTokenSymbol);
+            const tokenId = await chain.service.getTokenId(token.address);
+            await chains[1].service.registerRemoteGatewayToken(gatewayTokenSymbol, tokenId, chain.name);
+
+            await chain.service.deployRemoteTokens(tokenId, [chains[2].name], [1e7], {value: 1e7});
+            await token.mint(chain.ownerWallet.address, amount*2);
+
+            for (let i = 0; i < 3; i++) {
+                const chain = chains[i];
+                const linkerRouter = new Contract(await chain.service.linkerRouter(), LinkerRouter.abi, chain.ownerWallet);
+    
+                const names = [];
+    
+                for (let j = 0; j < 2; j++) {
+                    if (i === j) continue;
+                    names.push(chains[j].name);
+                }
+    
+                await linkerRouter.addGatewaySupportedChains(names);
+    
+                for (let j = 0; j < 3; j++) {
+                    if (i === j) continue;
+                    expect(await linkerRouter.supportedByGateway(chains[j].name)).to.equal(j < 2);
+                }
+            }
+
+            return tokenId;
+        },
+    ]
+
+    for(let i=0;i<titles.length;i++) {
+        describe(`Send Token ${titles[i]}`, () => {
+            let tokenId, origin, dest, originToken, destToken;
+            before(async() => {
+                tokenId = await prepares[i]();
+            })
+
+            for(let incr = 1; incr <= 2; incr++) {
+                for(let j=0;j < 3 * incr ;j += incr) {
+                    describe(`Sending token from ${j % 3} to ${(j+incr) % 3}`, () => {
+                        before(async() => {
+                            origin = chains[j % 3];
+                            dest = chains[(j+incr) % 3];
+                            const originTokenAddress = await origin.service.getTokenAddress(tokenId);
+                            originToken = new Contract(originTokenAddress, Token.abi, origin.ownerWallet);
+                            const destTokenAddress = await dest.service.getTokenAddress(tokenId);
+                            destToken = new Contract(destTokenAddress, Token.abi, dest.ownerWallet);
+                            expect(await originToken.balanceOf(origin.ownerWallet.address)).to.equal(amount*2);
+                            expect(await destToken.balanceOf(origin.ownerWallet.address)).to.equal(0);
+                        });
+
+                        it('Should not be able to send token without approval', async() => {
+                            await expect(origin.service.sendToken(tokenId, dest.name, dest.ownerWallet.address, amount, { value: 1e6 })).to.be.reverted;
+                        });
+
+                        it('Should be able to send some token', async () => {
+                            await originToken.approve(origin.service.address, amount);
+
+                            const blockNumber = await origin.provider.getBlockNumber();
+                            const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, origin.ownerWallet.address]));
+
+                            await expect(origin.service.sendToken(tokenId, dest.name, dest.ownerWallet.address, amount, { value: 1e6 }))
+                                .to.emit(origin.service, 'Sending')
+                                .withArgs(dest.name, dest.ownerWallet.address.toLowerCase(), amount, sendHash);
+
+
+                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(amount);
+
+                            await relay();
+
+                            await relayAndFulfill(dest.ownerWallet);
+
+                            expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(amount);
+                        });
+
+                        it('Should be able to express send some token over', async() => {
+                            await originToken.approve(origin.service.address, amount);
+
+                            const blockNumber = await origin.provider.getBlockNumber();
+                            const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, origin.ownerWallet.address]));
+
+                            await expect(origin.service.sendToken(tokenId, dest.name, dest.otherWallet.address, amount, { value: 1e6 }))
+                                .to.emit(origin.service, 'Sending')
+                                .withArgs(dest.name, dest.otherWallet.address.toLowerCase(), amount, sendHash);
+
+
+                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(0);
+
+                            await destToken.approve(dest.service.address, amount);
+
+                            await dest.service.expressExecute(tokenId, dest.otherWallet.address, amount, sendHash);
+
+                            expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(0);
+                            expect(Number(await destToken.balanceOf(dest.otherWallet.address))).to.equal(amount);
+
+                            await relay();
+
+                            await relayAndFulfill(dest.ownerWallet);
+
+                            expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(amount);
+                            expect(Number(await destToken.balanceOf(dest.otherWallet.address))).to.equal(amount);
+
+                            await destToken.connect(dest.otherWallet).transfer(dest.ownerWallet.address, amount);
+                        });
+
+                        it('Should not be able to send some token to another chain with insufficient balance', async () => {
+                            await originToken.approve(origin.service.address, amount);
+
+                            await expect(origin.service.sendToken(tokenId, dest.name, dest.ownerWallet.address, amount, { value: 1e6 })).to.be.reverted;
+                            
+                            await originToken.approve(origin.service.address, 0);
+                        });
+                    });
+                }
+            }
+
+            for(let incr = 1; incr <= 2; incr++) {
+                for(let j=0;j < 3 * incr ;j += incr) {
+                    describe(`Sending token with data from ${j % 3} to ${(j+incr) % 3}`, () => {
+                        const val = `from ${j % 3} to ${(j+incr) % 3}`;
+                        let payload;
+                        before(async() => {
+                            origin = chains[j % 3];
+                            dest = chains[(j+incr) % 3];
+                            const originTokenAddress = await origin.service.getTokenAddress(tokenId);
+                            originToken = new Contract(originTokenAddress, Token.abi, origin.ownerWallet);
+                            const destTokenAddress = await dest.service.getTokenAddress(tokenId);
+                            destToken = new Contract(destTokenAddress, Token.abi, dest.ownerWallet);
+                            expect(await originToken.balanceOf(origin.ownerWallet.address)).to.equal(amount*2);
+                            expect(await destToken.balanceOf(origin.ownerWallet.address)).to.equal(0);
+                            payload = defaultAbiCoder.encode(['address', 'string'], [dest.ownerWallet.address, val]);
+                        });
+
+                        it('Should not be able to send token without approval', async() => {
+                            await expect(origin.service.callContractWithInterToken(tokenId, dest.name, dest.executable.address, amount, payload, { value: 1e6 })).to.be.reverted;
+                        });
+
+                        it('Should be able to send some token', async () => {
+                            await originToken.approve(origin.service.address, amount);
+
+                            const blockNumber = await origin.provider.getBlockNumber();
+                            const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, origin.ownerWallet.address]));
+
+                            await expect(origin.service.callContractWithInterToken(tokenId, dest.name, dest.executable.address, amount, payload, { value: 1e6 }))
+                                .to.emit(origin.service, 'SendingWithData')
+                                .withArgs(origin.ownerWallet.address, dest.name, dest.executable.address.toLowerCase(), amount, payload, sendHash);
+
+
+                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(amount);
+
+                            await relay();
+
+                            await relayAndFulfill(dest.ownerWallet);
+
+                            expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(amount);
+                        });
+
+                        it('Should be able to express send some token over', async() => {
+                            payload = defaultAbiCoder.encode(['address', 'string'], [dest.otherWallet.address, val]);
+                            await originToken.approve(origin.service.address, amount);
+
+                            const blockNumber = await origin.provider.getBlockNumber();
+                            const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, origin.ownerWallet.address]));
+
+                            await expect(origin.service.callContractWithInterToken(tokenId, dest.name, dest.executable.address, amount, payload, { value: 1e6 }))
+                                .to.emit(origin.service, 'SendingWithData')
+                                .withArgs(origin.ownerWallet.address, dest.name, dest.executable.address.toLowerCase(), amount, payload, sendHash);
+
+
+                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(0);
+
+                            await destToken.approve(dest.service.address, amount);
+
+                            await dest.service.expressExecuteWithToken(tokenId, origin.name, origin.ownerWallet.address, dest.executable.address, amount, payload, sendHash);
+
+                            expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(0);
+                            expect(Number(await destToken.balanceOf(dest.otherWallet.address))).to.equal(amount);
+
+                            await relay();
+
+                            await relayAndFulfill(dest.ownerWallet);
+
+                            expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(amount);
+                            expect(Number(await destToken.balanceOf(dest.otherWallet.address))).to.equal(amount);
+
+                            await destToken.connect(dest.otherWallet).transfer(dest.ownerWallet.address, amount);
+                        });
+
+                        it('Should not be able to send some token to another chain with insufficient balance', async () => {
+                            await originToken.approve(origin.service.address, amount);
+
+                            await expect(origin.service.callContractWithInterToken(tokenId, dest.name, dest.executable.address, amount, payload, { value: 1e6 })).to.be.reverted;
+                            
+                            await originToken.approve(origin.service.address, 0);
+                        });
+                    });
+                }
+            }
+
+        })
+    }
+
+    describe('Mint Limits', () => {
+        const salt = keccak256('0x96858473');
+        const mintLimit = 125;
+        let tokenId, originToken, destToken, origin, dest;
+        before(async () => {
+            origin = chains[0];
+            dest = chains[1];
+            [originToken, tokenId] = await deployToken(origin, 'Name', 'Symbol', 18, origin.ownerWallet.address, salt, {
+                fromService: true,
+                remoteDeployments: [dest.name],
+            });
+            await originToken.mint(origin.ownerWallet.address, mintLimit * 3);
+
+            const destTokenAddress = await dest.service.getTokenAddress(tokenId);
+            destToken = new Contract(destTokenAddress, Token.abi, dest.ownerWallet);
+        });
+
+        it('Should be able to set a mint limit for a new token', async () => {
+            expect(await origin.service.getTokenMintLimit(tokenId)).to.equal(0);
+    
+            await origin.service.setTokenMintLimit(tokenId, mintLimit);
+    
+            expect(await origin.service.getTokenMintLimit(tokenId)).to.equal(mintLimit);
+    
+            expect(await dest.service.getTokenMintLimit(tokenId)).to.equal(0);
+    
+            await dest.service.setTokenMintLimit(tokenId, mintLimit*2);
+    
+            expect(await dest.service.getTokenMintLimit(tokenId)).to.equal(mintLimit*2);
+        });
+    
+        it('Should be able to sent up to the mint limit but no more', async () => {
+            await originToken.approve(origin.service.address, mintLimit * 3);
+    
+            await origin.service.sendToken(tokenId, dest.name, dest.ownerWallet.address, mintLimit*2, { value: 1e6 });
+            
+            await relay();
+    
+            expect(await destToken.balanceOf(dest.ownerWallet.address)).to.equal(mintLimit*2);
+    
+            expect(await relayRevert(origin.service.sendToken(tokenId, dest.name, dest.ownerWallet.address, mintLimit, { value: 1e6 }))).to.be.true;
+
+            await destToken.approve(origin.service.address, mintLimit * 2);
+    
+            await dest.service.sendToken(tokenId, origin.name, origin.ownerWallet.address, mintLimit, { value: 1e6 });
+    
+            await relay();
+    
+            expect(await originToken.balanceOf(origin.ownerWallet.address)).to.equal(mintLimit);
+    
+            expect(await relayRevert(dest.service.sendToken(tokenId, origin.name, origin.ownerWallet.address, mintLimit, { value: 1e6 }))).to.be.true;
+
+
         });
     })
 
 
-  
-    it('Should be able to deploy a remote token for the origin token', async () => {
-        const [, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, salt, false);
-        const destinationChains = [chains[1].name, chains[2].name];
-        const gasValues = [1e7, 1e7];
-        await expect(tokenService.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 }))
-            .to.emit(tokenService, 'RemoteTokenRegisterInitialized')
-            .withArgs(tokenId, destinationChains[0], gasValues[0])
-            .and.to.emit(tokenService, 'RemoteTokenRegisterInitialized')
-            .withArgs(tokenId, destinationChains[1], gasValues[1]);
-        await relay();
-
-        for (const i of [1, 2]) {
-            const [, tokenService] = loadChain(i);
-            const remoteTokenAddress = await tokenService.getTokenAddress(tokenId);
-            expect(remoteTokenAddress).to.not.equal(AddressZero);
-            expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
-        }
-    });
-    it('Should not be able to deploy a remote token for the origin token again', async () => {
-        const [, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, salt, false);
-        const destinationChains = [chains[1].name, chains[2].name];
-        const gasValues = [1e7, 1e7];
-        await expectRelayRevert(tokenService.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 }), false, 2);
-    });
-    it('Should be able to deploy a remote token for the origin token deployed at the service', async () => {
-        const [, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, salt, true);
-        const destinationChains = [chains[1].name, chains[2].name];
-        const gasValues = [1e7, 1e7];
-        await expect(tokenService.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 }))
-            .to.emit(tokenService, 'RemoteTokenRegisterInitialized')
-            .withArgs(tokenId, destinationChains[0], gasValues[0])
-            .and.to.emit(tokenService, 'RemoteTokenRegisterInitialized')
-            .withArgs(tokenId, destinationChains[1], gasValues[1]);
-
-        await relay();
-
-        for (const i of [1, 2]) {
-            const [, tokenService] = loadChain(i);
-            const remoteTokenAddress = await tokenService.getTokenAddress(tokenId);
-            expect(remoteTokenAddress).to.not.equal(AddressZero);
-            expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
-        }
-    });
-    it('Should not be able to deploy a remote token for the origin token deployed at the service again', async () => {
-        const [, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, salt, true);
-        const destinationChains = [chains[1].name, chains[2].name];
-        const gasValues = [1e7, 1e7];
-        await expectRelayRevert(tokenService.deployRemoteTokens(tokenId, destinationChains, gasValues, { value: 2e7 }), false, 2);
-    });
-    it('Should be able to register a token and deploy remote tokens in one go', async () => {
-        const newSalt = keccak256('0x1234567890');
-        const [wallet, tokenService, tokenDeployer] = loadChain(0);
-        const [tokenAddress, tokenId] = await getTokenData(0, newSalt, false);
-
-        await tokenDeployer.deployToken(name, symbol, decimals, wallet.address, newSalt);
-
-        const destinationChains = [chains[1].name, chains[2].name];
-        const gasValues = [1e7, 1e7];
-
-        await expect(tokenService.registerOriginTokenAndDeployRemoteTokens(tokenAddress, destinationChains, gasValues, { value: 2e7 }))
-            .to.emit(tokenService, 'TokenRegistered')
-            .withArgs(tokenId, tokenAddress, true, false, false)
-            .and.to.emit(tokenService, 'RemoteTokenRegisterInitialized')
-            .withArgs(tokenId, destinationChains[0], gasValues[0])
-            .and.to.emit(tokenService, 'RemoteTokenRegisterInitialized')
-            .withArgs(tokenId, destinationChains[1], gasValues[1]);
-
-        expect(await tokenService.getTokenId(tokenAddress)).to.equal(tokenId);
-        expect(await tokenService.getTokenAddress(tokenId)).to.equal(tokenAddress);
-
-        await relay();
-
-        for (const i of [1, 2]) {
-            const [, tokenService] = loadChain(i);
-            const remoteTokenAddress = await tokenService.getTokenAddress(tokenId);
-            expect(remoteTokenAddress).to.not.equal(AddressZero);
-            expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
-        }
-    });
-
-    it('Should be able to deploy an interchain token and deploy remote tokens in one go', async () => {
-        const newSalt = keccak256('0x1234567890');
-        const [wallet, tokenService] = loadChain(0);
-        const [tokenAddress, tokenId] = await getTokenData(0, newSalt, true);
-
-        const destinationChains = [chains[1].name, chains[2].name];
-        const gasValues = [1e7, 1e7];
-
-        await expect(
-            tokenService.deployInterchainToken(name, symbol, decimals, wallet.address, newSalt, destinationChains, gasValues, {
-                value: 2e7,
-            }),
-        )
-            .to.emit(tokenService, 'TokenDeployed')
-            .withArgs(tokenAddress, name, symbol, decimals, wallet.address)
-            .and.to.emit(tokenService, 'TokenRegistered')
-            .withArgs(tokenId, tokenAddress, true, false, false)
-            .and.to.emit(tokenService, 'RemoteTokenRegisterInitialized')
-            .withArgs(tokenId, destinationChains[0], gasValues[0])
-            .and.to.emit(tokenService, 'RemoteTokenRegisterInitialized')
-            .withArgs(tokenId, destinationChains[1], gasValues[1]);
-
-        expect(await tokenService.getTokenId(tokenAddress)).to.equal(tokenId);
-        expect(await tokenService.getTokenAddress(tokenId)).to.equal(tokenAddress);
-
-        await relay();
-
-        for (const i of [1, 2]) {
-            const [, tokenService] = loadChain(i);
-            const remoteTokenAddress = await tokenService.getTokenAddress(tokenId);
-            expect(remoteTokenAddress).to.equal(tokenAddress);
-            expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
-        }
-    });
-    it('Should be able to mint some token as the owner', async () => {
-        const [wallet] = loadChain(0);
-        const [tokenAddress] = await getTokenData(0, salt, true);
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-        expect(await token.mint(wallet.address, amount1))
-            .to.emit(token, 'Transfer')
-            .withArgs(AddressZero, wallet.address, amount1);
-        expect(Number(await token.balanceOf(wallet.address))).to.equal(amount1);
-    });
-    it('Should not be able to send some token to another chain without approval', async () => {
-        const [wallet, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, salt, true);
-
-        await expect(tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 })).to.be.reverted;
-    });
-    it('Should be able to send some token to another chain', async () => {
-        const [wallet, tokenService] = loadChain(0);
-        const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-        await token.approve(tokenService.address, amount1);
-
-        const blockNumber = await wallet.provider.getBlockNumber();
-        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
-
-        await expect(tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 }))
-            .to.emit(tokenService, 'Sending')
-            .withArgs(chains[1].name, wallet.address.toLowerCase(), amount1, sendHash);
-
-        await relay();
-
-        const [remoteWallet, remoteTokenService] = loadChain(1);
-        const remoteTokenAddress = await remoteTokenService.getTokenAddress(tokenId);
-        const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
-
-        expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
-        expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
-    });
-    it('Should not be able to send some token to another chain with insufficient balance', async () => {
-        const [wallet, tokenService] = loadChain(0);
-        const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-        await token.approve(tokenService.address, amount1);
-
-        await expect(tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 })).to.be.reverted;
-
-        await token.approve(tokenService.address, 0);
-    });
-    it('Should be able to send some token to a third chain', async () => {
-        const [wallet, tokenService] = loadChain(1);
-        const [, tokenId] = await getTokenData(0, salt, true);
-        const tokenAddress = await tokenService.getTokenAddress(tokenId);
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-        await token.approve(tokenService.address, amount1);
-
-        const blockNumber = await wallet.provider.getBlockNumber();
-        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
-
-        await expect(tokenService.sendToken(tokenId, chains[2].name, wallet.address, amount1, { value: 1e6 }))
-            .to.emit(tokenService, 'Sending')
-            .withArgs(chains[2].name, wallet.address.toLowerCase(), amount1, sendHash);
-
-        await relay();
-
-        const [remoteWallet, remoteTokenService] = loadChain(2);
-        const remoteTokenAddress = await remoteTokenService.getTokenAddress(tokenId);
-        const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
-
-        expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
-        expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
-    });
-
-    it('Should be able to send some token back to the original chain', async () => {
-        const [wallet, tokenService] = loadChain(2);
-        const [, tokenId] = await getTokenData(0, salt, true);
-        const tokenAddress = await tokenService.getTokenAddress(tokenId);
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-        await token.approve(tokenService.address, amount1);
-
-        const blockNumber = await wallet.provider.getBlockNumber();
-        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
-
-        await expect(tokenService.sendToken(tokenId, chains[0].name, wallet.address, amount1, { value: 1e6 }))
-            .to.emit(tokenService, 'Sending')
-            .withArgs(chains[0].name, wallet.address.toLowerCase(), amount1, sendHash);
-
-        await relay();
-
-        const [remoteWallet, remoteTokenService] = loadChain(0);
-        const remoteTokenAddress = await remoteTokenService.getTokenAddress(tokenId);
-        const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
-
-        expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
-        expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
-    });
-
-    for (let i = 0; i < 3; i++) {
-        const j = (i + 1) % 3;
-        it('Should be able to express send some token to another chain', async () => {
-            const otherKey = keccak256('0x05968796');
-            const [wallet, tokenService] = loadChain(i);
-            const [, tokenId] = await getTokenData(0, salt, true);
-            const tokenAddress = await tokenService.getTokenAddress(tokenId);
-            const amount = amount1 / 2;
-            const token = new Contract(tokenAddress, Token.abi, wallet);
-            await token.approve(tokenService.address, amount1);
-
-            let blockNumber = await wallet.provider.getBlockNumber();
-            let sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
-
-            await expect(tokenService.sendToken(tokenId, chains[j].name, wallet.address, amount, { value: 1e6 }))
-                .to.emit(tokenService, 'Sending')
-                .withArgs(chains[j].name, wallet.address.toLowerCase(), amount, sendHash);
-
-            await relay();
-
-            const [remoteWallet, remoteTokenService] = loadChain(j);
-            const remoteTokenAddress = await remoteTokenService.getTokenAddress(tokenId);
-            const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
-            const otherWallet = new Wallet(otherKey, remoteWallet.provider);
-
-            expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount);
-            expect(Number(await token.balanceOf(wallet.address))).to.equal(amount1 - amount);
-
-            blockNumber = await wallet.provider.getBlockNumber();
-            sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
-
-            await expect(tokenService.sendToken(tokenId, chains[j].name, otherWallet.address, amount, { value: 1e6 }))
-                .to.emit(tokenService, 'Sending')
-                .withArgs(chains[j].name, otherWallet.address.toLowerCase(), amount, sendHash);
-
-            await remoteToken.approve(remoteTokenService.address, amount);
-
-            await remoteTokenService.expressExecute(tokenId, otherWallet.address, amount, sendHash);
-
-            expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(0);
-            expect(Number(await remoteToken.balanceOf(otherWallet.address))).to.equal(amount);
-            expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
-
-            await relay();
-
-            expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount);
-            expect(Number(await remoteToken.balanceOf(otherWallet.address))).to.equal(amount);
-            expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
-
-            await remoteWallet.sendTransaction({ to: otherWallet.address, value: BigInt(1e17) });
-
-            await remoteToken.connect(otherWallet).transfer(wallet.address, amount);
-        });
-    }
-
-    it('Should not be able to send some token with data to another chain without approval', async () => {
-        const val = 'Hello!';
-        const [wallet, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, salt, true);
-
-        await expect(
-            tokenService.callContractWithInterToken(
-                tokenId,
-                chains[1].name,
-                chains[1].executable.address,
-                amount1,
-                defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]),
-                { value: 1e6 },
-            ),
-        ).to.be.reverted;
-    });
-    it('Should be able to send some token with data to another chain', async () => {
-        const val = 'Hello!';
-        const [wallet, tokenService] = loadChain(0);
-        const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-        await token.approve(tokenService.address, amount1);
-        const payload = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
-
-        const blockNumber = await wallet.provider.getBlockNumber();
-        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
-
-        await expect(
-            tokenService.callContractWithInterToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
-                value: 1e6,
-            }),
-        )
-            .to.emit(tokenService, 'SendingWithData')
-            .withArgs(wallet.address, chains[1].name, chains[1].executable.address.toLowerCase(), amount1, payload, sendHash);
-
-        await relay();
-
-        const [remoteWallet, remoteTokenService] = loadChain(1);
-        const remoteTokenAddress = await remoteTokenService.getTokenAddress(tokenId);
-        const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
-
-        expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
-        expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
-        expect(await chains[1].executable.val()).to.equal(val);
-    });
-    it('Should not be able to send some token with data to another chain with insufficient balance', async () => {
-        const val = 'Hello!';
-        const [wallet, tokenService] = loadChain(0);
-        const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-        await token.approve(tokenService.address, amount1);
-
-        await expect(
-            tokenService.callContractWithInterToken(
-                tokenId,
-                chains[1].name,
-                chains[1].executable.address,
-                amount1,
-                defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]),
-                { value: 1e6 },
-            ),
-        ).to.be.reverted;
-    });
-    it('Should be able to send some token with data to a non-executable', async () => {
-        const val = 'Hello!';
-        const [wallet, tokenService] = loadChain(1);
-        const [, tokenId] = await getTokenData(0, salt, true);
-        const tokenAddress = await tokenService.getTokenAddress(tokenId);
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-        await token.approve(tokenService.address, amount1);
-        const payload = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
-
-        const blockNumber = await wallet.provider.getBlockNumber();
-        const sendHash = keccak256(defaultAbiCoder.encode(['uint256', 'bytes32', 'address'], [blockNumber + 1, tokenId, wallet.address]));
-
-        await expect(tokenService.callContractWithInterToken(tokenId, chains[2].name, wallet.address, amount1, payload, { value: 1e6 }))
-            .to.emit(tokenService, 'SendingWithData')
-            .withArgs(wallet.address, chains[2].name, wallet.address.toLowerCase(), amount1, payload, sendHash);
-        await relay();
-
-        const [remoteWallet, remoteTokenService] = loadChain(2);
-        const remoteTokenAddress = await remoteTokenService.getTokenAddress(tokenId);
-        const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
-
-        expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
-        expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
-    });
-
-    it('Should deploy a gateway token to two chains', async () => {
-        const [wallet, , tokenDeployer] = loadChain(0);
-        await tokenDeployer.deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, wallet.address, gatewayTokenSalt);
-        [gatewayTokenAddress] = await getTokenData(0, gatewayTokenSalt, false);
-        await networks[0].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0, gatewayTokenAddress);
-        expect(await networks[0].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(gatewayTokenAddress);
-        const remoteGatewayToken = await networks[1].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0);
-        remoteGatewayTokenAddress = remoteGatewayToken.address;
-        expect(await networks[1].gateway.tokenAddresses(gatewayTokenSymbol)).to.not.equal(AddressZero);
-        expect(await networks[2].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(AddressZero);
-    });
-
-    it('Should not be able to register gateway tokens as not the owner', async () => {
-        const [wallet, tokenService] = loadChain(0);
-        const notOwner = new Wallet(notOwnerKey, wallet.provider);
-        await expect(tokenService.connect(notOwner).registerOriginGatewayToken(gatewayTokenSymbol)).to.be.reverted;
-        await expect(tokenService.connect(notOwner).registerRemoteGatewayToken(gatewayTokenSymbol, keccak256('0x'), 'Anything')).to.be
-            .reverted;
-    });
-
-    it('Should not be able to register gateway tokens that are not gateway tokens', async () => {
-        const [, tokenService] = loadChain(0);
-        const newSymbol = 'NS';
-
-        await expect(tokenService.registerOriginGatewayToken(newSymbol)).to.be.reverted;
-        await expect(tokenService.registerRemoteGatewayToken(newSymbol, keccak256('0x'), 'Anything')).to.be.reverted;
-    });
-
-    it('Should be able to register the origin token', async () => {
-        const [, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
-
-        await tokenService.registerOriginGatewayToken(gatewayTokenSymbol);
-        expect(await tokenService.getTokenAddress(tokenId)).to.equal(gatewayTokenAddress);
-        expect(await tokenService.getTokenId(gatewayTokenAddress)).to.equal(tokenId);
-
-        expect(await tokenService.isOriginToken(tokenId)).to.be.true;
-        expect(await tokenService.isGatewayToken(tokenId)).to.equal(true);
-        expect(await tokenService.isRemoteGatewayToken(tokenId)).to.false;
-        expect(await tokenService.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
-    });
-
-    it('Should be able to register the remote token', async () => {
-        const [, tokenService] = loadChain(1);
-        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
-
-        await tokenService.registerRemoteGatewayToken(gatewayTokenSymbol, tokenId, chains[0].name);
-        expect(await tokenService.getTokenAddress(tokenId)).to.equal(remoteGatewayTokenAddress);
-        expect(await tokenService.getTokenId(remoteGatewayTokenAddress)).to.equal(tokenId);
-
-        expect(await tokenService.isOriginToken(tokenId)).to.equal(false);
-        expect(await tokenService.isGatewayToken(tokenId)).to.equal(true);
-        expect(await tokenService.isRemoteGatewayToken(tokenId)).to.equal(false);
-        expect(await tokenService.getGatewayTokenSymbol(tokenId)).to.equal(gatewayTokenSymbol);
-    });
-
-    it('Should not be able to deploy the gateway token to a the chain that has the token', async () => {
-        const [, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
-
-        await expectRelayRevert(tokenService.deployRemoteTokens(tokenId, [chains[1].name], [1e7], { value: 1e7 }));
-    });
-
-    it('Should be able to deploy the gateway token to a third chain', async () => {
-        const [, tokenService] = loadChain(0);
-        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
-
-        await tokenService.deployRemoteTokens(tokenId, [chains[2].name], [1e7], { value: 1e7 });
-
-        await relay();
-
-        const [, remoteTokenService] = loadChain(2);
-        expect(await remoteTokenService.getTokenAddress(tokenId)).to.not.equal(AddressZero);
-
-        expect(await remoteTokenService.isOriginToken(tokenId)).to.equal(false);
-        expect(await remoteTokenService.isGatewayToken(tokenId)).to.equal(false);
-        expect(await remoteTokenService.isRemoteGatewayToken(tokenId)).to.equal(true);
-    });
-
-    it('Should be able to add gateway supported chains to the linker routers', async () => {
-        for (let i = 0; i < 3; i++) {
-            const [wallet, tokenService] = loadChain(i);
-            const linkerRouter = new Contract(await tokenService.linkerRouter(), LinkerRouter.abi, wallet);
-
-            const names = [];
-
-            for (let j = 0; j < 2; j++) {
-                if (i === j) continue;
-                names.push(chains[j].name);
-            }
-
-            await linkerRouter.addGatewaySupportedChains(names);
-
-            for (let j = 0; j < 3; j++) {
-                if (i === j) continue;
-                expect(await linkerRouter.supportedByGateway(chains[j].name)).to.equal(j < 2);
-            }
-        }
-    });
-
-    it('Should be able send some token to every chain from the origin chain', async () => {
-        const amount = 1e6;
-        const [wallet, tokenService] = loadChain(0);
-        const [tokenAddress, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
-
-        const originToken = new Contract(tokenAddress, Token.abi, wallet);
-
-        await originToken.mint(wallet.address, 2 * amount);
-
-        await originToken.approve(tokenService.address, 2 * amount);
-
-        for (let i = 1; i < 3; i++) {
-            await tokenService.sendToken(tokenId, chains[i].name, wallet.address, amount, { value: 1e6 });
-
-            await relay();
-
-            const [remoteWallet, remoteService] = loadChain(i);
-
-            const remoteTokenAddress = await remoteService.getTokenAddress(tokenId);
-
-            const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
-
-            expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount);
-        }
-    });
-
-    it('Should be able send some token to every other chain from the other chains', async () => {
-        const amount = 1e5;
-        const [, tokenId] = await getTokenData(0, gatewayTokenSalt, false);
-
-        for (let i = 1; i < 3; i++) {
-            const [wallet, tokenService] = loadChain(i);
-
-            const tokenAddress = await tokenService.getTokenAddress(tokenId);
-            const token = new Contract(tokenAddress, Token.abi, wallet);
-
-            await token.approve(tokenService.address, 2 * amount);
-
-            for (let j = 0; j < 3; j++) {
-                if (i === j) continue;
-
-                const [remoteWallet, remoteService] = loadChain(j);
-
-                const otherTokenAddress = await remoteService.getTokenAddress(tokenId);
-
-                const otherToken = new Contract(otherTokenAddress, Token.abi, remoteWallet);
-                const balance = Number(await otherToken.balanceOf(wallet.address));
-
-                await tokenService.sendToken(tokenId, chains[j].name, wallet.address, amount, { value: 1e6 });
-
-                await relay();
-
-                if (i + j === 3) {
-                    await relay();
-                    let commands;
-
-                    if (i === 1) {
-                        commands = evmRelayer.relayData.callContract;
-                    } else {
-                        commands = evmRelayer.relayData.callContractWithToken;
-                    }
-
-                    const commandIds = Object.keys(commands);
-                    commands = Object.values(commands);
-
-                    const payload = commands[commands.length - 1].payload;
-                    const commandId = commandIds[commandIds.length - 1];
-
-                    const executable = new Contract(remoteService.address, IAxelarExecutable.abi, remoteWallet);
-
-                    if (i === 1) {
-                        await executable.execute(commandId, chains[0].name, remoteService.address, payload);
-                    } else {
-                        await executable.executeWithToken(
-                            commandId,
-                            chains[0].name,
-                            remoteService.address,
-                            payload,
-                            await token.symbol(),
-                            amount,
-                        );
-                    }
-                }
-
-                expect(Number(await otherToken.balanceOf(wallet.address))).to.equal(balance + amount);
-            }
-        }
-    });
-
-    it('Should be able to set a mint limit for a new token', async () => {
-        const salt = keccak256('0x96858473');
-        const mintLimit = 125;
-        const [wallet, tokenService] = loadChain(0);
-
-        await tokenService.deployInterchainToken('Mint Limit Test', 'MLT', 18, wallet.address, salt, [chains[1].name], [1e7], {
-            value: 1e7,
-        });
-
-        await relay();
-
-        const [, tokenId] = await getTokenData(0, salt, true);
-        expect(await tokenService.getTokenMintLimit(tokenId)).to.equal(0);
-
-        await tokenService.setTokenMintLimit(tokenId, mintLimit);
-
-        expect(await tokenService.getTokenMintLimit(tokenId)).to.equal(mintLimit);
-
-        const [, remoteTokenService] = loadChain(1);
-
-        expect(await remoteTokenService.getTokenMintLimit(tokenId)).to.equal(0);
-
-        await remoteTokenService.setTokenMintLimit(tokenId, mintLimit);
-
-        expect(await remoteTokenService.getTokenMintLimit(tokenId)).to.equal(mintLimit);
-    });
-
-    it('Should be able to sent up to the mint limit but no more', async () => {
-        const salt = keccak256('0x96858473');
-        const mintLimit = 125;
-        const [wallet, tokenService] = loadChain(0);
-        const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
-
-        const token = new Contract(tokenAddress, Token.abi, wallet);
-
-        await token.mint(wallet.address, mintLimit * 2);
-
-        await token.approve(tokenService.address, mintLimit * 2);
-
-        await tokenService.sendToken(tokenId, chains[1].name, wallet.address, mintLimit, { value: 1e6 });
-
-        await relay();
-
-        const [remoteWallet, remoteTokenService] = loadChain(1);
-        const remoteTokenAddress = await remoteTokenService.getTokenAddress(tokenId);
-
-        const remoteToken = new Contract(remoteTokenAddress, Token.abi, remoteWallet);
-
-        expect(await remoteToken.balanceOf(wallet.address)).to.equal(mintLimit);
-
-        await expectRelayRevert(tokenService.sendToken(tokenId, chains[1].name, wallet.address, mintLimit, { value: 1e6 }));
-    });
 });

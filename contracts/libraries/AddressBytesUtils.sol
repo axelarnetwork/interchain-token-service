@@ -11,10 +11,6 @@ library AddressBytesUtils {
     }
 
     function toBytes(address addr) internal pure returns (bytes memory bytesAddress) {
-        bytesAddress = new bytes(20);
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            mstore(add(bytesAddress, 20), addr)
-        }
+        bytesAddress = abi.encodePacked(addr);
     }
 }
