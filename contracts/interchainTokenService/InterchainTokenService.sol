@@ -63,6 +63,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _;
     }
 
+    modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
+        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+        _;
+    }
+
     /* KEY GETTERS */
 
     function _getTokenDataKey(bytes32 tokenId) internal pure returns (bytes32 key) {
@@ -179,8 +184,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         external
         payable
         returns (
-            bytes32 tokenId // solhint-disable-next-line no-empty-blocks
-        )
+            bytes32 tokenId 
+        ) // solhint-disable-next-line no-empty-blocks
     {
         //TODO: Implement.
     }
@@ -427,8 +432,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     /* EXECUTE AND EXECUTE WITH TOKEN */
 
-    function _execute(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal override {
-        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+    function _execute(
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = address(this).call(payload);
         if (!success) revert ExecutionFailed();
@@ -440,8 +448,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes calldata payload,
         string calldata /*symbol*/,
         uint256 /*amount*/
-    ) internal override {
-        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = address(this).call(payload);
         if (!success) revert ExecutionFailed();
