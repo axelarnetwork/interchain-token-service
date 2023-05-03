@@ -268,6 +268,7 @@ describe('TokenService', () => {
             expect(await tokenService.getTokenId(remoteTokenAddress)).to.equal(tokenId);
         }
     });
+    
     it('Should be able to mint some token as the owner', async () => {
         const [wallet] = loadChain(0);
         const [tokenAddress] = await getTokenData(0, salt, true);
