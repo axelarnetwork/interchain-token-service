@@ -301,7 +301,8 @@ describe('TokenService', () => {
         expect(Number(await remoteToken.balanceOf(wallet.address))).to.equal(amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
     });
-    it('Should not be able to send some token to another chain with insufficient balance', async () => {
+ 
+       it('Should not be able to send some token to another chain with insufficient balance', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
         const token = new Contract(tokenAddress, Token.abi, wallet);
