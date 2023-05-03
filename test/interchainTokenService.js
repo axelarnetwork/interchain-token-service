@@ -283,6 +283,7 @@ describe('TokenService', () => {
 
         await expect(tokenService.sendToken(tokenId, chains[1].name, wallet.address, amount1, { value: 1e6 })).to.be.reverted;
     });
+    
     it('Should be able to send some token to another chain', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [tokenAddress, tokenId] = await getTokenData(0, salt, true);
