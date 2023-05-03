@@ -47,6 +47,7 @@ contract ExpressCallHandler is IExpressCallHandler {
         address expressCaller
     ) external onlyService {
         expressGiveToken[_getExpressSendTokenKey(tokenId, destinationAddress, amount, sendHash)] = expressCaller;
+        emit ExpressExecuted(tokenId, destinationAddress, amount, sendHash, expressCaller);
     }
 
     function setExpressSendTokenWithData(
@@ -62,6 +63,7 @@ contract ExpressCallHandler is IExpressCallHandler {
         expressGiveTokenWithData[
             _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)
         ] = expressCaller;
+        emit ExpressExecutedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, expressCaller);
     }
 
     function getExpressSendToken(
@@ -97,6 +99,7 @@ contract ExpressCallHandler is IExpressCallHandler {
         expressCaller = expressGiveToken[key];
         if (expressCaller != address(0)) {
             expressGiveToken[key] = address(0);
+            emit ExpressExecutionFulfilled(tokenId, destinationAddress, amount, sendHash, expressCaller);
         }
     }
 
@@ -113,6 +116,16 @@ contract ExpressCallHandler is IExpressCallHandler {
         expressCaller = expressGiveTokenWithData[key];
         if (expressCaller != address(0)) {
             expressGiveTokenWithData[key] = address(0);
+            emit ExpressExecutionWithDataFulfilled(
+                tokenId,
+                sourceChain,
+                sourceAddress,
+                destinationAddress,
+                amount,
+                data,
+                sendHash,
+                expressCaller
+            );
         }
     }
 }
