@@ -14,7 +14,7 @@ import { ITokenDeployer } from '../interfaces/ITokenDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
-import { IInterTokenExecutable } from '../interfaces/IInterTokenExecutable.sol';
+import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { LinkedTokenData } from '../libraries/LinkedTokenData.sol';
@@ -61,6 +61,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     modifier onlySelf() {
         if (msg.sender != address(this)) revert NotSelf();
+        _;
+    }
+
+    modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
+        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
         _;
     }
 
@@ -242,13 +247,12 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
     }
 
-    // solhint-disable-next-line no-empty-blocks
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
         _transferOrBurnFrom(tokenId, msg.sender, amount);
         _sendToken(tokenId, destinationChain, to, amount);
     }
 
-    function callContractWithInterToken(
+    function callContractWithInterchainToken(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata to,
@@ -440,7 +444,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         // solhint-disable-next-line avoid-low-level-calls
         (bool executionSuccessful, ) = destinationaddress.call(
             abi.encodeWithSelector(
-                IInterTokenExecutable.exectuteWithInterToken.selector,
+                IInterchainTokenExecutable.exectuteWithInterchainToken.selector,
                 tokenAddress,
                 sourceChain,
                 sourceAddress,
@@ -519,8 +523,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     /* EXECUTE AND EXECUTE WITH TOKEN */
 
-    function _execute(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal override {
-        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+    function _execute(
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = address(this).call(payload);
         if (!success) revert ExecutionFailed();
@@ -532,8 +539,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes calldata payload,
         string calldata /*symbol*/,
         uint256 /*amount*/
-    ) internal override {
-        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = address(this).call(payload);
         if (!success) revert ExecutionFailed();

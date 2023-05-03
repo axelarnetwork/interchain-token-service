@@ -88,7 +88,7 @@ interface IInterchainTokenService {
 
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable;
 
-    function callContractWithInterToken(
+    function callContractWithInterchainToken(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata to,
