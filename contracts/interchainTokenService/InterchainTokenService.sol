@@ -196,7 +196,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         _deployRemoteTokens(destinationChains, gasValues, tokenId, tokenData);
     }
 
-    // solhint-disable-next-line no-empty-blocks
     function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata to, uint256 amount) external payable {
         _transferOrBurnFrom(tokenId, msg.sender, amount);
         _sendToken(tokenId, destinationChain, to, amount);
