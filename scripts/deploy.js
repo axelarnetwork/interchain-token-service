@@ -5,6 +5,7 @@ require('dotenv').config();
 const TokenDeployer = require('../artifacts/contracts/utils/TokenDeployer.sol/TokenDeployer.json');
 const LinkerRouter = require('../artifacts/contracts/linkerRouter/LinkerRouter.sol/LinkerRouter.json');
 const LinkerRouterProxy = require('../artifacts/contracts/proxies/LinkerRouterProxy.sol/LinkerRouterProxy.json');
+const ExpressCallHandler = require('../artifacts/contracts/utils/ExpressCallHandler.sol/ExpressCallHandler.json');
 
 const TokenService = require('../artifacts/contracts/interchainTokenService/InterchainTokenService.sol/InterchainTokenService.json');
 const TokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
@@ -57,13 +58,26 @@ async function deployLinkerRouter(chain, wallet) {
     return new Contract(linkerRouterProxy.address, LinkerRouter.abi, wallet);
 }
 
+async function deployExpressCallHandler(chain, wallet) {
+    if (chain.expressCallHandler) return new Contract(chain.expressCallHandler, ExpressCallHandler.abi, wallet);
+
+    console.log(`Deploying Express Call Handler.`);
+    const interchainTokenServiceAddress = getCreate3Address(chain.create3Deployer, wallet, interchainTokenServiceKey);
+    const expressCallHandler = await deployContract(wallet, ExpressCallHandler, [interchainTokenServiceAddress]);
+    console.log(`Deployed at: ${expressCallHandler.address}`);
+
+    chain.expressCallHandler = expressCallHandler.address;
+
+    return expressCallHandler;
+}
+
 async function deployTokenService(chain, wallet) {
     const tokenService = await deployCreate3Upgradable(
         chain.create3Deployer,
         wallet,
         TokenService,
         TokenServiceProxy,
-        [chain.gateway, chain.gasService, chain.linkerRouter, chain.tokenDeployer, chain.name],
+        [chain.gateway, chain.gasService, chain.linkerRouter, chain.tokenDeployer, chain.expressCallHandler, chain.name],
         [],
         '0x',
         interchainTokenServiceKey,
@@ -76,4 +90,5 @@ module.exports = {
     deployTokenDeployer,
     deployLinkerRouter,
     deployTokenService,
+    deployExpressCallHandler,
 };

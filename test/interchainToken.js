@@ -2,7 +2,7 @@
 
 require('dotenv').config();
 
-const { deployTokenService, deployLinkerRouter, deployTokenDeployer } = require('../scripts/deploy.js');
+const { deployTokenService, deployLinkerRouter, deployTokenDeployer, deployExpressCallHandler } = require('../scripts/deploy.js');
 const { createNetwork, networks, relay, logger, stopAll, deployContract } = require('@axelar-network/axelar-local-dev');
 const {
     ethers: {
@@ -94,6 +94,7 @@ describe('Token', () => {
             const wallet = new Wallet(deployerKey, provider);
             await deployLinkerRouter(chain, wallet);
             await deployTokenDeployer(chain, wallet);
+            await deployExpressCallHandler(chain, wallet);
             await deployTokenService(chain, wallet);
             chain.executable = await deployContract(wallet, Test);
         }

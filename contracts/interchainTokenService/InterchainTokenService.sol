@@ -15,6 +15,7 @@ import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
+import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { LinkedTokenData } from '../libraries/LinkedTokenData.sol';
@@ -29,6 +30,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
     ITokenDeployer public immutable tokenDeployer;
+    IExpressCallHandler public immutable expressCallHandler;
 
     bytes32 internal constant PREFIX_TOKEN_DATA = keccak256('itl-token-data');
     bytes32 internal constant PREFIX_ORIGINAL_CHAIN = keccak256('itl-original-chain');
@@ -36,8 +38,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     bytes32 internal constant PREFIX_TOKEN_MINT_LIMIT = keccak256('itl-token-mint-limit');
     bytes32 internal constant PREFIX_TOKEN_MINT_AMOUNT = keccak256('itl-token-mint-amount');
     bytes32 internal constant PREFIX_CUSTOM_INTERCHAIN_TOKEN_ID = keccak256('itl-custom-interchain-token-id');
-    bytes32 internal constant PREFIX_EXPRESS_SEND_TOKEN = keccak256('itl-express-send-token');
-    bytes32 internal constant PREFIX_EXPRESS_SEND_TOKEN_WITH_DATA = keccak256('itl-express-send-token-with-data');
     // keccak256('interchain-token-service')-1
     // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
@@ -50,6 +50,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         address gasServiceAddress_,
         address linkerRouterAddress_,
         address tokenDeployerAddress_,
+        address expressCallHandlerAddress_,
         string memory chainName_
     ) AxelarExecutable(gatewayAddress_) {
         if (gatewayAddress_ == address(0) || gasServiceAddress_ == address(0) || linkerRouterAddress_ == address(0))
@@ -57,6 +58,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         gasService = IAxelarGasService(gasServiceAddress_);
         linkerRouter = ILinkerRouter(linkerRouterAddress_);
         tokenDeployer = ITokenDeployer(tokenDeployerAddress_);
+        expressCallHandler = IExpressCallHandler(expressCallHandlerAddress_);
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -91,29 +93,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function _getTokenMintAmountKey(bytes32 tokenId, uint256 epoch) internal pure returns (bytes32 key) {
         key = keccak256(abi.encode(PREFIX_TOKEN_MINT_AMOUNT, tokenId, epoch));
-    }
-
-    function _getExpressSendTokenKey(
-        bytes32 tokenId,
-        address destinationAddress,
-        uint256 amount,
-        bytes32 sendHash
-    ) internal pure returns (bytes32 key) {
-        key = keccak256(abi.encode(PREFIX_EXPRESS_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash));
-    }
-
-    function _getExpressSendTokenWithDataKey(
-        bytes32 tokenId,
-        string memory sourceChain,
-        bytes memory sourceAddress,
-        address destinationAddress,
-        uint256 amount,
-        bytes calldata data,
-        bytes32 sendHash
-    ) internal pure returns (bytes32 key) {
-        key = keccak256(
-            abi.encode(PREFIX_EXPRESS_SEND_TOKEN_WITH_DATA, tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)
-        );
     }
 
     /* GETTERS AND SETTERS*/
@@ -220,55 +199,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     function getDeploymentAddress(address sender, bytes32 salt) public view returns (address deployment) {
         salt = getInterchainTokenId(sender, salt);
         deployment = tokenDeployer.getDeploymentAddress(address(this), salt);
-    }
-
-    function _setExpressSendToken(
-        bytes32 tokenId,
-        address destinationAddress,
-        uint256 amount,
-        bytes32 sendHash,
-        address expressCaller
-    ) internal {
-        _setAddress(_getExpressSendTokenKey(tokenId, destinationAddress, amount, sendHash), expressCaller);
-    }
-
-    function _setExpressSendTokenWithData(
-        bytes32 tokenId,
-        string memory sourceChain,
-        bytes memory sourceAddress,
-        address destinationAddress,
-        uint256 amount,
-        bytes calldata data,
-        bytes32 sendHash,
-        address expressCaller
-    ) internal {
-        _setAddress(
-            _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash),
-            expressCaller
-        );
-    }
-
-    function getExpressSendToken(
-        bytes32 tokenId,
-        address destinationAddress,
-        uint256 amount,
-        bytes32 sendHash
-    ) internal view returns (address expressCaller) {
-        expressCaller = getAddress(_getExpressSendTokenKey(tokenId, destinationAddress, amount, sendHash));
-    }
-
-    function getExpressSendTokenWithData(
-        bytes32 tokenId,
-        string memory sourceChain,
-        bytes memory sourceAddress,
-        address destinationAddress,
-        uint256 amount,
-        bytes calldata data,
-        bytes32 sendHash
-    ) internal view returns (address expressCaller) {
-        expressCaller = getAddress(
-            _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)
-        );
     }
 
     /* EXTERNAL FUNCTIONS */
@@ -411,11 +341,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     function expressExecute(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external {
-        if (getExpressSendToken(tokenId, destinationAddress, amount, sendHash) != address(0)) revert AlreadyExpressExecuted();
-        _setExpressSendToken(tokenId, destinationAddress, amount, sendHash, msg.sender);
+        if (expressCallHandler.getExpressSendToken(tokenId, destinationAddress, amount, sendHash) != address(0)) revert AlreadyExpressExecuted();
+        expressCallHandler.setExpressSendToken(tokenId, destinationAddress, amount, sendHash, msg.sender);
         address tokenAddress = getTokenAddress(tokenId);
         _transferFrom(tokenAddress, msg.sender, destinationAddress, amount);
-        emit ExpressExecuted(tokenId, destinationAddress, amount, sendHash, msg.sender);
     }
 
     function expressExecuteWithToken(
@@ -427,9 +356,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         bytes calldata data,
         bytes32 sendHash
     ) external {
-        if (getExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash) != address(0))
+        if (expressCallHandler.getExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash) != address(0))
             revert AlreadyExpressExecuted();
-        _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, msg.sender);
+        expressCallHandler.setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, msg.sender);
         address tokenAddress = getTokenAddress(tokenId);
         _transferFrom(tokenAddress, msg.sender, destinationAddress, amount);
         // solhint-disable-next-line avoid-low-level-calls
@@ -443,17 +372,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
                 data
             )
         );
-        emit ExpressExecutedWithData(
-            tokenId,
-            sourceChain,
-            sourceAddress,
-            destinationAddress,
-            amount,
-            data,
-            sendHash,
-            executionSuccessful,
-            msg.sender
-        );
+        if(!executionSuccessful) revert ExecutionFailed();
     }
 
     /* ONLY SELF FUNCTIONS */
@@ -489,11 +408,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
 
     function selfTransferOrMint(bytes32 tokenId, bytes calldata destinationAddress, uint256 amount, bytes32 sendHash) public onlySelf {
         address dest = destinationAddress.toAddress();
-        address expressCaller = getExpressSendToken(tokenId, dest, amount, sendHash);
+        address expressCaller = expressCallHandler.popExpressSendToken(tokenId, dest, amount, sendHash);
         if (expressCaller != address(0)) {
-            _setExpressSendToken(tokenId, dest, amount, sendHash, address(0));
             _transferOrMint(tokenId, expressCaller, amount);
-            emit ExpressExecutionFulfilled(dest, amount, sendHash);
         } else {
             _transferOrMint(tokenId, dest, amount);
             emit Receiving(tokenId, dest, amount, sendHash);
@@ -511,11 +428,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     ) public onlySelf {
         address dest = destinationAddress.toAddress();
         {
-            address expressCaller = getExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, dest, amount, data, sendHash);
+            address expressCaller = expressCallHandler.popExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, dest, amount, data, sendHash);
             if (expressCaller != address(0)) {
-                _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, dest, amount, data, sendHash, address(0));
                 _transferOrMint(tokenId, expressCaller, amount);
-                emit ExpressExecutionFulfilled(dest, amount, sendHash);
                 return;
             }
         }
