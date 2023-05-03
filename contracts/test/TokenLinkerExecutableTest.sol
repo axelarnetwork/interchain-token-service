@@ -2,13 +2,13 @@
 
 pragma solidity 0.8.9;
 
-import { IInterTokenExecutable } from '../interfaces/IInterTokenExecutable.sol';
+import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
-contract TokenLinkerExecutableTest is IInterTokenExecutable {
+contract TokenLinkerExecutableTest is IInterchainTokenExecutable {
     string public val;
 
-    function exectuteWithInterToken(
+    function exectuteWithInterchainToken(
         address tokenAddress,
         string calldata,
         bytes calldata,
