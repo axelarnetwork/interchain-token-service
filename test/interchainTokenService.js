@@ -391,6 +391,7 @@ describe('TokenService', () => {
         expect(Number(await token.balanceOf(wallet.address))).to.equal(0);
         expect(await chains[1].executable.val()).to.equal(val);
     });
+    
     it('Should not be able to send some token with data to another chain with insufficient balance', async () => {
         const val = 'Hello!';
         const [wallet, tokenService] = loadChain(0);
