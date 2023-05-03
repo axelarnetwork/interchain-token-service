@@ -276,6 +276,7 @@ describe('TokenService', () => {
         await token.mint(wallet.address, amount1);
         expect(Number(await token.balanceOf(wallet.address))).to.equal(amount1);
     });
+    
     it('Should not be able to send some token to another chain without approval', async () => {
         const [wallet, tokenService] = loadChain(0);
         const [, tokenId] = await getTokenData(0, salt, true);
