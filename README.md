@@ -89,7 +89,7 @@ This repo will provide an implementation for an Interchain Token Service and an 
     - reverts with `TransferFromFailed()` when dealing with an origin token and calling `transferFrom(...)` to the token reverts.
     - reverts with `BurnFailed()` when dealing with a remote token and calling `burnFrom(...)` to the token reverts.
 
-`function callContractWithInterToken(
+`function callContractWithInterchainToken(
     bytes32 tokenId,
     string memory destinationChain,
     bytes memory to,

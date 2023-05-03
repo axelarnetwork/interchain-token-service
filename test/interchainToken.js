@@ -225,7 +225,7 @@ describe('Token', () => {
         const [, tokenId] = await getTokenData(0, salt, true);
 
         await expect(
-            tokenService.callContractWithInterToken(
+            tokenService.callContractWithInterchainToken(
                 tokenId,
                 chains[1].name,
                 chains[1].executable.address,
@@ -244,7 +244,7 @@ describe('Token', () => {
         await token.approve(tokenService.address, amount1);
         const payload = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
         await expect(
-            tokenService.callContractWithInterToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
+            tokenService.callContractWithInterchainToken(tokenId, chains[1].name, chains[1].executable.address, amount1, payload, {
                 value: 1e6,
             }),
         )
