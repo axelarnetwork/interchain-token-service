@@ -8,33 +8,13 @@ require('dotenv').config();
 const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
-const { stopAll, createNetwork, networks } = require('@axelar-network/axelar-local-dev');
+const { stopAll } = require('@axelar-network/axelar-local-dev');
+const { setupLocal } = require('../scripts/utils');
 
 let chain;
 let wallet;
 let otherWallet;
 let tokenDeployer;
-const n = 1;
-
-async function setupLocal(toFund) {
-    for (let i = 0; i < n; i++) {
-        const network = await createNetwork({ port: 8510 + i });
-        const user = network.userWallets[0];
-
-        for (const account of toFund) {
-            await user
-                .sendTransaction({
-                    to: account,
-                    value: BigInt(100e18),
-                })
-                .then((tx) => tx.wait());
-        }
-    }
-
-    const network = networks[0];
-    chain = network.getCloneInfo();
-    chain.rpc = `http://localhost:${network.port}`;
-}
 
 describe('Token', () => {
     let token;
@@ -51,7 +31,7 @@ describe('Token', () => {
         const deployerAddress = new Wallet(deployerKey).address;
         const otherAddress = new Wallet(otherKey).address;
         const toFund = [deployerAddress, otherAddress];
-        await setupLocal(toFund);
+        chain = (await setupLocal(toFund, 1))[0];
         const provider = getDefaultProvider(chain.rpc);
         wallet = new Wallet(deployerKey, provider);
         otherWallet = new Wallet(otherKey, provider);

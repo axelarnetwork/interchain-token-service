@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 
 import { ITokenDeployer } from './ITokenDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
+import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
 
 interface IInterchainTokenService {
     error TokenServiceZeroAddress();
@@ -68,6 +69,8 @@ interface IInterchainTokenService {
     function tokenDeployer() external view returns (ITokenDeployer);
 
     function linkerRouter() external view returns (ILinkerRouter);
+
+    function expressCallHandler() external view returns (IExpressCallHandler);
 
     function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 

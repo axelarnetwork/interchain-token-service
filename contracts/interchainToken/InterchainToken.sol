@@ -17,9 +17,13 @@ contract InterchainToken is IInterchainToken, ERC20BurnableMintable {
         string calldata destinationChain,
         bytes calldata recipient,
         uint256 amount,
-        bytes calldata /*metadata*/
+        bytes calldata metadata
     ) external payable {
-        _interchainTransfer(msg.sender, destinationChain, recipient, amount);
+        if (metadata.length == 0) {
+            _interchainTransfer(msg.sender, destinationChain, recipient, amount);
+        } else {
+            _interchainTransferWithData(msg.sender, destinationChain, recipient, amount, metadata);
+        }
     }
 
     // Send a token cross-chain from an account that has an approval to spend from `sender`'s balance
@@ -28,7 +32,7 @@ contract InterchainToken is IInterchainToken, ERC20BurnableMintable {
         string calldata destinationChain,
         bytes calldata recipient,
         uint256 amount,
-        bytes calldata /*metadata*/
+        bytes calldata metadata
     ) external payable {
         uint256 _allowance = allowance[sender][msg.sender];
 
@@ -36,7 +40,11 @@ contract InterchainToken is IInterchainToken, ERC20BurnableMintable {
             _approve(sender, msg.sender, _allowance - amount);
         }
 
-        _interchainTransfer(sender, destinationChain, recipient, amount);
+        if (metadata.length == 0) {
+            _interchainTransfer(sender, destinationChain, recipient, amount);
+        } else {
+            _interchainTransferWithData(sender, destinationChain, recipient, amount, metadata);
+        }
     }
 
     function _interchainTransfer(address sender, string calldata destinationChain, bytes calldata recipient, uint256 amount) internal {
@@ -47,5 +55,21 @@ contract InterchainToken is IInterchainToken, ERC20BurnableMintable {
         }
 
         interchainTokenService.sendSelf{ value: msg.value }(sender, destinationChain, recipient, amount);
+    }
+
+    function _interchainTransferWithData(
+        address sender,
+        string calldata destinationChain,
+        bytes calldata recipient,
+        uint256 amount,
+        bytes calldata data
+    ) internal {
+        uint256 currentAllowance = allowance[sender][address(interchainTokenService)];
+
+        if (currentAllowance != type(uint256).max) {
+            _approve(sender, address(interchainTokenService), currentAllowance + amount);
+        }
+
+        interchainTokenService.callContractWithSelf{ value: msg.value }(sender, destinationChain, recipient, amount, data);
     }
 }

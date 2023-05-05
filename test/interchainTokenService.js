@@ -2,11 +2,9 @@
 
 require('dotenv').config();
 
-const { deployTokenService, deployLinkerRouter, deployTokenDeployer, deployExpressCallHandler } = require('../scripts/deploy.js');
-const { createNetwork, networks, relay, evmRelayer, logger, stopAll, deployContract } = require('@axelar-network/axelar-local-dev');
+const { networks, relay, logger, stopAll } = require('@axelar-network/axelar-local-dev');
 const {
     ethers: {
-        getDefaultProvider,
         Contract,
         Wallet,
         constants: { AddressZero },
@@ -14,15 +12,15 @@ const {
     },
 } = require('hardhat');
 const { expect } = require('chai');
-const Token = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
+const Token = require('../artifacts/contracts/interfaces/IInterchainToken.sol/IInterchainToken.json');
 const LinkerRouter = require('../artifacts/contracts/linkerRouter/LinkerRouter.sol/LinkerRouter.json');
+const ExpressCallHandler = require('../artifacts/contracts/interfaces/IExpressCallHandler.sol/IExpressCallHandler.json');
 const TestToken = require('../artifacts/contracts/test/InterchainTokenTest.sol/InterchainTokenTest.json');
 const {
     setupLocal,
     prepareChain,
     deployToken,
     getTokenData,
-    expectRelayRevert,
     relayRevert,
     relayAndFulfill,
 } = require('../scripts/utils.js');
@@ -35,11 +33,6 @@ const notOwnerKey = keccak256(defaultAbiCoder.encode(['string'], ['not-owner']))
 let chains;
 
 describe('TokenService', () => {
-    const gatewayTokenName = 'GatewayToken';
-    const gatewayTokenSymbol = 'GT';
-    const gatewayTokenDecimals = 18;
-    const gatewayTokenSalt = keccak256(defaultAbiCoder.encode(['string'], ['gatewayToken']));
-    let gatewayTokenAddress, remoteGatewayTokenAddress;
 
     before(async () => {
         const deployerAddress = new Wallet(deployerKey).address;
@@ -247,6 +240,7 @@ describe('TokenService', () => {
             const gatewayTokenName = 'Gateway Token';
             const gatewayTokenSymbol = 'GT';
             const gatewayTokenDecimals = 18;
+            const gatewayTokenSalt = keccak256(defaultAbiCoder.encode(['string'], ['gatewayToken']));
             let tokenId, gatewayTokenAddress, remoteGatewayTokenAddress, chain;
             before(async () => {
                 chain = chains[0];
@@ -331,6 +325,7 @@ describe('TokenService', () => {
         'for custom tokens everywhere',
         'for a gateway token',
     ];
+    const sends = 2;
     const amount = 1234;
     const prepares = [
         async () => {
@@ -339,7 +334,7 @@ describe('TokenService', () => {
                 fromService: true,
                 remoteDeployments: [chains[1].name, chains[2].name],
             });
-            await token.mint(chain.ownerWallet.address, amount * 2);
+            await token.mint(chain.ownerWallet.address, amount * sends);
             return tokenId;
         },
         async () => {
@@ -349,12 +344,13 @@ describe('TokenService', () => {
                 register: true,
                 remoteDeployments: [chains[1].name, chains[2].name],
             });
-            await token.mint(chain.ownerWallet.address, amount * 2);
+            await token.mint(chain.ownerWallet.address, amount * sends);
 
             return tokenId;
         },
         async () => {
             let tokenId;
+
             for (let i = 0; i < 3; i++) {
                 const chain = chains[i];
                 const token = await deployCreate3Contract(chain.create3Deployer, chain.ownerWallet, TestToken, 'customToken', [
@@ -363,11 +359,12 @@ describe('TokenService', () => {
                     'Symbol',
                     18,
                     chain.ownerWallet.address,
-                    i == 0 ? amount * 2 : 0,
+                    i === 0 ? amount * sends : 0,
                 ]);
 
-                if (i == 0) tokenId = await chain.service.getTokenId(token.address);
+                if (i === 0) tokenId = await chain.service.getTokenId(token.address);
             }
+
             return tokenId;
         },
         async () => {
@@ -379,7 +376,7 @@ describe('TokenService', () => {
                 chain,
                 gatewayTokenName,
                 gatewayTokenSymbol,
-                18,
+                gatewayTokenDecimals,
                 chain.ownerWallet.address,
                 keccak256('0x12348779'),
                 {
@@ -388,10 +385,9 @@ describe('TokenService', () => {
                 },
             );
 
-            await networks[0].deployToken(gatewayTokenName, gatewayTokenSymbol, 18, 0, token.address);
+            await networks[0].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0, token.address);
+            await networks[1].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0);
             expect(await networks[0].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(token.address);
-            const remoteGatewayToken = await networks[1].deployToken(gatewayTokenName, gatewayTokenSymbol, gatewayTokenDecimals, 0);
-            remoteGatewayTokenAddress = remoteGatewayToken.address;
             expect(await networks[1].gateway.tokenAddresses(gatewayTokenSymbol)).to.not.equal(AddressZero);
             expect(await networks[2].gateway.tokenAddresses(gatewayTokenSymbol)).to.equal(AddressZero);
 
@@ -400,7 +396,7 @@ describe('TokenService', () => {
             await chains[1].service.registerRemoteGatewayToken(gatewayTokenSymbol, tokenId, chain.name);
 
             await chain.service.deployRemoteTokens(tokenId, [chains[2].name], [1e7], { value: 1e7 });
-            await token.mint(chain.ownerWallet.address, amount * 2);
+            await token.mint(chain.ownerWallet.address, amount * sends);
 
             for (let i = 0; i < 3; i++) {
                 const chain = chains[i];
@@ -442,7 +438,7 @@ describe('TokenService', () => {
                             originToken = new Contract(originTokenAddress, Token.abi, origin.ownerWallet);
                             const destTokenAddress = await dest.service.getTokenAddress(tokenId);
                             destToken = new Contract(destTokenAddress, Token.abi, dest.ownerWallet);
-                            expect(await originToken.balanceOf(origin.ownerWallet.address)).to.equal(amount * 2);
+                            expect(await originToken.balanceOf(origin.ownerWallet.address)).to.equal(amount * sends);
                             expect(await destToken.balanceOf(origin.ownerWallet.address)).to.equal(0);
                         });
 
@@ -466,7 +462,7 @@ describe('TokenService', () => {
                                 .to.emit(origin.service, 'Sending')
                                 .withArgs(dest.name, dest.ownerWallet.address.toLowerCase(), amount, sendHash);
 
-                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(amount);
+                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(amount * (sends - 1));
 
                             await relay();
 
@@ -490,11 +486,19 @@ describe('TokenService', () => {
                                 .to.emit(origin.service, 'Sending')
                                 .withArgs(dest.name, dest.otherWallet.address.toLowerCase(), amount, sendHash);
 
-                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(0);
+                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(amount * (sends - 2));
 
                             await destToken.approve(dest.service.address, amount);
 
-                            await dest.service.expressExecute(tokenId, dest.otherWallet.address, amount, sendHash);
+                            const expressCallHandler = new Contract(
+                                await dest.service.expressCallHandler(),
+                                ExpressCallHandler.abi,
+                                dest.provider,
+                            );
+
+                            await expect(dest.service.expressExecute(tokenId, dest.otherWallet.address, amount, sendHash))
+                                .to.emit(expressCallHandler, 'ExpressExecuted')
+                                .withArgs(tokenId, dest.otherWallet.address, amount, sendHash, origin.ownerWallet.address);
 
                             expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(0);
                             expect(Number(await destToken.balanceOf(dest.otherWallet.address))).to.equal(amount);
@@ -502,6 +506,19 @@ describe('TokenService', () => {
                             await relay();
 
                             await relayAndFulfill(dest.ownerWallet);
+
+                            const filter = expressCallHandler.filters.ExpressExecutionFulfilled(
+                                tokenId,
+                                dest.otherWallet.address,
+                                null,
+                                sendHash,
+                                null,
+                            );
+                            const logs = await expressCallHandler.queryFilter(filter);
+                            expect(logs.length).to.equal(1);
+                            const args = logs[0].args;
+                            expect(args.amount).to.equal(amount);
+                            expect(args.expressCaller).to.equal(dest.ownerWallet.address);
 
                             expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(amount);
                             expect(Number(await destToken.balanceOf(dest.otherWallet.address))).to.equal(amount);
@@ -533,7 +550,7 @@ describe('TokenService', () => {
                             originToken = new Contract(originTokenAddress, Token.abi, origin.ownerWallet);
                             const destTokenAddress = await dest.service.getTokenAddress(tokenId);
                             destToken = new Contract(destTokenAddress, Token.abi, dest.ownerWallet);
-                            expect(await originToken.balanceOf(origin.ownerWallet.address)).to.equal(amount * 2);
+                            expect(await originToken.balanceOf(origin.ownerWallet.address)).to.equal(amount * sends);
                             expect(await destToken.balanceOf(origin.ownerWallet.address)).to.equal(0);
                             payload = defaultAbiCoder.encode(['address', 'string'], [dest.ownerWallet.address, val]);
                         });
@@ -582,7 +599,7 @@ describe('TokenService', () => {
                                     sendHash,
                                 );
 
-                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(amount);
+                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(amount * (sends - 1));
 
                             await relay();
 
@@ -623,19 +640,38 @@ describe('TokenService', () => {
                                     sendHash,
                                 );
 
-                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(0);
+                            expect(Number(await originToken.balanceOf(origin.ownerWallet.address))).to.equal(amount * (sends - 2));
 
                             await destToken.approve(dest.service.address, amount);
 
-                            await dest.service.expressExecuteWithToken(
-                                tokenId,
-                                origin.name,
-                                origin.ownerWallet.address,
-                                dest.executable.address,
-                                amount,
-                                payload,
-                                sendHash,
+                            const expressCallHandler = new Contract(
+                                await dest.service.expressCallHandler(),
+                                ExpressCallHandler.abi,
+                                dest.provider,
                             );
+
+                            await expect(
+                                dest.service.expressExecuteWithToken(
+                                    tokenId,
+                                    origin.name,
+                                    origin.ownerWallet.address,
+                                    dest.executable.address,
+                                    amount,
+                                    payload,
+                                    sendHash,
+                                ),
+                            )
+                                .to.emit(expressCallHandler, 'ExpressExecutedWithData')
+                                .withArgs(
+                                    tokenId,
+                                    origin.name,
+                                    origin.ownerWallet.address.toLowerCase(),
+                                    dest.executable.address,
+                                    amount,
+                                    payload,
+                                    sendHash,
+                                    dest.ownerWallet.address,
+                                );
 
                             expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(0);
                             expect(Number(await destToken.balanceOf(dest.otherWallet.address))).to.equal(amount);
@@ -643,6 +679,25 @@ describe('TokenService', () => {
                             await relay();
 
                             await relayAndFulfill(dest.ownerWallet);
+
+                            const filter = expressCallHandler.filters.ExpressExecutionWithDataFulfilled(
+                                tokenId,
+                                null,
+                                null,
+                                dest.executable.address,
+                                null,
+                                null,
+                                sendHash,
+                                null,
+                            );
+                            const logs = await expressCallHandler.queryFilter(filter);
+                            expect(logs.length).to.equal(1);
+                            const args = logs[0].args;
+                            expect(args.sourceChain).to.equal(origin.name);
+                            expect(args.sourceAddress).to.equal(origin.ownerWallet.address.toLowerCase());
+                            expect(args.amount).to.equal(amount);
+                            expect(args.data).to.equal(payload);
+                            expect(args.expressCaller).to.equal(dest.ownerWallet.address);
 
                             expect(Number(await destToken.balanceOf(dest.ownerWallet.address))).to.equal(amount);
                             expect(Number(await destToken.balanceOf(dest.otherWallet.address))).to.equal(amount);

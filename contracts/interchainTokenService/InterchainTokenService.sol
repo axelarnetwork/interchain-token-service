@@ -338,6 +338,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
             data,
             sendHash
         );
+        emit SendingWithData(from, destinationChain, to, amount, data, sendHash);
     }
 
     function expressExecute(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external {

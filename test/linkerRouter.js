@@ -5,7 +5,8 @@ const chai = require('chai');
 const { getDefaultProvider, Wallet } = require('ethers');
 const { expect } = chai;
 const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
-const { stopAll, networks, createNetwork } = require('@axelar-network/axelar-local-dev');
+const { stopAll } = require('@axelar-network/axelar-local-dev');
+const { setupLocal } = require('../scripts/utils.js');
 
 let chain;
 let wallet;
@@ -14,37 +15,15 @@ let linkerRouter;
 let interchainTokenServiceAddress;
 const otherRemoteAddress = 'any string as an address';
 const otherChain = 'Chain Name';
-const n = 1;
 
-async function setupLocal(toFund) {
-    for (let i = 0; i < n; i++) {
-        const network = await createNetwork({ port: 8510 + i });
-        const user = network.userWallets[0];
-
-        for (const account of toFund) {
-            await user
-                .sendTransaction({
-                    to: account,
-                    value: BigInt(100e18),
-                })
-                .then((tx) => tx.wait());
-        }
-    }
-
-    const network = networks[0];
-    chain = network.getCloneInfo();
-    chain.rpc = `http://localhost:${network.port}`;
-}
-
-describe.only('LinkerRouter', () => {
+describe('LinkerRouter', () => {
     before(async () => {
         const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
         const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
         const deployerAddress = new Wallet(deployerKey).address;
         const otherAddress = new Wallet(otherKey).address;
         const toFund = [deployerAddress, otherAddress];
-        await setupLocal(toFund);
-        console.log(chain);
+        chain = (await setupLocal(toFund, 1))[0];
         const provider = getDefaultProvider(chain.rpc);
         wallet = new Wallet(deployerKey, provider);
         otherWallet = new Wallet(otherKey, provider);

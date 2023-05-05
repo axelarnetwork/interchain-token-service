@@ -48,7 +48,8 @@ async function prepareChain(chain, ownerKey, otherKey) {
 
 async function deployToken(chain, name, symbol, decimals, owner, salt, options = {}) {
     let tokenAddress, tokenId;
-    remoteDeployments = options.remoteDeployments || [];
+    const remoteDeployments = options.remoteDeployments || [];
+
     if (options.fromService) {
         await chain.service.deployInterchainToken(
             name,
@@ -66,6 +67,7 @@ async function deployToken(chain, name, symbol, decimals, owner, salt, options =
         await chain.deployer.deployToken(name, symbol, decimals, owner, salt);
         tokenAddress = await chain.deployer.getDeploymentAddress(chain.deployer.address, salt);
         tokenId = await chain.service.getOriginTokenId(tokenAddress);
+        
         if (options.register) {
             if (options.remoteDeployments) {
                 await chain.service.registerOriginTokenAndDeployRemoteTokens(
@@ -79,6 +81,7 @@ async function deployToken(chain, name, symbol, decimals, owner, salt, options =
             }
         }
     }
+
     await relay();
     const token = new Contract(tokenAddress, Token.abi, chain.ownerWallet);
     return [token, tokenId];
@@ -92,9 +95,10 @@ async function relayRevert(tx, withToken = false, n = 1) {
 
     for (let i = 0; i < n; i++) {
         const command = contractCalls[contractCalls.length - 1 - i];
-        if (command.transactionHash != transactionHash) return false;
+        if (command.transactionHash !== transactionHash) return false;
         if (command.execution) return false;
     }
+
     return true;
 }
 
@@ -120,6 +124,7 @@ async function relayAndFulfill(remoteWallet) {
     const m2 = Object.values(evmRelayer.relayData.callContractWithToken).length;
 
     let commands = evmRelayer.relayData.callContract;
+
     for (let i = n1; i < n2; i++) {
         const commandId = Object.keys(commands)[i];
         const command = commands[commandId];
@@ -128,7 +133,9 @@ async function relayAndFulfill(remoteWallet) {
         const executable = new Contract(command.destinationContractAddress, IAxelarExecutable.abi, remoteWallet);
         await executable.execute(commandId, command.from, command.sourceAddress, payload);
     }
+
     commands = evmRelayer.relayData.callContractWithToken;
+
     for (let i = m1; i < m2; i++) {
         const commandId = Object.keys(commands)[i];
         const command = commands[commandId];
