@@ -11,6 +11,10 @@ library AddressBytesUtils {
     }
 
     function toBytes(address addr) internal pure returns (bytes memory bytesAddress) {
-        bytesAddress = abi.encodePacked(addr);
+        bytesAddress = new bytes(20);
+        assembly {
+            mstore(add(bytesAddress, 20), addr)
+            mstore(bytesAddress, 20)
+        }
     }
 }
