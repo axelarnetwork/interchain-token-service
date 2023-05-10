@@ -37,7 +37,8 @@
   },
   "devDependencies": {
     "axios": "^0.27.2",
-    "dotenv": "^16.0.1"
+    "dotenv": "^16.0.1",
+    "readline-sync": "^1.4.10"
   },
   "description": ""
 }

@@ -19,50 +19,54 @@ const { Contract } = require('ethers');
 
 const interchainTokenServiceKey = 'interchainTokenServiceKey';
 
-async function deployTokenDeployer(chain, wallet) {
-    if (chain.tokenDeployer) return new Contract(chain.tokenDeployer, TokenDeployer.abi, wallet);
+async function deployTokenDeployer(chain, chainLocal, wallet) {
+    if (chainLocal.tokenDeployer) return new Contract(chainLocal.tokenDeployer, TokenDeployer.abi, wallet);
 
     console.log(`Deploying ERC20BurnableMintable.`);
     const token = await deployContract(wallet, Token, []);
-    chain.tokenImplementation = token.address;
+    chainLocal.tokenImplementation = token.address;
     console.log(`Deployed at: ${token.address}`);
 
     console.log(`Deploying Bytecode Server.`);
     const bytecodeServer = await deployContract(wallet, BytecodeServer, [TokenProxy.bytecode]);
-    chain.bytecodeServer = bytecodeServer.address;
+    chainLocal.bytecodeServer = bytecodeServer.address;
     console.log(`Deployed at: ${bytecodeServer.address}`);
 
     console.log(`Deploying Token Deployer.`);
-    const tokenDeployer = await deployContract(wallet, TokenDeployer, [chain.create3Deployer, bytecodeServer.address, token.address]);
-    chain.tokenDeployer = tokenDeployer.address;
+    const tokenDeployer = await deployContract(wallet, TokenDeployer, [
+        chain.Create3Deployer.address,
+        bytecodeServer.address,
+        token.address,
+    ]);
+    chainLocal.tokenDeployer = tokenDeployer.address;
     console.log(`Deployed at: ${tokenDeployer.address}`);
 
     return tokenDeployer;
 }
 
-async function deployLinkerRouter(chain, wallet) {
-    if (chain.linkerRouter) return new Contract(chain.linkerRouter, LinkerRouter.abi, wallet);
+async function deployLinkerRouter(chain, chainLocal, wallet) {
+    if (chainLocal.linkerRouter) return new Contract(chainLocal.linkerRouter, LinkerRouter.abi, wallet);
 
     console.log(`Deploying Linker Router.`);
-    const interchainTokenServiceAddress = getCreate3Address(chain.create3Deployer, wallet, interchainTokenServiceKey);
+    const interchainTokenServiceAddress = getCreate3Address(chain.Create3Deployer.address, wallet, interchainTokenServiceKey);
     const linkerRouter = await deployContract(wallet, LinkerRouter, [interchainTokenServiceAddress, [], []]);
     console.log(`Deployed at: ${linkerRouter.address}`);
 
     console.log(`Deploying Linker Router Proxy.`);
     const linkerRouterProxy = await deployContract(wallet, LinkerRouterProxy, [linkerRouter.address, wallet.address]);
-    chain.linkerRouter = linkerRouterProxy.address;
+    chainLocal.linkerRouter = linkerRouterProxy.address;
     console.log(`Deployed at: ${linkerRouterProxy.address}`);
 
     return new Contract(linkerRouterProxy.address, LinkerRouter.abi, wallet);
 }
 
-async function deployTokenService(chain, wallet) {
+async function deployTokenService(chain, chainLocal, wallet) {
     const tokenService = await deployCreate3Upgradable(
-        chain.create3Deployer,
+        chain.Create3Deployer.address,
         wallet,
         TokenService,
         TokenServiceProxy,
-        [chain.gateway, chain.gasService, chain.linkerRouter, chain.tokenDeployer, chain.name],
+        [chainLocal.gateway, chainLocal.gasService, chainLocal.linkerRouter, chainLocal.tokenDeployer, chainLocal.name],
         [],
         '0x',
         interchainTokenServiceKey,
