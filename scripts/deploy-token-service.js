@@ -43,11 +43,13 @@ async function deploy(env, chains, chainsLocal, wallet, contractName, deployTo) 
     for (const chain of chains) {
         if (deployTo.length > 0 && !deployTo.find((name) => chain.name === name)) continue;
         const exists = chainsLocal.some((obj) => obj.name === chain.name);
+
         if (!exists) {
             chainsLocal.push({
                 name: chain.name,
             });
         }
+
         const rpc = chain.rpc;
         const provider = getDefaultProvider(rpc);
         console.log(
@@ -99,6 +101,7 @@ async function deploy(env, chains, chainsLocal, wallet, contractName, deployTo) 
                 if (!chain.Create3Deployer) {
                     throw new Error(`Create3Deployer has not yet been deployed on ${chain.name}.`);
                 }
+
                 const proxyAddress = await getCreate3Address(chain.Create3Deployer.address, wallet.connect(provider), key);
 
                 console.log(`Proxy will be deployed to ${proxyAddress}. Does this match any existing deployments?`);
@@ -148,8 +151,8 @@ if (require.main === module) {
     const chainsLocal = require(`../info/${env}.json`);
     const chains = require(`@axelar-network/axelar-cgp-solidity/info/${env}.json`);
 
-    const private_key = process.env.PRIVATE_KEY;
-    const wallet = new Wallet(private_key);
+    const privateKey = process.env.PRIVATE_KEY;
+    const wallet = new Wallet(privateKey);
 
     const contractName = process.argv[3];
     const deployTo = process.argv.slice(4);
