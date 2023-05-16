@@ -53,7 +53,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         address expressCallHandlerAddress_,
         string memory chainName_
     ) AxelarExecutable(gatewayAddress_) {
-        if (gatewayAddress_ == address(0) || gasServiceAddress_ == address(0) || linkerRouterAddress_ == address(0))
+        if (gasServiceAddress_ == address(0) || linkerRouterAddress_ == address(0) || tokenDeployerAddress_ == address(0))
             revert TokenServiceZeroAddress();
         gasService = IAxelarGasService(gasServiceAddress_);
         linkerRouter = ILinkerRouter(linkerRouterAddress_);
@@ -69,7 +69,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
-        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) return;
+        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
         _;
     }
 
@@ -101,20 +101,23 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         tokenData = bytes32(getUint(_getTokenDataKey(tokenId)));
     }
 
+    function _getValidTokenData(bytes32 tokenId) internal view returns (bytes32 tokenData) {
+        tokenData = bytes32(getUint(_getTokenDataKey(tokenId)));
+        if (tokenData == bytes32(0)) revert NotRegistered();
+    }
+
     function _setTokenData(bytes32 tokenId, bytes32 tokenData) internal {
         _setUint(_getTokenDataKey(tokenId), uint256(tokenData));
     }
 
     function isOriginToken(bytes32 tokenId) external view returns (bool) {
-        bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered();
+        bytes32 tokenData = _getValidTokenData(tokenId);
 
         return tokenData.isOrigin();
     }
 
     function isGatewayToken(bytes32 tokenId) external view returns (bool) {
-        bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered();
+        bytes32 tokenData = _getValidTokenData(tokenId);
 
         return tokenData.isGateway();
     }
@@ -127,15 +130,13 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
     }
 
     function isRemoteGatewayToken(bytes32 tokenId) external view returns (bool) {
-        bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered();
+        bytes32 tokenData = _getValidTokenData(tokenId);
 
         return tokenData.isRemoteGateway();
     }
 
     function isCustomInterchainToken(bytes32 tokenId) external view returns (bool) {
-        bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered();
+        bytes32 tokenData = _getValidTokenData(tokenId);
 
         if (tokenData.isOrigin()) return false;
 
@@ -667,8 +668,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Et
         uint256 amount,
         bytes32 sendHash
     ) internal {
-        bytes32 tokenData = getTokenData(tokenId);
-        if (tokenData == bytes32(0)) revert NotRegistered();
+        bytes32 tokenData = _getValidTokenData(tokenId);
         bytes memory payload;
 
         if (tokenData.isGateway()) {

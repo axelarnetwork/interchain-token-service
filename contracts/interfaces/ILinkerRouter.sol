@@ -8,6 +8,11 @@ interface ILinkerRouter {
     error LengthMismatch();
     error ZeroStringLength();
 
+    event TrustedAddressAdded(string, string);
+    event TrustedAddressRemoved(string);
+    event GatewaySupportedChainAdded(string);
+    event GatewaySupportedChainRemoved(string);
+
     function validateSender(string calldata sourceChain, string calldata sourceAddress) external view returns (bool);
 
     function addTrustedAddress(string memory sourceChain, string memory sourceAddress) external;

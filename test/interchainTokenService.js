@@ -16,14 +16,7 @@ const Token = require('../artifacts/contracts/interfaces/IInterchainToken.sol/II
 const LinkerRouter = require('../artifacts/contracts/linkerRouter/LinkerRouter.sol/LinkerRouter.json');
 const ExpressCallHandler = require('../artifacts/contracts/interfaces/IExpressCallHandler.sol/IExpressCallHandler.json');
 const TestToken = require('../artifacts/contracts/test/InterchainTokenTest.sol/InterchainTokenTest.json');
-const {
-    setupLocal,
-    prepareChain,
-    deployToken,
-    getTokenData,
-    relayRevert,
-    relayAndFulfill,
-} = require('../scripts/utils.js');
+const { setupLocal, prepareChain, deployToken, getTokenData, relayRevert, relayAndFulfill } = require('../scripts/utils.js');
 const { deployCreate3Contract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 
 logger.log = (args) => {};
@@ -33,7 +26,6 @@ const notOwnerKey = keccak256(defaultAbiCoder.encode(['string'], ['not-owner']))
 let chains;
 
 describe('TokenService', () => {
-
     before(async () => {
         const deployerAddress = new Wallet(deployerKey).address;
         const notOwnerAddress = new Wallet(notOwnerKey).address;

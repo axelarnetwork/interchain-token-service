@@ -67,7 +67,7 @@ async function deployToken(chain, name, symbol, decimals, owner, salt, options =
         await chain.deployer.deployToken(name, symbol, decimals, owner, salt);
         tokenAddress = await chain.deployer.getDeploymentAddress(chain.deployer.address, salt);
         tokenId = await chain.service.getOriginTokenId(tokenAddress);
-        
+
         if (options.register) {
             if (options.remoteDeployments) {
                 await chain.service.registerOriginTokenAndDeployRemoteTokens(

@@ -38,7 +38,7 @@ describe('Token', () => {
         for (const chain of chains) {
             await prepareChain(chain, deployerKey, notOwnerKey);
         }
-        
+
         const chain = chains[0];
 
         const destinationChains = [chains[1].name];

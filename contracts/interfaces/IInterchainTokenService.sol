@@ -24,6 +24,7 @@ interface IInterchainTokenService {
     error ExecutionFailed();
     error AlreadyExpressExecuted();
     error InvalidSelector();
+    error NotRemoteService();
 
     event Sending(string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 indexed sendHash);
     event SendingWithData(

@@ -53,25 +53,31 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
         if (bytes(addr).length == 0) revert ZeroStringLength();
         remoteAddressHashes[chain] = keccak256(bytes(_lowerCase(addr)));
         remoteAddresses[chain] = addr;
+        emit TrustedAddressAdded(chain, addr);
     }
 
     function removeTrustedAddress(string calldata chain) external onlyOwner {
         if (bytes(chain).length == 0) revert ZeroStringLength();
         remoteAddressHashes[chain] = bytes32(0);
         remoteAddresses[chain] = '';
+        emit TrustedAddressRemoved(chain);
     }
 
     function addGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
         uint256 length = chainNames.length;
         for (uint256 i; i < length; ++i) {
-            supportedByGateway[chainNames[i]] = true;
+            string calldata chainName = chainNames[i];
+            supportedByGateway[chainName] = true;
+            emit GatewaySupportedChainAdded(chainName);
         }
     }
 
     function removeGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
         uint256 length = chainNames.length;
         for (uint256 i; i < length; ++i) {
-            supportedByGateway[chainNames[i]] = false;
+            string calldata chainName = chainNames[i];
+            supportedByGateway[chainName] = false;
+            emit GatewaySupportedChainRemoved(chainName);
         }
     }
 
