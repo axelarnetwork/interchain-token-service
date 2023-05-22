@@ -3,6 +3,8 @@
 pragma solidity 0.8.9;
 
 interface ITokenManager {
+    error NotProxy();
+
     function sendToken(string calldata destiantionChain, bytes calldata destinationAddress, uint256 amount) external payable;
 
     function callContractWithInterchainToken(

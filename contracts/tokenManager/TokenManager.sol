@@ -5,6 +5,21 @@ pragma solidity 0.8.9;
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 abstract contract TokenManager is ITokenManager {
+    address private implementationAddress;
+
+    constructor() {
+        implementationAddress = address(this);
+    }
+
+    modifier onlyProxy() {
+        if (implementationAddress == address(this)) revert NotProxy();
+        _;
+    }
+
+    function setup(bytes calldata params) external onlyProxy {
+        _setup(params);
+    }
+
     // solhint-disable-next-line no-empty-blocks
     function sendToken(string calldata destiantionChain, bytes calldata destinationAddress, uint256 amount) external payable {
         // TODO: implement
@@ -27,4 +42,6 @@ abstract contract TokenManager is ITokenManager {
     function _takeToken(address from, uint256 amount) internal virtual returns (uint256);
 
     function _giveToken(address from, uint256 amount) internal virtual returns (uint256);
+
+    function _setup(bytes calldata params) internal virtual;
 }

@@ -83,4 +83,9 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     ) external {
         // TODO: implement
     }
+
+    // solhint-disable-next-line no-empty-blocks
+    function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress) {
+        // TODO: implement
+    }
 }
