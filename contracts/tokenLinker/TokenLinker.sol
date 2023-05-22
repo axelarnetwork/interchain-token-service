@@ -28,32 +28,68 @@ abstract contract TokenLinker is ITokenLinker {
     IInterchainTokenRegistry public immutable interchainTokenService;
     address public tokenAddress;
     bytes32 public tokenId;
+    address public admin;
+
+    address private immutable implementationAddress;
 
     uint256 constant SEND_TOKEN_SELECTOR = 1;
     uint256 constant SEND_TOKEN_WITH_DATA_SELECTOR = 2;
 
-    constructor(
-        address interchainTokenService_
-    ) {
-        if (interchainTokenService_ == address(0))
-            revert TokenLinkerZeroAddress();
+    constructor(address interchainTokenService_) {
+        if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
         interchainTokenService = IInterchainTokenRegistry(interchainTokenService_);
+        implementationAddress = address(this);
     }
 
     modifier onlyService() {
-        if(msg.sender != address(interchainTokenService)) revert NotService();
+        if (msg.sender != address(interchainTokenService)) revert NotService();
         _;
+    }
+
+    modifier onlyProxy() {
+        if (implementationAddress == address(this)) revert NotProxy();
+        _;
+    }
+
+    modifier onlyAdmin() {
+        if (msg.sender != admin) revert NotAdmin();
+        _;
+    }
+
+    function setup(bytes calldata params) external onlyProxy {
+        (tokenAddress, admin) = abi.decode(params, (address, address));
+        _setup(params);
     }
 
     function sendToken(string calldata destiantionChain, bytes calldata destinationAddress, uint256 amount) external payable {
         amount = _takeToken(msg.sender, amount);
-        interchainTokenService.sendToken{value: msg.value}(tokenId, destiantionChain, destinationAddress, amount);
+        interchainTokenService.sendToken{ value: msg.value }(tokenId, destiantionChain, destinationAddress, amount);
     }
 
-    function proccessSendToken(bytes calldata destinationAddress, uint256 amount) external onlyService() {
-        _giveToken(destinationAddress.toAddress(), amount);
+    function callContractWithInterchainToken(
+        string calldata destiantionChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable {
+        amount = _takeToken(msg.sender, amount);
+        interchainTokenService.sendTokenWithData{ value: msg.value }(
+            tokenId,
+            msg.sender,
+            destiantionChain,
+            destinationAddress,
+            amount,
+            data
+        );
     }
 
-    function _takeToken(address from, uint256 amount) internal virtual returns(uint256);
-    function _giveToken(address to, uint256 amount) internal virtual returns(uint256);
+    function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
+        return _giveToken(destinationAddress, amount);
+    }
+
+    function _takeToken(address from, uint256 amount) internal virtual returns (uint256);
+
+    function _giveToken(address to, uint256 amount) internal virtual returns (uint256);
+
+    function _setup(bytes calldata params) internal virtual {}
 }

@@ -10,7 +10,7 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 import { EternalStorage } from '@axelar-network/axelar-cgp-solidity/contracts/EternalStorage.sol';
 
 import { IInterchainTokenRegistry } from '../interfaces/IInterchainTokenRegistry.sol';
-import { ITokenDeployer } from '../interfaces/ITokenDeployer.sol';
+import { TokenLinkerDeployer } from '../utils/TokenLinkerDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
@@ -22,16 +22,21 @@ import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { LinkedTokenData } from '../libraries/LinkedTokenData.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
-contract InterchainTokenRegistry is IInterchainTokenRegistry, AxelarExecutable, EternalStorage, Upgradable {
+contract InterchainTokenRegistry is IInterchainTokenRegistry, AxelarExecutable, EternalStorage, Upgradable, TokenLinkerDeployer {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using LinkedTokenData for bytes32;
     using AddressBytesUtils for bytes;
+    using AddressBytesUtils for address;
 
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
-    ITokenDeployer public immutable tokenDeployer;
     IExpressCallHandler public immutable expressCallHandler;
+
+    address public immutable lockUnlockImpl;
+    address public immutable mintBurnImpl;
+    address public immutable deployedImpl;
+    address public immutable gatewayImpl;
 
     bytes32 internal constant PREFIX_TOKEN_DATA = keccak256('itl-token-data');
     bytes32 internal constant PREFIX_ORIGINAL_CHAIN = keccak256('itl-original-chain');
@@ -40,8 +45,8 @@ contract InterchainTokenRegistry is IInterchainTokenRegistry, AxelarExecutable, 
     bytes32 internal constant PREFIX_TOKEN_MINT_AMOUNT = keccak256('itl-token-mint-amount');
     bytes32 internal constant PREFIX_CUSTOM_INTERCHAIN_TOKEN_ID = keccak256('itl-custom-interchain-token-id');
 
-    uint256 constant SEND_TOKEN_SELECTOR = 1;
-    uint256 constant SEND_TOKEN_WITH_DATA_SELECTOR = 2;
+    uint256 internal constant SEND_TOKEN_SELECTOR = 1;
+    uint256 internal constant SEND_TOKEN_WITH_DATA_SELECTOR = 2;
 
     // keccak256('interchain-token-service')-1
     // solhint-disable-next-line const-name-snakecase
@@ -54,18 +59,23 @@ contract InterchainTokenRegistry is IInterchainTokenRegistry, AxelarExecutable, 
         address gatewayAddress_,
         address gasServiceAddress_,
         address linkerRouterAddress_,
-        address tokenDeployerAddress_,
+        address deployer_,
+        address bytecodeServer_,
         address expressCallHandlerAddress_,
+        address[] memory implementations,
         string memory chainName_
-    ) AxelarExecutable(gatewayAddress_) {
+    ) AxelarExecutable(gatewayAddress_) TokenLinkerDeployer(deployer_, bytecodeServer_) {
         if (gatewayAddress_ == address(0) || gasServiceAddress_ == address(0) || linkerRouterAddress_ == address(0))
             revert TokenServiceZeroAddress();
         gasService = IAxelarGasService(gasServiceAddress_);
         linkerRouter = ILinkerRouter(linkerRouterAddress_);
-        tokenDeployer = ITokenDeployer(tokenDeployerAddress_);
         expressCallHandler = IExpressCallHandler(expressCallHandlerAddress_);
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
+        lockUnlockImpl = implementations[uint256(TokenLinkerType.LOCK_UNLOCK)];
+        mintBurnImpl = implementations[uint256(TokenLinkerType.MINT_BURN)];
+        deployedImpl = implementations[uint256(TokenLinkerType.DEPLOYED)];
+        gatewayImpl = implementations[uint256(TokenLinkerType.GATEWAY)];
     }
 
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
@@ -73,38 +83,76 @@ contract InterchainTokenRegistry is IInterchainTokenRegistry, AxelarExecutable, 
         _;
     }
 
-    modifier onlyTokenLinker(bytes32 tokenId) {
-        if(msg.sender != getTokenLinkerAddress(tokenId)) revert NotTokenLinker();
+    modifier onlyTokenLinker(bytes32 tokenLinkerId) {
+        if (msg.sender != getTokenLinkerAddress(tokenLinkerId)) revert NotTokenLinker();
         _;
     }
 
-    function getTokenId(address sender, bytes32 salt) public pure returns (bytes32) {
+    function gettokenLinkerId(address sender, bytes32 salt) public pure returns (bytes32) {
         return keccak256(abi.encode(PREFIX_CUSTOM_INTERCHAIN_TOKEN_ID, sender, salt));
     }
 
-    function getTokenLinkerAddress(bytes32 tokenId) public view returns (address deployment) {
-        deployment = tokenDeployer.getDeploymentAddress(address(this), tokenId);
+    function getImplementation(TokenLinkerType tokenLinkerType) external view returns (address impl) {
+        if (tokenLinkerType == TokenLinkerType.LOCK_UNLOCK) {
+            impl = lockUnlockImpl;
+        } else if (tokenLinkerType == TokenLinkerType.MINT_BURN) {
+            impl = mintBurnImpl;
+        } else if (tokenLinkerType == TokenLinkerType.LOCK_UNLOCK) {
+            impl = deployedImpl;
+        } else if (tokenLinkerType == TokenLinkerType.LOCK_UNLOCK) {
+            impl = gatewayImpl;
+        }
     }
 
     /* EXTERNAL FUNCTIONS */
 
-
-
-    function registerToken(bytes32 salt, address tokenAddress, bytes calldata params) external returns (bytes32 tokenId) {
+    function registerToken(bytes32 salt, TokenLinkerType tokenLinkerType, bytes calldata params) external returns (bytes32 tokenLinkerId) {
+        address tokenAddress = abi.decode(params, (address));
         _validateOriginToken(tokenAddress);
-        tokenId = getTokenId(msg.sender, salt);
-        _registerToken(tokenAddress, tokenId, params);
+        tokenLinkerId = gettokenLinkerId(msg.sender, salt);
+        _registerToken(tokenLinkerId, tokenLinkerType, params);
     }
 
-   function sendToken(bytes32 tokenId, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable onlyTokenLinker(tokenId){
-        bytes memory payload = abi.encode(SEND_TOKEN_SELECTOR, destinationAddress, amount);
+    function sendToken(
+        bytes32 tokenLinkerId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable onlyTokenLinker(tokenLinkerId) {
+        bytes memory payload = abi.encode(SEND_TOKEN_SELECTOR, tokenLinkerId, destinationAddress, amount);
+        _callContract(destinationChain, payload, msg.value);
+    }
+
+    function sendTokenWithData(
+        bytes32 tokenLinkerId,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable onlyTokenLinker(tokenLinkerId) {
+        bytes memory sourceAddressBytes = sourceAddress.toBytes();
+        bytes memory payload = abi.encode(
+            SEND_TOKEN_WITH_DATA_SELECTOR,
+            tokenLinkerId,
+            destinationAddress,
+            amount,
+            chainName.toTrimmedString(),
+            sourceAddressBytes,
+            data
+        );
         _callContract(destinationChain, payload, msg.value);
     }
 
     // UTILITY FUNCTIONS
 
-    function _registerToken(address tokenAddress, bytes32 tokenId, bytes calldata params) internal {
-        emit TokenRegistered(tokenId, tokenAddress);
+    function _registerToken(
+        bytes32 tokenLinkerId,
+        TokenLinkerType tokenLinkerType,
+        bytes calldata params
+    ) internal returns (address tokenLinkerAddress) {
+        tokenLinkerAddress = _deployTokenLinker(tokenLinkerId, tokenLinkerType, params);
+        emit TokenRegistered(tokenLinkerId, tokenLinkerType, params, tokenLinkerAddress);
     }
 
     function _validateOriginToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
@@ -128,23 +176,57 @@ contract InterchainTokenRegistry is IInterchainTokenRegistry, AxelarExecutable, 
         gateway.callContract(destinationChain, destinationAddress, payload);
     }
 
-    /* EXECUTE AND EXECUTE WITH TOKEN */
+    /* EXECUTE */
 
     function _execute(
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
     ) internal override onlyRemoteService(sourceChain, sourceAddress) {
-        //TODO: implement
+        uint256 selector = abi.decode(payload, (uint256));
+        if (selector == SEND_TOKEN_SELECTOR) {
+            _proccessSendTokenPayload(payload);
+        } else if (selector == SEND_TOKEN_WITH_DATA_SELECTOR) {
+            _proccessSendTokenWithDataPayload(payload);
+        }
     }
 
-    function _executeWithToken(
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata /*symbol*/,
-        uint256 /*amount*/
-    ) internal override {
-        _execute(sourceChain, sourceAddress, payload);
+    function _proccessSendTokenPayload(bytes calldata payload) internal {
+        (, bytes32 tokenLinkerId, bytes memory destinationAddressBytes, uint256 amount, bytes32 sendHash) = abi.decode(
+            payload,
+            (uint256, bytes32, bytes, uint256, bytes32)
+        );
+        address tokenAddress = getTokenLinkerAddress(tokenLinkerId);
+        address destinationAddress = destinationAddressBytes.toAddress();
+        ITokenLinker(tokenAddress).giveToken(destinationAddress, amount);
+        emit Receiving(tokenLinkerId, destinationAddress, amount, sendHash);
+    }
+
+    function _proccessSendTokenWithDataPayload(bytes calldata payload) internal {
+        (
+            ,
+            bytes32 tokenLinkerId,
+            bytes memory destinationAddressBytes,
+            uint256 amount,
+            string memory sourceChain,
+            bytes memory sourceAddress,
+            bytes memory data,
+            bytes32 sendHash
+        ) = abi.decode(payload, (uint256, bytes32, bytes, uint256, string, bytes, bytes, bytes32));
+        address tokenAddress = getTokenLinkerAddress(tokenLinkerId);
+        address destinationAddress = destinationAddressBytes.toAddress();
+        ITokenLinker(tokenAddress).giveToken(destinationAddress, amount);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool executionSuccessful, ) = destinationAddress.call(
+            abi.encodeWithSelector(
+                IInterchainTokenExecutable.exectuteWithInterchainToken.selector,
+                tokenAddress,
+                sourceChain,
+                sourceAddress,
+                amount,
+                data
+            )
+        );
+        emit ReceivingWithData(tokenLinkerId, sourceChain, destinationAddress, amount, sourceAddress, data, sendHash, executionSuccessful);
     }
 }

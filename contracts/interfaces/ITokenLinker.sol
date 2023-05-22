@@ -11,6 +11,8 @@ interface ITokenLinker {
     error NotService();
     error TakeTokenFailed();
     error GiveTokenFailed();
+    error NotProxy();
+    error NotAdmin();
 
     event Sending(string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 indexed sendHash);
     event SendingWithData(
@@ -36,4 +38,15 @@ interface ITokenLinker {
     event TokenRegistered(bytes32 indexed tokenId, address indexed tokenAddress, bool native, bool gateway, bool remoteGateway);
     event TokenDeployed(address indexed tokenAddress, string name, string symbol, uint8 decimals, address indexed owner);
     event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
+
+    function sendToken(string calldata destiantionChain, bytes calldata destinationAddress, uint256 amount) external payable;
+
+    function callContractWithInterchainToken(
+        string calldata destiantionChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable;
+
+    function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
 }
