@@ -3,12 +3,11 @@
 pragma solidity ^0.8.9;
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
+import { TokenManagerDeployer } from '../utils/TokenManagerDeployer.sol';
 
-contract InterchainTokenService is IInterchainTokenService {
+contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer {
     // solhint-disable-next-line no-empty-blocks
-    function getTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress) {
-        // TODO: implement
-    }
+    constructor(address deployer_, address bytecodeServer_) TokenManagerDeployer(deployer_, bytecodeServer_) {}
 
     // solhint-disable-next-line no-empty-blocks
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress) {

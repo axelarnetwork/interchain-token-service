@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
+import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 
-interface IInterchainTokenService is ITokenManagerType {
+interface IInterchainTokenService is ITokenManagerDeployer {
     event Sending(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event SendingWithData(
         bytes32 tokenId,
@@ -31,8 +31,6 @@ interface IInterchainTokenService is ITokenManagerType {
         bytes params
     );
     event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
-
-    function getTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress);
 

@@ -4,26 +4,24 @@ pragma solidity 0.8.9;
 
 import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol';
 
-import { ITokenDeployer } from '../interfaces/ITokenDeployer.sol';
+import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 
-contract TokenDeployer is ITokenDeployer {
+contract TokenManagerDeployer is ITokenManagerDeployer {
     Create3Deployer public immutable deployer;
     address public immutable bytecodeServer;
-    address public immutable tokenImplementation;
-    ITokenDeployer public immutable thisAddress;
 
-    constructor(address deployer_, address bytecodeServer_, address tokenImplementation_) {
+    constructor(address deployer_, address bytecodeServer_) {
+        if (deployer_ == address(0) || bytecodeServer_ == address(0)) revert AddressZero();
         deployer = Create3Deployer(deployer_);
         bytecodeServer = bytecodeServer_;
-        tokenImplementation = tokenImplementation_;
-        thisAddress = ITokenDeployer(this);
     }
 
     // this function assumes that the sender will delegatecall to deploy tokens, which is the case.
-    function getDeploymentAddress(address deployerAddress, bytes32 salt) external view returns (address deployment) {
-        deployment = deployer.deployedAddress(deployerAddress, salt);
+    function getTokenManagerAddress(bytes32 tokenManagerId) public view returns (address deployment) {
+        deployment = deployer.deployedAddress(address(this), tokenManagerId);
     }
 
+    // this is done as an external call because it is easier to manipulate calldata, but args are gotten from abi.encode which will always result in memory.
     function getBytecode(bytes calldata args) external view returns (bytes memory bytecode) {
         uint256 bytecodeLen;
         address server = bytecodeServer;
@@ -43,16 +41,14 @@ contract TokenDeployer is ITokenDeployer {
         }
     }
 
-    function deployToken(
-        string calldata name,
-        string calldata symbol,
-        uint8 decimals,
-        address owner,
-        bytes32 salt
-    ) external payable returns (address tokenAddress) {
-        bytes memory args = abi.encode(tokenImplementation, name, symbol, decimals, owner);
+    function _deployTokenManager(
+        bytes32 tokenManagerId,
+        TokenManagerType implementationType,
+        bytes calldata params
+    ) internal returns (address tokenAddress) {
+        bytes memory args = abi.encode(address(this), implementationType, params);
         // convert args to calldata by doing an external call to handle more easily in the function
-        bytes memory bytecode = thisAddress.getBytecode(args);
-        tokenAddress = deployer.deploy(bytecode, salt);
+        bytes memory bytecode = this.getBytecode(args);
+        tokenAddress = deployer.deploy(bytecode, tokenManagerId);
     }
 }
