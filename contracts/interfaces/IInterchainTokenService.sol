@@ -10,6 +10,7 @@ import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     error TokenServiceZeroAddress();
     error LengthMismatch();
+    error NotRemoteService();
 
     event Sending(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event SendingWithData(
@@ -27,7 +28,8 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         address indexed destinationAddress,
         uint256 indexed amount,
         address indexed from,
-        bytes data
+        bytes data,
+        bool success
     );
     event TokenManagerDeployed(
         bytes32 indexed tokenId,

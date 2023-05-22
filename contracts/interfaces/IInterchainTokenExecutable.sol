@@ -3,9 +3,9 @@
 pragma solidity ^0.8.9;
 
 // General interface for upgradable contracts
-interface IInterTokenExecutable {
+interface IInterchainTokenExecutable {
     function exectuteWithInterToken(
-        address tokenAddress,
+        bytes32 tokenId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
         uint256 amount,
