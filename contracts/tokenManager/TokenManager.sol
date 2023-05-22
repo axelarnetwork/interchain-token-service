@@ -3,11 +3,20 @@
 pragma solidity 0.8.9;
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 abstract contract TokenManager is ITokenManager {
-    address private implementationAddress;
+    address private immutable implementationAddress;
+    IInterchainTokenService public immutable interchainTokenService;
 
-    constructor() {
+    modifier onlyService() {
+        if (msg.sender != address(interchainTokenService)) revert NotService();
+        _;
+    }
+
+    constructor(address interchainTokenService_) {
+        if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
+        interchainTokenService = IInterchainTokenService(interchainTokenService_);
         implementationAddress = address(this);
     }
 
@@ -34,9 +43,8 @@ abstract contract TokenManager is ITokenManager {
         // TODO: implement
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    function giveToken(address destinationAddress, uint256 amount) external returns (uint256) {
-        // TODO: implement
+    function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
+        return _giveToken(destinationAddress, amount);
     }
 
     function _takeToken(address from, uint256 amount) internal virtual returns (uint256);

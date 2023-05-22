@@ -6,6 +6,10 @@ import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ERC20 } from '../utils/ERC20.sol';
 
 contract InterchainToken is IInterchainToken, ERC20 {
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+
     function interchainTransfer(
         string calldata destinationChain,
         string calldata recipient,

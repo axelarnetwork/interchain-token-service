@@ -2,12 +2,36 @@
 
 pragma solidity ^0.8.9;
 
+import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { TokenManagerDeployer } from '../utils/TokenManagerDeployer.sol';
 
 contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer {
-    // solhint-disable-next-line no-empty-blocks
-    constructor(address deployer_, address bytecodeServer_) TokenManagerDeployer(deployer_, bytecodeServer_) {}
+    IAxelarGateway public immutable gateway;
+    address public immutable implementationLockUnlock;
+    address public immutable implementationMintBurn;
+    address public immutable implementationCanonical;
+    address public immutable implementationGateway;
+
+    constructor(
+        address deployer_,
+        address bytecodeServer_,
+        address gateway_,
+        address[] memory tokenManagerImplementations
+    ) TokenManagerDeployer(deployer_, bytecodeServer_) {
+        if (gateway_ == address(0)) revert TokenServiceZeroAddress();
+        gateway = IAxelarGateway(gateway_);
+        if (tokenManagerImplementations.length != 4) revert LengthMismatch();
+        if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert TokenServiceZeroAddress();
+        implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
+        if (tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)] == address(0)) revert TokenServiceZeroAddress();
+        implementationMintBurn = tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)];
+        if (tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)] == address(0)) revert TokenServiceZeroAddress();
+        implementationCanonical = tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)];
+        if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert TokenServiceZeroAddress();
+        implementationGateway = tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)];
+    }
 
     // solhint-disable-next-line no-empty-blocks
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress) {
@@ -86,6 +110,14 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
 
     // solhint-disable-next-line no-empty-blocks
     function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress) {
-        // TODO: implement
+        if (tokenManagerType == TokenManagerType.LOCK_UNLOCK) {
+            return implementationLockUnlock;
+        } else if (tokenManagerType == TokenManagerType.MINT_BURN) {
+            return implementationMintBurn;
+        } else if (tokenManagerType == TokenManagerType.CANONICAL) {
+            return implementationCanonical;
+        } else if (tokenManagerType == TokenManagerType.GATEWAY) {
+            return implementationGateway;
+        }
     }
 }
