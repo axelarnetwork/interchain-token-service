@@ -3,10 +3,11 @@
 pragma solidity ^0.8.9;
 
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarExecutable.sol';
 
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 
-interface IInterchainTokenService is ITokenManagerDeployer {
+interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     error TokenServiceZeroAddress();
     error LengthMismatch();
 
@@ -36,8 +37,6 @@ interface IInterchainTokenService is ITokenManagerDeployer {
         bytes params
     );
     event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
-
-    function gateway() external view returns (IAxelarGateway);
 
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress);
 

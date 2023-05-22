@@ -3,12 +3,12 @@
 pragma solidity ^0.8.9;
 
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { TokenManagerDeployer } from '../utils/TokenManagerDeployer.sol';
 
-contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer {
-    IAxelarGateway public immutable gateway;
+contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer, AxelarExecutable {
     address public immutable implementationLockUnlock;
     address public immutable implementationMintBurn;
     address public immutable implementationCanonical;
@@ -19,9 +19,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address bytecodeServer_,
         address gateway_,
         address[] memory tokenManagerImplementations
-    ) TokenManagerDeployer(deployer_, bytecodeServer_) {
-        if (gateway_ == address(0)) revert TokenServiceZeroAddress();
-        gateway = IAxelarGateway(gateway_);
+    ) TokenManagerDeployer(deployer_, bytecodeServer_) AxelarExecutable(gateway_) {
         if (tokenManagerImplementations.length != 4) revert LengthMismatch();
         if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert TokenServiceZeroAddress();
         implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
@@ -32,6 +30,8 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert TokenServiceZeroAddress();
         implementationGateway = tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)];
     }
+
+    modifier onlyRemoteService
 
     // solhint-disable-next-line no-empty-blocks
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress) {
@@ -119,5 +119,9 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         } else if (tokenManagerType == TokenManagerType.GATEWAY) {
             return implementationGateway;
         }
+    }
+
+    function _execute(string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) internal override {
+
     }
 }
