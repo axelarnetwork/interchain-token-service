@@ -5,8 +5,7 @@ pragma solidity 0.8.9;
 import { TokenManager } from '../TokenManager.sol';
 import { InterchainToken } from '../../interchainToken/InterchainToken.sol';
 
-contract TokenLinkerMintBurn is TokenManager, InterchainToken {
-    address public tokenAddress;
+contract TokenManagerCanonical is TokenManager, InterchainToken {
 
     constructor(
         address interchainTokenService_
@@ -14,6 +13,10 @@ contract TokenLinkerMintBurn is TokenManager, InterchainToken {
         // solhint-disable-next-line no-empty-blocks
         TokenManager(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
+
+    function tokenAddress() external view returns (address) {
+        return address(this);
+    }
 
     function _setup(bytes calldata params) internal override {
         //the first argument is reserved for the admin.

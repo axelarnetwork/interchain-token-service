@@ -5,7 +5,7 @@ pragma solidity 0.8.9;
 import { TokenManager } from '../TokenManager.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
-contract TokenLinkerMintBurn is TokenManager {
+contract TokenManagerLockUnlock is TokenManager {
     address public tokenAddress;
 
     constructor(

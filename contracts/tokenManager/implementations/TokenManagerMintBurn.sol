@@ -5,7 +5,7 @@ pragma solidity 0.8.9;
 import { TokenManager } from '../TokenManager.sol';
 import { IERC20BurnableMintable } from '../../interfaces/IERC20BurnableMintable.sol';
 
-contract TokenLinkerMintBurn is TokenManager {
+contract TokenManagerMintBurn is TokenManager {
     address public tokenAddress;
 
     constructor(
