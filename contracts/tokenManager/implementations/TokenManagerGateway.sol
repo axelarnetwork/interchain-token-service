@@ -6,7 +6,7 @@ import { TokenManager } from '../TokenManager.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 
-contract TokenLinkerMintBurn is TokenManager {
+contract TokenManagerGateway is TokenManager {
     address public tokenAddress;
     string public gatewaySymbol;
 
