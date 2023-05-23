@@ -153,7 +153,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         } else if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
             _proccessSendTokenWithDataPayload(sourceChain, payload);
         } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
-            _proccessDeployTokenManagerPayload(sourceChain, payload);
+            _proccessDeployTokenManagerPayload(payload);
         }
     }
 
@@ -165,31 +165,45 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address destinationAddress = destinationAddressBytes.toAddress();
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.giveToken(destinationAddress, amount);
-        emit Receiving(tokenId, sourceChain, destinationAddress, amount);
+        emit Receiving(tokenId, sourceChain, destinationAddress, amount, sendHash);
     }
 
     function _proccessSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
-        (
-            ,
-            bytes32 tokenId,
-            bytes memory destinationAddressBytes,
-            uint256 amount,
-            bytes memory sourceAddress,
-            bytes memory data,
-            bytes32 sendHash
-        ) = abi.decode(payload, (uint256, bytes32, bytes, uint256, bytes, bytes, bytes32));
-        address destinationAddress = destinationAddressBytes.toAddress();
+        bytes32 tokenId;
+        uint256 amount;
+        bytes memory sourceAddress;
+        bytes memory data;
+        bytes32 sendHash;
+        address destinationAddress;
+        {
+            bytes memory destinationAddressBytes;
+            (, tokenId, destinationAddressBytes, amount, sourceAddress, data, sendHash) = abi.decode(
+                payload,
+                (uint256, bytes32, bytes, uint256, bytes, bytes, bytes32)
+            );
+            destinationAddress = destinationAddressBytes.toAddress();
+        }
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.giveToken(destinationAddress, amount);
-        (bool success, ) = IInterchainTokenExecutable(destinationAddress).exectuteWithInterToken(tokenId, amount, data);
-        emit ReceivingWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = destinationAddress.call(
+            abi.encodeWithSelector(
+                IInterchainTokenExecutable.exectuteWithInterchainToken.selector,
+                tokenId,
+                sourceChain,
+                sourceAddress,
+                amount,
+                data
+            )
+        );
+        emit ReceivingWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
     }
 
-    function _proccessDeployTokenManagerPayload(string calldata sourceChain, bytes calldata payload) internal {
-        (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
-        address destinationAddress = destinationAddressBytes.toAddress();
-        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
-        amount = tokenManager.giveToken(destinationAddress, amount);
-        emit Receiving(tokenId, sourceChain, destinationAddress, amount);
+    function _proccessDeployTokenManagerPayload(bytes calldata payload) internal {
+        (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
+            payload,
+            (uint256, bytes32, TokenManagerType, bytes)
+        );
+        _deployTokenManager(tokenId, tokenManagerType, params);
     }
 }

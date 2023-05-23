@@ -44,7 +44,7 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
     function _deployTokenManager(
         bytes32 tokenManagerId,
         TokenManagerType implementationType,
-        bytes calldata params
+        bytes memory params
     ) internal returns (address tokenAddress) {
         bytes memory args = abi.encode(address(this), implementationType, params);
         // convert args to calldata by doing an external call to handle more easily in the function
