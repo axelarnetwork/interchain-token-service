@@ -78,9 +78,9 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         uint256[] calldata gasValues
     ) external payable;
 
-    function registerCustomToken(bytes32 salt, TokenManagerType tokenManagerType, bytes calldata params) external;
+    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes calldata params) external;
 
-    function registerRemoteCustomTokens(
+    function deployRemoteCustomTokenManagers(
         bytes32 salt,
         string[] calldata destinationChains,
         TokenManagerType[] calldata tokenManagerTypes,
@@ -88,7 +88,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         uint256[] calldata gasValues
     ) external payable;
 
-    function registerCustomTokenAndDeployRemote(
+    function deployCustomTokenManagerAndDeployRemote(
         bytes32 salt,
         TokenManagerType tokenManagerType,
         bytes calldata params,
