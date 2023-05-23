@@ -10,6 +10,7 @@ import { TokenManagerDeployer } from '../utils/TokenManagerDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
@@ -24,6 +25,11 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     address public immutable implementationCanonical;
     address public immutable implementationGateway;
     ILinkerRouter public immutable linkerRouter;
+    bytes32 public immutable chainNameHash;
+    bytes32 public immutable chainName;
+
+    bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('itl-custom-token-id');
+    bytes32 internal constant PREFIX_CANONICAL_TOKEN_ID = keccak256('itl-cacnonical-token-id');
 
     uint256 private constant SELECTOR_SEND_TOKEN = 1;
     uint256 private constant SELECTOR_SEND_TOKEN_WITH_DATA = 2;
@@ -34,7 +40,8 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address bytecodeServer_,
         address gateway_,
         address linkerRouter_,
-        address[] memory tokenManagerImplementations
+        address[] memory tokenManagerImplementations,
+        string memory chainName_
     ) TokenManagerDeployer(deployer_, bytecodeServer_) AxelarExecutable(gateway_) {
         if (linkerRouter_ == address(0)) revert TokenServiceZeroAddress();
         linkerRouter = ILinkerRouter(linkerRouter_);
@@ -47,6 +54,9 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         implementationCanonical = tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)];
         if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert TokenServiceZeroAddress();
         implementationGateway = tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)];
+
+        chainName = chainName_.toBytes32();
+        chainNameHash = keccak256(bytes(chainName_));
     }
 
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
@@ -55,18 +65,17 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress) {
-        // TODO: implement
+    function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress) {
+        tokenManagerAddress = getTokenManagerAddress(tokenId);
+        if(ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerNotDeployed(tokenId);
     }
 
-    // solhint-disable-next-line no-empty-blocks
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId) {
-        // TODO: implement
+        tokenId = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_ID, chainNameHash, tokenAddress));
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    function getCustomTokenId(address admin, bytes32 salt) external view returns (bytes32 tokenId) {
-        // TODO: implement
+    function getCustomTokenId(address admin, bytes32 salt) external pure returns (bytes32 tokenId) {
+        tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, admin, salt));
     }
 
     // solhint-disable-next-line no-empty-blocks

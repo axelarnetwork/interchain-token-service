@@ -8,7 +8,9 @@ interface ITokenManagerProxy is ITokenManagerType {
     error ImplementationLookupFailed();
     error SetupFailed();
 
-    function implementationType() external returns (TokenManagerType);
+    function implementationType() external view returns (TokenManagerType);
 
-    function implementation() external returns (address);
+    function implementation() external view returns (address);
+
+    function tokenId() external view returns (bytes32);
 }
