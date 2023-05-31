@@ -6,6 +6,7 @@ import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.s
 import { TokenManagerDeployer } from '../utils/TokenManagerDeployer.sol';
 
 contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer {
+    // This calculates the token manager address for a given ID even if that token manager is not yet deployed.
     // solhint-disable-next-line no-empty-blocks
     constructor(address deployer_, address bytecodeServer_) TokenManagerDeployer(deployer_, bytecodeServer_) {}
 
@@ -14,11 +15,13 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         // TODO: implement
     }
 
+    // There are two ways to cacluate a tokenId, one is for pre-existing tokens, and anyone can do this for a token once.
     // solhint-disable-next-line no-empty-blocks
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId) {
         // TODO: implement
     }
 
+    // The other is by providing a salt, and your address (msg.sender) is used for the calculation.
     // solhint-disable-next-line no-empty-blocks
     function getCustomTokenId(address admin, bytes32 salt) external view returns (bytes32 tokenId) {
         // TODO: implement
