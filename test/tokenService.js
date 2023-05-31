@@ -10,16 +10,14 @@ const { defaultAbiCoder, keccak256 } = ethers.utils;
 const { Contract } = ethers;
 
 const TokenManager = require('../artifacts/contracts/tokenManager/TokenManager.sol/TokenManager.json');
-const TokenManagerProxy = require('../artifacts/contracts/proxies/TokenManagerProxy.sol/TokenManagerProxy.json');
 const { approveContractCall, getRandomBytes32, deployGatewayToken } = require('../scripts/utils');
 
 describe('Interchain Token Service', () => {
     let wallet;
-    let otherWallet;
     let service, gateway, gasService;
 
-    const SELECTOR_SEND_TOKEN = 1;
-    const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
+    // const SELECTOR_SEND_TOKEN = 1;
+    // const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
     const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 
     const LOCK_UNLOCK = 0;
@@ -30,16 +28,15 @@ describe('Interchain Token Service', () => {
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
-        otherWallet = wallets[1];
 
         [service, gateway, gasService] = await deployAll(wallet, 'Test');
     });
 
     describe('Register Canonical Token', () => {
         let token;
-        let tokenName = 'Token Name';
-        let tokenSymbol = 'TN';
-        let tokenDecimals = 13;
+        const tokenName = 'Token Name';
+        const tokenSymbol = 'TN';
+        const tokenDecimals = 13;
         let tokenId;
         before(async () => {
             token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
@@ -57,9 +54,9 @@ describe('Interchain Token Service', () => {
 
     describe('Initiate Remote Canonical Token Deployment', () => {
         let token;
-        let tokenName = 'Token Name';
-        let tokenSymbol = 'TN';
-        let tokenDecimals = 13;
+        const tokenName = 'Token Name';
+        const tokenSymbol = 'TN';
+        const tokenDecimals = 13;
         let tokenId;
         before(async () => {
             token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
@@ -96,9 +93,9 @@ describe('Interchain Token Service', () => {
 
     describe('Register Canonical Token and Deploy Remote Tokens', async () => {
         let token;
-        let tokenName = 'Token Name';
-        let tokenSymbol = 'TN';
-        let tokenDecimals = 13;
+        const tokenName = 'Token Name';
+        const tokenSymbol = 'TN';
+        const tokenDecimals = 13;
         let tokenId;
         before(async () => {
             token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
@@ -219,6 +216,7 @@ describe('Interchain Token Service', () => {
             const params = ['0x1234', '0x4567'];
             const types = [LOCK_UNLOCK, MINT_BURN];
             const payloads = [];
+
             for (const i of [0, 1]) {
                 payloads.push(
                     defaultAbiCoder.encode(
@@ -227,6 +225,7 @@ describe('Interchain Token Service', () => {
                     ),
                 );
             }
+
             await expect(service.deployRemoteCustomTokenManagers(salt, chains, types, params, gasValues, { value: 1e6 }))
                 .to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
                 .withArgs(tokenId, chains[0], gasValues[0], types[0], params[0])
@@ -303,6 +302,7 @@ describe('Interchain Token Service', () => {
             const remoteParams = ['0x1234', '0x4567'];
             const types = [LOCK_UNLOCK, MINT_BURN];
             const payloads = [];
+
             for (const i of [0, 1]) {
                 payloads.push(
                     defaultAbiCoder.encode(
@@ -311,6 +311,7 @@ describe('Interchain Token Service', () => {
                     ),
                 );
             }
+
             await expect(
                 service.deployCustomTokenManagerAndDeployRemote(salt, tokenManagerType, params, chains, types, remoteParams, gasValues, {
                     value: 1e6,

@@ -28,10 +28,12 @@ async function approveContractCall(
 
 async function deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals, walletForExternal) {
     let tokenAddress = AddressZero;
+
     if (walletForExternal) {
         const token = await deployContract(walletForExternal, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
         tokenAddress = token.address;
     }
+    
     const params = defaultAbiCoder.encode(
         ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
         [tokenName, tokenSymbol, tokenDecimals, 0, tokenAddress, 0],

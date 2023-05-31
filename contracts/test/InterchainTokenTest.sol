@@ -10,8 +10,8 @@ contract InterchainTokenTest is InterchainToken, Ownable {
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
-        // solhint-disable-next-line no-inline-assembly
         address owner = msg.sender;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(_OWNER_SLOT, owner)
         }

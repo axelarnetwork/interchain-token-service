@@ -61,10 +61,12 @@ async function deployInterchainTokenService(
 
 async function deployTokenManagerImplementations(wallet, interchainTokenServiceAddress) {
     const implementations = [];
+
     for (const type of ['LockUnlock', 'MintBurn', 'Canonical', 'Gateway']) {
         const impl = await deployContract(wallet, `TokenManager${type}`, [interchainTokenServiceAddress]);
         implementations.push(impl);
     }
+    
     return implementations;
 }
 
