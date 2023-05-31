@@ -17,7 +17,9 @@ import { IERC20Named } from '../interfaces/IERC20Named.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
-contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer, AxelarExecutable {
+import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
+
+contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer, AxelarExecutable, Upgradable {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using AddressBytesUtils for bytes;
@@ -37,6 +39,10 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     uint256 private constant SELECTOR_SEND_TOKEN = 1;
     uint256 private constant SELECTOR_SEND_TOKEN_WITH_DATA = 2;
     uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
+
+    // keccak256('interchain-token-service')-1
+    // solhint-disable-next-line const-name-snakecase
+    bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
 
     constructor(
         address deployer_,
@@ -105,6 +111,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         uint256[] calldata gasValues
     ) public payable {
         address tokenAddress = getValidTokenManagerAddress(tokenId);
+        tokenAddress = ITokenManager(tokenAddress).tokenAddress();
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
         bytes memory params = abi.encode(address(0), tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
@@ -149,7 +156,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         TokenManagerType[] calldata tokenManagerTypes,
         bytes[] calldata remoteParams,
         uint256[] calldata gasValues
-    ) external {
+    ) external payable {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployTokenManager(tokenId, tokenManagerType, params);
         _deployRemoteCustomTokens(tokenId, destinationChains, tokenManagerTypes, remoteParams, gasValues);
@@ -279,6 +286,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     ) internal {
         bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
         _callContract(destinationChain, payload, gasValue);
+        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
     function _deployRemoteCanonicalTokens(

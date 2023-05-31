@@ -40,14 +40,13 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         bool success,
         bytes32 sendHash
     );
-    event TokenManagerDeployed(
+    event RemoteTokenManagerDeploymentInitialized(
         bytes32 indexed tokenId,
-        address indexed tokenManagerAddress,
-        address indexed admin,
-        bytes32 salt,
+        string destinationChain,
+        uint256 indexed gasValue,
+        TokenManagerType indexed tokenManagerType,
         bytes params
     );
-    event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
 
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 
@@ -97,7 +96,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         TokenManagerType[] calldata tokenManagerTypes,
         bytes[] calldata remoteParams,
         uint256[] calldata gasValues
-    ) external;
+    ) external payable;
 
     function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress);
 }

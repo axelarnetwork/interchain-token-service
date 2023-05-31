@@ -11,7 +11,7 @@ import { ITokenDeployer } from '@axelar-network/axelar-cgp-solidity/contracts/in
 import { EternalStorage } from '@axelar-network/axelar-cgp-solidity/contracts/EternalStorage.sol';
 import { DepositHandler } from '@axelar-network/axelar-cgp-solidity/contracts/DepositHandler.sol';
 
-contract AxelarGateway is IAxelarGateway, EternalStorage {
+contract StubAxelarGateway is IAxelarGateway, EternalStorage {
     using SafeTokenCall for IERC20;
     using SafeTokenTransfer for IERC20;
     using SafeTokenTransferFrom for IERC20;
@@ -68,11 +68,7 @@ contract AxelarGateway is IAxelarGateway, EternalStorage {
         emit TokenSent(msg.sender, destinationChain, destinationAddress, symbol, amount);
     }
 
-    function callContract(
-        string calldata destinationChain,
-        string calldata destinationContractAddress,
-        bytes calldata payload
-    ) external {
+    function callContract(string calldata destinationChain, string calldata destinationContractAddress, bytes calldata payload) external {
         emit ContractCall(msg.sender, destinationChain, destinationContractAddress, keccak256(payload), payload);
     }
 
@@ -217,11 +213,7 @@ contract AxelarGateway is IAxelarGateway, EternalStorage {
         }
     }
 
-    function upgrade(
-        address newImplementation,
-        bytes32 newImplementationCodeHash,
-        bytes calldata setupParams
-    ) external override {
+    function upgrade(address newImplementation, bytes32 newImplementationCodeHash, bytes calldata setupParams) external override {
         if (newImplementationCodeHash != newImplementation.codehash) revert InvalidCodeHash();
 
         emit Upgraded(newImplementation);
@@ -243,14 +235,13 @@ contract AxelarGateway is IAxelarGateway, EternalStorage {
     \**********************/
 
     /// @dev Not publicly accessible as overshadowed in the proxy
-    function setup(bytes calldata /*params*/) external override view {
+    function setup(bytes calldata /*params*/) external view override {
         // Prevent setup from being called on a non-proxy (the implementation).
         if (implementation() == address(0)) revert NotProxy();
     }
 
     function execute(bytes calldata input) external override {
-        (bytes memory data) = abi.decode(input, (bytes));
-
+        bytes memory data = abi.decode(input, (bytes));
 
         // returns true for current operators
         bool allowOperatorshipTransfer = true;
@@ -277,20 +268,20 @@ contract AxelarGateway is IAxelarGateway, EternalStorage {
             bytes32 commandHash = keccak256(abi.encodePacked(commands[i]));
 
             if (commandHash == SELECTOR_DEPLOY_TOKEN) {
-                commandSelector = AxelarGateway.deployToken.selector;
+                commandSelector = StubAxelarGateway.deployToken.selector;
             } else if (commandHash == SELECTOR_MINT_TOKEN) {
-                commandSelector = AxelarGateway.mintToken.selector;
+                commandSelector = StubAxelarGateway.mintToken.selector;
             } else if (commandHash == SELECTOR_APPROVE_CONTRACT_CALL) {
-                commandSelector = AxelarGateway.approveContractCall.selector;
+                commandSelector = StubAxelarGateway.approveContractCall.selector;
             } else if (commandHash == SELECTOR_APPROVE_CONTRACT_CALL_WITH_MINT) {
-                commandSelector = AxelarGateway.approveContractCallWithMint.selector;
+                commandSelector = StubAxelarGateway.approveContractCallWithMint.selector;
             } else if (commandHash == SELECTOR_BURN_TOKEN) {
-                commandSelector = AxelarGateway.burnToken.selector;
+                commandSelector = StubAxelarGateway.burnToken.selector;
             } else if (commandHash == SELECTOR_TRANSFER_OPERATORSHIP) {
                 if (!allowOperatorshipTransfer) continue;
 
                 allowOperatorshipTransfer = false;
-                commandSelector = AxelarGateway.transferOperatorship.selector;
+                commandSelector = StubAxelarGateway.transferOperatorship.selector;
             } else {
                 continue; /* Ignore if unknown command received */
             }
@@ -429,11 +420,7 @@ contract AxelarGateway is IAxelarGateway, EternalStorage {
     |* Internal Methods *|
     \********************/
 
-    function _mintToken(
-        string memory symbol,
-        address account,
-        uint256 amount
-    ) internal {
+    function _mintToken(string memory symbol, address account, uint256 amount) internal {
         address tokenAddress = tokenAddresses(symbol);
 
         if (tokenAddress == address(0)) revert TokenDoesNotExist(symbol);
@@ -447,11 +434,7 @@ contract AxelarGateway is IAxelarGateway, EternalStorage {
         }
     }
 
-    function _burnTokenFrom(
-        address sender,
-        string memory symbol,
-        uint256 amount
-    ) internal {
+    function _burnTokenFrom(address sender, string memory symbol, uint256 amount) internal {
         address tokenAddress = tokenAddresses(symbol);
 
         if (tokenAddress == address(0)) revert TokenDoesNotExist(symbol);

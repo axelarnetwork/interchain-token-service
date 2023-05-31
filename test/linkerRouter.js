@@ -2,38 +2,21 @@
 
 require('dotenv').config();
 const chai = require('chai');
-const ethers = require('hardhat');
-const { getDefaultProvider, Wallet } = ethers;
+const { ethers } = require('hardhat');
 const { expect } = chai;
-const { keccak256, defaultAbiCoder } = ethers.utils;
-
-let chain;
-let wallet;
-let otherWallet;
-let linkerRouter;
-let interchainTokenServiceAddress;
-const otherRemoteAddress = 'any string as an address';
-const otherChain = 'Chain Name';
+const { deployLinkerRouter } = require('../scripts/deploy');
 
 describe('LinkerRouter', () => {
+    let ownerWallet, otherWallet, linkerRouter, interchainTokenServiceAddress;
+
+    const otherRemoteAddress = 'any string as an address';
+    const otherChain = 'Chain Name';
     before(async () => {
-        const deployerKey = keccak256(defaultAbiCoder.encode(['string'], [process.env.PRIVATE_KEY_GENERATOR]));
-        const otherKey = keccak256(defaultAbiCoder.encode(['string'], ['another key']));
-        const deployerAddress = new Wallet(deployerKey).address;
-        const otherAddress = new Wallet(otherKey).address;
-        const toFund = [deployerAddress, otherAddress];
-        chain = (await setupLocal(toFund, 1))[0];
-        const provider = getDefaultProvider(chain.rpc);
-        wallet = new Wallet(deployerKey, provider);
-        otherWallet = new Wallet(otherKey, provider);
-        const { deployLinkerRouter } = require('../scripts/deploy.js');
-
-        linkerRouter = await deployLinkerRouter(chain, wallet);
-        interchainTokenServiceAddress = await linkerRouter.interchainTokenServiceAddress();
-    });
-
-    after(async () => {
-        await stopAll();
+        const wallets = await ethers.getSigners();
+        ownerWallet = wallets[0];
+        otherWallet = wallets[1];
+        interchainTokenServiceAddress = wallets[2].address;
+        linkerRouter = await deployLinkerRouter(ownerWallet, interchainTokenServiceAddress);
     });
 
     it('Should get the correct remote address for unregistered chains', async () => {
@@ -51,15 +34,20 @@ describe('LinkerRouter', () => {
     });
 
     it('Should be able to add a custom remote address as the owner', async () => {
+        console.log(await linkerRouter.owner());
         await linkerRouter.addTrustedAddress(otherChain, otherRemoteAddress);
         expect(await linkerRouter.getRemoteAddress(otherChain)).to.equal(otherRemoteAddress);
     });
+
     it('Should be able to validate remote addresses properly.', async () => {
         expect(await linkerRouter.validateSender(otherChain, otherRemoteAddress)).to.equal(true);
     });
 
     it('Should not be able to remove a custom remote address as not the owner', async () => {
-        await expect(linkerRouter.connect(otherWallet).removeTrustedAddress(otherChain)).to.be.reverted;
+        await expect(linkerRouter.connect(otherWallet).removeTrustedAddress(otherChain)).to.be.revertedWithCustomError(
+            linkerRouter,
+            'NotOwner',
+        );
     });
 
     it('Should be able to remove a custom remote address as the owner', async () => {

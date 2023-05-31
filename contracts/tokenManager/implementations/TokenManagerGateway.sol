@@ -7,6 +7,8 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 
 contract TokenManagerGateway is TokenManager {
+    error NotGatewayToken();
+
     address public tokenAddress;
     string public gatewaySymbol;
 
@@ -23,7 +25,9 @@ contract TokenManagerGateway is TokenManager {
         (, symbol) = abi.decode(params, (address, string));
         gatewaySymbol = symbol;
         IAxelarGateway gateway = interchainTokenService.gateway();
-        tokenAddress = gateway.tokenAddresses(symbol);
+        address tokenAddress_ = gateway.tokenAddresses(symbol);
+        if (tokenAddress_ == address(0)) revert NotGatewayToken();
+        tokenAddress = tokenAddress_;
     }
 
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {

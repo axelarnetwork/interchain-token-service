@@ -1,6 +1,4 @@
-require('@nomiclabs/hardhat-waffle');
-require('hardhat-gas-reporter');
-require('solidity-coverage');
+require('@nomicfoundation/hardhat-toolbox');
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -29,10 +27,11 @@ module.exports = {
             },
         },
     },
-    paths: {
-        sources: "./contracts",
-    },
+    defaultNetwork: 'hardhat',
     mocha: {
-        timeout: 100000
+        timeout: 1000000,
+    },
+    gasReporter: {
+        enabled: (process.env.REPORT_GAS !== undefined),
     },
 };
