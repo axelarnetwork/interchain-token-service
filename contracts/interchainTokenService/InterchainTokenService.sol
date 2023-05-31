@@ -93,7 +93,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this), tokenAddress));
     }
 
-    function registerCanonicalTokenAndDeployRemoteTokens(
+    function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
@@ -197,7 +197,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address destinationAddress = destinationAddressBytes.toAddress();
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.giveToken(destinationAddress, amount);
-        emit Receiving(tokenId, sourceChain, destinationAddress, amount, sendHash);
+        emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
     }
 
     function _proccessSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
@@ -228,7 +228,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
                 data
             )
         );
-        emit ReceivingWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
+        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
     }
 
     function _proccessDeployTokenManagerPayload(bytes calldata payload) internal {

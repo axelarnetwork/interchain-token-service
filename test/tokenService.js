@@ -116,7 +116,7 @@ describe('Interchain Token Service', () => {
             );
             tokenId = await service.getCanonicalTokenId(token.address);
 
-            await expect(service.registerCanonicalTokenAndDeployRemoteTokens(token.address, chains, gasValues, { value: 1e6 }))
+            await expect(service.registerCanonicalTokenAndDeployRemoteCanonicalTokens(token.address, chains, gasValues, { value: 1e6 }))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, originParams)
                 .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
