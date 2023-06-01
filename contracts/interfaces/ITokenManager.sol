@@ -3,6 +3,10 @@
 pragma solidity 0.8.9;
 
 interface ITokenManager {
+    error TokenLinkerZeroAddress();
+    error NotService();
+    error TakeTokenFailed();
+    error GiveTokenFailed();
     error NotProxy();
 
     function sendToken(string calldata destiantionChain, bytes calldata destinationAddress, uint256 amount) external payable;
