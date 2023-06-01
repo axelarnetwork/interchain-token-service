@@ -105,11 +105,11 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function registerCustomToken(bytes32 salt, TokenManagerType tokenManagerType, bytes calldata params) external {
+    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes calldata params) external {
         // TODO: implement
     }
 
-    function registerRemoteCustomTokens(
+    function deployRemoteCustomTokenManagers(
         bytes32 salt,
         string[] calldata destinationChains,
         TokenManagerType[] calldata tokenManagerTypes,
@@ -119,7 +119,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         // TODO: implement
     }
 
-    function registerCustomTokenAndDeployRemote(
+    function deployCustomTokenManagerAndDeployRemote(
         bytes32 salt,
         TokenManagerType tokenManagerType,
         bytes calldata params,
