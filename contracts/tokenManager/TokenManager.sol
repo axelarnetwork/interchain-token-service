@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
+import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
 abstract contract TokenManager is ITokenManager {
     address private immutable implementationAddress;
@@ -52,4 +53,8 @@ abstract contract TokenManager is ITokenManager {
     function _giveToken(address from, uint256 amount) internal virtual returns (uint256);
 
     function _setup(bytes calldata params) internal virtual;
+
+    function _getTokenId() internal view returns (bytes32 tokenId) {
+        tokenId = ITokenManagerProxy(address(this)).tokenId();
+    }
 }

@@ -8,10 +8,12 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 contract TokenManagerProxy is ITokenManagerProxy {
     IInterchainTokenService public immutable interchainTokenServiceAddress;
     TokenManagerType public immutable implementationType;
+    bytes32 public immutable tokenId;
 
-    constructor(address interchainTokenServiceAddress_, TokenManagerType implementationType_, bytes memory params) {
+    constructor(address interchainTokenServiceAddress_, TokenManagerType implementationType_, bytes32 tokenId_, bytes memory params) {
         interchainTokenServiceAddress = IInterchainTokenService(interchainTokenServiceAddress_);
         implementationType = implementationType_;
+        tokenId = tokenId_;
         address impl = _getImplementation(IInterchainTokenService(interchainTokenServiceAddress_), implementationType_);
 
         // solhint-disable-next-line avoid-low-level-calls

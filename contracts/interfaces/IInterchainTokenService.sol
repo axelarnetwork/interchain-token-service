@@ -11,6 +11,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     error TokenServiceZeroAddress();
     error LengthMismatch();
     error NotRemoteService();
+    error TokenManagerNotDeployed(bytes32 tokenId);
 
     event Sending(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
     event SendingWithData(
@@ -48,7 +49,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     );
     event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
 
-    function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress);
+    function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 

@@ -46,7 +46,7 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
         TokenManagerType implementationType,
         bytes memory params
     ) internal returns (address tokenAddress) {
-        bytes memory args = abi.encode(address(this), implementationType, params);
+        bytes memory args = abi.encode(address(this), implementationType, tokenManagerId, params);
         // convert args to calldata by doing an external call to handle more easily in the function
         bytes memory bytecode = this.getBytecode(args);
         tokenAddress = deployer.deploy(bytecode, tokenManagerId);
