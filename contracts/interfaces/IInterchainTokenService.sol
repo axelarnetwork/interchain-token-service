@@ -81,4 +81,6 @@ interface IInterchainTokenService is ITokenManagerDeployer {
         bytes[] calldata remoteParams,
         uint256[] calldata gasValues
     ) external;
+
+    function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress);
 }
