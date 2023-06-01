@@ -9,6 +9,8 @@ interface ITokenManager {
     error GiveTokenFailed();
     error NotProxy();
 
+    function tokenAddress() external returns (address);
+
     function sendToken(string calldata destiantionChain, bytes calldata destinationAddress, uint256 amount) external payable;
 
     function callContractWithInterchainToken(

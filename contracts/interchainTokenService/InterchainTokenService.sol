@@ -3,25 +3,41 @@
 pragma solidity ^0.8.9;
 
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { TokenManagerDeployer } from '../utils/TokenManagerDeployer.sol';
+import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
+import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
+import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
-contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer {
-    IAxelarGateway public immutable gateway;
+import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
+import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
+
+contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer, AxelarExecutable {
+    using StringToBytes32 for string;
+    using Bytes32ToString for bytes32;
+    using AddressBytesUtils for bytes;
+
     address public immutable implementationLockUnlock;
     address public immutable implementationMintBurn;
     address public immutable implementationCanonical;
     address public immutable implementationGateway;
+    ILinkerRouter public immutable linkerRouter;
+
+    uint256 private constant SELECTOR_SEND_TOKEN = 1;
+    uint256 private constant SELECTOR_SEND_TOKEN_WITH_DATA = 2;
+    uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 
     constructor(
         address deployer_,
         address bytecodeServer_,
         address gateway_,
+        address linkerRouter_,
         address[] memory tokenManagerImplementations
-    ) TokenManagerDeployer(deployer_, bytecodeServer_) {
-        if (gateway_ == address(0)) revert TokenServiceZeroAddress();
-        gateway = IAxelarGateway(gateway_);
+    ) TokenManagerDeployer(deployer_, bytecodeServer_) AxelarExecutable(gateway_) {
+        if (linkerRouter_ == address(0)) revert TokenServiceZeroAddress();
+        linkerRouter = ILinkerRouter(linkerRouter_);
         if (tokenManagerImplementations.length != 4) revert LengthMismatch();
         if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert TokenServiceZeroAddress();
         implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
@@ -33,7 +49,11 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         implementationGateway = tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)];
     }
 
-    // This calculates the token manager address for a given ID even if that token manager is not yet deployed.
+    modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
+        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
+        _;
+    }
+
     // solhint-disable-next-line no-empty-blocks
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress) {
         // TODO: implement
@@ -122,5 +142,70 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         } else if (tokenManagerType == TokenManagerType.GATEWAY) {
             return implementationGateway;
         }
+    }
+
+    function _execute(
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
+        uint256 selector = abi.decode(payload, (uint256));
+        if (selector == SELECTOR_SEND_TOKEN) {
+            _proccessSendTokenPayload(sourceChain, payload);
+        } else if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
+            _proccessSendTokenWithDataPayload(sourceChain, payload);
+        } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
+            _proccessDeployTokenManagerPayload(payload);
+        }
+    }
+
+    function _proccessSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
+        (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount, bytes32 sendHash) = abi.decode(
+            payload,
+            (uint256, bytes32, bytes, uint256, bytes32)
+        );
+        address destinationAddress = destinationAddressBytes.toAddress();
+        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        amount = tokenManager.giveToken(destinationAddress, amount);
+        emit Receiving(tokenId, sourceChain, destinationAddress, amount, sendHash);
+    }
+
+    function _proccessSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
+        bytes32 tokenId;
+        uint256 amount;
+        bytes memory sourceAddress;
+        bytes memory data;
+        bytes32 sendHash;
+        address destinationAddress;
+        {
+            bytes memory destinationAddressBytes;
+            (, tokenId, destinationAddressBytes, amount, sourceAddress, data, sendHash) = abi.decode(
+                payload,
+                (uint256, bytes32, bytes, uint256, bytes, bytes, bytes32)
+            );
+            destinationAddress = destinationAddressBytes.toAddress();
+        }
+        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        amount = tokenManager.giveToken(destinationAddress, amount);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = destinationAddress.call(
+            abi.encodeWithSelector(
+                IInterchainTokenExecutable.exectuteWithInterchainToken.selector,
+                tokenId,
+                sourceChain,
+                sourceAddress,
+                amount,
+                data
+            )
+        );
+        emit ReceivingWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
+    }
+
+    function _proccessDeployTokenManagerPayload(bytes calldata payload) internal {
+        (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
+            payload,
+            (uint256, bytes32, TokenManagerType, bytes)
+        );
+        _deployTokenManager(tokenId, tokenManagerType, params);
     }
 }

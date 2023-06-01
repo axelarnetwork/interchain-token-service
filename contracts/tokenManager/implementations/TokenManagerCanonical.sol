@@ -6,7 +6,6 @@ import { TokenManager } from '../TokenManager.sol';
 import { InterchainToken } from '../../interchainToken/InterchainToken.sol';
 
 contract TokenManagerCanonical is TokenManager, InterchainToken {
-
     constructor(
         address interchainTokenService_
     )

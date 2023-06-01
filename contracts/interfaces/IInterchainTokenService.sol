@@ -3,30 +3,41 @@
 pragma solidity ^0.8.9;
 
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarExecutable.sol';
 
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 
-interface IInterchainTokenService is ITokenManagerDeployer {
+interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     error TokenServiceZeroAddress();
     error LengthMismatch();
+    error NotRemoteService();
 
-    event Sending(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
+    event Sending(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
     event SendingWithData(
         bytes32 tokenId,
         string destinationChain,
         bytes destinationAddress,
         uint256 indexed amount,
-        address indexed from,
-        bytes data
+        address indexed sourceAddress,
+        bytes data,
+        bytes32 sendHash
     );
-    event Receiving(bytes32 tokenId, string sourceChain, address indexed destinationAddress, uint256 indexed amount);
-    event ReceivingWithData(
-        bytes32 tokenId,
+    event Receiving(
+        bytes32 indexed tokenId,
         string sourceChain,
         address indexed destinationAddress,
         uint256 indexed amount,
-        address indexed from,
-        bytes data
+        bytes32 sendHash
+    );
+    event ReceivingWithData(
+        bytes32 indexed tokenId,
+        string sourceChain,
+        address indexed destinationAddress,
+        uint256 indexed amount,
+        bytes sourceAddress,
+        bytes data,
+        bool success,
+        bytes32 sendHash
     );
     event TokenManagerDeployed(
         bytes32 indexed tokenId,
@@ -36,8 +47,6 @@ interface IInterchainTokenService is ITokenManagerDeployer {
         bytes params
     );
     event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
-
-    function gateway() external view returns (IAxelarGateway);
 
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
