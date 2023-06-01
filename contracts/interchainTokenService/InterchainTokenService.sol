@@ -80,10 +80,12 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         if (ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerNotDeployed(tokenId);
     }
 
+    // There are two ways to cacluate a tokenId, one is for pre-existing tokens, and anyone can do this for a token once.
     function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_ID, chainNameHash, tokenAddress));
     }
 
+    // The other is by providing a salt, and your address (msg.sender) is used for the calculation.
     function getCustomTokenId(address admin, bytes32 salt) public pure returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, admin, salt));
     }
