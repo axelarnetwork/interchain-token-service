@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
@@ -11,6 +12,7 @@ import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
+import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
@@ -24,6 +26,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     address public immutable implementationMintBurn;
     address public immutable implementationCanonical;
     address public immutable implementationGateway;
+    IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
     bytes32 public immutable chainNameHash;
     bytes32 public immutable chainName;
@@ -39,12 +42,14 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address deployer_,
         address bytecodeServer_,
         address gateway_,
+        address gasService_,
         address linkerRouter_,
         address[] memory tokenManagerImplementations,
         string memory chainName_
     ) TokenManagerDeployer(deployer_, bytecodeServer_) AxelarExecutable(gateway_) {
-        if (linkerRouter_ == address(0)) revert TokenServiceZeroAddress();
+        if (linkerRouter_ == address(0) || gasService_ == address(0)) revert TokenServiceZeroAddress();
         linkerRouter = ILinkerRouter(linkerRouter_);
+        gasService = IAxelarGasService(gasService_);
         if (tokenManagerImplementations.length != 4) revert LengthMismatch();
         if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert TokenServiceZeroAddress();
         implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
@@ -64,58 +69,67 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         _;
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress) {
+    function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = getTokenManagerAddress(tokenId);
-        if(ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerNotDeployed(tokenId);
+        if (ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerNotDeployed(tokenId);
     }
 
     // There are two ways to cacluate a tokenId, one is for pre-existing tokens, and anyone can do this for a token once.
-    function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId) {
+    function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_ID, chainNameHash, tokenAddress));
     }
 
     // The other is by providing a salt, and your address (msg.sender) is used for the calculation.
-    function getCustomTokenId(address admin, bytes32 salt) external pure returns (bytes32 tokenId) {
+    function getCustomTokenId(address admin, bytes32 salt) public pure returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, admin, salt));
     }
 
-    // solhint-disable-next-line no-empty-blocks
     function registerCanonicalToken(address tokenAddress) external returns (bytes32 tokenId) {
-        // TODO: implement
+        tokenId = getCanonicalTokenId(tokenAddress);
+        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this), tokenAddress));
     }
 
     function registerCanonicalTokenAndDeployRemoteTokens(
         address tokenAddress,
         string[] calldata destinationChains,
-        uint256[] calldata gasValues // solhint-disable-next-line no-empty-blocks
+        uint256[] calldata gasValues
     ) external payable returns (bytes32 tokenId) {
-        // TODO: implement
+        tokenId = getCanonicalTokenId(tokenAddress);
+        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this), tokenAddress));
+        (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
+        bytes memory params = abi.encode(address(0), tokenName, tokenSymbol, tokenDecimals);
+        _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
     function deployRemoteCanonicalTokens(
         bytes32 tokenId,
         string[] calldata destinationChains,
-        uint256[] calldata gasValues // solhint-disable-next-line no-empty-blocks
-    ) external payable {
-        // TODO: implement
+        uint256[] calldata gasValues
+    ) public payable {
+        address tokenAddress = getValidTokenManagerAddress(tokenId);
+        (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
+        bytes memory params = abi.encode(address(0), tokenName, tokenSymbol, tokenDecimals);
+        _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
     function deployInterchainToken(
         string calldata tokenName,
         string calldata tokenSymbol,
         uint8 decimals,
-        address owner,
+        address admin,
         bytes32 salt,
         string[] calldata destinationChains,
-        uint256[] calldata gasValues // solhint-disable-next-line no-empty-blocks
+        uint256[] calldata gasValues
     ) external payable {
-        // TODO: implement
+        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        bytes memory params = abi.encode(admin, tokenName, tokenSymbol, decimals);
+        _deployTokenManager(tokenId, TokenManagerType.CANONICAL, params);
+        _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
-    // solhint-disable-next-line no-empty-blocks
     function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes calldata params) external {
-        // TODO: implement
+        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
     function deployRemoteCustomTokenManagers(
@@ -123,9 +137,10 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         string[] calldata destinationChains,
         TokenManagerType[] calldata tokenManagerTypes,
         bytes[] calldata params,
-        uint256[] calldata gasValues // solhint-disable-next-line no-empty-blocks
+        uint256[] calldata gasValues
     ) external payable {
-        // TODO: implement
+        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        _deployRemoteCustomTokens(tokenId, destinationChains, tokenManagerTypes, params, gasValues);
     }
 
     function deployCustomTokenManagerAndDeployRemote(
@@ -135,12 +150,13 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         string[] calldata destinationChains,
         TokenManagerType[] calldata tokenManagerTypes,
         bytes[] calldata remoteParams,
-        uint256[] calldata gasValues // solhint-disable-next-line no-empty-blocks
+        uint256[] calldata gasValues
     ) external {
-        // TODO: implement
+        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        _deployTokenManager(tokenId, tokenManagerType, params);
+        _deployRemoteCustomTokens(tokenId, destinationChains, tokenManagerTypes, remoteParams, gasValues);
     }
 
-    // solhint-disable-next-line no-empty-blocks
     function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress) {
         if (tokenManagerType == TokenManagerType.LOCK_UNLOCK) {
             return implementationLockUnlock;
@@ -216,5 +232,81 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
             (uint256, bytes32, TokenManagerType, bytes)
         );
         _deployTokenManager(tokenId, tokenManagerType, params);
+    }
+
+    function _callContract(string memory destinationChain, bytes memory payload, uint256 gasValue) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCall{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                msg.sender
+            );
+        }
+        gateway.callContract(destinationChain, destinationAddress, payload);
+    }
+
+    function _callContractWithToken(string memory destinationChain, string calldata symbol, uint256 amount, bytes memory payload) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        uint256 gasValue = msg.value;
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                msg.sender
+            );
+        }
+        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+    }
+
+    function _validateToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
+        IERC20Named token = IERC20Named(tokenAddress);
+        name = token.name();
+        symbol = token.symbol();
+        decimals = token.decimals();
+    }
+
+    function _deployRemoteTokenManager(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        uint256 gasValue,
+        TokenManagerType tokenManagerType,
+        bytes memory params
+    ) internal {
+        bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
+        _callContract(destinationChain, payload, gasValue);
+    }
+
+    function _deployRemoteCanonicalTokens(
+        bytes32 tokenId,
+        bytes memory params,
+        string[] calldata destinationChains,
+        uint256[] calldata gasValues
+    ) internal {
+        uint256 length = destinationChains.length;
+        if (length != gasValues.length) revert LengthMismatch();
+        for (uint256 i = 0; i < length; ++i) {
+            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], TokenManagerType.CANONICAL, params);
+        }
+    }
+
+    function _deployRemoteCustomTokens(
+        bytes32 tokenId,
+        string[] calldata destinationChains,
+        TokenManagerType[] calldata tokenManagerTypes,
+        bytes[] calldata params,
+        uint256[] calldata gasValues
+    ) internal {
+        uint256 length = destinationChains.length;
+        if (length != gasValues.length || length != tokenManagerTypes.length || length != params.length) revert LengthMismatch();
+        for (uint256 i = 0; i < length; ++i) {
+            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], tokenManagerTypes[i], params[i]);
+        }
     }
 }
