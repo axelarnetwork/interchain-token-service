@@ -18,8 +18,12 @@ contract TokenManagerCanonical is TokenManager, InterchainToken {
     }
 
     function _setup(bytes calldata params) internal override {
+        uint256 mintAmount;
         //the first argument is reserved for the admin.
-        (, name, symbol, decimals) = abi.decode(params, (address, string, string, uint8));
+        (, name, symbol, decimals, mintAmount) = abi.decode(params, (address, string, string, uint8, uint256));
+        if(mintAmount > 0 ) {
+            _mint(msg.sender, mintAmount);
+        }
     }
 
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {

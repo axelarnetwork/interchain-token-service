@@ -12,6 +12,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     error LengthMismatch();
     error NotRemoteService();
     error TokenManagerNotDeployed(bytes32 tokenId);
+    error NotTokenManager();
 
     event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
     event TokenSentWithData(
@@ -99,4 +100,40 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     ) external payable;
 
     function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress);
+
+    function transmitSendToken(
+        bytes32 tokenId,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable;
+
+    function transmitSendTokenWithData(
+        bytes32 tokenId,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes memory destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable;
+
+    function transmitSendTokenWithToken(
+        bytes32 tokenId,
+        string calldata symbol,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable;
+
+    function transmitSendTokenWithDataWithToken(
+        bytes32 tokenId,
+        string memory symbol,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes memory destinationAddress,
+        uint256 amount,
+        bytes memory data
+    ) external payable;
 }

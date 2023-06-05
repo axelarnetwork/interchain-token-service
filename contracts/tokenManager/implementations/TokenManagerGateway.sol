@@ -54,4 +54,32 @@ contract TokenManagerGateway is TokenManager {
         if (!transferred || token.code.length == 0) revert GiveTokenFailed();
         return amount;
     }
+
+    function _transmitSendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) internal override {
+        interchainTokenService.transmitSendTokenWithToken{ value: msg.value }(
+            _getTokenId(),
+            gatewaySymbol,
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount
+        );
+    }
+
+    function _transmitSendTokenWithData(
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) internal override {
+        interchainTokenService.transmitSendTokenWithDataWithToken{ value: msg.value }(
+            _getTokenId(),
+            gatewaySymbol,
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            data
+        );
+    }
 }

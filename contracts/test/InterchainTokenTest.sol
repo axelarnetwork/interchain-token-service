@@ -3,29 +3,21 @@
 pragma solidity 0.8.9;
 
 import { InterchainToken } from '../interchainToken/InterchainToken.sol';
-import { Ownable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Ownable.sol';
+import { Distributable } from '../utils/Distributable.sol';
 
-contract InterchainTokenTest is InterchainToken, Ownable {
+contract InterchainTokenTest is InterchainToken, Distributable {
     constructor(string memory name_, string memory symbol_, uint8 decimals_) {
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
-        address owner = msg.sender;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            sstore(_OWNER_SLOT, owner)
-        }
+        _setDistributor(msg.sender);
     }
 
-    function mint(address account, uint256 amount) external onlyOwner {
+    function mint(address account, uint256 amount) external onlyDistributor {
         _mint(account, amount);
     }
 
-    function burnFrom(address account, uint256 amount) external onlyOwner {
-        uint256 _allowance = allowance[account][msg.sender];
-        if (_allowance != type(uint256).max) {
-            _approve(account, msg.sender, _allowance - amount);
-        }
+    function burn(address account, uint256 amount) external onlyDistributor {
         _burn(account, amount);
     }
 }

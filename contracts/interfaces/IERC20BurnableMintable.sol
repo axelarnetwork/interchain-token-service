@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.9;
 
-import { IOwnable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IOwnable.sol';
+import { IDistributable } from './IDistributable.sol';
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
-interface IERC20BurnableMintable is IOwnable {
+interface IERC20BurnableMintable is IDistributable {
     error NotProxy();
 
     function name() external view returns (string memory);
@@ -20,5 +20,5 @@ interface IERC20BurnableMintable is IOwnable {
 
     function mint(address to, uint256 amount) external;
 
-    function burnFrom(address from, uint256 amount) external;
+    function burn(address from, uint256 amount) external;
 }

@@ -66,7 +66,7 @@ async function deployTokenManagerImplementations(wallet, interchainTokenServiceA
         const impl = await deployContract(wallet, `TokenManager${type}`, [interchainTokenServiceAddress]);
         implementations.push(impl);
     }
-    
+
     return implementations;
 }
 

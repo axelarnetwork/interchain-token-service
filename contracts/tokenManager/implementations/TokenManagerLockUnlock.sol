@@ -32,7 +32,7 @@ contract TokenManagerLockUnlock is TokenManager {
 
         if (!transferred || token.code.length == 0) revert TakeTokenFailed();
 
-        return balance - IERC20(token).balanceOf(address(this));
+        return IERC20(token).balanceOf(address(this)) - balance;
     }
 
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
@@ -43,6 +43,6 @@ contract TokenManagerLockUnlock is TokenManager {
         bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
 
         if (!transferred || token.code.length == 0) revert GiveTokenFailed();
-        return IERC20(token).balanceOf(to) - balance;
+        return balance - IERC20(token).balanceOf(to);
     }
 }

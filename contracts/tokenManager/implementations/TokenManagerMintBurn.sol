@@ -23,7 +23,7 @@ contract TokenManagerMintBurn is TokenManager {
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
         address token = tokenAddress;
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = token.call(abi.encodeWithSelector(IERC20BurnableMintable.burnFrom.selector, from, amount));
+        (bool success, ) = token.call(abi.encodeWithSelector(IERC20BurnableMintable.burn.selector, from, amount));
 
         if (!success || token.code.length == 0) revert TakeTokenFailed();
         return amount;
