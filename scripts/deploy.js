@@ -21,7 +21,7 @@ async function deployLinkerRouter(wallet, interchainTokenServiceAddress) {
 
 async function deployStubGateway(wallet) {
     const tokenDeployer = await deployContract(wallet, 'TokenDeployer', []);
-    const gateway = await deployContract(wallet, 'StubAxelarGateway', [tokenDeployer.address]);
+    const gateway = await deployContract(wallet, 'MockAxelarGateway', [tokenDeployer.address]);
     return gateway;
 }
 

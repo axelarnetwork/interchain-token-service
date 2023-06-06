@@ -13,8 +13,8 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     error NotRemoteService();
     error TokenManagerNotDeployed(bytes32 tokenId);
 
-    event Sending(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
-    event SendingWithData(
+    event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
+    event TokenSentWithData(
         bytes32 tokenId,
         string destinationChain,
         bytes destinationAddress,
@@ -23,14 +23,14 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         bytes data,
         bytes32 sendHash
     );
-    event Receiving(
+    event TokenReceived(
         bytes32 indexed tokenId,
         string sourceChain,
         address indexed destinationAddress,
         uint256 indexed amount,
         bytes32 sendHash
     );
-    event ReceivingWithData(
+    event TokenReceivedWithData(
         bytes32 indexed tokenId,
         string sourceChain,
         address indexed destinationAddress,
@@ -56,7 +56,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
 
     function registerCanonicalToken(address tokenAddress) external returns (bytes32 tokenId);
 
-    function registerCanonicalTokenAndDeployRemoteTokens(
+    function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
