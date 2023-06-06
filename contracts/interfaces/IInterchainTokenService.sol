@@ -136,4 +136,6 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         uint256 amount,
         bytes memory data
     ) external payable;
+
+    function approveGateway(bytes32 tokenId, address tokenAddress) external;
 }

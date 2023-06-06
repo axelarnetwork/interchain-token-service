@@ -22,7 +22,7 @@ contract TokenManagerGateway is TokenManager {
     function _setup(bytes calldata params) internal override {
         //the first argument is reserved for the admin.
         string memory symbol;
-        (, symbol) = abi.decode(params, (address, string));
+        (, symbol) = abi.decode(params, (bytes, string));
         gatewaySymbol = symbol;
         IAxelarGateway gateway = interchainTokenService.gateway();
         address tokenAddress_ = gateway.tokenAddresses(symbol);
@@ -81,5 +81,10 @@ contract TokenManagerGateway is TokenManager {
             amount,
             data
         );
+    }
+
+    // This will automatically happen on deployment once deployment is complete (the service will run some checks to make sure this can happen only once)
+    function gatewayApprove() external {
+        interchainTokenService.approveGateway(_getTokenId(), tokenAddress);
     }
 }

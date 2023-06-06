@@ -275,6 +275,10 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, data, sendHash);
     }
 
+    function approveGateway(bytes32 tokenId, address tokenAddress) external onlyTokenManager(tokenId) {
+        IERC20Named(tokenAddress).approve(address(gateway), type(uint256).max);
+    }
+
     function _helper(
         bytes32 tokenId,
         string calldata symbol,
