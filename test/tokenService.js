@@ -506,7 +506,7 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe.only('SendToken', () => {
+    describe('SendToken', () => {
         const amount = 1234;
         const destChain = 'destination Chain';
         const destAddress = '0x5678';
@@ -580,6 +580,104 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, 'TT', amount, gasValue, wallet.address)
                 .to.emit(service, 'TokenSent')
                 .withArgs(tokenId, destChain, destAddress, amount, checkSendHash)
+        });
+    });
+
+    describe.only('Receive Remote Tokens', () => {
+        const sourceChain = 'source chain';
+        let sourceAddress;
+        before(async () => {
+            sourceAddress = service.address.toLowerCase();
+        });
+
+        it('Should be able to receive a remote lock/unlock token manager depoloyment', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const tokenId = getRandomBytes32();
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [AddressZero, token.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, LOCK_UNLOCK, params],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, LOCK_UNLOCK, params);
+            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+            expect(await tokenManager.tokenAddress()).to.equal(token.address);
+        });
+
+        it('Should be able to receive a remote lock/unlock token manager depoloyment', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const tokenId = getRandomBytes32();
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [AddressZero, token.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, MINT_BURN, params);
+            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+            expect(await tokenManager.tokenAddress()).to.equal(token.address);
+        });
+
+        it('Should be able to receive a remote canonical token manager depoloyment', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const tokenId = getRandomBytes32();
+            const params = defaultAbiCoder.encode(
+                ['bytes', 'string', ' string', 'uint8'],
+                [AddressZero, tokenName, tokenSymbol, tokenDecimals],
+            );
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, CANONICAL, params],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, CANONICAL, params);
+            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+            expect(await tokenManager.tokenAddress()).to.equal(tokenManagerAddress);
+        });
+
+        it('Should be able to receive a remote gateway token manager deployment', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN2';
+            const tokenDecimals = 13;
+            const tokenId = getRandomBytes32();
+
+            await deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals);
+            const tokenAddress = await gateway.tokenAddresses(tokenSymbol);
+            const params = defaultAbiCoder.encode(['bytes', 'string'], [AddressZero, tokenSymbol]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, GATEWAY, params],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, GATEWAY, params);
+            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+            expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
         });
     });
 });
