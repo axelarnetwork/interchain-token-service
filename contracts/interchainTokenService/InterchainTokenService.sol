@@ -451,4 +451,146 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
             _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], tokenManagerTypes[i], params[i]);
         }
     }
+
+    function _execute(
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
+        uint256 selector = abi.decode(payload, (uint256));
+        if (selector == SELECTOR_SEND_TOKEN) {
+            _proccessSendTokenPayload(sourceChain, payload);
+        } else if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
+            _proccessSendTokenWithDataPayload(sourceChain, payload);
+        } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
+            _proccessDeployTokenManagerPayload(payload);
+        }
+    }
+
+    function _proccessSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
+        (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount, bytes32 sendHash) = abi.decode(
+            payload,
+            (uint256, bytes32, bytes, uint256, bytes32)
+        );
+        address destinationAddress = destinationAddressBytes.toAddress();
+        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        amount = tokenManager.giveToken(destinationAddress, amount);
+        emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
+    }
+
+    function _proccessSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
+        bytes32 tokenId;
+        uint256 amount;
+        bytes memory sourceAddress;
+        bytes memory data;
+        bytes32 sendHash;
+        address destinationAddress;
+        {
+            bytes memory destinationAddressBytes;
+            (, tokenId, destinationAddressBytes, amount, sourceAddress, data, sendHash) = abi.decode(
+                payload,
+                (uint256, bytes32, bytes, uint256, bytes, bytes, bytes32)
+            );
+            destinationAddress = destinationAddressBytes.toAddress();
+        }
+        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        amount = tokenManager.giveToken(destinationAddress, amount);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = destinationAddress.call(
+            abi.encodeWithSelector(
+                IInterchainTokenExecutable.exectuteWithInterchainToken.selector,
+                tokenId,
+                sourceChain,
+                sourceAddress,
+                amount,
+                data
+            )
+        );
+        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
+    }
+
+    function _proccessDeployTokenManagerPayload(bytes calldata payload) internal {
+        (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
+            payload,
+            (uint256, bytes32, TokenManagerType, bytes)
+        );
+        _deployTokenManager(tokenId, tokenManagerType, params);
+    }
+
+    function _callContract(string memory destinationChain, bytes memory payload, uint256 gasValue) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCall{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                msg.sender
+            );
+        }
+        gateway.callContract(destinationChain, destinationAddress, payload);
+    }
+
+    function _callContractWithToken(string memory destinationChain, string calldata symbol, uint256 amount, bytes memory payload) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        uint256 gasValue = msg.value;
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                msg.sender
+            );
+        }
+        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+    }
+
+    function _validateToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
+        IERC20Named token = IERC20Named(tokenAddress);
+        name = token.name();
+        symbol = token.symbol();
+        decimals = token.decimals();
+    }
+
+    function _deployRemoteTokenManager(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        uint256 gasValue,
+        TokenManagerType tokenManagerType,
+        bytes memory params
+    ) internal {
+        bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
+        _callContract(destinationChain, payload, gasValue);
+        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
+    }
+
+    function _deployRemoteCanonicalTokens(
+        bytes32 tokenId,
+        bytes memory params,
+        string[] calldata destinationChains,
+        uint256[] calldata gasValues
+    ) internal {
+        uint256 length = destinationChains.length;
+        if (length != gasValues.length) revert LengthMismatch();
+        for (uint256 i = 0; i < length; ++i) {
+            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], TokenManagerType.CANONICAL, params);
+        }
+    }
+
+    function _deployRemoteCustomTokens(
+        bytes32 tokenId,
+        string[] calldata destinationChains,
+        TokenManagerType[] calldata tokenManagerTypes,
+        bytes[] calldata params,
+        uint256[] calldata gasValues
+    ) internal {
+        uint256 length = destinationChains.length;
+        if (length != gasValues.length || length != tokenManagerTypes.length || length != params.length) revert LengthMismatch();
+        for (uint256 i = 0; i < length; ++i) {
+            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], tokenManagerTypes[i], params[i]);
+        }
+    }
 }
