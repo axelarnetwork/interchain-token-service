@@ -7,7 +7,9 @@ import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 
 interface ITokenManagerDeployer is ITokenManagerType {
     error AddressZero();
-    error TokenLinkerDeploymentFailed();
+    error TokenManagerDeploymentFailed();
+
+    event TokenManagerDeployed(bytes32 indexed tokenId, TokenManagerType indexed tokenManagerType, bytes params);
 
     function deployer() external view returns (Create3Deployer);
 

@@ -84,7 +84,7 @@ This repo will provide an implementation for an Interchain Token Service and an 
 `sendToken(bytes32 tokenId, string memory destinationChain, bytes memory to, uint256 amount) external payable`
 
 - Sends a pre-approved `amount` of a registered token specified by `tokenId` to the `destinationChain`, the specified address `to`, and uses any native currency received to pay for gas.
-    - emits `Sending(...)`
+    - emits `TokenSent(...)`
     - reverts with `NotRegistered()` if the token is not registered.
     - reverts with `TransferFromFailed()` when dealing with an origin token and calling `transferFrom(...)` to the token reverts.
     - reverts with `BurnFailed()` when dealing with a remote token and calling `burnFrom(...)` to the token reverts.
@@ -98,7 +98,7 @@ This repo will provide an implementation for an Interchain Token Service and an 
 ) external payable`
 
 - Same as above but also sends over `data` to be parsed at the destination chain.
-    - emits `SendingWithData(...)`.
+    - emits `TokenSentWithData(...)`.
     - reverts with `NotRegistered()` if the token is not registered.
     - reverts with `TransferFromFailed()` when dealing with an origin token and calling `transferFrom(...)` to the token reverts.
     - reverts with `BurnFailed()` when dealing with a remote token and calling `burnFrom(...)` to the token reverts.
@@ -114,7 +114,7 @@ This repo will provide an implementation for an Interchain Token Service and an 
     - gets the `tokenId` for `tokenAddress == msg.sender`.
     - reverts with `notRegistered()` if `msg.sender` is not a registered token.
     - Takes token from `from` (either with `transferFrom` or with `burnFrom`).
-    - emits `Sending(...)`.
+    - emits `TokenSent(...)`.
 
 `function callContractWithSelf(
     address from,
@@ -128,11 +128,11 @@ This repo will provide an implementation for an Interchain Token Service and an 
     - gets the `tokenId` for `tokenAddress == msg.sender`.
     - reverts with `notRegistered()` if `msg.sender` is not a registered token.
     - Takes token from `from` (either with `transferFrom` or with `burnFrom`).
-    - emits `SendingWithData(...)`.
+    - emits `TokenSentWithData(...)`.
 
-### Receiving Calls
+### TokenReceived Calls
 
-When receiving calls from a remote Interchain token Linker the following behaviour is expected. All the below names are not *real,* because the method called is simply `execute` which figures out what to do based on the payload.
+When TokenReceived calls from a remote Interchain token Linker the following behaviour is expected. All the below names are not *real,* because the method called is simply `execute` which figures out what to do based on the payload.
 
 `deployToken(...)`
 
@@ -144,19 +144,19 @@ When receiving calls from a remote Interchain token Linker the following behavio
 `giveToken(...)`
 
 - Gives (either transfers for origin tokens or mints for remote tokens) the appropriate amount of token the the address specified.
-    - emits `Receiving(...)`.
+    - emits `TokenReceived(...)`.
     - reverts with `NotRegistered()` if the token is not registered on this chain (if it is not deployed beforehand).
 
 `giveToken(...)`
 
 - Gives (either transfers for origin tokens or mints for remote tokens) the appropriate amount of token the the address specified.
-    - emits `Receiving(...)`.
+    - emits `TokenReceived(...)`.
     - reverts with `NotRegistered()` if the token is not registered on this chain (if it is not deployed beforehand).
 
 `giveTokenWithData(...)`
 
 - Gives (either transfers for origin tokens or mints for remote tokens) the appropriate amount of token the the address specified.
-    - emits `ReceivingWithData(...)`.
+    - emits `TokenReceivedWithData(...)`.
     - reverts with `NotRegistered()` if the token is not registered on this chain (if it is not deployed beforehand).
     - calls `proccessToken(tokenId, amount)` of the destination address after transferring the token.
 

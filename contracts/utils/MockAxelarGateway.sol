@@ -11,7 +11,7 @@ import { ITokenDeployer } from '@axelar-network/axelar-cgp-solidity/contracts/in
 import { EternalStorage } from '@axelar-network/axelar-cgp-solidity/contracts/EternalStorage.sol';
 import { DepositHandler } from '@axelar-network/axelar-cgp-solidity/contracts/DepositHandler.sol';
 
-contract AxelarGateway is IAxelarGateway, EternalStorage {
+contract MockAxelarGateway is IAxelarGateway, EternalStorage {
     using SafeTokenCall for IERC20;
     using SafeTokenTransfer for IERC20;
     using SafeTokenTransferFrom for IERC20;
@@ -268,20 +268,20 @@ contract AxelarGateway is IAxelarGateway, EternalStorage {
             bytes32 commandHash = keccak256(abi.encodePacked(commands[i]));
 
             if (commandHash == SELECTOR_DEPLOY_TOKEN) {
-                commandSelector = AxelarGateway.deployToken.selector;
+                commandSelector = MockAxelarGateway.deployToken.selector;
             } else if (commandHash == SELECTOR_MINT_TOKEN) {
-                commandSelector = AxelarGateway.mintToken.selector;
+                commandSelector = MockAxelarGateway.mintToken.selector;
             } else if (commandHash == SELECTOR_APPROVE_CONTRACT_CALL) {
-                commandSelector = AxelarGateway.approveContractCall.selector;
+                commandSelector = MockAxelarGateway.approveContractCall.selector;
             } else if (commandHash == SELECTOR_APPROVE_CONTRACT_CALL_WITH_MINT) {
-                commandSelector = AxelarGateway.approveContractCallWithMint.selector;
+                commandSelector = MockAxelarGateway.approveContractCallWithMint.selector;
             } else if (commandHash == SELECTOR_BURN_TOKEN) {
-                commandSelector = AxelarGateway.burnToken.selector;
+                commandSelector = MockAxelarGateway.burnToken.selector;
             } else if (commandHash == SELECTOR_TRANSFER_OPERATORSHIP) {
                 if (!allowOperatorshipTransfer) continue;
 
                 allowOperatorshipTransfer = false;
-                commandSelector = AxelarGateway.transferOperatorship.selector;
+                commandSelector = MockAxelarGateway.transferOperatorship.selector;
             } else {
                 continue; /* Ignore if unknown command received */
             }

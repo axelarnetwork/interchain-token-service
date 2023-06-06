@@ -13,8 +13,8 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
     error NotRemoteService();
     error TokenManagerNotDeployed(bytes32 tokenId);
 
-    event Sending(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
-    event SendingWithData(
+    event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
+    event TokenSentWithData(
         bytes32 tokenId,
         string destinationChain,
         bytes destinationAddress,
@@ -23,14 +23,14 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         bytes data,
         bytes32 sendHash
     );
-    event Receiving(
+    event TokenReceived(
         bytes32 indexed tokenId,
         string sourceChain,
         address indexed destinationAddress,
         uint256 indexed amount,
         bytes32 sendHash
     );
-    event ReceivingWithData(
+    event TokenReceivedWithData(
         bytes32 indexed tokenId,
         string sourceChain,
         address indexed destinationAddress,
@@ -40,14 +40,13 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         bool success,
         bytes32 sendHash
     );
-    event TokenManagerDeployed(
+    event RemoteTokenManagerDeploymentInitialized(
         bytes32 indexed tokenId,
-        address indexed tokenManagerAddress,
-        address indexed admin,
-        bytes32 salt,
+        string destinationChain,
+        uint256 indexed gasValue,
+        TokenManagerType indexed tokenManagerType,
         bytes params
     );
-    event RemoteTokenRegisterInitialized(bytes32 indexed tokenId, string destinationChain, uint256 gasValue);
 
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 
@@ -57,7 +56,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
 
     function registerCanonicalToken(address tokenAddress) external returns (bytes32 tokenId);
 
-    function registerCanonicalTokenAndDeployRemoteTokens(
+    function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
         address tokenAddress,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
@@ -97,7 +96,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         TokenManagerType[] calldata tokenManagerTypes,
         bytes[] calldata remoteParams,
         uint256[] calldata gasValues
-    ) external;
+    ) external payable;
 
     function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress);
 }
