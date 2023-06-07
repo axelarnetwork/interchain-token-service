@@ -33,7 +33,7 @@ describe('Interchain Token Service', () => {
 
     deployFunctions.lockUnlock = async function deployNewLockUnlock(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
         const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
-        const params = defaultAbiCoder.encode(['address', 'address'], [wallet.address, token.address]);
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
         const salt = getRandomBytes32();
         await (await service.deployCustomTokenManager(salt, LOCK_UNLOCK, params)).wait();
 
@@ -62,7 +62,7 @@ describe('Interchain Token Service', () => {
 
         await (await token.setDistributor(tokenManagerAddress)).wait();
 
-        const params = defaultAbiCoder.encode(['address', 'address'], [wallet.address, token.address]);
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
         await (await service.deployCustomTokenManager(salt, MINT_BURN, params)).wait();
 
         return [token, tokenManager, tokenId];
@@ -85,7 +85,6 @@ describe('Interchain Token Service', () => {
     };
 
     deployFunctions.gateway = async function deployNewGateway(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
-
         await deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals, mintAmount === 0 ? null : wallet);
         const tokenAddress = await gateway.tokenAddresses(tokenSymbol);
         const token = new Contract(tokenAddress, ERC20.abi, wallet);
@@ -513,7 +512,7 @@ describe('Interchain Token Service', () => {
         const destChain = 'destination Chain';
         const destAddress = '0x5678';
         const gasValue = 90;
-        
+
         for (const type of ['lockUnlock', 'mintBurn', 'canonical']) {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
@@ -570,7 +569,7 @@ describe('Interchain Token Service', () => {
 
             function checkPayload(payload) {
                 const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
-                
+
                 if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
                 if (emmitted[1] !== tokenId) return false;
                 if (emmitted[2] !== destAddress) return false;

@@ -6,7 +6,12 @@ import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
-abstract contract TokenManager is ITokenManager {
+import { Adminable } from '../utils/Adminable.sol';
+import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
+
+abstract contract TokenManager is ITokenManager, Adminable {
+    using AddressBytesUtils for bytes;
+
     address private immutable implementationAddress;
     IInterchainTokenService public immutable interchainTokenService;
 
@@ -27,6 +32,8 @@ abstract contract TokenManager is ITokenManager {
     }
 
     function setup(bytes calldata params) external onlyProxy {
+        bytes memory adminBytes = abi.decode(params, (bytes));
+        _setAdmin(adminBytes.toAddress());
         _setup(params);
     }
 
