@@ -34,8 +34,8 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     bytes32 public immutable chainNameHash;
     bytes32 public immutable chainName;
 
-    bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('itl-custom-token-id');
-    bytes32 internal constant PREFIX_CANONICAL_TOKEN_ID = keccak256('itl-cacnonical-token-id');
+    bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
+    bytes32 internal constant PREFIX_CANONICAL_TOKEN_ID = keccak256('its-cacnonical-token-id');
 
     uint256 private constant SELECTOR_SEND_TOKEN = 1;
     uint256 private constant SELECTOR_SEND_TOKEN_WITH_DATA = 2;
@@ -57,7 +57,10 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         if (linkerRouter_ == address(0) || gasService_ == address(0)) revert TokenServiceZeroAddress();
         linkerRouter = ILinkerRouter(linkerRouter_);
         gasService = IAxelarGasService(gasService_);
-        if (tokenManagerImplementations.length != 4) revert LengthMismatch();
+
+        if (tokenManagerImplementations.length != TokenManagerType.max + 1) revert LengthMismatch();
+
+        // use a loop for the zero address checks?
         if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert TokenServiceZeroAddress();
         implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
         if (tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)] == address(0)) revert TokenServiceZeroAddress();
@@ -67,6 +70,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert TokenServiceZeroAddress();
         implementationGateway = tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)];
 
+        // let's store it as a string, so if another user/contract queries it, it's sensical
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -279,6 +283,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         IERC20Named(tokenAddress).approve(address(gateway), type(uint256).max);
     }
 
+    // what's this for?
     function _helper(
         bytes32 tokenId,
         string calldata symbol,
@@ -330,7 +335,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
     }
 
-    function _proccessSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
+    function _processSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
         bytes32 tokenId;
         uint256 amount;
         bytes memory sourceAddress;
@@ -361,7 +366,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
     }
 
-    function _proccessDeployTokenManagerPayload(bytes calldata payload) internal {
+    function _processDeployTokenManagerPayload(bytes calldata payload) internal {
         (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
             payload,
             (uint256, bytes32, TokenManagerType, bytes)

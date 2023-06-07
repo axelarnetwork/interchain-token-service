@@ -24,6 +24,8 @@ contract TokenManagerLockUnlock is TokenManager {
         address token = tokenAddress;
         uint256 balance = IERC20(token).balanceOf(address(this));
 
+        // Can we lock the tokens on the ITS instead? It'll be simpler for tracking/monitoring
+        // Use SafeERC20 interface from gmp sdk
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returnData) = token.call(
             abi.encodeWithSelector(IERC20.transferFrom.selector, from, address(this), amount)
@@ -32,12 +34,14 @@ contract TokenManagerLockUnlock is TokenManager {
 
         if (!transferred || token.code.length == 0) revert TakeTokenFailed();
 
+        // Note: This allows support for fee-on-transfer tokens
         return IERC20(token).balanceOf(address(this)) - balance;
     }
 
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
         address token = tokenAddress;
         uint256 balance = IERC20(token).balanceOf(to);
+        // Use SafeERC20 interface from gmp sdk
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returnData) = token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
         bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));

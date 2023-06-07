@@ -10,15 +10,15 @@ abstract contract TokenManager is ITokenManager {
     address private immutable implementationAddress;
     IInterchainTokenService public immutable interchainTokenService;
 
-    modifier onlyService() {
-        if (msg.sender != address(interchainTokenService)) revert NotService();
-        _;
-    }
-
     constructor(address interchainTokenService_) {
         if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
         implementationAddress = address(this);
+    }
+
+    modifier onlyService() {
+        if (msg.sender != address(interchainTokenService)) revert NotService();
+        _;
     }
 
     modifier onlyProxy() {
@@ -31,7 +31,7 @@ abstract contract TokenManager is ITokenManager {
     }
 
     function sendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable virtual {
-        _takeToken(msg.sender, amount);
+        amount = _takeToken(msg.sender, amount);
         _transmitSendToken(destinationChain, destinationAddress, amount);
     }
 
@@ -41,7 +41,7 @@ abstract contract TokenManager is ITokenManager {
         uint256 amount,
         bytes calldata data
     ) external payable virtual {
-        _takeToken(msg.sender, amount);
+        amount = _takeToken(msg.sender, amount);
         _transmitSendTokenWithData(destinationChain, destinationAddress, amount, data);
     }
 

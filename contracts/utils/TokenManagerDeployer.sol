@@ -17,8 +17,8 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
     }
 
     // this function assumes that the sender will delegatecall to deploy tokens, which is the case.
-    function getTokenManagerAddress(bytes32 tokenManagerId) public view returns (address deployment) {
-        deployment = deployer.deployedAddress(address(this), tokenManagerId);
+    function getTokenManagerAddress(bytes32 tokenId) public view returns (address deployment) {
+        deployment = deployer.deployedAddress(address(this), tokenId);
     }
 
     // this is done as an external call because it is easier to manipulate calldata, but args are gotten from abi.encode which will always result in memory.

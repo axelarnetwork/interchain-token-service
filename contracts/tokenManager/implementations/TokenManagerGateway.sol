@@ -33,6 +33,7 @@ contract TokenManagerGateway is TokenManager {
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
         address token = tokenAddress;
 
+        // Use SafeERC20 from gmp sdk
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returnData) = token.call(
             abi.encodeWithSelector(IERC20.transferFrom.selector, from, address(interchainTokenService), amount)

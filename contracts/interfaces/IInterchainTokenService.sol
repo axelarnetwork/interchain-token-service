@@ -8,7 +8,8 @@ import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contr
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 
 interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
-    error TokenServiceZeroAddress();
+    // more generic error
+    error ZeroAddress();
     error LengthMismatch();
     error NotRemoteService();
     error TokenManagerNotDeployed(bytes32 tokenId);

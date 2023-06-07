@@ -26,6 +26,8 @@ contract TokenManagerCanonical is TokenManager, InterchainToken {
         //the first argument is reserved for the admin.
         (admin, name, symbol, decimals, mintAmount) = abi.decode(params, (bytes, string, string, uint8, uint256));
         if(mintAmount > 0 ) {
+            // Not sure why initial mint for an arbitrary admin address is needed natively.
+            // Better to keep it simpler I think and it can be done at a higher level if needed.
             _mint(admin.toAddress(), mintAmount);
         }
     }

@@ -20,10 +20,10 @@ contract Distributable is IDistributable {
         }
     }
 
-    function _setDistributor(address distr) internal {
+    function _setDistributor(address distributor_) internal {
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            sstore(DISTRIBUTOR_SLOT, distr)
+            sstore(DISTRIBUTOR_SLOT, distributor_)
         }
     }
 
