@@ -531,10 +531,11 @@ describe('Interchain Token Service', () => {
 
                 function checkPayload(payload) {
                     const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
-                    if (emmitted[0] !== SELECTOR_SEND_TOKEN) return false;
+
+                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
                     if (emmitted[1] !== tokenId) return false;
                     if (emmitted[2] !== destAddress) return false;
-                    if (emmitted[3] !== amount) return false;
+                    if (Number(emmitted[3]) !== amount) return false;
                     sendHash = emmitted[4];
                     payloadHash = keccak256(payload);
                     return true;
@@ -569,10 +570,11 @@ describe('Interchain Token Service', () => {
 
             function checkPayload(payload) {
                 const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
-                if (emmitted[0] !== SELECTOR_SEND_TOKEN) return false;
+                
+                if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
                 if (emmitted[1] !== tokenId) return false;
                 if (emmitted[2] !== destAddress) return false;
-                if (emmitted[3] !== amount) return false;
+                if (Number(emmitted[3]) !== amount) return false;
                 sendHash = emmitted[4];
                 payloadHash = keccak256(payload);
                 return true;
