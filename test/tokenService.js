@@ -673,7 +673,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
         });
 
-        it('Should be able to receive lock/unlock token', async () => {
+        it('Should be able to receive canonical token', async () => {
             const [token, , tokenId] = await deployFunctions.canonical(`Test Token Lock Unlock}`, 'TT', 12, amount);
 
             const sendHash = getRandomBytes32();
@@ -684,8 +684,7 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await service
-                .execute(commandId, sourceChain, sourceAddress, payload)
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, destAddress, amount)
                 .and.to.emit(service, 'TokenReceived')
@@ -696,12 +695,12 @@ describe('Interchain Token Service', () => {
     describe('Flow Limits', () => {
         const destinationChain = 'dest';
         const destinationAddress = '0x1234';
-        let token, tokenManager, tokenId;
+        let tokenManager, tokenId;
         const sendAmount = 1234;
         const flowLimit = (sendAmount * 3) / 2;
         const mintAmount = flowLimit * 3;
         beforeEach(async () => {
-            [token, tokenManager, tokenId] = await deployFunctions.canonical(`Test Token Lock Unlock`, 'TT', 12, mintAmount);
+            [, tokenManager, tokenId] = await deployFunctions.canonical(`Test Token Lock Unlock`, 'TT', 12, mintAmount);
             await (await tokenManager.setFlowLimit(flowLimit)).wait();
         });
 
@@ -730,10 +729,7 @@ describe('Interchain Token Service', () => {
 
             await (await receiveToken(sendAmount)).wait();
 
-            await expect(receiveToken(sendAmount)).to.be.revertedWithCustomError(
-                tokenManager,
-                'FlowLimitExceeded',
-            );
+            await expect(receiveToken(sendAmount)).to.be.revertedWithCustomError(tokenManager, 'FlowLimitExceeded');
         });
     });
 });
