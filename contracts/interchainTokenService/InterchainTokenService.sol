@@ -54,20 +54,20 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address[] memory tokenManagerImplementations,
         string memory chainName_
     ) TokenManagerDeployer(deployer_, bytecodeServer_) AxelarExecutable(gateway_) {
-        if (linkerRouter_ == address(0) || gasService_ == address(0)) revert TokenServiceZeroAddress();
+        if (linkerRouter_ == address(0) || gasService_ == address(0)) revert ZeroAddress();
         linkerRouter = ILinkerRouter(linkerRouter_);
         gasService = IAxelarGasService(gasService_);
 
-        if (tokenManagerImplementations.length != TokenManagerType.max + 1) revert LengthMismatch();
+        if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
         // use a loop for the zero address checks?
-        if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert TokenServiceZeroAddress();
+        if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert ZeroAddress();
         implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)] == address(0)) revert TokenServiceZeroAddress();
+        if (tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)] == address(0)) revert ZeroAddress();
         implementationMintBurn = tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)] == address(0)) revert TokenServiceZeroAddress();
+        if (tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)] == address(0)) revert ZeroAddress();
         implementationCanonical = tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert TokenServiceZeroAddress();
+        if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert ZeroAddress();
         implementationGateway = tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)];
 
         // let's store it as a string, so if another user/contract queries it, it's sensical
@@ -335,7 +335,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
     }
 
-    function _processSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
+    function _proccessSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
         bytes32 tokenId;
         uint256 amount;
         bytes memory sourceAddress;
