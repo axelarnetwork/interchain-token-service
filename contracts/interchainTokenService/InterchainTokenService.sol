@@ -122,7 +122,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
 
     function registerCanonicalToken(address tokenAddress) external returns (bytes32 tokenId) {
         tokenId = getCanonicalTokenId(tokenAddress);
-        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this), tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
     }
 
     function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
@@ -131,9 +131,9 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         uint256[] calldata gasValues
     ) external payable returns (bytes32 tokenId) {
         tokenId = getCanonicalTokenId(tokenAddress);
-        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this), tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        bytes memory params = abi.encode(address(0), tokenName, tokenSymbol, tokenDecimals);
+        bytes memory params = abi.encode(address(0).toBytes(), tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
@@ -145,7 +145,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        bytes memory params = abi.encode(address(0), tokenName, tokenSymbol, tokenDecimals);
+        bytes memory params = abi.encode(address(0).toBytes(), tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
@@ -159,7 +159,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         uint256[] calldata gasValues
     ) external payable {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        bytes memory params = abi.encode(admin, tokenName, tokenSymbol, decimals);
+        bytes memory params = abi.encode(admin.toBytes(), tokenName, tokenSymbol, decimals);
         _deployTokenManager(tokenId, TokenManagerType.CANONICAL, params);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }

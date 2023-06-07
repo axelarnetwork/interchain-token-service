@@ -43,6 +43,6 @@ contract TokenManagerLockUnlock is TokenManager {
         bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
 
         if (!transferred || token.code.length == 0) revert GiveTokenFailed();
-        return balance - IERC20(token).balanceOf(to);
+        return IERC20(token).balanceOf(to) - balance;
     }
 }

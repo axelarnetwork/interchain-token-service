@@ -465,8 +465,8 @@ describe('Interchain Token Service', () => {
             const tokenDecimals = 13;
             const tokenId = getRandomBytes32();
             const params = defaultAbiCoder.encode(
-                ['bytes', 'string', ' string', 'uint8'],
-                [AddressZero, tokenName, tokenSymbol, tokenDecimals],
+                ['bytes', 'string', ' string', 'uint8', 'uint256'],
+                [AddressZero, tokenName, tokenSymbol, tokenDecimals, 0],
             );
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
@@ -583,101 +583,68 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe.only('Receive Remote Tokens', () => {
+    describe('Receive Remote Tokens', () => {
         const sourceChain = 'source chain';
         let sourceAddress;
+        const amount = 1234;
+        let destAddress;
         before(async () => {
             sourceAddress = service.address.toLowerCase();
+            destAddress = wallet.address;
         });
 
-        it('Should be able to receive a remote lock/unlock token manager depoloyment', async () => {
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN';
-            const tokenDecimals = 13;
-            const tokenId = getRandomBytes32();
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+        it('Should be able to receive lock/unlock token', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
+            (await (await token.transfer(tokenManager.address, amount))).wait();
+            const sendHash = getRandomBytes32();
 
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [AddressZero, token.address]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, LOCK_UNLOCK, params],
+                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount, sendHash],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params);
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-            expect(await tokenManager.tokenAddress()).to.equal(token.address);
+                .to.emit(token, 'Transfer')
+                .withArgs(tokenManager.address, destAddress, amount)
+                .and.to.emit(service, 'TokenReceived')
+                .withArgs(tokenId, sourceChain, destAddress, amount, sendHash)
         });
 
-        it('Should be able to receive a remote lock/unlock token manager depoloyment', async () => {
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN';
-            const tokenDecimals = 13;
-            const tokenId = getRandomBytes32();
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+        it('Should be able to receive mint/burn token', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.mintBurn(`Test Token Mint Burn`, 'TT', 12, amount);
+            
+            const sendHash = getRandomBytes32();
 
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [AddressZero, token.address]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
+                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount, sendHash],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params);
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-            expect(await tokenManager.tokenAddress()).to.equal(token.address);
+                .to.emit(token, 'Transfer')
+                .withArgs(AddressZero, destAddress, amount)
+                .and.to.emit(service, 'TokenReceived')
+                .withArgs(tokenId, sourceChain, destAddress, amount, sendHash)
         });
 
-        it('Should be able to receive a remote canonical token manager depoloyment', async () => {
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN';
-            const tokenDecimals = 13;
-            const tokenId = getRandomBytes32();
-            const params = defaultAbiCoder.encode(
-                ['bytes', 'string', ' string', 'uint8'],
-                [AddressZero, tokenName, tokenSymbol, tokenDecimals],
-            );
+        it('Should be able to receive lock/unlock token', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.canonical(`Test Token Lock Unlock}`, 'TT', 12, amount);
+
+            const sendHash = getRandomBytes32();
+
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, CANONICAL, params],
+                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount, sendHash],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, CANONICAL, params);
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-            expect(await tokenManager.tokenAddress()).to.equal(tokenManagerAddress);
-        });
-
-        it('Should be able to receive a remote gateway token manager deployment', async () => {
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN2';
-            const tokenDecimals = 13;
-            const tokenId = getRandomBytes32();
-
-            await deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals);
-            const tokenAddress = await gateway.tokenAddresses(tokenSymbol);
-            const params = defaultAbiCoder.encode(['bytes', 'string'], [AddressZero, tokenSymbol]);
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, GATEWAY, params],
-            );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, GATEWAY, params);
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-            expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
+                .to.emit(token, 'Transfer')
+                .withArgs(AddressZero, destAddress, amount)
+                .and.to.emit(service, 'TokenReceived')
+                .withArgs(tokenId, sourceChain, destAddress, amount, sendHash)
         });
     });
 });

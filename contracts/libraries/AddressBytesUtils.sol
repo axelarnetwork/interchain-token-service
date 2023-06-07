@@ -15,6 +15,7 @@ library AddressBytesUtils {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             mstore(add(bytesAddress, 20), addr)
+            mstore(bytesAddress, 20)
         }
     }
 }
