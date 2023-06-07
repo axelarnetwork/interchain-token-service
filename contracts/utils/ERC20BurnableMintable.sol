@@ -34,7 +34,7 @@ contract ERC20BurnableMintable is ERC20, Distributable, IERC20BurnableMintable {
         _setDistributor(distr);
     }
 
-    function mint(address account, uint256 amount) external onlyDistributor() {
+    function mint(address account, uint256 amount) external onlyDistributor {
         _mint(account, amount);
     }
 

@@ -279,17 +279,6 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         IERC20Named(tokenAddress).approve(address(gateway), type(uint256).max);
     }
 
-    function _helper(
-        bytes32 tokenId,
-        string calldata symbol,
-        string memory destinationChain,
-        bytes memory destinationAddress,
-        uint256 amount,
-        address sourceAddress,
-        bytes memory data,
-        bytes32 sendHash
-    ) internal {}
-
     /****************\
     INTERNAL FUNCTIONS
     \****************/

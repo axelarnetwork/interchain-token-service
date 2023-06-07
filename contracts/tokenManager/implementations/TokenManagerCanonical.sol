@@ -25,7 +25,7 @@ contract TokenManagerCanonical is TokenManager, InterchainToken {
         bytes memory admin;
         //the first argument is reserved for the admin.
         (admin, name, symbol, decimals, mintAmount) = abi.decode(params, (bytes, string, string, uint8, uint256));
-        if(mintAmount > 0 ) {
+        if (mintAmount > 0) {
             _mint(admin.toAddress(), mintAmount);
         }
     }
