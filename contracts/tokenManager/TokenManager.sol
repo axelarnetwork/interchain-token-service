@@ -33,7 +33,14 @@ abstract contract TokenManager is ITokenManager, Adminable {
 
     function setup(bytes calldata params) external onlyProxy {
         bytes memory adminBytes = abi.decode(params, (bytes));
-        _setAdmin(adminBytes.toAddress());
+        address admin_;
+        // Specifying an empty admin will default to the service being the admin. This makes it easy to deploy remote canonical tokens without knowing anything about the service address at the destination.
+        if(adminBytes.length == 0) {
+            admin_ = address(interchainTokenService);
+        } else {
+            admin_ = adminBytes.toAddress();
+        }
+        _setAdmin(admin_);
         _setup(params);
     }
 
