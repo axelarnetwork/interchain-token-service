@@ -151,10 +151,7 @@ describe('Interchain Token Service', () => {
         it('Should be able to initiate a remote canonical token deployment', async () => {
             const chains = ['chain1', 'chain2'];
             const gasValues = [1e6, 0];
-            const params = defaultAbiCoder.encode(
-                ['bytes', 'string', ' string', 'uint8'],
-                ['0x', tokenName, tokenSymbol, tokenDecimals],
-            );
+            const params = defaultAbiCoder.encode(['bytes', 'string', ' string', 'uint8'], ['0x', tokenName, tokenSymbol, tokenDecimals]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, CANONICAL, params],
@@ -425,11 +422,11 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, chains[1], service.address.toLowerCase(), keccak256(payloads[1]), payloads[1]);
 
-                const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-                expect(tokenManagerAddress).to.not.equal(AddressZero);
-                const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
+            expect(tokenManagerAddress).to.not.equal(AddressZero);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-                expect(await tokenManager.admin()).to.equal(wallet.address);
+            expect(await tokenManager.admin()).to.equal(wallet.address);
         });
     });
 
@@ -687,11 +684,56 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await service
+                .execute(commandId, sourceChain, sourceAddress, payload)
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, destAddress, amount)
                 .and.to.emit(service, 'TokenReceived')
                 .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
+        });
+    });
+
+    describe('Flow Limits', () => {
+        const destinationChain = 'dest';
+        const destinationAddress = '0x1234';
+        let token, tokenManager, tokenId;
+        const sendAmount = 1234;
+        const flowLimit = (sendAmount * 3) / 2;
+        const mintAmount = flowLimit * 3;
+        beforeEach(async () => {
+            [token, tokenManager, tokenId] = await deployFunctions.canonical(`Test Token Lock Unlock`, 'TT', 12, mintAmount);
+            await (await tokenManager.setFlowLimit(flowLimit)).wait();
+        });
+
+        // These tests will fail every once in a while since the two transactions will happen in different epochs.
+        // LMK of any fixes to this that do not involve writing a new contract to facilitate a multicall.
+        it('Should be able to send token only if it does not trigger the mint limit', async () => {
+            await (await tokenManager.sendToken(destinationChain, destinationAddress, sendAmount)).wait();
+            await expect(tokenManager.sendToken(destinationChain, destinationAddress, sendAmount)).to.be.revertedWithCustomError(
+                tokenManager,
+                'FlowLimitExceeded',
+            );
+        });
+
+        it('Should be able to receive token only if it does not trigger the mint limit', async () => {
+            async function receiveToken(sendAmount) {
+                const sendHash = getRandomBytes32();
+
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
+                    [SELECTOR_SEND_TOKEN, tokenId, wallet.address, sendAmount, sendHash],
+                );
+                const commandId = await approveContractCall(gateway, destinationChain, service.address, service.address, payload);
+
+                return service.execute(commandId, destinationChain, service.address, payload);
+            }
+
+            await (await receiveToken(sendAmount)).wait();
+
+            await expect(receiveToken(sendAmount)).to.be.revertedWithCustomError(
+                tokenManager,
+                'FlowLimitExceeded',
+            );
         });
     });
 });

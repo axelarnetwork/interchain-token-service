@@ -7,9 +7,10 @@ import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.s
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
 import { Adminable } from '../utils/Adminable.sol';
+import { FlowLimit } from '../utils/FlowLimit.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 
-abstract contract TokenManager is ITokenManager, Adminable {
+abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
     using AddressBytesUtils for bytes;
 
     address private immutable implementationAddress;
@@ -35,7 +36,7 @@ abstract contract TokenManager is ITokenManager, Adminable {
         bytes memory adminBytes = abi.decode(params, (bytes));
         address admin_;
         // Specifying an empty admin will default to the service being the admin. This makes it easy to deploy remote canonical tokens without knowing anything about the service address at the destination.
-        if(adminBytes.length == 0) {
+        if (adminBytes.length == 0) {
             admin_ = address(interchainTokenService);
         } else {
             admin_ = adminBytes.toAddress();
@@ -46,6 +47,7 @@ abstract contract TokenManager is ITokenManager, Adminable {
 
     function sendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable virtual {
         amount = _takeToken(msg.sender, amount);
+        _addFlowOut(amount);
         _transmitSendToken(destinationChain, destinationAddress, amount);
     }
 
@@ -56,11 +58,18 @@ abstract contract TokenManager is ITokenManager, Adminable {
         bytes calldata data
     ) external payable virtual {
         amount = _takeToken(msg.sender, amount);
+        _addFlowOut(amount);
         _transmitSendTokenWithData(destinationChain, destinationAddress, amount, data);
     }
 
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
-        return _giveToken(destinationAddress, amount);
+        amount = _giveToken(destinationAddress, amount);
+        _addFlowIn(amount);
+        return amount;
+    }
+
+    function setFlowLimit(uint256 flowLimit) external onlyAdmin {
+        _setFlowLimit(flowLimit);
     }
 
     function _takeToken(address from, uint256 amount) internal virtual returns (uint256);
