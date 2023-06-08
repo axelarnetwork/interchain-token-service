@@ -121,25 +121,6 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
         bytes calldata data
     ) external payable;
 
-    function transmitSendTokenWithToken(
-        bytes32 tokenId,
-        string calldata symbol,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount
-    ) external payable;
-
-    function transmitSendTokenWithDataWithToken(
-        bytes32 tokenId,
-        string memory symbol,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes memory destinationAddress,
-        uint256 amount,
-        bytes memory data
-    ) external payable;
-
     function approveGateway(bytes32 tokenId, address tokenAddress) external;
 
     function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;

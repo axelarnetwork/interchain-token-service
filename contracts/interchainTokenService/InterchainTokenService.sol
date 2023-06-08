@@ -40,7 +40,6 @@ contract InterchainTokenService is
     address public immutable implementationLockUnlock;
     address public immutable implementationMintBurn;
     address public immutable implementationCanonical;
-    address public immutable implementationGateway;
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
     bytes32 public immutable chainNameHash;
@@ -79,8 +78,6 @@ contract InterchainTokenService is
         implementationMintBurn = tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)];
         if (tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)] == address(0)) revert ZeroAddress();
         implementationCanonical = tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert ZeroAddress();
-        implementationGateway = tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)];
 
         // let's store it as a string, so if another user/contract queries it, it's sensical
         chainName = chainName_.toBytes32();
@@ -127,8 +124,6 @@ contract InterchainTokenService is
             return implementationMintBurn;
         } else if (tokenManagerType == TokenManagerType.CANONICAL) {
             return implementationCanonical;
-        } else if (tokenManagerType == TokenManagerType.GATEWAY) {
-            return implementationGateway;
         }
     }
 
@@ -283,46 +278,6 @@ contract InterchainTokenService is
         emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, data, sendHash);
     }
 
-    function transmitSendTokenWithToken(
-        bytes32 tokenId,
-        string calldata symbol,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount
-    ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
-        bytes memory payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash);
-        _callContractWithToken(destinationChain, symbol, amount, payload, sourceAddress);
-        emit TokenSent(tokenId, destinationChain, destinationAddress, amount, sendHash);
-    }
-
-    function transmitSendTokenWithDataWithToken(
-        bytes32 tokenId,
-        string memory symbol,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes memory destinationAddress,
-        uint256 amount,
-        bytes memory data
-    ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
-        {
-            bytes memory sourceAddressBytes = sourceAddress.toBytes();
-            bytes memory payload = abi.encode(
-                SELECTOR_SEND_TOKEN_WITH_DATA,
-                tokenId,
-                destinationAddress,
-                amount,
-                sourceAddressBytes,
-                data,
-                sendHash
-            );
-            _callContractWithToken(destinationChain, symbol, amount, payload, sourceAddress);
-        }
-        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, data, sendHash);
-    }
-
     function approveGateway(bytes32 tokenId, address tokenAddress) external onlyTokenManager(tokenId) {
         IERC20Named(tokenAddress).approve(address(gateway), type(uint256).max);
     }
@@ -357,16 +312,6 @@ contract InterchainTokenService is
         } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
             _proccessDeployTokenManagerPayload(payload);
         }
-    }
-
-    function _executeWithToken(
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata /*symbol*/,
-        uint256 /*amount*/
-    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
-        _execute(sourceChain, sourceAddress, payload);
     }
 
     function _proccessSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
@@ -452,29 +397,6 @@ contract InterchainTokenService is
             );
         }
         gateway.callContract(destinationChain, destinationAddress, payload);
-    }
-
-    function _callContractWithToken(
-        string calldata destinationChain,
-        string memory symbol,
-        uint256 amount,
-        bytes memory payload,
-        address refundTo
-    ) internal {
-        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
-        uint256 gasValue = msg.value;
-        if (gasValue > 0) {
-            gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
-                address(this),
-                destinationChain,
-                destinationAddress,
-                payload,
-                symbol,
-                amount,
-                refundTo
-            );
-        }
-        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
 
     function _validateToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {

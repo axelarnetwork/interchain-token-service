@@ -6,7 +6,6 @@ interface ITokenManagerType {
     enum TokenManagerType {
         LOCK_UNLOCK,
         MINT_BURN,
-        CANONICAL,
-        GATEWAY
+        CANONICAL
     }
 }
