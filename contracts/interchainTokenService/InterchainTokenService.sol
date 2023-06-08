@@ -319,6 +319,11 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         IERC20Named(tokenAddress).approve(address(gateway), type(uint256).max);
     }
 
+    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external onlyOwner {
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        tokenManager.setFlowLimit(flowLimit);
+    }
+
     /****************\
     INTERNAL FUNCTIONS
     \****************/
