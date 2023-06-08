@@ -5,6 +5,8 @@ pragma solidity ^0.8.9;
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol';
+import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
+import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { TokenManagerDeployer } from '../utils/TokenManagerDeployer.sol';
@@ -19,7 +21,9 @@ import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk
 
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
-contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer, AxelarExecutable, Upgradable {
+import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
+
+contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer, AxelarExecutable, Upgradable, ExpressCallHandler {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using AddressBytesUtils for bytes;
@@ -198,6 +202,38 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         _deployRemoteCustomTokens(tokenId, destinationChains, tokenManagerTypes, remoteParams, gasValues);
     }
 
+    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external {
+        address caller = msg.sender;
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        IERC20 token = IERC20(tokenManager.tokenAddress());
+        uint256 balance = token.balanceOf(destinationAddress);
+        SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
+        amount = token.balanceOf(destinationAddress) - balance;
+        _setExpressSendToken(tokenId, destinationAddress, amount, sendHash, caller);
+
+        emit ExpressExecuted(tokenId, destinationAddress, amount, sendHash, caller);
+    }
+
+    function expressReceiveTokenWithData(
+        bytes32 tokenId,
+        string memory sourceChain,
+        bytes memory sourceAddress,
+        address destinationAddress,
+        uint256 amount,
+        bytes calldata data,
+        bytes32 sendHash
+    ) external {
+        address caller = msg.sender;
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        IERC20 token = IERC20(tokenManager.tokenAddress());
+        uint256 balance = token.balanceOf(destinationAddress);
+        SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
+        amount = token.balanceOf(destinationAddress) - balance;
+        _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
+        _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
+        emit ExpressExecutedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
+    }
+
     /*********************\
     TOKEN MANAGER FUNCTIONS
     \*********************/
@@ -318,9 +354,15 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
             (uint256, bytes32, bytes, uint256, bytes32)
         );
         address destinationAddress = destinationAddressBytes.toAddress();
-        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
-        amount = tokenManager.giveToken(destinationAddress, amount);
-        emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        address expressCaller = _popExpressSendToken(tokenId, destinationAddress, amount, sendHash);
+        if (expressCaller == address(0)) {
+            amount = tokenManager.giveToken(destinationAddress, amount);
+            emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
+        } else {
+            amount = tokenManager.giveToken(expressCaller, amount);
+            emit ExpressExecutionFulfilled(tokenId, destinationAddress, amount, sendHash, expressCaller);
+        }
     }
 
     function _proccessSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
@@ -339,19 +381,34 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
             destinationAddress = destinationAddressBytes.toAddress();
         }
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
-        amount = tokenManager.giveToken(destinationAddress, amount);
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = destinationAddress.call(
-            abi.encodeWithSelector(
-                IInterchainTokenExecutable.exectuteWithInterchainToken.selector,
+        {
+            address expressCaller = _popExpressSendTokenWithData(
                 tokenId,
                 sourceChain,
                 sourceAddress,
+                destinationAddress,
                 amount,
-                data
-            )
-        );
-        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
+                data,
+                sendHash
+            );
+            if (expressCaller != address(0)) {
+                amount = tokenManager.giveToken(expressCaller, amount);
+                emit ExpressExecutionWithDataFulfilled(
+                    tokenId,
+                    sourceChain,
+                    sourceAddress,
+                    destinationAddress,
+                    amount,
+                    data,
+                    sendHash,
+                    expressCaller
+                );
+                return;
+            }
+        }
+        amount = tokenManager.giveToken(destinationAddress, amount);
+        _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
+        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, sendHash);
     }
 
     function _processDeployTokenManagerPayload(bytes calldata payload) internal {
@@ -482,5 +539,27 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
             );
         }
         gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+    }
+
+    function _passData(
+        address destinationAddress,
+        bytes32 tokenId,
+        string memory sourceChain,
+        bytes memory sourceAddress,
+        uint256 amount,
+        bytes memory data
+    ) internal {
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = destinationAddress.call(
+            abi.encodeWithSelector(
+                IInterchainTokenExecutable.exectuteWithInterchainToken.selector,
+                tokenId,
+                sourceChain,
+                sourceAddress,
+                amount,
+                data
+            )
+        );
+        if (!success) revert ExecuteWithInterchainTokenFailed(destinationAddress);
     }
 }
