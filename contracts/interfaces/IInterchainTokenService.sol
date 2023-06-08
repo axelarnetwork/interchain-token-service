@@ -17,6 +17,8 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
     error TokenManagerNotDeployed(bytes32 tokenId);
     error NotTokenManager();
     error ExecuteWithInterchainTokenFailed(address contractAddress);
+    error NotCanonicalToken();
+    error GatewayToken();
 
     event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
     event TokenSentWithData(
@@ -72,16 +74,6 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
         uint256[] calldata gasValues
     ) external payable;
 
-    function deployInterchainToken(
-        string calldata tokenName,
-        string calldata tokenSymbol,
-        uint8 decimals,
-        address owner,
-        bytes32 salt,
-        string[] calldata destinationChains,
-        uint256[] calldata gasValues
-    ) external payable;
-
     function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes calldata params) external;
 
     function deployRemoteCustomTokenManagers(
@@ -102,7 +94,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
         uint256[] calldata gasValues
     ) external payable;
 
-    function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress);
+    function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
 
     function transmitSendToken(
         bytes32 tokenId,

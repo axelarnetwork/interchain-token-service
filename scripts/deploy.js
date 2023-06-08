@@ -19,7 +19,7 @@ async function deployLinkerRouter(wallet, interchainTokenServiceAddress) {
     return linkerRouter;
 }
 
-async function deployStubGateway(wallet) {
+async function deployMockGateway(wallet) {
     const tokenDeployer = await deployContract(wallet, 'TokenDeployer', []);
     const gateway = await deployContract(wallet, 'MockAxelarGateway', [tokenDeployer.address]);
     return gateway;
@@ -62,7 +62,7 @@ async function deployInterchainTokenService(
 async function deployTokenManagerImplementations(wallet, interchainTokenServiceAddress) {
     const implementations = [];
 
-    for (const type of ['LockUnlock', 'MintBurn', 'Canonical', 'Gateway']) {
+    for (const type of ['LockUnlock', 'MintBurn', 'Canonical']) {
         const impl = await deployContract(wallet, `TokenManager${type}`, [interchainTokenServiceAddress]);
         implementations.push(impl);
     }
@@ -72,7 +72,7 @@ async function deployTokenManagerImplementations(wallet, interchainTokenServiceA
 
 async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenService') {
     const create3Deployer = await deployContract(wallet, 'Create3Deployer');
-    const gateway = await deployStubGateway(wallet);
+    const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
     const bytecodeServer = await deployContract(wallet, 'BytecodeServer', [TokenManagerProxy.bytecode]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
@@ -96,7 +96,7 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
 module.exports = {
     deployContract,
     deployLinkerRouter,
-    deployStubGateway,
+    deployMockGateway,
     deployGasService,
     deployInterchainTokenService,
     deployAll,

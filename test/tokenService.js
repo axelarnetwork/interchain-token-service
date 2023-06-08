@@ -10,7 +10,6 @@ const { Contract } = ethers;
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 
 const TokenManager = require('../artifacts/contracts/tokenManager/TokenManager.sol/TokenManager.json');
-const TokenManagerGateway = require('../artifacts/contracts/tokenManager/implementations/TokenManagerGateway.sol/TokenManagerGateway.json');
 const ERC20 = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 
 const { approveContractCall, getRandomBytes32, deployGatewayToken } = require('../scripts/utils');
@@ -81,26 +80,6 @@ describe('Interchain Token Service', () => {
         const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
         const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
         const token = new Contract(tokenManagerAddress, ERC20.abi, wallet);
-
-        return [token, tokenManager, tokenId];
-    };
-
-    deployFunctions.gateway = async function deployNewGateway(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
-        await deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals, mintAmount === 0 ? null : wallet);
-        const tokenAddress = await gateway.tokenAddresses(tokenSymbol);
-        const token = new Contract(tokenAddress, ERC20.abi, wallet);
-
-        const params = defaultAbiCoder.encode(['bytes', 'string'], [wallet.address, tokenSymbol]);
-        const salt = getRandomBytes32();
-        await (await service.deployCustomTokenManager(salt, GATEWAY, params)).wait();
-        const tokenId = await service.getCustomTokenId(wallet.address, salt);
-        const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManagerGateway.abi, wallet);
-        await (await tokenManager.gatewayApprove()).wait();
-
-        if (mintAmount > 0) {
-            await (await token.mint(wallet.address, mintAmount)).wait();
-            await (await token.approve(tokenManager.address, mintAmount)).wait();
-        }
 
         return [token, tokenManager, tokenId];
     };
@@ -280,28 +259,6 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.admin()).to.equal(wallet.address);
         });
-
-        it('Should deploy a canonical token manager', async () => {
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN';
-            const tokenDecimals = 13;
-
-            await deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals);
-
-            const params = defaultAbiCoder.encode(['bytes', 'string'], [wallet.address, tokenSymbol]);
-
-            const salt = getRandomBytes32();
-            const tokenId = await service.getCustomTokenId(wallet.address, salt);
-            await expect(service.deployCustomTokenManager(salt, GATEWAY, params))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, GATEWAY, params);
-
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-
-            expect(await tokenManager.admin()).to.equal(wallet.address);
-        });
     });
 
     describe('Initialize remote custom token manager deployment', () => {
@@ -379,20 +336,6 @@ describe('Interchain Token Service', () => {
                 ['bytes', 'string', 'string', 'uint8'],
                 [wallet.address, tokenName, tokenSymbol, tokenDecimals],
             );
-            salt = getRandomBytes32();
-        });
-
-        it('Should deploy a gateway token manager', async () => {
-            tokenManagerType = GATEWAY;
-
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN3';
-            const tokenDecimals = 13;
-
-            await deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals);
-
-            params = defaultAbiCoder.encode(['bytes', 'string'], [wallet.address, tokenSymbol]);
-
             salt = getRandomBytes32();
         });
 
@@ -513,30 +456,6 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.tokenAddress()).to.equal(tokenManagerAddress);
             expect(await tokenManager.admin()).to.equal(wallet.address);
         });
-
-        it('Should be able to receive a remote gateway token manager deployment', async () => {
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN2';
-            const tokenDecimals = 13;
-            const tokenId = getRandomBytes32();
-
-            await deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals);
-            const tokenAddress = await gateway.tokenAddresses(tokenSymbol);
-            const params = defaultAbiCoder.encode(['bytes', 'string'], [wallet.address, tokenSymbol]);
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, GATEWAY, params],
-            );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, GATEWAY, params);
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-            expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
-            expect(await tokenManager.admin()).to.equal(wallet.address);
-        });
     });
 
     describe('SendToken', () => {
@@ -584,54 +503,6 @@ describe('Interchain Token Service', () => {
                     .withArgs(tokenId, destChain, destAddress, amount, checkSendHash);
             });
         }
-
-        it(`Should be able to initiate an interchain token transfer [gateway]`, async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.gateway(`Test Token gateway`, 'TT', 12, amount);
-
-            let sendHash;
-            let payloadHash;
-
-            function checkSendHash(hash) {
-                return sendHash === hash;
-            }
-
-            function checkPayloadHash(hash) {
-                return payloadHash === hash;
-            }
-
-            function checkPayload(payload) {
-                const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
-
-                if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
-                if (emmitted[1] !== tokenId) return false;
-                if (emmitted[2] !== destAddress) return false;
-                if (Number(emmitted[3]) !== amount) return false;
-                sendHash = emmitted[4];
-                payloadHash = keccak256(payload);
-                return true;
-            }
-
-            await expect(tokenManager.sendToken(destChain, destAddress, amount, { value: gasValue }))
-                .and.to.emit(token, 'Transfer')
-                .withArgs(wallet.address, service.address, amount)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(service.address, gateway.address, amount)
-                .and.to.emit(gateway, 'ContractCallWithToken')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload, 'TT', amount)
-                .and.to.emit(gasService, 'NativeGasPaidForContractCallWithToken')
-                .withArgs(
-                    service.address,
-                    destChain,
-                    service.address.toLowerCase(),
-                    checkPayloadHash,
-                    'TT',
-                    amount,
-                    gasValue,
-                    wallet.address,
-                )
-                .to.emit(service, 'TokenSent')
-                .withArgs(tokenId, destChain, destAddress, amount, checkSendHash);
-        });
     });
 
     describe('Receive Remote Tokens', () => {

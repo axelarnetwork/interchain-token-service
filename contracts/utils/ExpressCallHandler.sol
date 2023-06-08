@@ -5,19 +5,24 @@ pragma solidity 0.8.9;
 import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
 
 contract ExpressCallHandler is IExpressCallHandler {
+    // solhint-disable no-inline-assembly
+    // uint256(keccak256('prefix-express-give-token')) - 1;
+    uint256 internal constant PREFIX_EXPRESS_GIVE_TOKEN = 0x67c7b41c1cb0375e36084c4ec399d005168e83425fa471b9224f6115af86561a;
+    // uint256(keccak256('prefix-express-give-token-with-data')) - 1;
+    uint256 internal constant PREFIX_EXPRESS_GIVE_TOKEN_WITH_DATA = 0x3e607cc12a253b1d9f677a03d298ad869a90a8ba4bd0fb5739e7d79db7cdeaae;
     mapping(bytes32 => address) private expressGiveToken;
     mapping(bytes32 => address) private expressGiveTokenWithData;
 
-    function _getExpressSendTokenKey(
+    function _getExpressSendTokenSlot(
         bytes32 tokenId,
         address destinationAddress,
         uint256 amount,
         bytes32 sendHash
-    ) internal pure returns (bytes32 key) {
-        key = keccak256(abi.encode(tokenId, destinationAddress, amount, sendHash));
+    ) internal pure returns (uint256 slot) {
+        slot = uint256(keccak256(abi.encode(PREFIX_EXPRESS_GIVE_TOKEN, tokenId, destinationAddress, amount, sendHash)));
     }
 
-    function _getExpressSendTokenWithDataKey(
+    function _getExpressSendTokenWithDataSlot(
         bytes32 tokenId,
         string memory sourceChain,
         bytes memory sourceAddress,
@@ -25,8 +30,21 @@ contract ExpressCallHandler is IExpressCallHandler {
         uint256 amount,
         bytes memory data,
         bytes32 sendHash
-    ) internal pure returns (bytes32 key) {
-        key = keccak256(abi.encode(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash));
+    ) internal pure returns (uint256 slot) {
+        slot = uint256(
+            keccak256(
+                abi.encode(
+                    PREFIX_EXPRESS_GIVE_TOKEN_WITH_DATA,
+                    tokenId,
+                    sourceChain,
+                    sourceAddress,
+                    destinationAddress,
+                    amount,
+                    data,
+                    sendHash
+                )
+            )
+        );
     }
 
     function _setExpressSendToken(
@@ -36,7 +54,10 @@ contract ExpressCallHandler is IExpressCallHandler {
         bytes32 sendHash,
         address expressCaller
     ) internal {
-        expressGiveToken[_getExpressSendTokenKey(tokenId, destinationAddress, amount, sendHash)] = expressCaller;
+        uint256 slot = _getExpressSendTokenSlot(tokenId, destinationAddress, amount, sendHash);
+        assembly {
+            sstore(slot, expressCaller)
+        }
         emit ExpressExecuted(tokenId, destinationAddress, amount, sendHash, expressCaller);
     }
 
@@ -50,9 +71,10 @@ contract ExpressCallHandler is IExpressCallHandler {
         bytes32 sendHash,
         address expressCaller
     ) internal {
-        expressGiveTokenWithData[
-            _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)
-        ] = expressCaller;
+        uint256 slot = _getExpressSendTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
+        assembly {
+            sstore(slot, expressCaller)
+        }
         emit ExpressExecutedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, expressCaller);
     }
 
@@ -62,7 +84,10 @@ contract ExpressCallHandler is IExpressCallHandler {
         uint256 amount,
         bytes32 sendHash
     ) public view returns (address expressCaller) {
-        expressCaller = expressGiveToken[_getExpressSendTokenKey(tokenId, destinationAddress, amount, sendHash)];
+        uint256 slot = _getExpressSendTokenSlot(tokenId, destinationAddress, amount, sendHash);
+        assembly {
+            expressCaller := sload(slot)
+        }
     }
 
     function getExpressSendTokenWithData(
@@ -74,9 +99,10 @@ contract ExpressCallHandler is IExpressCallHandler {
         bytes calldata data,
         bytes32 sendHash
     ) public view returns (address expressCaller) {
-        expressCaller = expressGiveTokenWithData[
-            _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash)
-        ];
+        uint256 slot = _getExpressSendTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
+        assembly {
+            expressCaller := sload(slot)
+        }
     }
 
     function _popExpressSendToken(
@@ -85,10 +111,14 @@ contract ExpressCallHandler is IExpressCallHandler {
         uint256 amount,
         bytes32 sendHash
     ) internal returns (address expressCaller) {
-        bytes32 key = _getExpressSendTokenKey(tokenId, destinationAddress, amount, sendHash);
-        expressCaller = expressGiveToken[key];
+        uint256 slot = _getExpressSendTokenSlot(tokenId, destinationAddress, amount, sendHash);
+        assembly {
+            expressCaller := sload(slot)
+        }
         if (expressCaller != address(0)) {
-            expressGiveToken[key] = address(0);
+            assembly {
+                sstore(slot, 0)
+            }
             emit ExpressExecutionFulfilled(tokenId, destinationAddress, amount, sendHash, expressCaller);
         }
     }
@@ -102,10 +132,14 @@ contract ExpressCallHandler is IExpressCallHandler {
         bytes memory data,
         bytes32 sendHash
     ) internal returns (address expressCaller) {
-        bytes32 key = _getExpressSendTokenWithDataKey(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
-        expressCaller = expressGiveTokenWithData[key];
+        uint256 slot = _getExpressSendTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
+        assembly {
+            expressCaller := sload(slot)
+        }
         if (expressCaller != address(0)) {
-            expressGiveTokenWithData[key] = address(0);
+            assembly {
+                sstore(slot, 0)
+            }
             emit ExpressExecutionWithDataFulfilled(
                 tokenId,
                 sourceChain,

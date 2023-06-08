@@ -8,10 +8,10 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 // Inherit from FixedProxy from gmp sdk
 contract TokenManagerProxy is ITokenManagerProxy {
     IInterchainTokenService public immutable interchainTokenServiceAddress;
-    TokenManagerType public immutable implementationType;
+    uint256 public immutable implementationType;
     bytes32 public immutable tokenId;
 
-    constructor(address interchainTokenServiceAddress_, TokenManagerType implementationType_, bytes32 tokenId_, bytes memory params) {
+    constructor(address interchainTokenServiceAddress_, uint256 implementationType_, bytes32 tokenId_, bytes memory params) {
         interchainTokenServiceAddress = IInterchainTokenService(interchainTokenServiceAddress_);
         implementationType = implementationType_;
         tokenId = tokenId_;
@@ -28,17 +28,13 @@ contract TokenManagerProxy is ITokenManagerProxy {
 
     function _getImplementation(
         IInterchainTokenService interchainTokenServiceAddress_,
-        TokenManagerType implementationType_
+        uint256 implementationType_
     ) internal view returns (address impl) {
         impl = interchainTokenServiceAddress_.getImplementation(implementationType_);
     }
 
     // solhint-disable-next-line no-empty-blocks
     function setup(bytes calldata setupParams) external {}
-
-    function contractId() internal pure virtual returns (bytes32) {
-        return bytes32(0);
-    }
 
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable virtual {
