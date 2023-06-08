@@ -32,13 +32,14 @@ describe('Interchain Token Service', () => {
     const deployFunctions = {};
 
     deployFunctions.lockUnlock = async function deployNewLockUnlock(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
-        const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
-        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
         const salt = getRandomBytes32();
-        await (await service.deployCustomTokenManager(salt, LOCK_UNLOCK, params)).wait();
-
         const tokenId = await service.getCustomTokenId(wallet.address, salt);
         const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
+
+        const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+        
+        await (await service.deployCustomTokenManager(salt, LOCK_UNLOCK, params)).wait();
 
         if (mintAmount > 0) {
             await (await token.mint(wallet.address, mintAmount)).wait();
@@ -49,10 +50,11 @@ describe('Interchain Token Service', () => {
     };
 
     deployFunctions.mintBurn = async function deployNewMintBurn(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
-        const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
         const salt = getRandomBytes32();
         const tokenId = await service.getCustomTokenId(wallet.address, salt);
         const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+        const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+        
 
         const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
 
@@ -118,7 +120,7 @@ describe('Interchain Token Service', () => {
         const tokenDecimals = 13;
         let tokenId;
         before(async () => {
-            token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+            token = await deployContract(wallet, 'InterchainTokenTestCanonical', [tokenName, tokenSymbol, tokenDecimals, service.address]);
         });
         it('Should register a canonical token', async () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
@@ -141,7 +143,7 @@ describe('Interchain Token Service', () => {
         const tokenDecimals = 13;
         let tokenId;
         before(async () => {
-            token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+            token = await deployContract(wallet, 'InterchainTokenTestCanonical', [tokenName, tokenSymbol, tokenDecimals, service.address]);
             await (await service.registerCanonicalToken(token.address)).wait();
             tokenId = await service.getCanonicalTokenId(token.address);
             const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
@@ -177,7 +179,7 @@ describe('Interchain Token Service', () => {
         const tokenDecimals = 13;
         let tokenId;
         before(async () => {
-            token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+            token = await deployContract(wallet, 'InterchainTokenTestCanonical', [tokenName, tokenSymbol, tokenDecimals, service.address]);
             tokenId = await service.getCanonicalTokenId(token.address);
         });
 
@@ -222,15 +224,16 @@ describe('Interchain Token Service', () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
             const tokenDecimals = 13;
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            
             await expect(service.deployCustomTokenManager(salt, LOCK_UNLOCK, params))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, params);
 
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
@@ -241,15 +244,16 @@ describe('Interchain Token Service', () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
             const tokenDecimals = 13;
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            
             await expect(service.deployCustomTokenManager(salt, MINT_BURN, params))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, MINT_BURN, params);
 
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
@@ -344,10 +348,12 @@ describe('Interchain Token Service', () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
             const tokenDecimals = 13;
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+            salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
 
             params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-            salt = getRandomBytes32();
         });
 
         it('Should deploy a mint/burn token manager', async () => {
@@ -356,9 +362,12 @@ describe('Interchain Token Service', () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
             const tokenDecimals = 13;
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
-            params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+            params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            
         });
 
         it('Should deploy a canonical token manager', async () => {
@@ -442,7 +451,8 @@ describe('Interchain Token Service', () => {
             const tokenSymbol = 'TN';
             const tokenDecimals = 13;
             const tokenId = getRandomBytes32();
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
@@ -454,7 +464,6 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, params);
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
             expect(await tokenManager.admin()).to.equal(wallet.address);
@@ -465,7 +474,8 @@ describe('Interchain Token Service', () => {
             const tokenSymbol = 'TN';
             const tokenDecimals = 13;
             const tokenId = getRandomBytes32();
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
@@ -477,7 +487,6 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, MINT_BURN, params);
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
             expect(await tokenManager.admin()).to.equal(wallet.address);

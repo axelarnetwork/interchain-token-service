@@ -12,6 +12,7 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit {
     error TakeTokenFailed();
     error GiveTokenFailed();
     error NotProxy();
+    error NotToken();
 
     function tokenAddress() external view returns (address);
 
@@ -24,7 +25,19 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit {
         bytes calldata data
     ) external payable;
 
+    function sendSelf(address from, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable;
+
+    function callContractWithSelf(
+        address from,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable;
+    
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
 
     function setFlowLimit(uint256 flowLimit) external;
+
+    function requiresApproval() external view returns (bool);
 }

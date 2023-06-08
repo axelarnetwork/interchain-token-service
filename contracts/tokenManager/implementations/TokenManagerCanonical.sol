@@ -5,6 +5,7 @@ pragma solidity 0.8.9;
 import { TokenManager } from '../TokenManager.sol';
 import { InterchainToken } from '../../interchainToken/InterchainToken.sol';
 import { AddressBytesUtils } from '../../libraries/AddressBytesUtils.sol';
+import { ITokenManager } from '../../interfaces/ITokenManager.sol';
 
 contract TokenManagerCanonical is TokenManager, InterchainToken {
     using AddressBytesUtils for bytes;
@@ -16,8 +17,16 @@ contract TokenManagerCanonical is TokenManager, InterchainToken {
         TokenManager(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
 
-    function tokenAddress() external view returns (address) {
+    function tokenAddress() public override view returns (address) {
         return address(this);
+    }
+
+    function getTokenManager() public override view returns (ITokenManager tokenManager) {
+        return ITokenManager(this);
+    }
+
+    function requiresApproval() external pure returns (bool) {
+        return false;
     }
 
     function _setup(bytes calldata params) internal override {
