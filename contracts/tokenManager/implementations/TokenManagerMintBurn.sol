@@ -6,7 +6,6 @@ import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
 import { IERC20BurnableMintable } from '../../interfaces/IERC20BurnableMintable.sol';
 
 contract TokenManagerMintBurn is TokenManagerAddressStorage {
-
     constructor(
         address interchainTokenService_
     )
@@ -17,7 +16,7 @@ contract TokenManagerMintBurn is TokenManagerAddressStorage {
     function requiresApproval() external pure returns (bool) {
         return false;
     }
-    
+
     function _setup(bytes calldata params) internal override {
         //the first argument is reserved for the admin.
         (, address tokenAddress) = abi.decode(params, (bytes, address));

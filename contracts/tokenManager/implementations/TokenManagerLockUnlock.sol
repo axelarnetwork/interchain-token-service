@@ -6,7 +6,6 @@ import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 contract TokenManagerLockUnlock is TokenManagerAddressStorage {
-
     constructor(
         address interchainTokenService_
     )

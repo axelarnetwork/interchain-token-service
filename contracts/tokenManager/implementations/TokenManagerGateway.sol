@@ -59,7 +59,12 @@ contract TokenManagerGateway is TokenManagerAddressStorage {
         return amount;
     }
 
-    function _transmitSendToken(address sender, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) internal override {
+    function _transmitSendToken(
+        address sender,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) internal override {
         interchainTokenService.transmitSendTokenWithToken{ value: msg.value }(
             _getTokenId(),
             gatewaySymbol,

@@ -34,7 +34,7 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit {
         uint256 amount,
         bytes calldata data
     ) external payable;
-    
+
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
 
     function setFlowLimit(uint256 flowLimit) external;

@@ -37,7 +37,7 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
         _;
     }
 
-    function tokenAddress() public virtual view returns (address);
+    function tokenAddress() public view virtual returns (address);
 
     function setup(bytes calldata params) external onlyProxy {
         bytes memory adminBytes = abi.decode(params, (bytes));
@@ -71,7 +71,12 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
         _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, data);
     }
 
-    function sendSelf(address sender, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable virtual onlyToken {
+    function sendSelf(
+        address sender,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable virtual onlyToken {
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
         _transmitSendToken(sender, destinationChain, destinationAddress, amount);
@@ -103,14 +108,13 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
 
     function _giveToken(address from, uint256 amount) internal virtual returns (uint256);
 
-    function _transmitSendToken(address sender, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) internal virtual {
-        interchainTokenService.transmitSendToken{ value: msg.value }(
-            _getTokenId(),
-            sender,
-            destinationChain,
-            destinationAddress,
-            amount
-        );
+    function _transmitSendToken(
+        address sender,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) internal virtual {
+        interchainTokenService.transmitSendToken{ value: msg.value }(_getTokenId(), sender, destinationChain, destinationAddress, amount);
     }
 
     function _transmitSendTokenWithData(

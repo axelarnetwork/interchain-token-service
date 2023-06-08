@@ -19,7 +19,7 @@ contract InterchainTokenTestCanonical is InterchainToken, Distributable {
         tokenManager = ITokenManager(service.getTokenManagerAddress(tokenId));
     }
 
-    function getTokenManager() public override view returns (ITokenManager) {
+    function getTokenManager() public view override returns (ITokenManager) {
         return tokenManager;
     }
 

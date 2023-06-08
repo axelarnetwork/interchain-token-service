@@ -11,7 +11,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
     string public symbol;
     uint8 public decimals;
 
-    function getTokenManager() public virtual view returns (ITokenManager tokenManager);
+    function getTokenManager() public view virtual returns (ITokenManager tokenManager);
 
     function interchainTransfer(
         string calldata destinationChain,
@@ -21,13 +21,13 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
     ) external payable {
         address sender = msg.sender;
         ITokenManager tokenManager = getTokenManager();
-        if(tokenManager.requiresApproval()) {
+        if (tokenManager.requiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
-        if(metadata.length == 0) {
-            tokenManager.sendSelf{value: msg.value}(sender, destinationChain, recipient, amount);
+        if (metadata.length == 0) {
+            tokenManager.sendSelf{ value: msg.value }(sender, destinationChain, recipient, amount);
         } else {
-            tokenManager.callContractWithSelf{value: msg.value}(sender, destinationChain, recipient, amount, metadata);
+            tokenManager.callContractWithSelf{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
         }
     }
 
@@ -46,13 +46,13 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
         }
 
         ITokenManager tokenManager = getTokenManager();
-        if(tokenManager.requiresApproval()) {
+        if (tokenManager.requiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
-        if(metadata.length == 0) {
-            tokenManager.sendSelf{value: msg.value}(sender, destinationChain, recipient, amount);
+        if (metadata.length == 0) {
+            tokenManager.sendSelf{ value: msg.value }(sender, destinationChain, recipient, amount);
         } else {
-            tokenManager.callContractWithSelf{value: msg.value}(sender, destinationChain, recipient, amount, metadata);
+            tokenManager.callContractWithSelf{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
         }
     }
 }

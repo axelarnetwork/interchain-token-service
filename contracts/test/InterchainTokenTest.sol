@@ -17,7 +17,7 @@ contract InterchainTokenTest is InterchainToken, Distributable {
         tokenManager = ITokenManager(tokenManager_);
     }
 
-    function getTokenManager() public override view returns (ITokenManager) {
+    function getTokenManager() public view override returns (ITokenManager) {
         return tokenManager;
     }
 

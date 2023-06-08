@@ -17,11 +17,11 @@ contract TokenManagerCanonical is TokenManager, InterchainToken {
         TokenManager(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
 
-    function tokenAddress() public override view returns (address) {
+    function tokenAddress() public view override returns (address) {
         return address(this);
     }
 
-    function getTokenManager() public override view returns (ITokenManager tokenManager) {
+    function getTokenManager() public view override returns (ITokenManager tokenManager) {
         return ITokenManager(this);
     }
 
