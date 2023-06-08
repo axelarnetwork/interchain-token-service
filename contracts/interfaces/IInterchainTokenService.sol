@@ -7,8 +7,9 @@ import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contr
 
 import { IExpressCallHandler } from './IExpressCallHandler.sol';
 import { ITokenManagerDeployer } from './ITokenManagerDeployer.sol';
+import { IPausable } from './IPausable.sol';
 
-interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler, IAxelarExecutable {
+interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler, IAxelarExecutable, IPausable {
     // more generic error
     error ZeroAddress();
     error LengthMismatch();
@@ -142,4 +143,6 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
     function approveGateway(bytes32 tokenId, address tokenAddress) external;
 
     function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;
+
+    function setPaused(bool paused) external;
 }
