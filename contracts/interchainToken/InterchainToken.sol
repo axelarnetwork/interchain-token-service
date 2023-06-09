@@ -4,9 +4,10 @@ pragma solidity 0.8.9;
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { ERC20 } from '../utils/ERC20.sol';
+// You can have your own implementation of ERC20, but unfortunatelly we had to include an implementations to have access to the _approve method as well as the allowance mapping
+import { ERC20Permit } from '../utils/ERC20Permit.sol';
 
-abstract contract InterchainToken is IInterchainToken, ERC20 {
+abstract contract InterchainToken is IInterchainToken, ERC20Permit {
     string public name;
     string public symbol;
     uint8 public decimals;
