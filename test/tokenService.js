@@ -4,7 +4,7 @@ const chai = require('chai');
 const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
-const { AddressZero } = ethers.constants;
+const { AddressZero, MaxUint256 } = ethers.constants;
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 const { Contract } = ethers;
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
@@ -22,9 +22,10 @@ const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const LOCK_UNLOCK = 0;
 const MINT_BURN = 1;
 const CANONICAL = 2;
+const LIQUIDITY_POOL = 3;
 
 describe('Interchain Token Service', () => {
-    let wallet;
+    let wallet, liquidityPool;
     let service, gateway, gasService;
 
     const deployFunctions = {};
@@ -83,10 +84,29 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
+    deployFunctions.liquidityPool = async function deployNewLiquidityPool(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
+        const salt = getRandomBytes32();
+        const tokenId = await service.getCustomTokenId(wallet.address, salt);
+        const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
+
+        const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
+        const params = defaultAbiCoder.encode(['bytes', 'address', 'address'], [wallet.address, token.address, liquidityPool.address]);
+
+        await (await service.deployCustomTokenManager(salt, LIQUIDITY_POOL, params)).wait();
+        await (await token.connect(liquidityPool).approve(tokenManager.address, MaxUint256)).wait();
+
+        if (mintAmount > 0) {
+            await (await token.mint(wallet.address, mintAmount)).wait();
+            await (await token.approve(tokenManager.address, mintAmount)).wait();
+        }
+
+        return [token, tokenManager, tokenId];
+    };
+
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
-
+        liquidityPool = wallets[1];
         [service, gateway, gasService] = await deployAll(wallet, 'Test');
     });
 
@@ -261,6 +281,26 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.admin()).to.equal(wallet.address);
         });
+
+        it('Should deploy a liquidity pool token manager', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address', 'address'], [wallet.address, token.address, liquidityPool.address]);
+
+            await expect(service.deployCustomTokenManager(salt, LIQUIDITY_POOL, params))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, LIQUIDITY_POOL, params);
+
+            expect(tokenManagerAddress).to.not.equal(AddressZero);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+
+            expect(await tokenManager.admin()).to.equal(wallet.address);
+        });
     });
 
     describe('Initialize remote custom token manager deployment', () => {
@@ -339,6 +379,20 @@ describe('Interchain Token Service', () => {
                 [wallet.address, tokenName, tokenSymbol, tokenDecimals],
             );
             salt = getRandomBytes32();
+        });
+
+        it('Should deploy a lock/unlock token manager', async () => {
+            tokenManagerType = LIQUIDITY_POOL;
+
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+
+            params = defaultAbiCoder.encode(['bytes', 'address', 'address'], [wallet.address, token.address, liquidityPool.address]);
         });
 
         afterEach('Should initialize a remote custom token manager deployment', async () => {
@@ -458,6 +512,29 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.tokenAddress()).to.equal(tokenManagerAddress);
             expect(await tokenManager.admin()).to.equal(wallet.address);
         });
+
+        it('Should be able to receive a remote lock/unlock token manager depoloyment', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const tokenId = getRandomBytes32();
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+
+            const params = defaultAbiCoder.encode(['bytes', 'address', 'address'], [wallet.address, token.address, liquidityPool.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, LIQUIDITY_POOL, params],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, LIQUIDITY_POOL, params);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+            expect(await tokenManager.tokenAddress()).to.equal(token.address);
+            expect(await tokenManager.admin()).to.equal(wallet.address);
+        });
     });
 
     describe('SendToken', () => {
@@ -466,7 +543,7 @@ describe('Interchain Token Service', () => {
         const destAddress = '0x5678';
         const gasValue = 90;
 
-        for (const type of ['lockUnlock', 'mintBurn', 'canonical']) {
+        for (const type of ['lockUnlock', 'mintBurn', 'canonical', 'liquidityPool']) {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
 
@@ -493,7 +570,14 @@ describe('Interchain Token Service', () => {
                     return true;
                 }
 
-                const transferToAddress = type === 'lockUnlock' ? tokenManager.address : AddressZero;
+                let transferToAddress = AddressZero;
+
+                if (type === 'lockUnlock') {
+                    transferToAddress = tokenManager.address;
+                } else if (type === 'liquidityPool') {
+                    transferToAddress = liquidityPool.address;
+                }
+
                 await expect(tokenManager.sendToken(destChain, destAddress, amount, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
@@ -567,6 +651,24 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, destAddress, amount)
+                .and.to.emit(service, 'TokenReceived')
+                .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
+        });
+
+        it('Should be able to receive liquidity pool token', async () => {
+            const [token, , tokenId] = await deployFunctions.liquidityPool(`Test Token Liquidity Pool`, 'TTLP', 12, amount);
+            (await await token.transfer(liquidityPool.address, amount)).wait();
+            const sendHash = getRandomBytes32();
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount, sendHash],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(liquidityPool.address, destAddress, amount)
                 .and.to.emit(service, 'TokenReceived')
                 .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
         });
