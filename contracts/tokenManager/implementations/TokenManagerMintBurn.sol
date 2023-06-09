@@ -8,8 +8,6 @@ import { IERC20BurnableMintable } from '../../interfaces/IERC20BurnableMintable.
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 
-
-
 contract TokenManagerMintBurn is TokenManagerAddressStorage {
     constructor(
         address interchainTokenService_

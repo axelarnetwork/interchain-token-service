@@ -13,6 +13,7 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
     error InvalidV();
     error InvalidSignature();
 
+    // solhint-disable-next-line var-name-mixedcase
     bytes32 public DOMAIN_SEPARATOR;
 
     string private constant EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA = '\x19\x01';
@@ -31,15 +32,8 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
         );
     }
 
-    function permit(
-        address issuer,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+    function permit(address issuer, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {  
+        // solhint-disable-next-line not-rely-on-time
         if (block.timestamp > deadline) revert PermitExpired();
 
         if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) revert InvalidS();
