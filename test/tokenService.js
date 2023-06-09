@@ -12,7 +12,7 @@ const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 const TokenManager = require('../artifacts/contracts/tokenManager/TokenManager.sol/TokenManager.json');
 const ERC20 = require('../artifacts/contracts/interfaces/IERC20BurnableMintable.sol/IERC20BurnableMintable.json');
 
-const { approveContractCall, getRandomBytes32, deployGatewayToken } = require('../scripts/utils');
+const { approveContractCall, getRandomBytes32 } = require('../scripts/utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
@@ -22,7 +22,6 @@ const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const LOCK_UNLOCK = 0;
 const MINT_BURN = 1;
 const CANONICAL = 2;
-const GATEWAY = 3;
 
 describe('Interchain Token Service', () => {
     let wallet;
