@@ -4,7 +4,7 @@ const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 
 function getRandomBytes32() {
-    return keccak256(defaultAbiCoder.encode(['uint256'], [new Date().getTime()]));
+    return keccak256(defaultAbiCoder.encode(['uint256'], [Math.floor(new Date().getTime() * Math.random())]));
 }
 
 async function approveContractCall(
