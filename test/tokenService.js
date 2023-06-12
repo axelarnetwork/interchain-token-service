@@ -220,7 +220,7 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Custom Token Manager Deploymenr', () => {
-        for(const useParams of [true, false]) {
+        for (const useParams of [true, false]) {
             it('Should deploy a lock/unlock token manager' + (useParams ? 'using params' : ''), async () => {
                 const tokenName = 'Token Name';
                 const tokenSymbol = 'TN';
@@ -228,13 +228,18 @@ describe('Interchain Token Service', () => {
                 const salt = getRandomBytes32();
                 const tokenId = await service.getCustomTokenId(wallet.address, salt);
                 const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-                const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+                const token = await deployContract(wallet, 'InterchainTokenTest', [
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    tokenManagerAddress,
+                ]);
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
-                const tx = useParams ? service.deployCustomTokenManager(salt, LOCK_UNLOCK, params) : service.deployCustomTokenManagerLockUnlock(salt, wallet.address, token.address);
-                await expect(tx)
-                    .to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, LOCK_UNLOCK, params);
+                const tx = useParams
+                    ? service.deployCustomTokenManager(salt, LOCK_UNLOCK, params)
+                    : service.deployCustomTokenManagerLockUnlock(salt, wallet.address, token.address);
+                await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, LOCK_UNLOCK, params);
 
                 expect(tokenManagerAddress).to.not.equal(AddressZero);
                 const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
@@ -249,13 +254,18 @@ describe('Interchain Token Service', () => {
                 const salt = getRandomBytes32();
                 const tokenId = await service.getCustomTokenId(wallet.address, salt);
                 const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-                const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+                const token = await deployContract(wallet, 'InterchainTokenTest', [
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    tokenManagerAddress,
+                ]);
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-                
-                const tx = useParams ? service.deployCustomTokenManager(salt, MINT_BURN, params) : service.deployCustomTokenManagerMintBurn(salt, wallet.address, token.address);
-                await expect(tx)
-                    .to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, MINT_BURN, params);
+
+                const tx = useParams
+                    ? service.deployCustomTokenManager(salt, MINT_BURN, params)
+                    : service.deployCustomTokenManagerMintBurn(salt, wallet.address, token.address);
+                await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, MINT_BURN, params);
 
                 expect(tokenManagerAddress).to.not.equal(AddressZero);
                 const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
@@ -275,10 +285,10 @@ describe('Interchain Token Service', () => {
                 const salt = getRandomBytes32();
                 const tokenId = await service.getCustomTokenId(wallet.address, salt);
 
-                const tx = useParams ? service.deployCustomTokenManager(salt, CANONICAL, params) : service.deployCustomTokenManagerCanonical(salt, wallet.address, tokenName, tokenSymbol, tokenDecimals, 0);
-                await expect(tx)
-                    .to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, CANONICAL, params);
+                const tx = useParams
+                    ? service.deployCustomTokenManager(salt, CANONICAL, params)
+                    : service.deployCustomTokenManagerCanonical(salt, wallet.address, tokenName, tokenSymbol, tokenDecimals, 0);
+                await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, CANONICAL, params);
 
                 const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
                 expect(tokenManagerAddress).to.not.equal(AddressZero);
@@ -294,13 +304,21 @@ describe('Interchain Token Service', () => {
                 const salt = getRandomBytes32();
                 const tokenId = await service.getCustomTokenId(wallet.address, salt);
                 const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-                const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
-                const params = defaultAbiCoder.encode(['bytes', 'address', 'address'], [wallet.address, token.address, liquidityPool.address]);
+                const token = await deployContract(wallet, 'InterchainTokenTest', [
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    tokenManagerAddress,
+                ]);
+                const params = defaultAbiCoder.encode(
+                    ['bytes', 'address', 'address'],
+                    [wallet.address, token.address, liquidityPool.address],
+                );
 
-                const tx = useParams ? service.deployCustomTokenManager(salt, LIQUIDITY_POOL, params) : service.deployCustomTokenManagerLiquidityPool(salt, wallet.address, token.address, liquidityPool.address);
-                await expect(tx)
-                    .to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, LIQUIDITY_POOL, params);
+                const tx = useParams
+                    ? service.deployCustomTokenManager(salt, LIQUIDITY_POOL, params)
+                    : service.deployCustomTokenManagerLiquidityPool(salt, wallet.address, token.address, liquidityPool.address);
+                await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, LIQUIDITY_POOL, params);
 
                 expect(tokenManagerAddress).to.not.equal(AddressZero);
                 const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);

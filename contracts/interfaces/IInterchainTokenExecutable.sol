@@ -12,4 +12,6 @@ interface IInterchainTokenExecutable {
         bytes32 tokenId,
         uint256 amount
     ) external;
+
+    function executeOnRevert() external view returns (bool);
 }
