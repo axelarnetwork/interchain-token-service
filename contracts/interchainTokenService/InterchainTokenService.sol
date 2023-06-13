@@ -10,6 +10,7 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
+import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
@@ -31,23 +32,25 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     using AddressBytesUtils for bytes;
     using AddressBytesUtils for address;
 
-    address public immutable implementationLockUnlock;
-    address public immutable implementationMintBurn;
-    address public immutable implementationCanonical;
-    address public immutable implementationLiquidityPool;
+    address internal immutable implementationLockUnlock;
+    address internal immutable implementationMintBurn;
+    address internal immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
     address public immutable tokenManagerDeployer;
-    Create3Deployer public immutable deployer;
-    bytes32 public immutable chainNameHash;
-    bytes32 public immutable chainName;
+    address public immutable standardizedTokenDeployer;
+    Create3Deployer internal immutable deployer;
+    bytes32 internal immutable chainNameHash;
+    bytes32 internal immutable chainName;
 
     bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
-    bytes32 internal constant PREFIX_CANONICAL_TOKEN_ID = keccak256('its-cacnonical-token-id');
+    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_ID = keccak256('its-cacnonical-token-id');
+    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_SALT = keccak256('its-cacnonical-token-salt');
 
     uint256 private constant SELECTOR_SEND_TOKEN = 1;
     uint256 private constant SELECTOR_SEND_TOKEN_WITH_DATA = 2;
     uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
+    uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
     // keccak256('interchain-token-service')-1
     // solhint-disable-next-line const-name-snakecase
@@ -55,16 +58,23 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
 
     constructor(
         address tokenManagerDeployer_,
+        address standardizedTokenDeployer_,
         address gateway_,
         address gasService_,
         address linkerRouter_,
         address[] memory tokenManagerImplementations,
         string memory chainName_
     ) AxelarExecutable(gateway_) {
-        if (linkerRouter_ == address(0) || gasService_ == address(0) || tokenManagerDeployer_ == address(0)) revert ZeroAddress();
+        if (
+            linkerRouter_ == address(0) ||
+            gasService_ == address(0) ||
+            tokenManagerDeployer_ == address(0) ||
+            standardizedTokenDeployer_ == address(0)
+        ) revert ZeroAddress();
         linkerRouter = ILinkerRouter(linkerRouter_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
+        standardizedTokenDeployer = standardizedTokenDeployer_;
         deployer = ITokenManagerDeployer(tokenManagerDeployer_).deployer();
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
@@ -74,8 +84,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
         if (tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)] == address(0)) revert ZeroAddress();
         implementationMintBurn = tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)] == address(0)) revert ZeroAddress();
-        implementationCanonical = tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)];
         if (tokenManagerImplementations[uint256(TokenManagerType.LIQUIDITY_POOL)] == address(0)) revert ZeroAddress();
         implementationLiquidityPool = tokenManagerImplementations[uint256(TokenManagerType.LIQUIDITY_POOL)];
 
@@ -120,9 +128,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         tokenAddress = ITokenManager(tokenManagerAddress).tokenAddress();
     }
 
+    function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
+        tokenId = _getStandardizedTokenSalt(tokenId);
+        tokenAddress = deployer.deployedAddress(address(this), tokenId);
+    }
+
     // There are two ways to cacluate a tokenId, one is for pre-existing tokens, and anyone can do this for a token once.
     function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_ID, chainNameHash, tokenAddress));
+        tokenId = keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_ID, chainNameHash, tokenAddress));
     }
 
     // The other is by providing a salt, and your address (msg.sender) is used for the calculation.
@@ -135,8 +148,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             return implementationLockUnlock;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
             return implementationMintBurn;
-        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.CANONICAL) {
-            return implementationCanonical;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) {
             return implementationLiquidityPool;
         }
@@ -150,7 +161,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         params = abi.encode(admin, tokenAddress);
     }
 
-    function getParamsCanonical(
+    function getParamsStandardized(
         bytes memory admin,
         string calldata tokenName,
         string calldata tokenSymbol,
@@ -186,10 +197,17 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     ) public payable notPaused {
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
-        if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalToken();
+        if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalTokenManager();
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        bytes memory params = abi.encode('', tokenName, tokenSymbol, tokenDecimals);
-        _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
+        bytes memory payload = abi.encode(
+            SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+            tokenId,
+            tokenName,
+            tokenSymbol,
+            tokenDecimals,
+            ''
+        );
+        _deployRemoteStandardizedTokens(tokenId, payload, destinationChains, gasValues);
     }
 
     function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
@@ -201,8 +219,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
         if (gateway.tokenAddresses(tokenSymbol) == tokenAddress) revert GatewayToken();
-        bytes memory params = abi.encode('', tokenName, tokenSymbol, tokenDecimals);
-        _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
+        bytes memory payload = abi.encode(
+            SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+            tokenId,
+            tokenName,
+            tokenSymbol,
+            tokenDecimals,
+            ''
+        );
+        _deployRemoteStandardizedTokens(tokenId, payload, destinationChains, gasValues);
     }
 
     function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) public notPaused {
@@ -235,36 +260,40 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployRemoteCustomTokens(tokenId, destinationChains, tokenManagerTypes, remoteParams, gasValues);
     }
 
-    function deployCustomTokenManagerLockUnlock(bytes32 salt, address admin, address tokenAddress) external {
-        bytes memory params = getParamsLockUnlock(admin.toBytes(), tokenAddress);
-        deployCustomTokenManager(salt, TokenManagerType.LOCK_UNLOCK, params);
-    }
-
-    function deployCustomTokenManagerMintBurn(bytes32 salt, address admin, address tokenAddress) external {
-        bytes memory params = getParamsMintBurn(admin.toBytes(), tokenAddress);
-        deployCustomTokenManager(salt, TokenManagerType.MINT_BURN, params);
-    }
-
-    function deployCustomTokenManagerCanonical(
+    function deployAndRegisterStandardizedToken(
         bytes32 salt,
-        address admin,
-        string calldata tokenName,
-        string calldata tokenSymbol,
-        uint8 tokenDecimals,
-        uint256 mintAmount
-    ) external {
-        bytes memory params = getParamsCanonical(admin.toBytes(), tokenName, tokenSymbol, tokenDecimals, mintAmount);
-        deployCustomTokenManager(salt, TokenManagerType.CANONICAL, params);
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        uint256 mintAmount,
+        address distributor
+    ) public {
+        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
+        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
+        address tokenAddress = getStandardizedTokenAddress(tokenId);
+        deployCustomTokenManager(salt, tokenManagerType, abi.encode(msg.sender.toBytes(), tokenAddress));
     }
 
-    function deployCustomTokenManagerLiquidityPool(
+    function deployAndRegisterRemoteStandardizedTokens(
         bytes32 salt,
-        address admin,
-        address tokenAddress,
-        address liquidityPoolAddress
-    ) external {
-        bytes memory params = getParamsLiquidityPool(admin.toBytes(), tokenAddress, liquidityPoolAddress);
-        deployCustomTokenManager(salt, TokenManagerType.LIQUIDITY_POOL, params);
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        bytes calldata distributor,
+        string calldata destinationChain
+    ) external payable notPaused {
+        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        bytes memory payload = abi.encode(
+            SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+            tokenId,
+            name,
+            symbol,
+            decimals,
+            distributor
+        );
+        _deployRemoteStandardizedToken(tokenId, payload, destinationChain, msg.value);
     }
 
     function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external notPaused {
@@ -410,6 +439,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             _processSendTokenWithDataPayload(sourceChain, payload);
         } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
+        } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
+            _processDeployStandardizedTokenAndManagerPayload(payload);
         }
     }
 
@@ -494,6 +525,26 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
+    function _processDeployStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
+        (
+            ,
+            bytes32 tokenId,
+            string memory name,
+            string memory symbol,
+            uint8 decimals,
+            bytes memory distributorBytes
+        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes));
+        address tokenAddress = getStandardizedTokenAddress(tokenId);
+        address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : address(this);
+        _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);
+        TokenManagerType tokenManagerType = distributor == address(this) ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
+        _deployTokenManager(
+            tokenId,
+            tokenManagerType,
+            abi.encode(distributorBytes.length == 0 ? address(this).toBytes() : distributorBytes, tokenAddress)
+        );
+    }
+
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue, address refundTo) internal {
         string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
         if (gasValue > 0) {
@@ -550,16 +601,26 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
-    function _deployRemoteCanonicalTokens(
+    function _deployRemoteStandardizedToken(
         bytes32 tokenId,
-        bytes memory params,
+        bytes memory payload,
+        string calldata destinationChain,
+        uint256 gasValue
+    ) internal {
+        _callContract(destinationChain, payload, gasValue, msg.sender);
+        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
+    }
+
+    function _deployRemoteStandardizedTokens(
+        bytes32 tokenId,
+        bytes memory payload,
         string[] calldata destinationChains,
         uint256[] calldata gasValues
     ) internal {
         uint256 length = destinationChains.length;
         if (length != gasValues.length) revert LengthMismatch();
         for (uint256 i = 0; i < length; ++i) {
-            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], TokenManagerType.CANONICAL, params);
+            _deployRemoteStandardizedToken(tokenId, payload, destinationChains[i], gasValues[i]);
         }
     }
 
@@ -628,5 +689,40 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             revert TokenManagerDeploymentFailed();
         }
         emit TokenManagerDeployed(tokenId, tokenManagerType, params);
+    }
+
+    function _getStandardizedTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
+        return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, tokenId));
+    }
+
+    function _deployStandardizedToken(
+        bytes32 tokenId,
+        address distributor,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        uint256 mintAmount,
+        address mintTo
+    ) internal {
+        bytes32 salt = _getStandardizedTokenSalt(tokenId);
+        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = standardizedTokenDeployer.delegatecall(
+            abi.encodeWithSelector(
+                IStandardizedTokenDeployer.deployStandardizedToken.selector,
+                salt,
+                tokenManagerAddress,
+                distributor,
+                name,
+                symbol,
+                decimals,
+                mintAmount,
+                mintTo
+            )
+        );
+        if (!success) {
+            revert StandardizedTokenDeploymentFailed();
+        }
+        emit StandardizedTokenDeployed(tokenId, name, symbol, decimals, mintAmount, mintTo);
     }
 }

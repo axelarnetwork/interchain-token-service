@@ -18,9 +18,10 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error TokenManagerNotDeployed(bytes32 tokenId);
     error NotTokenManager();
     error ExecuteWithInterchainTokenFailed(address contractAddress);
-    error NotCanonicalToken();
+    error NotCanonicalTokenManager();
     error GatewayToken();
     error TokenManagerDeploymentFailed();
+    error StandardizedTokenDeploymentFailed();
 
     event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
     event TokenSentWithData(
@@ -55,9 +56,17 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
+    event RemoteStandardizedTokenAndManagerDeploymentInitialized(
+        bytes32 indexed tokenId,
+        string destinationChain,
+        uint256 indexed gasValue
+    );
     event TokenManagerDeployed(bytes32 tokenId, TokenManagerType tokenManagerType, bytes params);
+    event StandardizedTokenDeployed(bytes32 tokenId, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo);
 
     function tokenManagerDeployer() external view returns (address);
+
+    function standardizedTokenDeployer() external view returns (address);
 
     function getChainName() external view returns (string memory name);
 
@@ -67,6 +76,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
 
     function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
+    function getStandardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
+
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
     function getCustomTokenId(address admin, bytes32 salt) external view returns (bytes32 tokenId);
@@ -74,14 +85,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     function getParamsLockUnlock(bytes memory admin, address tokenAddress) external pure returns (bytes memory params);
 
     function getParamsMintBurn(bytes memory admin, address tokenAddress) external pure returns (bytes memory params);
-
-    function getParamsCanonical(
-        bytes memory admin,
-        string calldata tokenName,
-        string calldata tokenSymbol,
-        uint8 tokenDecimals,
-        uint256 mintAmount
-    ) external pure returns (bytes memory params);
 
     function getParamsLiquidityPool(
         bytes memory admin,
@@ -123,25 +126,25 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint256[] calldata gasValues
     ) external payable;
 
-    function deployCustomTokenManagerLockUnlock(bytes32 salt, address admin, address tokenAddress) external;
-
-    function deployCustomTokenManagerMintBurn(bytes32 salt, address admin, address tokenAddress) external;
-
-    function deployCustomTokenManagerCanonical(
+    // This deploys a standardized token, mints mintAmount to msg.sender.
+    // Then if the distributor is the tokenManagerAddress for the tokenId calculated based on the salt then it deploys a Mint/Burn tokenManager, or it deploys a Lock/Unlock one otherwise.
+    function deployAndRegisterStandardizedToken(
         bytes32 salt,
-        address admin,
-        string calldata tokenName,
-        string calldata tokenSymbol,
-        uint8 tokenDecimals,
-        uint256 mintAmount
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        uint256 mintAmount,
+        address distributor
     ) external;
 
-    function deployCustomTokenManagerLiquidityPool(
+    function deployAndRegisterRemoteStandardizedTokens(
         bytes32 salt,
-        address admin,
-        address tokenAddress,
-        address liquidityPoolAddress
-    ) external;
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        bytes calldata distributor,
+        string calldata destinationChain
+    ) external payable;
 
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
 
