@@ -30,18 +30,19 @@ abstract contract TokenManager is ITokenManager {
         _setup(params);
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    function sendToken(string calldata destiantionChain, bytes calldata destinationAddress, uint256 amount) external payable {
-        // TODO: implement
+    function sendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable virtual {
+        _takeToken(msg.sender, amount);
+        _transmitSendToken(destinationChain, destinationAddress, amount);
     }
 
     function callContractWithInterchainToken(
-        string calldata destiantionChain,
+        string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata data // solhint-disable-next-line no-empty-blocks
-    ) external payable {
-        // TODO: implement
+        bytes calldata data
+    ) external payable virtual {
+        _takeToken(msg.sender, amount);
+        _transmitSendTokenWithData(destinationChain, destinationAddress, amount, data);
     }
 
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
@@ -51,6 +52,32 @@ abstract contract TokenManager is ITokenManager {
     function _takeToken(address from, uint256 amount) internal virtual returns (uint256);
 
     function _giveToken(address from, uint256 amount) internal virtual returns (uint256);
+
+    function _transmitSendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) internal virtual {
+        interchainTokenService.transmitSendToken{ value: msg.value }(
+            _getTokenId(),
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount
+        );
+    }
+
+    function _transmitSendTokenWithData(
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) internal virtual {
+        interchainTokenService.transmitSendTokenWithData{ value: msg.value }(
+            _getTokenId(),
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            data
+        );
+    }
 
     function _setup(bytes calldata params) internal virtual;
 

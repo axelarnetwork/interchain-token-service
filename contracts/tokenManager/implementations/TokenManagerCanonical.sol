@@ -4,8 +4,11 @@ pragma solidity 0.8.9;
 
 import { TokenManager } from '../TokenManager.sol';
 import { InterchainToken } from '../../interchainToken/InterchainToken.sol';
+import { AddressBytesUtils } from '../../libraries/AddressBytesUtils.sol';
 
 contract TokenManagerCanonical is TokenManager, InterchainToken {
+    using AddressBytesUtils for bytes;
+
     constructor(
         address interchainTokenService_
     )
@@ -18,8 +21,13 @@ contract TokenManagerCanonical is TokenManager, InterchainToken {
     }
 
     function _setup(bytes calldata params) internal override {
+        uint256 mintAmount;
+        bytes memory admin;
         //the first argument is reserved for the admin.
-        (, name, symbol, decimals) = abi.decode(params, (address, string, string, uint8));
+        (admin, name, symbol, decimals, mintAmount) = abi.decode(params, (bytes, string, string, uint8, uint256));
+        if (mintAmount > 0) {
+            _mint(admin.toAddress(), mintAmount);
+        }
     }
 
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {

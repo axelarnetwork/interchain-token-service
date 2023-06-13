@@ -3,10 +3,10 @@
 pragma solidity 0.8.9;
 
 import { ERC20 } from './ERC20.sol';
-import { Ownable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Ownable.sol';
+import { Distributable } from './Distributable.sol';
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
 
-contract ERC20BurnableMintable is ERC20, Ownable, IERC20BurnableMintable {
+contract ERC20BurnableMintable is ERC20, Distributable, IERC20BurnableMintable {
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -24,28 +24,21 @@ contract ERC20BurnableMintable is ERC20, Ownable, IERC20BurnableMintable {
     }
 
     function setup(bytes calldata setupParams) external onlyProxy {
-        (string memory name_, string memory symbol_, uint8 decimals_, address owner) = abi.decode(
+        (string memory name_, string memory symbol_, uint8 decimals_, address distr) = abi.decode(
             setupParams,
             (string, string, uint8, address)
         );
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            sstore(_OWNER_SLOT, owner)
-        }
+        _setDistributor(distr);
     }
 
-    function mint(address account, uint256 amount) external onlyOwner {
+    function mint(address account, uint256 amount) external onlyDistributor {
         _mint(account, amount);
     }
 
-    function burnFrom(address account, uint256 amount) external onlyOwner {
-        uint256 _allowance = allowance[account][msg.sender];
-        if (_allowance != type(uint256).max) {
-            _approve(account, msg.sender, _allowance - amount);
-        }
+    function burn(address account, uint256 amount) external onlyDistributor {
         _burn(account, amount);
     }
 }

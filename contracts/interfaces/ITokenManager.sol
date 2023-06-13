@@ -13,10 +13,10 @@ interface ITokenManager is ITokenManagerType {
 
     function tokenAddress() external view returns (address);
 
-    function sendToken(string calldata destiantionChain, bytes calldata destinationAddress, uint256 amount) external payable;
+    function sendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable;
 
     function callContractWithInterchainToken(
-        string calldata destiantionChain,
+        string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data

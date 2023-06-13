@@ -23,6 +23,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using AddressBytesUtils for bytes;
+    using AddressBytesUtils for address;
 
     address public immutable implementationLockUnlock;
     address public immutable implementationMintBurn;
@@ -70,10 +71,23 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         chainNameHash = keccak256(bytes(chainName_));
     }
 
+    /*******\
+    MODIFIERS
+    \*******/
+
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
         if (!linkerRouter.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
         _;
     }
+
+    modifier onlyTokenManager(bytes32 tokenId) {
+        if (msg.sender != getTokenManagerAddress(tokenId)) revert NotTokenManager();
+        _;
+    }
+
+    /*****\
+    GETTERS
+    \*****/
 
     function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = getTokenManagerAddress(tokenId);
@@ -90,9 +104,25 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, admin, salt));
     }
 
+    function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress) {
+        if (tokenManagerType == TokenManagerType.LOCK_UNLOCK) {
+            return implementationLockUnlock;
+        } else if (tokenManagerType == TokenManagerType.MINT_BURN) {
+            return implementationMintBurn;
+        } else if (tokenManagerType == TokenManagerType.CANONICAL) {
+            return implementationCanonical;
+        } else if (tokenManagerType == TokenManagerType.GATEWAY) {
+            return implementationGateway;
+        }
+    }
+
+    /************\
+    USER FUNCTIONS
+    \************/
+
     function registerCanonicalToken(address tokenAddress) external returns (bytes32 tokenId) {
         tokenId = getCanonicalTokenId(tokenAddress);
-        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this), tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
     }
 
     function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
@@ -101,9 +131,9 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         uint256[] calldata gasValues
     ) external payable returns (bytes32 tokenId) {
         tokenId = getCanonicalTokenId(tokenAddress);
-        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this), tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        bytes memory params = abi.encode(address(0), tokenName, tokenSymbol, tokenDecimals);
+        bytes memory params = abi.encode(address(0).toBytes(), tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
@@ -115,7 +145,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        bytes memory params = abi.encode(address(0), tokenName, tokenSymbol, tokenDecimals);
+        bytes memory params = abi.encode(address(0).toBytes(), tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
@@ -129,7 +159,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         uint256[] calldata gasValues
     ) external payable {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        bytes memory params = abi.encode(admin, tokenName, tokenSymbol, decimals);
+        bytes memory params = abi.encode(admin.toBytes(), tokenName, tokenSymbol, decimals);
         _deployTokenManager(tokenId, TokenManagerType.CANONICAL, params);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
@@ -164,17 +194,94 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         _deployRemoteCustomTokens(tokenId, destinationChains, tokenManagerTypes, remoteParams, gasValues);
     }
 
-    function getImplementation(TokenManagerType tokenManagerType) external view returns (address tokenManagerAddress) {
-        if (tokenManagerType == TokenManagerType.LOCK_UNLOCK) {
-            return implementationLockUnlock;
-        } else if (tokenManagerType == TokenManagerType.MINT_BURN) {
-            return implementationMintBurn;
-        } else if (tokenManagerType == TokenManagerType.CANONICAL) {
-            return implementationCanonical;
-        } else if (tokenManagerType == TokenManagerType.GATEWAY) {
-            return implementationGateway;
-        }
+    /*********************\
+    TOKEN MANAGER FUNCTIONS
+    \*********************/
+
+    function transmitSendToken(
+        bytes32 tokenId,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable {
+        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
+        bytes memory payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash);
+        _callContract(destinationChain, payload, msg.value, sourceAddress);
+        emit TokenSent(tokenId, destinationChain, destinationAddress, amount, sendHash);
     }
+
+    function transmitSendTokenWithData(
+        bytes32 tokenId,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes memory destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable onlyTokenManager(tokenId) {
+        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
+        {
+            bytes memory payload = abi.encode(
+                SELECTOR_SEND_TOKEN_WITH_DATA,
+                tokenId,
+                destinationAddress,
+                amount,
+                sourceAddress.toBytes(),
+                data,
+                sendHash
+            );
+            _callContract(destinationChain, payload, msg.value, sourceAddress);
+        }
+        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, data, sendHash);
+    }
+
+    function transmitSendTokenWithToken(
+        bytes32 tokenId,
+        string calldata symbol,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable onlyTokenManager(tokenId) {
+        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
+        bytes memory payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash);
+        _callContractWithToken(destinationChain, symbol, amount, payload, sourceAddress);
+        emit TokenSent(tokenId, destinationChain, destinationAddress, amount, sendHash);
+    }
+
+    function transmitSendTokenWithDataWithToken(
+        bytes32 tokenId,
+        string memory symbol,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes memory destinationAddress,
+        uint256 amount,
+        bytes memory data
+    ) external payable onlyTokenManager(tokenId) {
+        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
+        {
+            bytes memory sourceAddressBytes = sourceAddress.toBytes();
+            bytes memory payload = abi.encode(
+                SELECTOR_SEND_TOKEN_WITH_DATA,
+                tokenId,
+                destinationAddress,
+                amount,
+                sourceAddressBytes,
+                data,
+                sendHash
+            );
+            _callContractWithToken(destinationChain, symbol, amount, payload, sourceAddress);
+        }
+        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, data, sendHash);
+    }
+
+    function approveGateway(bytes32 tokenId, address tokenAddress) external onlyTokenManager(tokenId) {
+        IERC20Named(tokenAddress).approve(address(gateway), type(uint256).max);
+    }
+
+    /****************\
+    INTERNAL FUNCTIONS
+    \****************/
 
     function _execute(
         string calldata sourceChain,
@@ -189,6 +296,16 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
             _proccessDeployTokenManagerPayload(payload);
         }
+    }
+
+    function _executeWithToken(
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata /*symbol*/,
+        uint256 /*amount*/
+    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
+        _execute(sourceChain, sourceAddress, payload);
     }
 
     function _proccessSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
@@ -233,6 +350,89 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
     }
 
+    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue, address refundTo) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCall{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                refundTo
+            );
+        }
+        gateway.callContract(destinationChain, destinationAddress, payload);
+    }
+
+    function _callContractWithToken(
+        string calldata destinationChain,
+        string memory symbol,
+        uint256 amount,
+        bytes memory payload,
+        address refundTo
+    ) internal {
+        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        uint256 gasValue = msg.value;
+        if (gasValue > 0) {
+            gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                refundTo
+            );
+        }
+        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+    }
+
+    function _validateToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
+        IERC20Named token = IERC20Named(tokenAddress);
+        name = token.name();
+        symbol = token.symbol();
+        decimals = token.decimals();
+    }
+
+    function _deployRemoteTokenManager(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        uint256 gasValue,
+        TokenManagerType tokenManagerType,
+        bytes memory params
+    ) internal {
+        bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
+        _callContract(destinationChain, payload, gasValue, msg.sender);
+        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
+    }
+
+    function _deployRemoteCanonicalTokens(
+        bytes32 tokenId,
+        bytes memory params,
+        string[] calldata destinationChains,
+        uint256[] calldata gasValues
+    ) internal {
+        uint256 length = destinationChains.length;
+        if (length != gasValues.length) revert LengthMismatch();
+        for (uint256 i = 0; i < length; ++i) {
+            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], TokenManagerType.CANONICAL, params);
+        }
+    }
+
+    function _deployRemoteCustomTokens(
+        bytes32 tokenId,
+        string[] calldata destinationChains,
+        TokenManagerType[] calldata tokenManagerTypes,
+        bytes[] calldata params,
+        uint256[] calldata gasValues
+    ) internal {
+        uint256 length = destinationChains.length;
+        if (length != gasValues.length || length != tokenManagerTypes.length || length != params.length) revert LengthMismatch();
+        for (uint256 i = 0; i < length; ++i) {
+            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], tokenManagerTypes[i], params[i]);
+        }
+    }
+
     function _proccessDeployTokenManagerPayload(bytes calldata payload) internal {
         (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
             payload,
@@ -270,51 +470,5 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
             );
         }
         gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
-    }
-
-    function _validateToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
-        IERC20Named token = IERC20Named(tokenAddress);
-        name = token.name();
-        symbol = token.symbol();
-        decimals = token.decimals();
-    }
-
-    function _deployRemoteTokenManager(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        uint256 gasValue,
-        TokenManagerType tokenManagerType,
-        bytes memory params
-    ) internal {
-        bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
-        _callContract(destinationChain, payload, gasValue);
-        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
-    }
-
-    function _deployRemoteCanonicalTokens(
-        bytes32 tokenId,
-        bytes memory params,
-        string[] calldata destinationChains,
-        uint256[] calldata gasValues
-    ) internal {
-        uint256 length = destinationChains.length;
-        if (length != gasValues.length) revert LengthMismatch();
-        for (uint256 i = 0; i < length; ++i) {
-            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], TokenManagerType.CANONICAL, params);
-        }
-    }
-
-    function _deployRemoteCustomTokens(
-        bytes32 tokenId,
-        string[] calldata destinationChains,
-        TokenManagerType[] calldata tokenManagerTypes,
-        bytes[] calldata params,
-        uint256[] calldata gasValues
-    ) internal {
-        uint256 length = destinationChains.length;
-        if (length != gasValues.length || length != tokenManagerTypes.length || length != params.length) revert LengthMismatch();
-        for (uint256 i = 0; i < length; ++i) {
-            _deployRemoteTokenManager(tokenId, destinationChains[i], gasValues[i], tokenManagerTypes[i], params[i]);
-        }
     }
 }
