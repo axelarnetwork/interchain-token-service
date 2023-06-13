@@ -5,10 +5,11 @@ pragma solidity ^0.8.9;
 // General interface for upgradable contracts
 interface IInterchainTokenExecutable {
     function exectuteWithInterchainToken(
-        bytes32 tokenId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
-        uint256 amount,
-        bytes calldata data
+        // to mimic executeWithToken more maybe?
+        bytes calldata data,
+        bytes32 tokenId,
+        uint256 amount
     ) external;
 }

@@ -17,6 +17,8 @@ contract ERC20BurnableMintable is ERC20, Distributable, IERC20BurnableMintable {
     }
 
     modifier onlyProxy() {
+        // Why are we using proxy pattern here?
+        // The following will revert due to the above
         // Prevent setup from being called on the implementation
         if (address(this) == implementationAddress) revert NotProxy();
 

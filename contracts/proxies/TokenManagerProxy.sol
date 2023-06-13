@@ -5,6 +5,7 @@ pragma solidity 0.8.9;
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
+// Inherit from FixedProxy from gmp sdk
 contract TokenManagerProxy is ITokenManagerProxy {
     IInterchainTokenService public immutable interchainTokenServiceAddress;
     TokenManagerType public immutable implementationType;

@@ -34,8 +34,8 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
     bytes32 public immutable chainNameHash;
     bytes32 public immutable chainName;
 
-    bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('itl-custom-token-id');
-    bytes32 internal constant PREFIX_CANONICAL_TOKEN_ID = keccak256('itl-cacnonical-token-id');
+    bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
+    bytes32 internal constant PREFIX_CANONICAL_TOKEN_ID = keccak256('its-cacnonical-token-id');
 
     uint256 private constant SELECTOR_SEND_TOKEN = 1;
     uint256 private constant SELECTOR_SEND_TOKEN_WITH_DATA = 2;
@@ -54,19 +54,23 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address[] memory tokenManagerImplementations,
         string memory chainName_
     ) TokenManagerDeployer(deployer_, bytecodeServer_) AxelarExecutable(gateway_) {
-        if (linkerRouter_ == address(0) || gasService_ == address(0)) revert TokenServiceZeroAddress();
+        if (linkerRouter_ == address(0) || gasService_ == address(0)) revert ZeroAddress();
         linkerRouter = ILinkerRouter(linkerRouter_);
         gasService = IAxelarGasService(gasService_);
-        if (tokenManagerImplementations.length != 4) revert LengthMismatch();
-        if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert TokenServiceZeroAddress();
+
+        if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
+
+        // use a loop for the zero address checks?
+        if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert ZeroAddress();
         implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)] == address(0)) revert TokenServiceZeroAddress();
+        if (tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)] == address(0)) revert ZeroAddress();
         implementationMintBurn = tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)] == address(0)) revert TokenServiceZeroAddress();
+        if (tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)] == address(0)) revert ZeroAddress();
         implementationCanonical = tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert TokenServiceZeroAddress();
+        if (tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)] == address(0)) revert ZeroAddress();
         implementationGateway = tokenManagerImplementations[uint256(TokenManagerType.GATEWAY)];
 
+        // let's store it as a string, so if another user/contract queries it, it's sensical
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -133,7 +137,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         tokenId = getCanonicalTokenId(tokenAddress);
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        bytes memory params = abi.encode(address(0).toBytes(), tokenName, tokenSymbol, tokenDecimals);
+        bytes memory params = abi.encode('', tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
@@ -145,7 +149,7 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        bytes memory params = abi.encode(address(0).toBytes(), tokenName, tokenSymbol, tokenDecimals);
+        bytes memory params = abi.encode('', tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
@@ -348,6 +352,14 @@ contract InterchainTokenService is IInterchainTokenService, TokenManagerDeployer
             )
         );
         emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, success, sendHash);
+    }
+
+    function _processDeployTokenManagerPayload(bytes calldata payload) internal {
+        (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
+            payload,
+            (uint256, bytes32, TokenManagerType, bytes)
+        );
+        _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue, address refundTo) internal {

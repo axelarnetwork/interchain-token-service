@@ -3,8 +3,9 @@
 pragma solidity 0.8.9;
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
+import { IAdminable } from './IAdminable.sol';
 
-interface ITokenManager is ITokenManagerType {
+interface ITokenManager is ITokenManagerType, IAdminable {
     error TokenLinkerZeroAddress();
     error NotService();
     error TakeTokenFailed();

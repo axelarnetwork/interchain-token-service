@@ -6,19 +6,24 @@ import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
-abstract contract TokenManager is ITokenManager {
+import { Adminable } from '../utils/Adminable.sol';
+import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
+
+abstract contract TokenManager is ITokenManager, Adminable {
+    using AddressBytesUtils for bytes;
+
     address private immutable implementationAddress;
     IInterchainTokenService public immutable interchainTokenService;
-
-    modifier onlyService() {
-        if (msg.sender != address(interchainTokenService)) revert NotService();
-        _;
-    }
 
     constructor(address interchainTokenService_) {
         if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
         implementationAddress = address(this);
+    }
+
+    modifier onlyService() {
+        if (msg.sender != address(interchainTokenService)) revert NotService();
+        _;
     }
 
     modifier onlyProxy() {
@@ -27,11 +32,20 @@ abstract contract TokenManager is ITokenManager {
     }
 
     function setup(bytes calldata params) external onlyProxy {
+        bytes memory adminBytes = abi.decode(params, (bytes));
+        address admin_;
+        // Specifying an empty admin will default to the service being the admin. This makes it easy to deploy remote canonical tokens without knowing anything about the service address at the destination.
+        if(adminBytes.length == 0) {
+            admin_ = address(interchainTokenService);
+        } else {
+            admin_ = adminBytes.toAddress();
+        }
+        _setAdmin(admin_);
         _setup(params);
     }
 
     function sendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable virtual {
-        _takeToken(msg.sender, amount);
+        amount = _takeToken(msg.sender, amount);
         _transmitSendToken(destinationChain, destinationAddress, amount);
     }
 
@@ -41,7 +55,7 @@ abstract contract TokenManager is ITokenManager {
         uint256 amount,
         bytes calldata data
     ) external payable virtual {
-        _takeToken(msg.sender, amount);
+        amount = _takeToken(msg.sender, amount);
         _transmitSendTokenWithData(destinationChain, destinationAddress, amount, data);
     }
 
