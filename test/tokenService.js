@@ -255,7 +255,6 @@ describe('Interchain Token Service', () => {
             const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-
             expect(await tokenManager.admin()).to.equal(wallet.address);
         });
     });
