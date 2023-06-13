@@ -162,16 +162,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         params = abi.encode(admin, tokenAddress);
     }
 
-    function getParamsStandardized(
-        bytes memory admin,
-        string calldata tokenName,
-        string calldata tokenSymbol,
-        uint8 tokenDecimals,
-        uint256 mintAmount
-    ) public pure returns (bytes memory params) {
-        params = abi.encode(admin, tokenName, tokenSymbol, tokenDecimals, mintAmount);
-    }
-
     function getParamsLiquidityPool(
         bytes memory admin,
         address tokenAddress,
@@ -191,11 +181,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
     }
 
-    function deployRemoteCanonicalToken(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        uint256 gasValue
-    ) public payable notPaused {
+    function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable notPaused {
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
         if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalTokenManager();
@@ -474,14 +460,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     }
 
     function _processDeployStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
-        (
-            ,
-            bytes32 tokenId,
-            string memory name,
-            string memory symbol,
-            uint8 decimals,
-            bytes memory distributorBytes
-        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes));
+        (, bytes32 tokenId, string memory name, string memory symbol, uint8 decimals, bytes memory distributorBytes) = abi.decode(
+            payload,
+            (uint256, bytes32, string, string, uint8, bytes)
+        );
         address tokenAddress = getStandardizedTokenAddress(tokenId);
         address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : address(this);
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);

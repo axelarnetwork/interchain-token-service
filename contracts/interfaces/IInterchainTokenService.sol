@@ -95,11 +95,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
 
     function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId);
 
-    function deployRemoteCanonicalToken(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        uint256 gasValue
-    ) external payable;
+    function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) external payable;
 
     function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) external payable;
 
@@ -120,7 +116,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint8 decimals,
         uint256 mintAmount,
         address distributor
-    ) external payable; 
+    ) external payable;
 
     function deployAndRegisterRemoteStandardizedTokens(
         bytes32 salt,
