@@ -97,11 +97,12 @@ describe('Interchain Token Service', () => {
         const tokenDecimals = 13;
         let tokenId;
         before(async () => {
-            token = await deployContract(wallet, 'InterchainTokenTestCanonical', [tokenName, tokenSymbol, tokenDecimals, service.address]);
+            token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, service.address]);
+            tokenId = await service.getCanonicalTokenId(token.address);
+            await (await token.setTokenManager(await service.getTokenManagerAddress(tokenId))).wait();
         });
         it('Should register a canonical token', async () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
-            tokenId = await service.getCanonicalTokenId(token.address);
             await expect(service.registerCanonicalToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, params);
@@ -120,9 +121,10 @@ describe('Interchain Token Service', () => {
         const tokenDecimals = 13;
         let tokenId;
         before(async () => {
-            token = await deployContract(wallet, 'InterchainTokenTestCanonical', [tokenName, tokenSymbol, tokenDecimals, service.address]);
+            token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, service.address]);
             await (await service.registerCanonicalToken(token.address)).wait();
             tokenId = await service.getCanonicalTokenId(token.address);
+            await (await token.setTokenManager(await service.getTokenManagerAddress(tokenId))).wait();
             const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
         });
@@ -156,8 +158,9 @@ describe('Interchain Token Service', () => {
         const tokenDecimals = 13;
         let tokenId;
         before(async () => {
-            token = await deployContract(wallet, 'InterchainTokenTestCanonical', [tokenName, tokenSymbol, tokenDecimals, service.address]);
+            token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, service.address]);
             tokenId = await service.getCanonicalTokenId(token.address);
+            await (await token.setTokenManager(await service.getTokenManagerAddress(tokenId))).wait();
         });
 
         it('Should be able to register a canonical token and initiate a remote canonical token deployment', async () => {

@@ -7,7 +7,6 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 
 import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 
-
 contract TokenManagerLockUnlock is TokenManagerAddressStorage {
     constructor(
         address interchainTokenService_
