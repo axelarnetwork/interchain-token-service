@@ -25,13 +25,7 @@ import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
 
-contract InterchainTokenService is
-    IInterchainTokenService,
-    AxelarExecutable,
-    Upgradable,
-    ExpressCallHandler,
-    Pausable
-{
+contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Upgradable, ExpressCallHandler, Pausable {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using AddressBytesUtils for bytes;
@@ -625,15 +619,12 @@ contract InterchainTokenService is
         IInterchainTokenExecutable(destinationAddress).exectuteWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
     }
 
-    
     function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
-        (bool success, ) = tokenManagerDeployer.delegatecall(abi.encodeWithSelector(
-            ITokenManagerDeployer.deployTokenManager.selector,
-            tokenId, 
-            tokenManagerType, 
-            params
-        ));
-        if(!success) {
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = tokenManagerDeployer.delegatecall(
+            abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
+        );
+        if (!success) {
             revert TokenManagerDeploymentFailed();
         }
         emit TokenManagerDeployed(tokenId, tokenManagerType, params);

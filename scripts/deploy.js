@@ -1,6 +1,5 @@
 const { ethers } = require('hardhat');
 const { Contract } = ethers;
-const TokenManagerProxy = require('../artifacts/contracts/proxies/TokenManagerProxy.sol/TokenManagerProxy.json');
 const InterchainTokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
 const { deployCreate3Contract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 
