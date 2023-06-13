@@ -742,7 +742,7 @@ describe('Interchain Token Service', () => {
         }
 
         it(`Should be able to initiate an interchain token transfer [gateway]`, async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.gateway(`Test Token gateway`, 'TT', 12, amount);
+            const [token, tokenManager, tokenId] = await deployFunctions.gateway(`Test Token gateway2`, 'TT2', 12, amount);
 
             let sendHash;
             let payloadHash;
@@ -773,14 +773,14 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(service.address, gateway.address, amount)
                 .and.to.emit(gateway, 'ContractCallWithToken')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload, 'TT', amount)
+                .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload, 'TT2', amount)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCallWithToken')
                 .withArgs(
                     service.address,
                     destChain,
                     service.address.toLowerCase(),
                     checkPayloadHash,
-                    'TT',
+                    'TT2',
                     amount,
                     gasValue,
                     wallet.address,
