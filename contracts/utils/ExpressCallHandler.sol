@@ -69,24 +69,13 @@ contract ExpressCallHandler is IExpressCallHandler {
         uint256 amount,
         bytes calldata data,
         bytes32 sendHash,
-        address expressCaller,
-        bool success
+        address expressCaller
     ) internal {
         uint256 slot = _getExpressSendTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
         assembly {
             sstore(slot, expressCaller)
         }
-        emit ExpressExecutedWithData(
-            tokenId,
-            sourceChain,
-            sourceAddress,
-            destinationAddress,
-            amount,
-            data,
-            sendHash,
-            expressCaller,
-            success
-        );
+        emit ExpressExecutedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, expressCaller);
     }
 
     function getExpressSendToken(
