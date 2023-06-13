@@ -16,7 +16,7 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
         deployer = Create3Deployer(deployer_);
     }
 
-    function deployTokenManager(bytes32 tokenId, TokenManagerType implementationType, bytes calldata params) external payable {
+    function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes calldata params) external payable {
         bytes memory args = abi.encode(address(this), implementationType, tokenId, params);
         bytes memory bytecode = abi.encodePacked(type(TokenManagerProxy).creationCode, args);
         address tokenManagerAddress = deployer.deploy(bytecode, tokenId);
