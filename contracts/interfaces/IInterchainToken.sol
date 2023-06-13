@@ -10,9 +10,8 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 interface IInterchainToken is IERC20 {
     function interchainTransfer(
         string calldata destinationChain,
-        string calldata recipient,
+        bytes calldata recipient,
         uint256 amount,
-        uint256 transferType, // on hold for now
         bytes calldata metadata
     ) external payable;
 
@@ -20,9 +19,8 @@ interface IInterchainToken is IERC20 {
     function interchainTransferFrom(
         address sender,
         string calldata destinationChain,
-        string calldata recipient,
+        bytes calldata recipient,
         uint256 amount,
-        uint256 transferType, // on hold for now
         bytes calldata metadata
     ) external payable;
 }

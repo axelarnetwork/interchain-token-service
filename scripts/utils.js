@@ -30,7 +30,7 @@ async function deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals
     let tokenAddress = AddressZero;
 
     if (walletForExternal) {
-        const token = await deployContract(walletForExternal, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals]);
+        const token = await deployContract(walletForExternal, 'GatewayToken', [tokenName, tokenSymbol, tokenDecimals]);
         tokenAddress = token.address;
     }
 

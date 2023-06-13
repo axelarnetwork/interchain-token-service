@@ -32,6 +32,13 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
         _;
     }
 
+    modifier onlyToken() {
+        if (msg.sender != tokenAddress()) revert NotToken();
+        _;
+    }
+
+    function tokenAddress() public view virtual returns (address);
+
     function setup(bytes calldata params) external onlyProxy {
         bytes memory adminBytes = abi.decode(params, (bytes));
         address admin_;
@@ -46,9 +53,10 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
     }
 
     function sendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable virtual {
-        amount = _takeToken(msg.sender, amount);
+        address sender = msg.sender;
+        amount = _takeToken(sender, amount);
         _addFlowOut(amount);
-        _transmitSendToken(destinationChain, destinationAddress, amount);
+        _transmitSendToken(sender, destinationChain, destinationAddress, amount);
     }
 
     function callContractWithInterchainToken(
@@ -57,9 +65,33 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
         uint256 amount,
         bytes calldata data
     ) external payable virtual {
-        amount = _takeToken(msg.sender, amount);
+        address sender = msg.sender;
+        amount = _takeToken(sender, amount);
         _addFlowOut(amount);
-        _transmitSendTokenWithData(destinationChain, destinationAddress, amount, data);
+        _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, data);
+    }
+
+    function sendSelf(
+        address sender,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable virtual onlyToken {
+        amount = _takeToken(sender, amount);
+        _addFlowOut(amount);
+        _transmitSendToken(sender, destinationChain, destinationAddress, amount);
+    }
+
+    function callContractWithSelf(
+        address sender,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable virtual onlyToken {
+        amount = _takeToken(sender, amount);
+        _addFlowOut(amount);
+        _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, data);
     }
 
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
@@ -76,17 +108,17 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
 
     function _giveToken(address from, uint256 amount) internal virtual returns (uint256);
 
-    function _transmitSendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) internal virtual {
-        interchainTokenService.transmitSendToken{ value: msg.value }(
-            _getTokenId(),
-            msg.sender,
-            destinationChain,
-            destinationAddress,
-            amount
-        );
+    function _transmitSendToken(
+        address sender,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) internal virtual {
+        interchainTokenService.transmitSendToken{ value: msg.value }(_getTokenId(), sender, destinationChain, destinationAddress, amount);
     }
 
     function _transmitSendTokenWithData(
+        address sender,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
@@ -94,7 +126,7 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
     ) internal virtual {
         interchainTokenService.transmitSendTokenWithData{ value: msg.value }(
             _getTokenId(),
-            msg.sender,
+            sender,
             destinationChain,
             destinationAddress,
             amount,

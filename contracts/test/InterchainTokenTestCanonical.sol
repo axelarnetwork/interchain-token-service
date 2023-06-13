@@ -5,16 +5,18 @@ pragma solidity 0.8.9;
 import { InterchainToken } from '../interchainToken/InterchainToken.sol';
 import { Distributable } from '../utils/Distributable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
-contract InterchainTokenTest is InterchainToken, Distributable {
+contract InterchainTokenTestCanonical is InterchainToken, Distributable {
     ITokenManager internal immutable tokenManager;
 
-    constructor(string memory name_, string memory symbol_, uint8 decimals_, address tokenManager_) {
+    constructor(string memory name_, string memory symbol_, uint8 decimals_, IInterchainTokenService service) {
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
         _setDistributor(msg.sender);
-        tokenManager = ITokenManager(tokenManager_);
+        bytes32 tokenId = service.getCanonicalTokenId(address(this));
+        tokenManager = ITokenManager(service.getTokenManagerAddress(tokenId));
     }
 
     function getTokenManager() public view override returns (ITokenManager) {

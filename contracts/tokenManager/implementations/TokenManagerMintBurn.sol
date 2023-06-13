@@ -2,26 +2,29 @@
 
 pragma solidity 0.8.9;
 
-import { TokenManager } from '../TokenManager.sol';
+import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
 import { IERC20BurnableMintable } from '../../interfaces/IERC20BurnableMintable.sol';
 
-contract TokenManagerMintBurn is TokenManager {
-    address public tokenAddress;
-
+contract TokenManagerMintBurn is TokenManagerAddressStorage {
     constructor(
         address interchainTokenService_
     )
         // solhint-disable-next-line no-empty-blocks
-        TokenManager(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
+        TokenManagerAddressStorage(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
+
+    function requiresApproval() external pure returns (bool) {
+        return false;
+    }
 
     function _setup(bytes calldata params) internal override {
         //the first argument is reserved for the admin.
-        (, tokenAddress) = abi.decode(params, (address, address));
+        (, address tokenAddress) = abi.decode(params, (bytes, address));
+        _setTokenAddress(tokenAddress);
     }
 
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
-        address token = tokenAddress;
+        address token = tokenAddress();
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = token.call(abi.encodeWithSelector(IERC20BurnableMintable.burn.selector, from, amount));
 
@@ -30,7 +33,7 @@ contract TokenManagerMintBurn is TokenManager {
     }
 
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
-        address token = tokenAddress;
+        address token = tokenAddress();
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = token.call(abi.encodeWithSelector(IERC20BurnableMintable.mint.selector, to, amount));
 
