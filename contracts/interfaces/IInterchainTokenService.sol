@@ -140,4 +140,6 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
     ) external payable;
 
     function approveGateway(bytes32 tokenId, address tokenAddress) external;
+
+    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;
 }
