@@ -298,8 +298,8 @@ contract InterchainTokenService is
         uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
         amount = token.balanceOf(destinationAddress) - balance;
-        bool success = _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
-        _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller, success);
+        _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
+        _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
     }
 
     /*********************\
@@ -488,8 +488,8 @@ contract InterchainTokenService is
             }
         }
         amount = tokenManager.giveToken(destinationAddress, amount);
-        bool success = _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
-        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, sendHash, success);
+        _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
+        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, sendHash);
     }
 
     function _processDeployTokenManagerPayload(bytes calldata payload) internal {
@@ -621,20 +621,8 @@ contract InterchainTokenService is
         bytes memory sourceAddress,
         uint256 amount,
         bytes memory data
-    ) internal returns (bool success) {
-        // solhint-disable-next-line avoid-low-level-calls
-        (success, ) = destinationAddress.call(
-            abi.encodeWithSelector(
-                IInterchainTokenExecutable.exectuteWithInterchainToken.selector,
-                sourceChain,
-                sourceAddress,
-                data,
-                tokenId,
-                amount
-            )
-        );
-        if (!success && !IInterchainTokenExecutable(destinationAddress).executeOnRevert())
-            revert ExecuteWithInterchainTokenFailed(destinationAddress);
+    ) internal {
+        IInterchainTokenExecutable(destinationAddress).exectuteWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
     }
 
     

@@ -26,8 +26,7 @@ interface IExpressCallHandler {
         uint256 amount,
         bytes data,
         bytes32 indexed sendHash,
-        address expressCaller,
-        bool success
+        address expressCaller
     );
     event ExpressExecutionWithDataFulfilled(
         bytes32 indexed tokenId,

@@ -46,8 +46,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint256 indexed amount,
         bytes sourceAddress,
         bytes data,
-        bytes32 sendHash,
-        bool success
+        bytes32 sendHash
     );
     event RemoteTokenManagerDeploymentInitialized(
         bytes32 indexed tokenId,
