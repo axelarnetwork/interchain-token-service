@@ -13,7 +13,5 @@ interface ITokenManagerDeployer is ITokenManagerType {
 
     function deployer() external view returns (Create3Deployer);
 
-    function bytecodeServer() external view returns (address);
-
-    function getTokenManagerAddress(bytes32 tokenId) external view returns (address deployment);
+    function deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes calldata params) external payable;
 }

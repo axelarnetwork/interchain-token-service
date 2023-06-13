@@ -7,9 +7,10 @@ import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contr
 
 import { IExpressCallHandler } from './IExpressCallHandler.sol';
 import { ITokenManagerDeployer } from './ITokenManagerDeployer.sol';
+import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
 
-interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler, IAxelarExecutable, IPausable {
+interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAxelarExecutable, IPausable {
     // more generic error
     error ZeroAddress();
     error LengthMismatch();
@@ -19,6 +20,7 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error NotCanonicalToken();
     error GatewayToken();
+    error TokenManagerDeploymentFailed();
 
     event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
     event TokenSentWithData(
@@ -54,8 +56,13 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
+    event TokenManagerDeployed(bytes32 tokenId, TokenManagerType tokenManagerType, bytes params);
+
+    function tokenManagerDeployer() external view returns (address);
 
     function getChainName() external view returns (string memory name);
+
+    function getTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 

@@ -9,7 +9,7 @@ import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/c
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { TokenManagerDeployer } from '../utils/TokenManagerDeployer.sol';
+import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
@@ -20,13 +20,13 @@ import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
+import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol';
 
 import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
 
 contract InterchainTokenService is
     IInterchainTokenService,
-    TokenManagerDeployer,
     AxelarExecutable,
     Upgradable,
     ExpressCallHandler,
@@ -43,6 +43,8 @@ contract InterchainTokenService is
     address public immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
+    address public immutable tokenManagerDeployer;
+    Create3Deployer public immutable deployer;
     bytes32 public immutable chainNameHash;
     bytes32 public immutable chainName;
 
@@ -58,17 +60,18 @@ contract InterchainTokenService is
     bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
 
     constructor(
-        address deployer_,
-        address bytecodeServer_,
+        address tokenManagerDeployer_,
         address gateway_,
         address gasService_,
         address linkerRouter_,
         address[] memory tokenManagerImplementations,
         string memory chainName_
-    ) TokenManagerDeployer(deployer_, bytecodeServer_) AxelarExecutable(gateway_) {
-        if (linkerRouter_ == address(0) || gasService_ == address(0)) revert ZeroAddress();
+    ) AxelarExecutable(gateway_) {
+        if (linkerRouter_ == address(0) || gasService_ == address(0) || tokenManagerDeployer_ == address(0)) revert ZeroAddress();
         linkerRouter = ILinkerRouter(linkerRouter_);
         gasService = IAxelarGasService(gasService_);
+        tokenManagerDeployer = tokenManagerDeployer_;
+        deployer = ITokenManagerDeployer(tokenManagerDeployer_).deployer();
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
@@ -107,6 +110,10 @@ contract InterchainTokenService is
 
     function getChainName() public view returns (string memory name) {
         name = chainName.toTrimmedString();
+    }
+
+    function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
+        tokenManagerAddress = deployer.deployedAddress(address(this), tokenId);
     }
 
     function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
@@ -199,6 +206,7 @@ contract InterchainTokenService is
         tokenId = getCanonicalTokenId(tokenAddress);
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
+        if (gateway.tokenAddresses(tokenSymbol) == tokenAddress) revert GatewayToken();
         bytes memory params = abi.encode('', tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
@@ -627,5 +635,19 @@ contract InterchainTokenService is
         );
         if (!success && !IInterchainTokenExecutable(destinationAddress).executeOnRevert())
             revert ExecuteWithInterchainTokenFailed(destinationAddress);
+    }
+
+    
+    function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
+        (bool success, ) = tokenManagerDeployer.delegatecall(abi.encodeWithSelector(
+            ITokenManagerDeployer.deployTokenManager.selector,
+            tokenId, 
+            tokenManagerType, 
+            params
+        ));
+        if(!success) {
+            revert TokenManagerDeploymentFailed();
+        }
+        emit TokenManagerDeployed(tokenId, tokenManagerType, params);
     }
 }
