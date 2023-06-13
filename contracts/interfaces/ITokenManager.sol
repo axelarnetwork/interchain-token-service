@@ -4,8 +4,9 @@ pragma solidity 0.8.9;
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IAdminable } from './IAdminable.sol';
+import { IFlowLimit } from './IFlowLimit.sol';
 
-interface ITokenManager is ITokenManagerType, IAdminable {
+interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit {
     error TokenLinkerZeroAddress();
     error NotService();
     error TakeTokenFailed();
@@ -24,4 +25,6 @@ interface ITokenManager is ITokenManagerType, IAdminable {
     ) external payable;
 
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
+
+    function setFlowLimit(uint256 flowLimit) external;
 }

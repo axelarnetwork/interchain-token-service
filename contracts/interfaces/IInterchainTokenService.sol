@@ -5,15 +5,17 @@ pragma solidity ^0.8.9;
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarExecutable.sol';
 
-import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
+import { IExpressCallHandler } from './IExpressCallHandler.sol';
+import { ITokenManagerDeployer } from './ITokenManagerDeployer.sol';
 
-interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
+interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler, IAxelarExecutable {
     // more generic error
     error ZeroAddress();
     error LengthMismatch();
     error NotRemoteService();
     error TokenManagerNotDeployed(bytes32 tokenId);
     error NotTokenManager();
+    error ExecuteWithInterchainTokenFailed(address contractAddress);
 
     event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
     event TokenSentWithData(
@@ -39,7 +41,6 @@ interface IInterchainTokenService is ITokenManagerDeployer, IAxelarExecutable {
         uint256 indexed amount,
         bytes sourceAddress,
         bytes data,
-        bool success,
         bytes32 sendHash
     );
     event RemoteTokenManagerDeploymentInitialized(

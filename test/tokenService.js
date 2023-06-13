@@ -151,10 +151,7 @@ describe('Interchain Token Service', () => {
         it('Should be able to initiate a remote canonical token deployment', async () => {
             const chains = ['chain1', 'chain2'];
             const gasValues = [1e6, 0];
-            const params = defaultAbiCoder.encode(
-                ['bytes', 'string', ' string', 'uint8'],
-                ['0x', tokenName, tokenSymbol, tokenDecimals],
-            );
+            const params = defaultAbiCoder.encode(['bytes', 'string', ' string', 'uint8'], ['0x', tokenName, tokenSymbol, tokenDecimals]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, CANONICAL, params],
@@ -425,11 +422,11 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, chains[1], service.address.toLowerCase(), keccak256(payloads[1]), payloads[1]);
 
-                const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-                expect(tokenManagerAddress).to.not.equal(AddressZero);
-                const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
+            expect(tokenManagerAddress).to.not.equal(AddressZero);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-                expect(await tokenManager.admin()).to.equal(wallet.address);
+            expect(await tokenManager.admin()).to.equal(wallet.address);
         });
     });
 
@@ -676,7 +673,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
         });
 
-        it('Should be able to receive lock/unlock token', async () => {
+        it('Should be able to receive canonical token', async () => {
             const [token, , tokenId] = await deployFunctions.canonical(`Test Token Lock Unlock}`, 'TT', 12, amount);
 
             const sendHash = getRandomBytes32();
@@ -695,163 +692,44 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe('SendToken', () => {
-        const amount = 1234;
-        const destChain = 'destination Chain';
-        const destAddress = '0x5678';
-        const gasValue = 90;
+    describe('Flow Limits', () => {
+        const destinationChain = 'dest';
+        const destinationAddress = '0x1234';
+        let tokenManager, tokenId;
+        const sendAmount = 1234;
+        const flowLimit = (sendAmount * 3) / 2;
+        const mintAmount = flowLimit * 3;
+        beforeEach(async () => {
+            [, tokenManager, tokenId] = await deployFunctions.canonical(`Test Token Lock Unlock`, 'TT', 12, mintAmount);
+            await (await tokenManager.setFlowLimit(flowLimit)).wait();
+        });
 
-        for (const type of ['lockUnlock', 'mintBurn', 'canonical']) {
-            it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
-                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
+        // These tests will fail every once in a while since the two transactions will happen in different epochs.
+        // LMK of any fixes to this that do not involve writing a new contract to facilitate a multicall.
+        it('Should be able to send token only if it does not trigger the mint limit', async () => {
+            await (await tokenManager.sendToken(destinationChain, destinationAddress, sendAmount)).wait();
+            await expect(tokenManager.sendToken(destinationChain, destinationAddress, sendAmount)).to.be.revertedWithCustomError(
+                tokenManager,
+                'FlowLimitExceeded',
+            );
+        });
 
-                let sendHash;
-                let payloadHash;
+        it('Should be able to receive token only if it does not trigger the mint limit', async () => {
+            async function receiveToken(sendAmount) {
+                const sendHash = getRandomBytes32();
 
-                function checkSendHash(hash) {
-                    return sendHash === hash;
-                }
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
+                    [SELECTOR_SEND_TOKEN, tokenId, wallet.address, sendAmount, sendHash],
+                );
+                const commandId = await approveContractCall(gateway, destinationChain, service.address, service.address, payload);
 
-                function checkPayloadHash(hash) {
-                    return payloadHash === hash;
-                }
-
-                function checkPayload(payload) {
-                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
-
-                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
-                    if (emmitted[1] !== tokenId) return false;
-                    if (emmitted[2] !== destAddress) return false;
-                    if (Number(emmitted[3]) !== amount) return false;
-                    sendHash = emmitted[4];
-                    payloadHash = keccak256(payload);
-                    return true;
-                }
-
-                const transferToAddress = type === 'lockUnlock' ? tokenManager.address : AddressZero;
-                await expect(tokenManager.sendToken(destChain, destAddress, amount, { value: gasValue }))
-                    .and.to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, transferToAddress, amount)
-                    .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
-                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'TokenSent')
-                    .withArgs(tokenId, destChain, destAddress, amount, checkSendHash);
-            });
-        }
-
-        it(`Should be able to initiate an interchain token transfer [gateway]`, async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.gateway(`Test Token gateway2`, 'TT2', 12, amount);
-
-            let sendHash;
-            let payloadHash;
-
-            function checkSendHash(hash) {
-                return sendHash === hash;
+                return service.execute(commandId, destinationChain, service.address, payload);
             }
 
-            function checkPayloadHash(hash) {
-                return payloadHash === hash;
-            }
+            await (await receiveToken(sendAmount)).wait();
 
-            function checkPayload(payload) {
-                const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
-                
-                if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
-                if (emmitted[1] !== tokenId) return false;
-                if (emmitted[2] !== destAddress) return false;
-                if (Number(emmitted[3]) !== amount) return false;
-                sendHash = emmitted[4];
-                payloadHash = keccak256(payload);
-                return true;
-            }
-
-            await expect(tokenManager.sendToken(destChain, destAddress, amount, { value: gasValue }))
-                .and.to.emit(token, 'Transfer')
-                .withArgs(wallet.address, service.address, amount)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(service.address, gateway.address, amount)
-                .and.to.emit(gateway, 'ContractCallWithToken')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload, 'TT2', amount)
-                .and.to.emit(gasService, 'NativeGasPaidForContractCallWithToken')
-                .withArgs(
-                    service.address,
-                    destChain,
-                    service.address.toLowerCase(),
-                    checkPayloadHash,
-                    'TT2',
-                    amount,
-                    gasValue,
-                    wallet.address,
-                )
-                .to.emit(service, 'TokenSent')
-                .withArgs(tokenId, destChain, destAddress, amount, checkSendHash);
-        });
-    });
-
-    describe('Receive Remote Tokens', () => {
-        const sourceChain = 'source chain';
-        let sourceAddress;
-        const amount = 1234;
-        let destAddress;
-        before(async () => {
-            sourceAddress = service.address.toLowerCase();
-            destAddress = wallet.address;
-        });
-
-        it('Should be able to receive lock/unlock token', async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
-            (await await token.transfer(tokenManager.address, amount)).wait();
-            const sendHash = getRandomBytes32();
-
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount, sendHash],
-            );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(token, 'Transfer')
-                .withArgs(tokenManager.address, destAddress, amount)
-                .and.to.emit(service, 'TokenReceived')
-                .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
-        });
-
-        it('Should be able to receive mint/burn token', async () => {
-            const [token, , tokenId] = await deployFunctions.mintBurn(`Test Token Mint Burn`, 'TT', 12, amount);
-
-            const sendHash = getRandomBytes32();
-
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount, sendHash],
-            );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(token, 'Transfer')
-                .withArgs(AddressZero, destAddress, amount)
-                .and.to.emit(service, 'TokenReceived')
-                .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
-        });
-
-        it('Should be able to receive lock/unlock token', async () => {
-            const [token, , tokenId] = await deployFunctions.canonical(`Test Token Lock Unlock}`, 'TT', 12, amount);
-
-            const sendHash = getRandomBytes32();
-
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount, sendHash],
-            );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(token, 'Transfer')
-                .withArgs(AddressZero, destAddress, amount)
-                .and.to.emit(service, 'TokenReceived')
-                .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
+            await expect(receiveToken(sendAmount)).to.be.revertedWithCustomError(tokenManager, 'FlowLimitExceeded');
         });
     });
 });
