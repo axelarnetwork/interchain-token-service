@@ -5,6 +5,11 @@ pragma solidity 0.8.9;
 import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
 import { IERC20BurnableMintable } from '../../interfaces/IERC20BurnableMintable.sol';
 
+import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
+
+
+
 contract TokenManagerMintBurn is TokenManagerAddressStorage {
     constructor(
         address interchainTokenService_
@@ -24,20 +29,18 @@ contract TokenManagerMintBurn is TokenManagerAddressStorage {
     }
 
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
-        address token = tokenAddress();
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = token.call(abi.encodeWithSelector(IERC20BurnableMintable.burn.selector, from, amount));
+        IERC20 token = IERC20(tokenAddress());
 
-        if (!success || token.code.length == 0) revert TakeTokenFailed();
+        SafeTokenCall.safeCall(token, abi.encodeWithSelector(IERC20BurnableMintable.burn.selector, from, amount));
+
         return amount;
     }
 
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
-        address token = tokenAddress();
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = token.call(abi.encodeWithSelector(IERC20BurnableMintable.mint.selector, to, amount));
+        IERC20 token = IERC20(tokenAddress());
 
-        if (!success || token.code.length == 0) revert GiveTokenFailed();
+        SafeTokenCall.safeCall(token, abi.encodeWithSelector(IERC20BurnableMintable.mint.selector, to, amount));
+
         return amount;
     }
 }

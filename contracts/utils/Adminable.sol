@@ -5,7 +5,7 @@ pragma solidity 0.8.9;
 import { IAdminable } from '../interfaces/IAdminable.sol';
 
 contract Adminable is IAdminable {
-    // uint256(keccak256('admin'))-1
+    // uint256(keccak256('admin')) - 1
     uint256 internal constant ADMIN_SLOT = 0xf23ec0bb4210edd5cba85afd05127efcd2fc6a781bfed49188da1081670b22d7;
 
     modifier onlyAdmin() {

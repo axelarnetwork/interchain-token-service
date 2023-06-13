@@ -5,6 +5,9 @@ pragma solidity 0.8.9;
 import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
+import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
+
+
 contract TokenManagerLockUnlock is TokenManagerAddressStorage {
     constructor(
         address interchainTokenService_
@@ -24,32 +27,21 @@ contract TokenManagerLockUnlock is TokenManagerAddressStorage {
     }
 
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
-        address token = tokenAddress();
-        uint256 balance = IERC20(token).balanceOf(address(this));
+        IERC20 token = IERC20(tokenAddress());
+        uint256 balance = token.balanceOf(address(this));
 
-        // Can we lock the tokens on the ITS instead? It'll be simpler for tracking/monitoring
-        // Use SafeERC20 interface from gmp sdk
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returnData) = token.call(
-            abi.encodeWithSelector(IERC20.transferFrom.selector, from, address(this), amount)
-        );
-        bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
-
-        if (!transferred || token.code.length == 0) revert TakeTokenFailed();
+        SafeTokenTransferFrom.safeTransferFrom(token, from, address(this), amount);
 
         // Note: This allows support for fee-on-transfer tokens
         return IERC20(token).balanceOf(address(this)) - balance;
     }
 
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
-        address token = tokenAddress();
+        IERC20 token = IERC20(tokenAddress());
         uint256 balance = IERC20(token).balanceOf(to);
-        // Use SafeERC20 interface from gmp sdk
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returnData) = token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
-        bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
 
-        if (!transferred || token.code.length == 0) revert GiveTokenFailed();
+        SafeTokenTransfer.safeTransfer(token, to, amount);
+
         return IERC20(token).balanceOf(to) - balance;
     }
 }
