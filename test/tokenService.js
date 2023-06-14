@@ -537,6 +537,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.tokenAddress()).to.equal(tokenManagerAddress);
             expect(await tokenManager.admin()).to.equal(wallet.address);
         });
+    });
 
         it('Should be able to receive a remote lock/unlock token manager depoloyment', async () => {
             const tokenName = 'Token Name';
