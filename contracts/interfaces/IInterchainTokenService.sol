@@ -9,8 +9,9 @@ import { IExpressCallHandler } from './IExpressCallHandler.sol';
 import { ITokenManagerDeployer } from './ITokenManagerDeployer.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
+import { IMulticall } from './IMulticall.sol';
 
-interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAxelarExecutable, IPausable {
+interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAxelarExecutable, IPausable, IMulticall {
     // more generic error
     error ZeroAddress();
     error LengthMismatch();
@@ -92,38 +93,18 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         address liquidityPoolAddress
     ) external pure returns (bytes memory params);
 
-    function registerCanonicalToken(address tokenAddress) external returns (bytes32 tokenId);
+    function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId);
 
-    function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
-        address tokenAddress,
-        string[] calldata destinationChains,
-        uint256[] calldata gasValues
-    ) external payable returns (bytes32 tokenId);
+    function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) external payable;
 
-    function deployRemoteCanonicalTokens(
-        bytes32 tokenId,
-        string[] calldata destinationChains,
-        uint256[] calldata gasValues
-    ) external payable;
+    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) external payable;
 
-    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) external;
-
-    function deployRemoteCustomTokenManagers(
+    function deployRemoteCustomTokenManager(
         bytes32 salt,
-        string[] calldata destinationChains,
-        TokenManagerType[] calldata tokenManagerTypes,
-        bytes[] calldata params,
-        uint256[] calldata gasValues
-    ) external payable;
-
-    function deployCustomTokenManagerAndDeployRemote(
-        bytes32 salt,
+        string calldata destinationChain,
         TokenManagerType tokenManagerType,
         bytes calldata params,
-        string[] calldata destinationChains,
-        TokenManagerType[] calldata tokenManagerTypes,
-        bytes[] calldata remoteParams,
-        uint256[] calldata gasValues
+        uint256 gasValue
     ) external payable;
 
     // This deploys a standardized token, mints mintAmount to msg.sender.
@@ -135,7 +116,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint8 decimals,
         uint256 mintAmount,
         address distributor
-    ) external;
+    ) external payable;
 
     function deployAndRegisterRemoteStandardizedTokens(
         bytes32 salt,
@@ -143,7 +124,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         string calldata symbol,
         uint8 decimals,
         bytes calldata distributor,
-        string calldata destinationChain
+        string calldata destinationChain,
+        uint256 gasValue
     ) external payable;
 
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
@@ -183,8 +165,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint256 amount,
         bytes memory data
     ) external payable;
-
-    function approveGateway(bytes32 tokenId, address tokenAddress) external;
 
     function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;
 

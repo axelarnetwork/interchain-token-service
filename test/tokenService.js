@@ -133,67 +133,19 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to initiate a remote standardized token deployment', async () => {
-            const chains = ['chain1', 'chain2'];
-            const gasValues = [1e6, 0];
+            const chain = 'chain1';
+            const gasValue = 1e6;
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, '0x'],
             );
-            await expect(service.deployRemoteCanonicalTokens(tokenId, chains, gasValues, { value: 1e6 }))
+            await expect(service.deployRemoteCanonicalToken(tokenId, chain, gasValue, { value: gasValue }))
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[0], gasValues[0])
-                .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[1], gasValues[1])
+                .withArgs(tokenId, chain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
+                .withArgs(service.address, chain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payload), payload)
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[1], service.address.toLowerCase(), keccak256(payload), payload);
-        });
-    });
-
-    describe('Register Canonical Token and Deploy Remote Tokens', async () => {
-        let token;
-        const tokenName = 'Token Name';
-        const tokenSymbol = 'TN';
-        const tokenDecimals = 13;
-        let tokenId;
-        before(async () => {
-            token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, service.address]);
-            tokenId = await service.getCanonicalTokenId(token.address);
-            await (await token.setTokenManager(await service.getTokenManagerAddress(tokenId))).wait();
-        });
-
-        it('Should be able to register a canonical token and initiate a remote canonical token deployment', async () => {
-            const chains = ['chain1', 'chain2'];
-            const gasValues = [1e6, 0];
-            const originParams = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, '0x'],
-            );
-            tokenId = await service.getCanonicalTokenId(token.address);
-
-            await expect(service.registerCanonicalTokenAndDeployRemoteCanonicalTokens(token.address, chains, gasValues, { value: 1e6 }))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, originParams)
-                .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[0], gasValues[0])
-                .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[1], gasValues[1])
-                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payload), payload)
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[1], service.address.toLowerCase(), keccak256(payload), payload);
-
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-
-            expect(await tokenManager.admin()).to.equal(service.address);
+                .withArgs(service.address, chain, service.address.toLowerCase(), keccak256(payload), payload);
         });
     });
 
@@ -261,6 +213,7 @@ describe('Interchain Token Service', () => {
                     tokenDecimals,
                     distributor,
                     destinationChain,
+                    gasValue,
                     { value: gasValue },
                 ),
             )
@@ -284,7 +237,6 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive a remote standardized token depoloyment with a lock/unlock token manager', async () => {
-            
             const tokenId = getRandomBytes32();
             const distributor = wallet.address;
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
@@ -297,16 +249,15 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-            .to.emit(service, 'StandardizedTokenDeployed')
-            .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, distributor)
-            .and.to.emit(service, 'TokenManagerDeployed')
-            .withArgs(tokenId, LOCK_UNLOCK, params);
+                .to.emit(service, 'StandardizedTokenDeployed')
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, distributor)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, LOCK_UNLOCK, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.admin()).to.equal(wallet.address);
         });
         it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager', async () => {
-            
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             const distributor = service.address;
@@ -319,17 +270,16 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-            .to.emit(service, 'StandardizedTokenDeployed')
-            .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, service.address)
-            .and.to.emit(service, 'TokenManagerDeployed')
-            .withArgs(tokenId, MINT_BURN, params);
+                .to.emit(service, 'StandardizedTokenDeployed')
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, service.address)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.admin()).to.equal(service.address);
         });
 
         it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager', async () => {
-            
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             const distributor = '0x';
@@ -342,16 +292,14 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-            .to.emit(service, 'StandardizedTokenDeployed')
-            .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, service.address)
-            .and.to.emit(service, 'TokenManagerDeployed')
-            .withArgs(tokenId, MINT_BURN, params);
+                .to.emit(service, 'StandardizedTokenDeployed')
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, service.address)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.admin()).to.equal(service.address);
         });
-
-
     });
 
     describe('Custom Token Manager Deployment', () => {
@@ -417,32 +365,22 @@ describe('Interchain Token Service', () => {
         it('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
-            const chains = ['chain1', 'chain2'];
-            const gasValues = [1e6, 0];
-            const params = ['0x1234', '0x4567'];
-            const types = [LOCK_UNLOCK, MINT_BURN];
-            const payloads = [];
+            const chain = 'chain1';
+            const gasValue = 1e6;
+            const params = '0x1234';
+            const type = LOCK_UNLOCK;
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, type, params],
+            );
 
-            for (const i of [0, 1]) {
-                payloads.push(
-                    defaultAbiCoder.encode(
-                        ['uint256', 'bytes32', 'uint256', 'bytes'],
-                        [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, types[i], params[i]],
-                    ),
-                );
-            }
-
-            await expect(service.deployRemoteCustomTokenManagers(salt, chains, types, params, gasValues, { value: 1e6 }))
+            await expect(service.deployRemoteCustomTokenManager(salt, chain, type, params, gasValue, { value: gasValue }))
                 .to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[0], gasValues[0], types[0], params[0])
-                .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[1], gasValues[1], types[1], params[1])
+                .withArgs(tokenId, chain, gasValue, type, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payloads[0]), gasValues[0], wallet.address)
+                .withArgs(service.address, chain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payloads[0]), payloads[0])
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[1], service.address.toLowerCase(), keccak256(payloads[1]), payloads[1]);
+                .withArgs(service.address, chain, service.address.toLowerCase(), keccak256(payload), payload);
         });
     });
 
@@ -450,118 +388,22 @@ describe('Interchain Token Service', () => {
         it('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
-            const chains = ['chain1', 'chain2'];
-            const gasValues = [1e6, 0];
-            const params = ['0x1234', '0x4567'];
-            const types = [LOCK_UNLOCK, MINT_BURN];
-            const payloads = [];
+            const chain = 'chain1';
+            const gasValue = 1e6;
+            const params = '0x1234';
+            const type = LOCK_UNLOCK;
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, type, params],
+            );
 
-            for (const i of [0, 1]) {
-                payloads.push(
-                    defaultAbiCoder.encode(
-                        ['uint256', 'bytes32', 'uint256', 'bytes'],
-                        [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, types[i], params[i]],
-                    ),
-                );
-            }
-
-            await expect(service.deployRemoteCustomTokenManagers(salt, chains, types, params, gasValues, { value: 1e6 }))
+            await expect(service.deployRemoteCustomTokenManager(salt, chain, type, params, gasValue, { value: gasValue }))
                 .to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[0], gasValues[0], types[0], params[0])
-                .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[1], gasValues[1], types[1], params[1])
+                .withArgs(tokenId, chain, gasValue, type, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payloads[0]), gasValues[0], wallet.address)
+                .withArgs(service.address, chain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payloads[0]), payloads[0])
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[1], service.address.toLowerCase(), keccak256(payloads[1]), payloads[1]);
-        });
-    });
-
-    describe('Deploy custom token manager and initialize remote custom token manager deployment', () => {
-        let salt;
-        let tokenManagerType;
-        let params;
-        it('Should deploy a lock/unlock token manager', async () => {
-            tokenManagerType = LOCK_UNLOCK;
-
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN';
-            const tokenDecimals = 13;
-            salt = getRandomBytes32();
-            const tokenId = await service.getCustomTokenId(wallet.address, salt);
-            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
-
-            params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-        });
-
-        it('Should deploy a mint/burn token manager', async () => {
-            tokenManagerType = MINT_BURN;
-
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN';
-            const tokenDecimals = 13;
-            salt = getRandomBytes32();
-            const tokenId = await service.getCustomTokenId(wallet.address, salt);
-            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
-            params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-        });
-
-        it('Should deploy a lock/unlock token manager', async () => {
-            tokenManagerType = LIQUIDITY_POOL;
-
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN';
-            const tokenDecimals = 13;
-            salt = getRandomBytes32();
-            const tokenId = await service.getCustomTokenId(wallet.address, salt);
-            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
-
-            params = defaultAbiCoder.encode(['bytes', 'address', 'address'], [wallet.address, token.address, liquidityPool.address]);
-        });
-
-        afterEach('Should initialize a remote custom token manager deployment', async () => {
-            const tokenId = await service.getCustomTokenId(wallet.address, salt);
-            const chains = ['chain1', 'chain2'];
-            const gasValues = [1e6, 0];
-            const remoteParams = ['0x1234', '0x4567'];
-            const types = [LOCK_UNLOCK, MINT_BURN];
-            const payloads = [];
-
-            for (const i of [0, 1]) {
-                payloads.push(
-                    defaultAbiCoder.encode(
-                        ['uint256', 'bytes32', 'uint256', 'bytes'],
-                        [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, types[i], remoteParams[i]],
-                    ),
-                );
-            }
-
-            await expect(
-                service.deployCustomTokenManagerAndDeployRemote(salt, tokenManagerType, params, chains, types, remoteParams, gasValues, {
-                    value: 1e6,
-                }),
-            )
-                .to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[0], gasValues[0], types[0], remoteParams[0])
-                .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
-                .withArgs(tokenId, chains[1], gasValues[1], types[1], remoteParams[1])
-                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payloads[0]), gasValues[0], wallet.address)
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[0], service.address.toLowerCase(), keccak256(payloads[0]), payloads[0])
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, chains[1], service.address.toLowerCase(), keccak256(payloads[1]), payloads[1]);
-
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
-
-            expect(await tokenManager.admin()).to.equal(wallet.address);
+                .withArgs(service.address, chain, service.address.toLowerCase(), keccak256(payload), payload);
         });
     });
 
