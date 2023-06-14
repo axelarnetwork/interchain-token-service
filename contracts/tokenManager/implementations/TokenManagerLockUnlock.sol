@@ -15,10 +15,6 @@ contract TokenManagerLockUnlock is TokenManagerAddressStorage {
         TokenManagerAddressStorage(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
 
-    function requiresApproval() external pure returns (bool) {
-        return true;
-    }
-
     function _setup(bytes calldata params) internal override {
         //the first argument is reserved for the admin.
         (, address tokenAddress) = abi.decode(params, (bytes, address));

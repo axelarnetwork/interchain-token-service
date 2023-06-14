@@ -18,10 +18,6 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
         TokenManagerAddressStorage(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
 
-    function requiresApproval() external pure returns (bool) {
-        return true;
-    }
-
     function _setup(bytes calldata params) internal override {
         //the first argument is reserved for the admin.
         (, address tokenAddress_, address liquidityPool_) = abi.decode(params, (bytes, address, address));
