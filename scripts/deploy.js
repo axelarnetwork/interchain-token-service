@@ -33,6 +33,7 @@ async function deployInterchainTokenService(
     wallet,
     create3DeployerAddress,
     tokenManagerDeployerAddress,
+    standardizedTokenDeployerAddress,
     gatewayAddress,
     gasServiceAddress,
     linkerRouterAddress,
@@ -42,6 +43,7 @@ async function deployInterchainTokenService(
 ) {
     const implementation = await deployContract(wallet, 'InterchainTokenService', [
         tokenManagerDeployerAddress,
+        standardizedTokenDeployerAddress,
         gatewayAddress,
         gasServiceAddress,
         linkerRouterAddress,
@@ -60,7 +62,7 @@ async function deployInterchainTokenService(
 async function deployTokenManagerImplementations(wallet, interchainTokenServiceAddress) {
     const implementations = [];
 
-    for (const type of ['LockUnlock', 'MintBurn', 'Canonical', 'LiquidityPool']) {
+    for (const type of ['LockUnlock', 'MintBurn', 'LiquidityPool']) {
         const impl = await deployContract(wallet, `TokenManager${type}`, [interchainTokenServiceAddress]);
         implementations.push(impl);
     }
@@ -73,13 +75,20 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
     const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
     const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', [create3Deployer.address]);
+    const standardizedToken = await deployContract(wallet, 'StandardizedToken');
+    const standardizedTokenDeployer = await deployContract(wallet, 'StandardizedTokenDeployer', [
+        create3Deployer.address,
+        standardizedToken.address,
+    ]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const linkerRouter = await deployLinkerRouter(wallet, interchainTokenServiceAddress);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
+
     const service = await deployInterchainTokenService(
         wallet,
         create3Deployer.address,
         tokenManagerDeployer.address,
+        standardizedTokenDeployer.address,
         gateway.address,
         gasService.address,
         linkerRouter.address,
@@ -87,7 +96,6 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
         chainName,
         deploymentKey,
     );
-
     return [service, gateway, gasService];
 }
 

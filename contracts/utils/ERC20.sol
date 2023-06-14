@@ -208,7 +208,7 @@ contract ERC20 is IERC20 {
         emit Approval(owner, spender, amount);
     }
 
-    // For the canonical token we provide, we can remove this method
+    // For the standardized token we provide, we can remove this method
     /**
      * @dev Hook that is called before any transfer of tokens. This includes
      * minting and burning.

@@ -5,13 +5,13 @@ pragma solidity 0.8.9;
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IAdminable } from './IAdminable.sol';
 import { IFlowLimit } from './IFlowLimit.sol';
+import { IImplementation } from './IImplementation.sol';
 
-interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit {
+interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
     error NotService();
     error TakeTokenFailed();
     error GiveTokenFailed();
-    error NotProxy();
     error NotToken();
 
     function tokenAddress() external view returns (address);

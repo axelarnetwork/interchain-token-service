@@ -9,26 +9,20 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { Adminable } from '../utils/Adminable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
+import { Implementation } from '../utils/Implementation.sol';
 
-abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
+abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implementation {
     using AddressBytesUtils for bytes;
 
-    address private immutable implementationAddress;
     IInterchainTokenService public immutable interchainTokenService;
 
     constructor(address interchainTokenService_) {
         if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
-        implementationAddress = address(this);
     }
 
     modifier onlyService() {
         if (msg.sender != address(interchainTokenService)) revert NotService();
-        _;
-    }
-
-    modifier onlyProxy() {
-        if (implementationAddress == address(this)) revert NotProxy();
         _;
     }
 
@@ -39,10 +33,10 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit {
 
     function tokenAddress() public view virtual returns (address);
 
-    function setup(bytes calldata params) external onlyProxy {
+    function setup(bytes calldata params) external override onlyProxy {
         bytes memory adminBytes = abi.decode(params, (bytes));
         address admin_;
-        // Specifying an empty admin will default to the service being the admin. This makes it easy to deploy remote canonical tokens without knowing anything about the service address at the destination.
+        // Specifying an empty admin will default to the service being the admin. This makes it easy to deploy remote standardized tokens without knowing anything about the service address at the destination.
         if (adminBytes.length == 0) {
             admin_ = address(interchainTokenService);
         } else {
