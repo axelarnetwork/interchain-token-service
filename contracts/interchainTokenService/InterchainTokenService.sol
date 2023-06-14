@@ -40,6 +40,7 @@ contract InterchainTokenService is
     address public immutable implementationLockUnlock;
     address public immutable implementationMintBurn;
     address public immutable implementationCanonical;
+    address public immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
     ILinkerRouter public immutable linkerRouter;
     bytes32 public immutable chainNameHash;
@@ -78,6 +79,8 @@ contract InterchainTokenService is
         implementationMintBurn = tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)];
         if (tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)] == address(0)) revert ZeroAddress();
         implementationCanonical = tokenManagerImplementations[uint256(TokenManagerType.CANONICAL)];
+        if (tokenManagerImplementations[uint256(TokenManagerType.LIQUIDITY_POOL)] == address(0)) revert ZeroAddress();
+        implementationLiquidityPool = tokenManagerImplementations[uint256(TokenManagerType.LIQUIDITY_POOL)];
 
         // let's store it as a string, so if another user/contract queries it, it's sensical
         chainName = chainName_.toBytes32();
@@ -124,6 +127,8 @@ contract InterchainTokenService is
             return implementationMintBurn;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.CANONICAL) {
             return implementationCanonical;
+        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) {
+            return implementationLiquidityPool;
         }
     }
 
