@@ -132,6 +132,23 @@ contract InterchainTokenService is
         }
     }
 
+
+    function getParamsLockUnlock(bytes calldata admin, address tokenAddress) public pure returns (bytes memory params) {
+        params = abi.encode(admin, tokenAddress);
+    }
+
+    function getParamsMintBurn(bytes calldata admin, address tokenAddress) public pure returns (bytes memory params) {
+        params = abi.encode(admin, tokenAddress);
+    }
+
+    function getParamsCanonical(bytes calldata admin, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals, uint256 mintAmount) public pure returns (bytes memory params)  {
+        params = abi.encode(admin, tokenName, tokenSymbol, tokenDecimals, mintAmount);
+    }
+
+    function getParamsLiquidityPool(bytes calldata admin, address tokenAddress, address liquidityPoolAddress) public pure returns (bytes memory params) {
+        params = abi.encode(admin, tokenAddress, liquidityPoolAddress);
+    }
+
     /************\
     USER FUNCTIONS
     \************/
@@ -168,7 +185,7 @@ contract InterchainTokenService is
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
     }
 
-    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes calldata params) external notPaused {
+    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) public notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployTokenManager(tokenId, tokenManagerType, params);
     }
@@ -197,6 +214,24 @@ contract InterchainTokenService is
         _deployTokenManager(tokenId, tokenManagerType, params);
         _deployRemoteCustomTokens(tokenId, destinationChains, tokenManagerTypes, remoteParams, gasValues);
     }
+
+    function deployCustomTokenManagerLockUnlock(bytes32 salt, bytes calldata admin, address tokenAddress) external {
+        bytes memory params = getParamsLockUnlock(admin, tokenAddress);
+        deployCustomTokenManager(salt, TokenManagerType.LOCK_UNLOCK, params);
+    }
+    function deployCustomTokenManagerMintBurn(bytes32 salt, bytes calldata admin, address tokenAddress) external {
+        bytes memory params = getParamsMintBurn(admin, tokenAddress);
+        deployCustomTokenManager(salt, TokenManagerType.MINT_BURN, params);
+    }
+    function deployCustomTokenManagerCanonical(bytes32 salt, bytes calldata admin, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals, uint256 mintAmount) external {
+        bytes memory params = getParamsCanonical(admin, tokenName, tokenSymbol, tokenDecimals, mintAmount);
+        deployCustomTokenManager(salt, TokenManagerType.CANONICAL, params);
+    }
+    function deployCustomTokenManagerLiquidityPool(bytes32 salt, bytes calldata admin, address tokenAddress, address liquidityPoolAddress) external {
+        bytes memory params = getParamsLiquidityPool(admin, tokenAddress, liquidityPoolAddress);
+        deployCustomTokenManager(salt, TokenManagerType.LIQUIDITY_POOL, params);
+    }
+
 
     function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external notPaused {
         address caller = msg.sender;
