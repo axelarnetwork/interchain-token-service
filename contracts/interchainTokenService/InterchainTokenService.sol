@@ -105,6 +105,10 @@ contract InterchainTokenService is
     GETTERS
     \*****/
 
+    function getChainName() public view returns (string memory name) {
+        name = chainName.toTrimmedString();
+    }
+
     function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = getTokenManagerAddress(tokenId);
         if (ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerNotDeployed(tokenId);

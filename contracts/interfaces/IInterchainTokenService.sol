@@ -54,6 +54,8 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
         bytes params
     );
 
+    function getChainName() external view returns (string memory name);
+
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
