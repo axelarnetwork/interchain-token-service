@@ -63,8 +63,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
 
     function getTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 
-    function getChainName() external view returns (string memory name);
-
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 
     function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
