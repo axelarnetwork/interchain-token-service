@@ -12,6 +12,7 @@ contract StandardizedToken is InterchainToken, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
     address public tokenManager;
+    bool public tokenManagerRequiresApproval_;
 
     // bytes32(uint256(keccak256('standardized-token')) - 1)
     // solhint-disable-next-line const-name-snakecase
@@ -21,13 +22,19 @@ contract StandardizedToken is InterchainToken, Implementation, Distributable {
         return ITokenManager(tokenManager);
     }
 
+    function tokenManagerRequiresApproval() public view override returns (bool) {
+        return tokenManagerRequiresApproval_;
+    }
+
     function setup(bytes calldata params) external override onlyProxy {
         {
             address distributor_;
+            address tokenManager_;
             string memory tokenName;
-            (tokenManager, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
+            (tokenManager_, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
             _setDistributor(distributor_);
-
+            tokenManager = tokenManager_;
+            tokenManagerRequiresApproval_ = distributor_ != tokenManager;
             _setDomainTypeSignatureHash(tokenName);
             name = tokenName;
         }

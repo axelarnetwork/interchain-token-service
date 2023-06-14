@@ -14,6 +14,8 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
 
     function getTokenManager() public view virtual returns (ITokenManager tokenManager);
 
+    function tokenManagerRequiresApproval() public view virtual returns (bool);
+
     function interchainTransfer(
         string calldata destinationChain,
         bytes calldata recipient,
@@ -22,7 +24,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
     ) external payable {
         address sender = msg.sender;
         ITokenManager tokenManager = getTokenManager();
-        if (tokenManager.requiresApproval()) {
+        if (tokenManagerRequiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
         if (metadata.length == 0) {
@@ -47,7 +49,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
         }
 
         ITokenManager tokenManager = getTokenManager();
-        if (tokenManager.requiresApproval()) {
+        if (tokenManagerRequiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
         if (metadata.length == 0) {
