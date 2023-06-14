@@ -114,6 +114,11 @@ contract InterchainTokenService is
         if (ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerNotDeployed(tokenId);
     }
 
+    function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress) {
+        address tokenManagerAddress = getValidTokenManagerAddress(tokenId);
+        tokenAddress = ITokenManager(tokenManagerAddress).tokenAddress();
+    }
+
     // There are two ways to cacluate a tokenId, one is for pre-existing tokens, and anyone can do this for a token once.
     function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_ID, chainNameHash, tokenAddress));
@@ -136,20 +141,29 @@ contract InterchainTokenService is
         }
     }
 
-
-    function getParamsLockUnlock(bytes calldata admin, address tokenAddress) public pure returns (bytes memory params) {
+    function getParamsLockUnlock(bytes memory admin, address tokenAddress) public pure returns (bytes memory params) {
         params = abi.encode(admin, tokenAddress);
     }
 
-    function getParamsMintBurn(bytes calldata admin, address tokenAddress) public pure returns (bytes memory params) {
+    function getParamsMintBurn(bytes memory admin, address tokenAddress) public pure returns (bytes memory params) {
         params = abi.encode(admin, tokenAddress);
     }
 
-    function getParamsCanonical(bytes calldata admin, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals, uint256 mintAmount) public pure returns (bytes memory params)  {
+    function getParamsCanonical(
+        bytes memory admin,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 tokenDecimals,
+        uint256 mintAmount
+    ) public pure returns (bytes memory params) {
         params = abi.encode(admin, tokenName, tokenSymbol, tokenDecimals, mintAmount);
     }
 
-    function getParamsLiquidityPool(bytes calldata admin, address tokenAddress, address liquidityPoolAddress) public pure returns (bytes memory params) {
+    function getParamsLiquidityPool(
+        bytes memory admin,
+        address tokenAddress,
+        address liquidityPoolAddress
+    ) public pure returns (bytes memory params) {
         params = abi.encode(admin, tokenAddress, liquidityPoolAddress);
     }
 
@@ -164,18 +178,6 @@ contract InterchainTokenService is
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
     }
 
-    function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
-        address tokenAddress,
-        string[] calldata destinationChains,
-        uint256[] calldata gasValues
-    ) external payable notPaused returns (bytes32 tokenId) {
-        tokenId = getCanonicalTokenId(tokenAddress);
-        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
-        (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        bytes memory params = abi.encode('', tokenName, tokenSymbol, tokenDecimals);
-        _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
-    }
-
     function deployRemoteCanonicalTokens(
         bytes32 tokenId,
         string[] calldata destinationChains,
@@ -184,6 +186,18 @@ contract InterchainTokenService is
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
         if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalToken();
+        (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
+        bytes memory params = abi.encode('', tokenName, tokenSymbol, tokenDecimals);
+        _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
+    }
+
+    function registerCanonicalTokenAndDeployRemoteCanonicalTokens(
+        address tokenAddress,
+        string[] calldata destinationChains,
+        uint256[] calldata gasValues
+    ) external payable notPaused returns (bytes32 tokenId) {
+        tokenId = getCanonicalTokenId(tokenAddress);
+        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
         bytes memory params = abi.encode('', tokenName, tokenSymbol, tokenDecimals);
         _deployRemoteCanonicalTokens(tokenId, params, destinationChains, gasValues);
@@ -219,23 +233,37 @@ contract InterchainTokenService is
         _deployRemoteCustomTokens(tokenId, destinationChains, tokenManagerTypes, remoteParams, gasValues);
     }
 
-    function deployCustomTokenManagerLockUnlock(bytes32 salt, bytes calldata admin, address tokenAddress) external {
-        bytes memory params = getParamsLockUnlock(admin, tokenAddress);
+    function deployCustomTokenManagerLockUnlock(bytes32 salt, address admin, address tokenAddress) external {
+        bytes memory params = getParamsLockUnlock(admin.toBytes(), tokenAddress);
         deployCustomTokenManager(salt, TokenManagerType.LOCK_UNLOCK, params);
     }
-    function deployCustomTokenManagerMintBurn(bytes32 salt, bytes calldata admin, address tokenAddress) external {
-        bytes memory params = getParamsMintBurn(admin, tokenAddress);
+
+    function deployCustomTokenManagerMintBurn(bytes32 salt, address admin, address tokenAddress) external {
+        bytes memory params = getParamsMintBurn(admin.toBytes(), tokenAddress);
         deployCustomTokenManager(salt, TokenManagerType.MINT_BURN, params);
     }
-    function deployCustomTokenManagerCanonical(bytes32 salt, bytes calldata admin, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals, uint256 mintAmount) external {
-        bytes memory params = getParamsCanonical(admin, tokenName, tokenSymbol, tokenDecimals, mintAmount);
+
+    function deployCustomTokenManagerCanonical(
+        bytes32 salt,
+        address admin,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 tokenDecimals,
+        uint256 mintAmount
+    ) external {
+        bytes memory params = getParamsCanonical(admin.toBytes(), tokenName, tokenSymbol, tokenDecimals, mintAmount);
         deployCustomTokenManager(salt, TokenManagerType.CANONICAL, params);
     }
-    function deployCustomTokenManagerLiquidityPool(bytes32 salt, bytes calldata admin, address tokenAddress, address liquidityPoolAddress) external {
-        bytes memory params = getParamsLiquidityPool(admin, tokenAddress, liquidityPoolAddress);
+
+    function deployCustomTokenManagerLiquidityPool(
+        bytes32 salt,
+        address admin,
+        address tokenAddress,
+        address liquidityPoolAddress
+    ) external {
+        bytes memory params = getParamsLiquidityPool(admin.toBytes(), tokenAddress, liquidityPoolAddress);
         deployCustomTokenManager(salt, TokenManagerType.LIQUIDITY_POOL, params);
     }
-
 
     function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external notPaused {
         address caller = msg.sender;
@@ -245,8 +273,6 @@ contract InterchainTokenService is
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
         amount = token.balanceOf(destinationAddress) - balance;
         _setExpressSendToken(tokenId, destinationAddress, amount, sendHash, caller);
-
-        emit ExpressExecuted(tokenId, destinationAddress, amount, sendHash, caller);
     }
 
     function expressReceiveTokenWithData(
@@ -264,9 +290,8 @@ contract InterchainTokenService is
         uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
         amount = token.balanceOf(destinationAddress) - balance;
-        _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
         _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
-        emit ExpressExecutedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
+        _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
     }
 
     /*********************\
@@ -280,7 +305,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount
     ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
+        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
         bytes memory payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash);
         _callContract(destinationChain, payload, msg.value, sourceAddress);
         emit TokenSent(tokenId, destinationChain, destinationAddress, amount, sendHash);
@@ -294,7 +319,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata data
     ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
+        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
         {
             bytes memory payload = abi.encode(
                 SELECTOR_SEND_TOKEN_WITH_DATA,
@@ -318,7 +343,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount
     ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
+        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
         bytes memory payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash);
         _callContractWithToken(destinationChain, symbol, amount, payload, sourceAddress);
         emit TokenSent(tokenId, destinationChain, destinationAddress, amount, sendHash);
@@ -333,7 +358,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes memory data
     ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount));
+        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
         {
             bytes memory sourceAddressBytes = sourceAddress.toBytes();
             bytes memory payload = abi.encode(

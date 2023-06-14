@@ -58,14 +58,29 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
 
     function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
 
+    function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
+
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
     function getCustomTokenId(address admin, bytes32 salt) external view returns (bytes32 tokenId);
 
-    function getParamsLockUnlock(bytes calldata admin, address tokenAddress) external pure returns (bytes memory params);
-    function getParamsMintBurn(bytes calldata admin, address tokenAddress) external pure returns (bytes memory params);
-    function getParamsCanonical(bytes calldata admin, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals, uint256 mintAmount) external pure returns (bytes memory params);
-    function getParamsLiquidityPool(bytes calldata admin, address tokenAddress, address liquidityPoolAddress) external pure returns (bytes memory params);
+    function getParamsLockUnlock(bytes memory admin, address tokenAddress) external pure returns (bytes memory params);
+
+    function getParamsMintBurn(bytes memory admin, address tokenAddress) external pure returns (bytes memory params);
+
+    function getParamsCanonical(
+        bytes memory admin,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 tokenDecimals,
+        uint256 mintAmount
+    ) external pure returns (bytes memory params);
+
+    function getParamsLiquidityPool(
+        bytes memory admin,
+        address tokenAddress,
+        address liquidityPoolAddress
+    ) external pure returns (bytes memory params);
 
     function registerCanonicalToken(address tokenAddress) external returns (bytes32 tokenId);
 
@@ -101,11 +116,25 @@ interface IInterchainTokenService is ITokenManagerDeployer, IExpressCallHandler,
         uint256[] calldata gasValues
     ) external payable;
 
-    function deployCustomTokenManagerLockUnlock(bytes32 salt, bytes calldata admin, address tokenAddress) external;
-    function deployCustomTokenManagerMintBurn(bytes32 salt, bytes calldata admin, address tokenAddress) external;
-    function deployCustomTokenManagerCanonical(bytes32 salt, bytes calldata admin, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals, uint256 mintAmount) external;
-    function deployCustomTokenManagerLiquidityPool(bytes32 salt, bytes calldata admin, address tokenAddress, address liquidityPoolAddress) external;
+    function deployCustomTokenManagerLockUnlock(bytes32 salt, address admin, address tokenAddress) external;
 
+    function deployCustomTokenManagerMintBurn(bytes32 salt, address admin, address tokenAddress) external;
+
+    function deployCustomTokenManagerCanonical(
+        bytes32 salt,
+        address admin,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 tokenDecimals,
+        uint256 mintAmount
+    ) external;
+
+    function deployCustomTokenManagerLiquidityPool(
+        bytes32 salt,
+        address admin,
+        address tokenAddress,
+        address liquidityPoolAddress
+    ) external;
 
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
 
