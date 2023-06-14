@@ -1,6 +1,5 @@
 const { ethers } = require('hardhat');
 const { Contract } = ethers;
-const TokenManagerProxy = require('../artifacts/contracts/proxies/TokenManagerProxy.sol/TokenManagerProxy.json');
 const InterchainTokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
 const { deployCreate3Contract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 
@@ -33,7 +32,7 @@ async function deployGasService(wallet) {
 async function deployInterchainTokenService(
     wallet,
     create3DeployerAddress,
-    bytecodeServerAddress,
+    tokenManagerDeployerAddress,
     gatewayAddress,
     gasServiceAddress,
     linkerRouterAddress,
@@ -42,8 +41,7 @@ async function deployInterchainTokenService(
     deploymentKey,
 ) {
     const implementation = await deployContract(wallet, 'InterchainTokenService', [
-        create3DeployerAddress,
-        bytecodeServerAddress,
+        tokenManagerDeployerAddress,
         gatewayAddress,
         gasServiceAddress,
         linkerRouterAddress,
@@ -74,14 +72,14 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
     const create3Deployer = await deployContract(wallet, 'Create3Deployer');
     const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
-    const bytecodeServer = await deployContract(wallet, 'BytecodeServer', [TokenManagerProxy.bytecode]);
+    const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', [create3Deployer.address]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const linkerRouter = await deployLinkerRouter(wallet, interchainTokenServiceAddress);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
     const service = await deployInterchainTokenService(
         wallet,
         create3Deployer.address,
-        bytecodeServer.address,
+        tokenManagerDeployer.address,
         gateway.address,
         gasService.address,
         linkerRouter.address,
