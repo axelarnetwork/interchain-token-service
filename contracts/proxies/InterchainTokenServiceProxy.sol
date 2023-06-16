@@ -13,7 +13,6 @@ contract InterchainTokenServiceProxy is FinalProxy {
      * @dev Constructs the InterchainTokenServiceProxy contract.
      * @param implementationAddress Address of the interchain token service implementation
      * @param owner Address of the owner of the proxy
-     * @param setupParams Initialization parameters for the contract implementation. Currently not used.
      */
     constructor(
         address implementationAddress,
