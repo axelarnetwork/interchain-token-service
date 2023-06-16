@@ -19,22 +19,36 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
 
     IInterchainTokenService public immutable interchainTokenService;
 
-    /// @param interchainTokenService_ The address of the interchain token service, which can be stored in an immutable variable saving some gas.
+    /**
+     * @dev Constructs the TokenManager contract.
+     * @param interchainTokenService_ The address of the interchain token service
+     */
     constructor(address interchainTokenService_) {
         if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
     }
 
+    /**
+     * @dev A modifier that allows only the interchain token service to execute the function.
+     */
     modifier onlyService() {
         if (msg.sender != address(interchainTokenService)) revert NotService();
         _;
     }
 
+    /**
+     * @dev A modifier that allows only the token to execute the function.
+     */
     modifier onlyToken() {
         if (msg.sender != tokenAddress()) revert NotToken();
         _;
     }
 
+    /**
+     * @dev A function that should return the address of the token.
+     * Must be overridden in the inheriting contract.
+     * @return address address of the token.
+     */
     function tokenAddress() public view virtual returns (address);
 
     /// @dev This is supposed to only be hidden by the proxy and only be called once from the proxy constructor
@@ -130,10 +144,31 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         _setFlowLimit(flowLimit);
     }
 
+    /**
+     * @dev Transfers tokens from a specific address to this contract.
+     * Must be overridden in the inheriting contract.
+     * @param from The address from which the tokens will be sent
+     * @param amount The amount of tokens to receive
+     * @return uint amount of tokens received
+     */
     function _takeToken(address from, uint256 amount) internal virtual returns (uint256);
 
+    /**
+     * @dev Transfers tokens from this contract to a specific address.
+     * Must be overridden in the inheriting contract.
+     * @param from The address to which the tokens will be sent
+     * @param amount The amount of tokens to send
+     * @return uint amount of tokens sent
+     */
     function _giveToken(address from, uint256 amount) internal virtual returns (uint256);
 
+    /**
+     * @dev Calls the interchain token service to send tokens to an address on another chain
+     * @param sender The sender of the tokens
+     * @param destinationChain The chain to which the tokens will be sent
+     * @param destinationAddress The address on the destination chain where the tokens will be sent
+     * @param amount The amount of tokens to send
+     */
     function _transmitSendToken(
         address sender,
         string calldata destinationChain,
@@ -143,6 +178,14 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         interchainTokenService.transmitSendToken{ value: msg.value }(_getTokenId(), sender, destinationChain, destinationAddress, amount);
     }
 
+    /**
+     * @dev Calls the interchain token service to send tokens to and call a function on a contract on another chain
+     * @param sender The sender of the tokens
+     * @param destinationChain The chain to which the tokens will be sent
+     * @param destinationAddress The address on the destination chain where the tokens will be sent
+     * @param amount The amount of tokens to send
+     * @param data The data needed to call the contract on the destination chain
+     */
     function _transmitSendTokenWithData(
         address sender,
         string calldata destinationChain,
@@ -160,8 +203,17 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         );
     }
 
+    /**
+     * @dev Additional setup logic to perform
+     * Must be overridden in the inheriting contract.
+     * @param params The setup parameters
+     */
     function _setup(bytes calldata params) internal virtual;
 
+    /**
+     * @dev Gets the token ID from the token manager proxy.
+     * @return tokenId The ID of the token
+     */
     function _getTokenId() internal view returns (bytes32 tokenId) {
         tokenId = ITokenManagerProxy(address(this)).tokenId();
     }
