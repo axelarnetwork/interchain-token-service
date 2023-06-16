@@ -20,8 +20,8 @@ describe('LinkerRouter', () => {
     });
 
     it('Should get the correct remote address for unregistered chains', async () => {
-        //const remoteAddress = await linkerRouter.getRemoteAddress(otherChain);
-        expect(await linkerRouter.getRemoteAddress(otherChain)).to.equal(interchainTokenServiceAddress.toLowerCase());
+        const remoteAddress = await linkerRouter.getRemoteAddress(otherChain);
+        expect(remoteAddress).to.equal(interchainTokenServiceAddress.toLowerCase());
     });
 
     it('Should be able to validate remote addresses properly', async () => {
