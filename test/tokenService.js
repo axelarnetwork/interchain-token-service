@@ -29,7 +29,13 @@ describe('Interchain Token Service', () => {
 
     const deployFunctions = {};
 
-    deployFunctions.lockUnlock = async function deployNewLockUnlock(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
+    deployFunctions.lockUnlock = async function deployNewLockUnlock(
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
         const salt = getRandomBytes32();
         const tokenId = await service.getCustomTokenId(wallet.address, salt);
         const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
@@ -41,7 +47,7 @@ describe('Interchain Token Service', () => {
 
         if (mintAmount > 0) {
             await (await token.mint(wallet.address, mintAmount)).wait();
-            if(!skipApprove) await (await token.approve(tokenManager.address, mintAmount)).wait();
+            if (!skipApprove) await (await token.approve(tokenManager.address, mintAmount)).wait();
         }
 
         return [token, tokenManager, tokenId];
@@ -67,7 +73,13 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
-    deployFunctions.liquidityPool = async function deployNewLiquidityPool(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
+    deployFunctions.liquidityPool = async function deployNewLiquidityPool(
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
         const salt = getRandomBytes32();
         const tokenId = await service.getCustomTokenId(wallet.address, salt);
         const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
@@ -80,7 +92,7 @@ describe('Interchain Token Service', () => {
 
         if (mintAmount > 0) {
             await (await token.mint(wallet.address, mintAmount)).wait();
-            if(!skipApprove) await (await token.approve(tokenManager.address, mintAmount)).wait();
+            if (!skipApprove) await (await token.approve(tokenManager.address, mintAmount)).wait();
         }
 
         return [token, tokenManager, tokenId];
@@ -757,7 +769,6 @@ describe('Interchain Token Service', () => {
         });
     });
 
-
     describe('Send Interchain Token', () => {
         const amount = 1234;
         const destChain = 'destination Chain';
@@ -812,7 +823,7 @@ describe('Interchain Token Service', () => {
         }
     });
 
-    describe.only('Send Interchain Token With Data', () => {
+    describe('Send Interchain Token With Data', () => {
         const amount = 1234;
         const destChain = 'destination Chain';
         const destAddress = '0x5678';
