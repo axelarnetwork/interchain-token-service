@@ -28,8 +28,7 @@ import { Pausable } from '../utils/Pausable.sol';
 import { Multicall } from '../utils/Multicall.sol';
 
 /// @title The Interchain Token Service
-/// @author Foivos Antoulinakis
-/// @notice This contract is responsible for facilitating cross chain token transfers. 
+/// @notice This contract is responsible for facilitating cross chain token transfers.
 /// It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
 /// @dev The only storage used here is for ExpressCalls
 contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Upgradable, ExpressCallHandler, Pausable, Multicall {
@@ -172,17 +171,19 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     }
 
     /// @notice Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt. This will not depend on what chain it is called from, unlike canonical tokenIds.
-    /// @param admin the address of the TokenManager deployer.
+    /// @param sender the address of the TokenManager deployer.
     /// @param salt the salt that the deployer uses for the deployment.
     /// @return tokenId the tokenId that the custom TokenManager would get (or has gotten).
-    function getCustomTokenId(address admin, bytes32 salt) public pure returns (bytes32 tokenId) {
-        tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, admin, salt));
+    function getCustomTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId) {
+        tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, sender, salt));
     }
 
     /// @notice Getter function for TokenManager implementations. This will mainly be called by TokenManagerProxies to figure out their implementations
     /// @param tokenManagerType the type of the TokenManager.
     /// @return tokenManagerAddress the address of the TokenManagerImplementation.
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress) {
+        // There could be a way to rewrite the following using assembly switch statements, which would be more gas efficient,
+        // but accessing immutable variables and/or enum values seems to be tricky, and would reduce code readability.
         if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK) {
             return implementationLockUnlock;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
@@ -235,7 +236,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
     }
 
-    /// @notice Used to deploy remote TokenManagers and standardized tokens for a canonical token. This needs to be called from the chain that registered the canonical token, and anyone can call it.   
+    /// @notice Used to deploy remote TokenManagers and standardized tokens for a canonical token. This needs to be called from the chain that registered the canonical token, and anyone can call it.
     /// @param tokenId the tokenId of the canonical token.
     /// @param destinationChain the name of the chain to deploy the TokenManager and standardized token to.
     /// @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount specified needs to be passed to the call
@@ -245,7 +246,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
         if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalTokenManager();
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', destinationChain, gasValue);
+        _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', '', destinationChain, gasValue);
     }
 
     /// @notice Used to deploy custom TokenManagers with the specified salt. Different callers would result in different tokenIds.
@@ -274,7 +275,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
-    
+
     /// @notice Used to deploy a standardized token alongside a TokenManager. If the `distributor` is the address of the TokenManager (which can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
     /// @param salt the salt to be used.
     /// @param name the name of the token to be deployed.
@@ -295,7 +296,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
         TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
         address tokenAddress = getStandardizedTokenAddress(tokenId);
-        deployCustomTokenManager(salt, tokenManagerType, abi.encode(msg.sender.toBytes(), tokenAddress));
+        _deployTokenManager(tokenId, tokenManagerType, abi.encode(msg.sender.toBytes(), tokenAddress));
     }
 
     /// @notice Used to deploy a standardized token alongside a TokenManager in another chain. If the `distributor` is empty bytes then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
@@ -312,12 +313,13 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         string calldata name,
         string calldata symbol,
         uint8 decimals,
-        bytes calldata distributor,
+        bytes memory distributor,
+        bytes memory admin,
         string calldata destinationChain,
         uint256 gasValue
     ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, destinationChain, gasValue);
+        _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, admin, destinationChain, gasValue);
     }
 
     /// @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
@@ -416,48 +418,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, data, sendHash);
     }
 
-    /// @notice This is not currently used, it is meant for forward compatibility with gateway tokens.
-    function transmitSendTokenWithToken(
-        bytes32 tokenId,
-        string calldata symbol,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount
-    ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
-        bytes memory payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash);
-        _callContractWithToken(destinationChain, symbol, amount, payload, sourceAddress);
-        emit TokenSent(tokenId, destinationChain, destinationAddress, amount, sendHash);
-    }
-
-    /// @notice This is not currently used, it is meant for forward compatibility with gateway tokens.
-    function transmitSendTokenWithDataWithToken(
-        bytes32 tokenId,
-        string memory symbol,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes memory destinationAddress,
-        uint256 amount,
-        bytes memory data
-    ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
-        {
-            bytes memory sourceAddressBytes = sourceAddress.toBytes();
-            bytes memory payload = abi.encode(
-                SELECTOR_SEND_TOKEN_WITH_DATA,
-                tokenId,
-                destinationAddress,
-                amount,
-                sourceAddressBytes,
-                data,
-                sendHash
-            );
-            _callContractWithToken(destinationChain, symbol, amount, payload, sourceAddress);
-        }
-        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, data, sendHash);
-    }
-
     /*************\
     OWNER FUNCTIONS
     \*************/
@@ -495,16 +455,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
             _processDeployStandardizedTokenAndManagerPayload(payload);
         }
-    }
-
-    function _executeWithToken(
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata /*symbol*/,
-        uint256 /*amount*/
-    ) internal override onlyRemoteService(sourceChain, sourceAddress) {
-        _execute(sourceChain, sourceAddress, payload);
     }
 
     function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
@@ -579,10 +529,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     }
 
     function _processDeployStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
-        (, bytes32 tokenId, string memory name, string memory symbol, uint8 decimals, bytes memory distributorBytes) = abi.decode(
-            payload,
-            (uint256, bytes32, string, string, uint8, bytes)
-        );
+        (
+            ,
+            bytes32 tokenId,
+            string memory name,
+            string memory symbol,
+            uint8 decimals,
+            bytes memory distributorBytes,
+            bytes memory adminBytes
+        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
         address tokenAddress = getStandardizedTokenAddress(tokenId);
         address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : address(this);
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);
@@ -590,7 +545,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployTokenManager(
             tokenId,
             tokenManagerType,
-            abi.encode(distributorBytes.length == 0 ? address(this).toBytes() : distributorBytes, tokenAddress)
+            abi.encode(adminBytes.length == 0 ? address(this).toBytes() : adminBytes, tokenAddress)
         );
     }
 
@@ -606,29 +561,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             );
         }
         gateway.callContract(destinationChain, destinationAddress, payload);
-    }
-
-    function _callContractWithToken(
-        string calldata destinationChain,
-        string memory symbol,
-        uint256 amount,
-        bytes memory payload,
-        address refundTo
-    ) internal {
-        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
-        uint256 gasValue = msg.value;
-        if (gasValue > 0) {
-            gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
-                address(this),
-                destinationChain,
-                destinationAddress,
-                payload,
-                symbol,
-                amount,
-                refundTo
-            );
-        }
-        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
 
     function _validateToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
@@ -656,10 +588,19 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
+        bytes memory admin,
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
-        bytes memory payload = abi.encode(SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, distributor);
+        bytes memory payload = abi.encode(
+            SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+            tokenId,
+            name,
+            symbol,
+            decimals,
+            distributor,
+            admin
+        );
         _callContract(destinationChain, payload, gasValue, msg.sender);
         emit RemoteStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
     }

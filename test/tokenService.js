@@ -148,8 +148,8 @@ describe('Interchain Token Service', () => {
             const chain = 'chain1';
             const gasValue = 1e6;
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, '0x'],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, '0x', '0x'],
             );
             await expect(service.deployRemoteCanonicalToken(tokenId, chain, gasValue, { value: gasValue }))
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
@@ -207,6 +207,7 @@ describe('Interchain Token Service', () => {
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
         const distributor = '0x12345678';
+        const admin = '0x5678';
         const destinationChain = 'dest';
         const gasValue = 1234;
         const salt = getRandomBytes32();
@@ -214,8 +215,8 @@ describe('Interchain Token Service', () => {
         it('Should initialize a remote standardized token deployment', async () => {
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, admin],
             );
             await expect(
                 service.deployAndRegisterRemoteStandardizedTokens(
@@ -224,6 +225,7 @@ describe('Interchain Token Service', () => {
                     tokenSymbol,
                     tokenDecimals,
                     distributor,
+                    admin,
                     destinationChain,
                     gasValue,
                     { value: gasValue },
@@ -251,12 +253,13 @@ describe('Interchain Token Service', () => {
         it('Should be able to receive a remote standardized token depoloyment with a lock/unlock token manager', async () => {
             const tokenId = getRandomBytes32();
             const distributor = wallet.address;
+            const admin = wallet.address;
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             const tokenAddress = await service.getStandardizedTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [distributor, tokenAddress]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, admin],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -273,11 +276,12 @@ describe('Interchain Token Service', () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             const distributor = service.address;
+            const admin = wallet.address;
             const tokenAddress = await service.getStandardizedTokenAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, tokenAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [admin, tokenAddress]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, admin],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -288,18 +292,19 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
-            expect(await tokenManager.admin()).to.equal(service.address);
+            expect(await tokenManager.admin()).to.equal(admin);
         });
 
         it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager', async () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             const distributor = '0x';
+            const admin = '0x';
             const tokenAddress = await service.getStandardizedTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, tokenAddress]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, admin],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 

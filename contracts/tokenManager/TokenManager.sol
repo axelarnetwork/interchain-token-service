@@ -11,8 +11,7 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { Implementation } from '../utils/Implementation.sol';
 
-/// @title The main functionality of TokenManagers. 
-/// @author Foivos Antoulinakis
+/// @title The main functionality of TokenManagers.
 /// @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
 abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implementation {
     using AddressBytesUtils for bytes;
@@ -51,7 +50,7 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
      */
     function tokenAddress() public view virtual returns (address);
 
-    /// @dev This is supposed to only be hidden by the proxy and only be called once from the proxy constructor
+    /// @dev This is supposed to be hidden by the proxy and only be called once from the proxy constructor
     /// @param params the parameters to be used to initialize the TokenManager. The exact format depends on the type of TokenManager used but the first 32 bytes are reserved for the address of the admin, stored as bytes (to be compatible with non-EVM chains)
     function setup(bytes calldata params) external override onlyProxy {
         bytes memory adminBytes = abi.decode(params, (bytes));
