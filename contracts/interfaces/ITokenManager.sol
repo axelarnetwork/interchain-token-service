@@ -38,6 +38,4 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplement
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
 
     function setFlowLimit(uint256 flowLimit) external;
-
-    function requiresApproval() external view returns (bool);
 }

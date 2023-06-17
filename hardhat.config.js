@@ -1,4 +1,6 @@
 require('@nomicfoundation/hardhat-toolbox');
+require('solidity-coverage');
+require('solidity-docgen');
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
