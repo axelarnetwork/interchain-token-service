@@ -9,6 +9,7 @@ import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/c
 
 /**
  * @title TokenManagerLiquidityPool
+ * @author Foivos Antoulinakis
  * @notice This contract is a an implementation of TokenManager that stores all tokens in a separate liquity pool
  * rather than within itself.
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
