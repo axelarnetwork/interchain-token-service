@@ -39,6 +39,7 @@ contract StandardizedToken is InterchainToken, Implementation, Distributable, IE
             tokenManagerRequiresApproval_ = distributor_ != tokenManager;
             _setDomainTypeSignatureHash(tokenName);
             name = tokenName;
+            // TODO: symbol, decimals aren't being set
         }
         {
             uint256 mintAmount;

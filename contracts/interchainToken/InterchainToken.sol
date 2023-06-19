@@ -43,6 +43,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
     ) external payable {
         address sender = msg.sender;
         ITokenManager tokenManager = getTokenManager();
+        // TODO: this is not needed for mint/burn tokens, so we could split it out
         /// @dev if you know the value of `tokenManagerRequiresApproval()` you can just skip the if statement and just do nothing or _approve.
         if (tokenManagerRequiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
