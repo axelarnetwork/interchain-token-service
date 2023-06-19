@@ -25,7 +25,7 @@ contract Adminable is IAdminable {
 
     /**
      * @notice Get the address of the admin
-     * @return address of the admin
+     * @return distr of the admin
      */
     function admin() public view returns (address distr) {
         // solhint-disable-next-line no-inline-assembly

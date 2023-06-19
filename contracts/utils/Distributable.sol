@@ -25,7 +25,7 @@ contract Distributable is IDistributable {
 
     /**
      * @notice Get the address of the distributor
-     * @return address of the distributor
+     * @return distr of the distributor
      */
     function distributor() public view returns (address distr) {
         // solhint-disable-next-line no-inline-assembly

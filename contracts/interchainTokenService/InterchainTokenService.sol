@@ -579,8 +579,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
      * @param sourceChain The chain where the transaction originates from
      * @param sourceAddress The address where the transaction originates from
      * @param payload The encoded data payload for the transaction
-     * @param string The symbol of the token to be transferred
-     * @param uint The amount of token to be transferred
      */
     function _executeWithToken(
         string calldata sourceChain,
