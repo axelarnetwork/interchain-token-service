@@ -916,7 +916,7 @@ describe('Interchain Token Service', () => {
 
         it('Should express execute', async () => {
             await expect(service.expressReceiveToken(tokenId, destinationAddress, amount, sendHash))
-                .to.emit(service, 'ExpressExecuted')
+                .to.emit(service, 'ExpressReceived')
                 .withArgs(tokenId, destinationAddress, amount, sendHash, wallet.address)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, destinationAddress, amount);
@@ -924,7 +924,7 @@ describe('Interchain Token Service', () => {
 
         it('Should express execute with token', async () => {
             await expect(service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, executable.address, amount, data, sendHash))
-                .to.emit(service, 'ExpressExecutedWithData')
+                .to.emit(service, 'ExpressReceivedWithData')
                 .withArgs(tokenId, sourceChain, sourceAddress, executable.address, amount, data, sendHash, wallet.address)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, executable.address, amount)

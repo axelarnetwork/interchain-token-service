@@ -17,4 +17,6 @@ interface IInterchainTokenExecutable {
         bytes32 tokenId,
         uint256 amount
     ) external;
+
+    function acceptsExpressExecution() external view returns (bool);
 }

@@ -337,7 +337,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
         amount = token.balanceOf(destinationAddress) - balance;
-        _setExpressSendToken(tokenId, destinationAddress, amount, sendHash, caller);
+        _setExpressReceiveToken(tokenId, destinationAddress, amount, sendHash, caller);
     }
 
     // TODO: express receive with data should be opt-in since the data is opaque and might be high value
@@ -368,8 +368,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
         amount = token.balanceOf(destinationAddress) - balance;
+        if(!IInterchainTokenExecutable(destinationAddress).acceptsExpressExecution()) revert DoesNotAcceptExpressExecute(destinationAddress);
         _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
-        _setExpressSendTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
+        _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
     }
 
     /*********************\
@@ -434,17 +435,22 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
 
     // TODO: allow passing a list of tokens and limits for convenience. a single owner tx is easier to prepare
     /// @notice Used to set a flow limit for a token manager that has the service as its admin.
-    /// @param tokenId the token Id of the tokenManager to set the flow limit.
-    /// @param flowLimit the flowLimit to set
-    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external onlyOwner {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        tokenManager.setFlowLimit(flowLimit);
+    /// @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
+    /// @param flowLimits and array of the flowLimit to set, identical in size to tokenIds.
+    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOwner {
+        uint256 length = tokenIds.length;
+        if(length != flowLimits.length) revert LengthMismatch();
+        for(uint256 i; i < length; ++i) {
+            ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
+            tokenManager.setFlowLimit(flowLimits[i]);
+        }
     }
 
     /// @notice Used to pause the entire service, as an emergency measure.
     /// @param paused what value to set paused to.
     function setPaused(bool paused) external onlyOwner {
         _setPaused(paused);
+        emit PausedSet(paused);
     }
 
     /****************\
@@ -465,6 +471,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             _processDeployTokenManagerPayload(payload);
         } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
             _processDeployStandardizedTokenAndManagerPayload(payload);
+        } else {
+            revert SelectorUnknown();
         }
 
         // TODO: revert if selector is not recognized
@@ -477,7 +485,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         );
         address destinationAddress = destinationAddressBytes.toAddress();
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        address expressCaller = _popExpressSendToken(tokenId, destinationAddress, amount, sendHash);
+        address expressCaller = _popExpressReceiveToken(tokenId, destinationAddress, amount, sendHash);
         if (expressCaller == address(0)) {
             amount = tokenManager.giveToken(destinationAddress, amount);
             emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
@@ -503,7 +511,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         }
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         {
-            address expressCaller = _popExpressSendTokenWithData(
+            address expressCaller = _popExpressReceiveTokenWithData(
                 tokenId,
                 sourceChain,
                 sourceAddress,
@@ -615,7 +623,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         uint256 amount,
         bytes memory data
     ) internal {
-        IInterchainTokenExecutable(destinationAddress).exectuteWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
+        IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
     }
 
     function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {

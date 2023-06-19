@@ -23,6 +23,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error GatewayToken();
     error TokenManagerDeploymentFailed();
     error StandardizedTokenDeploymentFailed();
+    error DoesNotAcceptExpressExecute(address contractAddress);
+    error SelectorUnknown();
 
     event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
     event TokenSentWithData(
@@ -64,6 +66,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     );
     event TokenManagerDeployed(bytes32 tokenId, TokenManagerType tokenManagerType, bytes params);
     event StandardizedTokenDeployed(bytes32 tokenId, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo);
+    event PausedSet(bool paused);
 
     function tokenManagerDeployer() external view returns (address);
 
@@ -148,7 +151,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes calldata data
     ) external payable;
 
-    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;
+    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
 
     function setPaused(bool paused) external;
 }

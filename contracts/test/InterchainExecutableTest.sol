@@ -11,7 +11,7 @@ contract InterchainExecutableTest is IInterchainTokenExecutable {
 
     string public lastMessage;
 
-    function exectuteWithInterchainToken(
+    function executeWithInterchainToken(
         string calldata sourceChain,
         bytes calldata sourceAddress,
         bytes calldata data,
@@ -23,5 +23,9 @@ contract InterchainExecutableTest is IInterchainTokenExecutable {
         address tokenAddress = IInterchainTokenService(msg.sender).getTokenAddress(tokenId);
         IERC20(tokenAddress).transfer(receiver, amount);
         emit MessageReceived(sourceChain, sourceAddress, receiver, message, tokenId, amount);
+    }
+
+    function acceptsExpressExecution() external pure returns (bool) {
+        return true;
     }
 }
