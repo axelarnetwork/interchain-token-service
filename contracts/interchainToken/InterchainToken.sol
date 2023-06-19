@@ -47,6 +47,13 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
         if (tokenManagerRequiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
+
+        // TODO: Don't think this should be resolved here. The token contract is fixed, whereas metadata interpretation
+        // can evolve in the future. Metadata should be passed as-is to the token service.
+        // Metadata should also be versioned:
+        // - if metadata is empty, interpret it as a simple transfer
+        // - if metadata has a bytes4/bytes32(0) prefix, then it's transfer with data
+        // - other versions can add more features in the future, without breaking semantics
         if (metadata.length == 0) {
             tokenManager.sendSelf{ value: msg.value }(sender, destinationChain, recipient, amount);
         } else {
@@ -79,6 +86,8 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
         if (tokenManagerRequiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
+
+        // TODO: same comment
         if (metadata.length == 0) {
             tokenManager.sendSelf{ value: msg.value }(sender, destinationChain, recipient, amount);
         } else {

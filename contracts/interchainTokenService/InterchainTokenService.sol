@@ -49,15 +49,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     bytes32 internal immutable chainName;
 
     bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
-    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_ID = keccak256('its-cacnonical-token-id');
-    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_SALT = keccak256('its-cacnonical-token-salt');
+    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_ID = keccak256('its-standardized-token-id');
+    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_SALT = keccak256('its-standardized-token-salt');
 
     uint256 private constant SELECTOR_SEND_TOKEN = 1;
     uint256 private constant SELECTOR_SEND_TOKEN_WITH_DATA = 2;
     uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
     uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
-    // keccak256('interchain-token-service')-1
+    // TODO: For contract Id, we can stick to not using the -1 convention
+    // keccak256('interchain-token-service')
     // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
 
@@ -322,6 +323,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, admin, destinationChain, gasValue);
     }
 
+    // TODO: pause check isn't needed for this since it's just passing tokens through, so we can save some gas
+    // TODO: Add commandID to help express vs execute reorder protection, i.e check if commandID is already executed
     /// @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
     /// @param tokenId the tokenId of the TokenManager used.
     /// @param destinationAddress the destinationAddress for the sendToken.
@@ -337,6 +340,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _setExpressSendToken(tokenId, destinationAddress, amount, sendHash, caller);
     }
 
+    // TODO: express receive with data should be opt-in since the data is opaque and might be high value
+    // TODO: I think we should have an InterchainTokenExpressExecutable interface that apps can add/customize. This method can just call that, and the app can track the express relayer.
+    // TODO: Alternatively, ITS tracks it and queries the contract to check for opt-in status (default is opt out), at the cost of more gas usage and less flexibility, but some more trust.
+    // TODO: similar comment on forwarding commandID
+    // TODO: similar comment on pause
     /// @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
     /// @param tokenId the tokenId of the TokenManager used.
     /// @param sourceChain the name of the chain where the call came from.
@@ -381,6 +389,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         bytes calldata destinationAddress,
         uint256 amount
     ) external payable onlyTokenManager(tokenId) notPaused {
+        // TODO: what's the point of sendHash? block.number can't always enforce uniqueness
+        // TODO: For express calls, I think we can accept the similar restriction as forecallable. For express with data, the app can provide unique data in payload if it wants.
         bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
         bytes memory payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash);
         _callContract(destinationChain, payload, msg.value, sourceAddress);
@@ -422,6 +432,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     OWNER FUNCTIONS
     \*************/
 
+    // TODO: allow passing a list of tokens and limits for convenience. a single owner tx is easier to prepare
     /// @notice Used to set a flow limit for a token manager that has the service as its admin.
     /// @param tokenId the token Id of the tokenManager to set the flow limit.
     /// @param flowLimit the flowLimit to set
@@ -430,7 +441,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         tokenManager.setFlowLimit(flowLimit);
     }
 
-    /// @notice Used to pause the entire service.
+    /// @notice Used to pause the entire service, as an emergency measure.
     /// @param paused what value to set paused to.
     function setPaused(bool paused) external onlyOwner {
         _setPaused(paused);
@@ -455,6 +466,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
             _processDeployStandardizedTokenAndManagerPayload(payload);
         }
+
+        // TODO: revert if selector is not recognized
     }
 
     function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
