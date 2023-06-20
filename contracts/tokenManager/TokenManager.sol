@@ -107,9 +107,16 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     ) external payable virtual onlyToken {
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
-        if(metadata.length != 0) {
+        if (metadata.length != 0) {
             uint32 version;
             (version, metadata) = _decodeMetadata(metadata);
+            if (version > 0) {
+                revert InvalidMetadataVersion(version);
+            }
+            if (metadata.length > 0) {
+                _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, metadata);
+                return;
+            }
         }
         _transmitSendToken(sender, destinationChain, destinationAddress, amount);
     }
@@ -227,11 +234,7 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         assembly {
             data.length := sub(metadata.length, 4)
             data.offset := add(metadata.offset, 4)
-            version := calldataload(metadata.offset)
+            version := calldataload(sub(metadata.offset, 28))
         }
-    }
-
-    function test(bytes calldata metadata) external pure returns (uint32 version, bytes calldata data) {
-        return _decodeMetadata(metadata);
     }
 }

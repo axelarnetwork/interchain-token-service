@@ -54,8 +54,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
         // - if metadata is empty, interpret it as a simple transfer
         // - if metadata has a bytes4/bytes32(0) prefix, then it's transfer with data
         // - other versions can add more features in the future, without breaking semantics
-        tokenManager.transmitInterchainTransfer{value: msg.value}(sender, destinationChain, recipient, amount, metadata);
-  
+        tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
 
     /// @notice Implementation of the interchainTransferFrom method
@@ -84,8 +83,6 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
 
-
         tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
-        
     }
 }

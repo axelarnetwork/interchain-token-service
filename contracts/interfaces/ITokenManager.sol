@@ -13,6 +13,7 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplement
     error TakeTokenFailed();
     error GiveTokenFailed();
     error NotToken();
+    error InvalidMetadataVersion(uint32 version);
 
     function tokenAddress() external view returns (address);
 
@@ -25,7 +26,13 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplement
         bytes calldata data
     ) external payable;
 
-    function transmitInterchainTransfer(address from, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount, bytes calldata metadata) external payable;
+    function transmitInterchainTransfer(
+        address from,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata
+    ) external payable;
 
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
 

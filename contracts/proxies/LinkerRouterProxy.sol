@@ -27,7 +27,7 @@ contract LinkerRouterProxy is Proxy {
      */
     // solhint-disable-next-line no-empty-blocks
     function contractId() internal pure override returns (bytes32) {
-        // bytes32(uint256(keccak256('remote-address-validator')) - 1)
-        return 0x5d9f4d5e6bb737c289f92f2a319c66ba484357595194acb7c2122e48550eda7c;
+        // bytes32(uint256(keccak256('remote-address-validator')))
+        return 0x5d9f4d5e6bb737c289f92f2a319c66ba484357595194acb7c2122e48550eda7d;
     }
 }
