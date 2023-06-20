@@ -8,10 +8,11 @@ import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { ERC20Permit } from '../utils/ERC20Permit.sol';
 
 /**
- * @title InterchainToken
- * @dev Contract that implements the IInterchainToken interface and allows for interchain token transfers.
- * This contract also inherits ERC20Permit to allow for approvals using off-chain signatures.
- * This contract is abstract and is intended to be inherited by another contract.
+ * @title An example implementation of the IInterchainTokenInterface.
+ * @author Foivos Antoulinakis
+ * @notice The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
+ * that can be used to create approvals, and that `allowance` is a mapping.
+ * @dev You can skip the `tokenManagerRequiresApproval()` function alltogether if you know what it should return for your token.
  */
 abstract contract InterchainToken is IInterchainToken, ERC20Permit {
     string public name;
@@ -19,25 +20,31 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
     uint8 public decimals;
 
     /**
-     * @dev A function that returns the token manager for this InterchainToken.
-     * Must be overridden in the inheriting contract.
-     * @return tokenManager The token manager contract
+     * @notice Getter for the tokenManager used for this token.
+     * @dev Needs to be overwitten.
+     * @return tokenManager the TokenManager called to facilitate cross chain transfers.
      */
     function getTokenManager() public view virtual returns (ITokenManager tokenManager);
 
     /**
-     * @dev A function that checks if the token manager requires an approval.
-     * Must be overridden in the inheriting contract.
-     * @return Boolean representing if the token manager requires approval
+     * @notice Getter function specifiying if the tokenManager requires approval to facilitate cross-chain transfers.
+     * Usually, only mint/burn tokenManagers do not need approval.
+     * @dev The return value depends on the implementation of ERC20.
+     * In case of lock/unlock and liquidity pool TokenManagers it is possible to implement transferFrom to allow the
+     * TokenManager specifically to do it permissionlesly.
+     * On the other hand you can implement burn in a way that requires approval for a mint/burn TokenManager
+     * @return tokenManager the TokenManager called to facilitate cross chain transfers.
      */
     function tokenManagerRequiresApproval() public view virtual returns (bool);
 
     /**
-     * @dev A function that handles interchain transfers for this token
-     * @param destinationChain The chain to which the tokens will be sent
-     * @param recipient The recipient address of the tokens represented in bytes
-     * @param amount The amount of tokens to send
-     * @param metadata Any additional data to include with the transfer
+     * @notice Implementation of the interchainTransfer method
+     * @dev We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
+     * A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well.
+     * @param destinationChain the string representation of the destination chain.
+     * @param recipient the bytes representation of the address of the recipient.
+     * @param amount the amount of token to be transfered.
+     * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
      */
     function interchainTransfer(
         string calldata destinationChain,
@@ -47,6 +54,9 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
     ) external payable {
         address sender = msg.sender;
         ITokenManager tokenManager = getTokenManager();
+        /**
+         * @dev if you know the value of `tokenManagerRequiresApproval()` you can just skip the if statement and just do nothing or _approve.
+         */
         if (tokenManagerRequiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
@@ -58,13 +68,14 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
     }
 
     /**
-     * @dev A function to send a token cross-chain from an account that has an approval
-     * to spend from `sender`'s balance
-     * @param sender The account to send the tokens from
-     * @param destinationChain The chain to which the tokens will be sent
-     * @param recipient The recipient address of the tokens represented in bytes
-     * @param amount The amount of tokens to send
-     * @param metadata Any additional data to include with the transfer
+     * @notice Implementation of the interchainTransferFrom method
+     * @dev We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
+     * A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well.
+     * @param sender the sender of the tokens. They need to have approved `msg.sender` before this is called.
+     * @param destinationChain the string representation of the destination chain.
+     * @param recipient the bytes representation of the address of the recipient.
+     * @param amount the amount of token to be transfered.
+     * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
      */
     function interchainTransferFrom(
         address sender,

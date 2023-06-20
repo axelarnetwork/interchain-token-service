@@ -15,7 +15,7 @@ const { approveContractCall, getRandomBytes32 } = require('../scripts/utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
-// const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
+const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
 const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
@@ -29,7 +29,13 @@ describe('Interchain Token Service', () => {
 
     const deployFunctions = {};
 
-    deployFunctions.lockUnlock = async function deployNewLockUnlock(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
+    deployFunctions.lockUnlock = async function deployNewLockUnlock(
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
         const salt = getRandomBytes32();
         const tokenId = await service.getCustomTokenId(wallet.address, salt);
         const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
@@ -41,7 +47,7 @@ describe('Interchain Token Service', () => {
 
         if (mintAmount > 0) {
             await (await token.mint(wallet.address, mintAmount)).wait();
-            await (await token.approve(tokenManager.address, mintAmount)).wait();
+            if (!skipApprove) await (await token.approve(tokenManager.address, mintAmount)).wait();
         }
 
         return [token, tokenManager, tokenId];
@@ -67,7 +73,13 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
-    deployFunctions.liquidityPool = async function deployNewLiquidityPool(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
+    deployFunctions.liquidityPool = async function deployNewLiquidityPool(
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
         const salt = getRandomBytes32();
         const tokenId = await service.getCustomTokenId(wallet.address, salt);
         const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
@@ -80,7 +92,7 @@ describe('Interchain Token Service', () => {
 
         if (mintAmount > 0) {
             await (await token.mint(wallet.address, mintAmount)).wait();
-            await (await token.approve(tokenManager.address, mintAmount)).wait();
+            if (!skipApprove) await (await token.approve(tokenManager.address, mintAmount)).wait();
         }
 
         return [token, tokenManager, tokenId];
@@ -601,6 +613,278 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(service, 'TokenReceived')
                 .withArgs(tokenId, sourceChain, destAddress, amount, sendHash);
         });
+    });
+
+    describe('Send Token With Data', () => {
+        const amount = 1234;
+        const destChain = 'destination Chain';
+        const destAddress = '0x5678';
+        const gasValue = 90;
+        let sourceAddress;
+        const data = '0x1234';
+
+        before(() => {
+            sourceAddress = wallet.address;
+        });
+
+        for (const type of ['lockUnlock', 'mintBurn', 'liquidityPool']) {
+            it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
+                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
+
+                let sendHash;
+                let payloadHash;
+
+                function checkSendHash(hash) {
+                    return sendHash === hash;
+                }
+
+                function checkPayloadHash(hash) {
+                    return payloadHash === hash;
+                }
+
+                function checkPayload(payload) {
+                    const emmitted = defaultAbiCoder.decode(
+                        ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes', 'bytes32'],
+                        payload,
+                    );
+                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN_WITH_DATA) return false;
+                    if (emmitted[1] !== tokenId) return false;
+                    if (emmitted[2] !== destAddress) return false;
+                    if (Number(emmitted[3]) !== amount) return false;
+                    if (emmitted[4] !== sourceAddress.toLowerCase()) return false;
+                    if (emmitted[5] !== data) return false;
+                    sendHash = emmitted[6];
+                    payloadHash = keccak256(payload);
+                    return true;
+                }
+
+                let transferToAddress = AddressZero;
+
+                if (type === 'lockUnlock') {
+                    transferToAddress = tokenManager.address;
+                } else if (type === 'liquidityPool') {
+                    transferToAddress = liquidityPool.address;
+                }
+
+                await expect(tokenManager.callContractWithInterchainToken(destChain, destAddress, amount, data, { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, transferToAddress, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'TokenSentWithData')
+                    .withArgs(tokenId, destChain, destAddress, amount, sourceAddress, data, checkSendHash);
+            });
+        }
+    });
+
+    describe('Receive Remote Tokens with Data', () => {
+        const sourceChain = 'source chain';
+        let sourceAddress;
+        const sourceAddressForService = '0x1234';
+        const amount = 1234;
+        let destAddress;
+        let executable;
+
+        before(async () => {
+            sourceAddress = service.address.toLowerCase();
+            executable = await deployContract(wallet, 'InterchainExecutableTest');
+            destAddress = executable.address;
+        });
+
+        it('Should be able to receive lock/unlock token', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
+            (await await token.transfer(tokenManager.address, amount)).wait();
+            const sendHash = getRandomBytes32();
+            const msg = `lock/unlock`;
+            const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes', 'bytes32'],
+                [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddressForService, data, sendHash],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(tokenManager.address, destAddress, amount)
+                .to.emit(token, 'Transfer')
+                .withArgs(destAddress, wallet.address, amount)
+                .and.to.emit(service, 'TokenReceivedWithData')
+                .withArgs(tokenId, sourceChain, destAddress, amount, sourceAddressForService, data, sendHash)
+                .and.to.emit(executable, 'MessageReceived')
+                .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
+
+            expect(await executable.lastMessage()).to.equal(msg);
+        });
+
+        it('Should be able to receive mint/burn token', async () => {
+            const [token, , tokenId] = await deployFunctions.mintBurn(`Test Token Mint Burn`, 'TT', 12, amount);
+
+            const sendHash = getRandomBytes32();
+            const msg = `mint/burn`;
+            const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes', 'bytes32'],
+                [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddressForService, data, sendHash],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(AddressZero, destAddress, amount)
+                .to.emit(token, 'Transfer')
+                .withArgs(destAddress, wallet.address, amount)
+                .and.to.emit(service, 'TokenReceivedWithData')
+                .withArgs(tokenId, sourceChain, destAddress, amount, sourceAddressForService, data, sendHash)
+                .and.to.emit(executable, 'MessageReceived')
+                .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
+
+            expect(await executable.lastMessage()).to.equal(msg);
+        });
+
+        it('Should be able to receive liquidity pool token', async () => {
+            const [token, , tokenId] = await deployFunctions.liquidityPool(`Test Token Liquidity Pool`, 'TTLP', 12, amount);
+            (await await token.transfer(liquidityPool.address, amount)).wait();
+            const sendHash = getRandomBytes32();
+            const msg = `mint/burn`;
+            const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes', 'bytes32'],
+                [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddressForService, data, sendHash],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(liquidityPool.address, destAddress, amount)
+                .to.emit(token, 'Transfer')
+                .withArgs(destAddress, wallet.address, amount)
+                .and.to.emit(service, 'TokenReceivedWithData')
+                .withArgs(tokenId, sourceChain, destAddress, amount, sourceAddressForService, data, sendHash)
+                .and.to.emit(executable, 'MessageReceived')
+                .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
+
+            expect(await executable.lastMessage()).to.equal(msg);
+        });
+    });
+
+    describe('Send Interchain Token', () => {
+        const amount = 1234;
+        const destChain = 'destination Chain';
+        const destAddress = '0x5678';
+        const gasValue = 90;
+
+        for (const type of ['lockUnlock', 'mintBurn', 'liquidityPool']) {
+            it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
+                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, true);
+
+                let sendHash;
+                let payloadHash;
+
+                function checkSendHash(hash) {
+                    return sendHash === hash;
+                }
+
+                function checkPayloadHash(hash) {
+                    return payloadHash === hash;
+                }
+
+                function checkPayload(payload) {
+                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
+
+                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
+                    if (emmitted[1] !== tokenId) return false;
+                    if (emmitted[2] !== destAddress) return false;
+                    if (Number(emmitted[3]) !== amount) return false;
+                    sendHash = emmitted[4];
+                    payloadHash = keccak256(payload);
+                    return true;
+                }
+
+                let transferToAddress = AddressZero;
+
+                if (type === 'lockUnlock') {
+                    transferToAddress = tokenManager.address;
+                } else if (type === 'liquidityPool') {
+                    transferToAddress = liquidityPool.address;
+                }
+
+                await expect(token.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, transferToAddress, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'TokenSent')
+                    .withArgs(tokenId, destChain, destAddress, amount, checkSendHash);
+            });
+        }
+    });
+
+    describe('Send Interchain Token With Data', () => {
+        const amount = 1234;
+        const destChain = 'destination Chain';
+        const destAddress = '0x5678';
+        const gasValue = 90;
+        let sourceAddress;
+        const data = '0x1234';
+
+        before(() => {
+            sourceAddress = wallet.address;
+        });
+
+        for (const type of ['lockUnlock', 'mintBurn', 'liquidityPool']) {
+            it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
+                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, false);
+
+                let sendHash;
+                let payloadHash;
+
+                function checkSendHash(hash) {
+                    return sendHash === hash;
+                }
+
+                function checkPayloadHash(hash) {
+                    return payloadHash === hash;
+                }
+
+                function checkPayload(payload) {
+                    const emmitted = defaultAbiCoder.decode(
+                        ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes', 'bytes32'],
+                        payload,
+                    );
+                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN_WITH_DATA) return false;
+                    if (emmitted[1] !== tokenId) return false;
+                    if (emmitted[2] !== destAddress) return false;
+                    if (Number(emmitted[3]) !== amount) return false;
+                    if (emmitted[4] !== sourceAddress.toLowerCase()) return false;
+                    if (emmitted[5] !== data) return false;
+                    sendHash = emmitted[6];
+                    payloadHash = keccak256(payload);
+                    return true;
+                }
+
+                let transferToAddress = AddressZero;
+
+                if (type === 'lockUnlock') {
+                    transferToAddress = tokenManager.address;
+                } else if (type === 'liquidityPool') {
+                    transferToAddress = liquidityPool.address;
+                }
+
+                await expect(token.interchainTransfer(destChain, destAddress, amount, data, { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, transferToAddress, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'TokenSentWithData')
+                    .withArgs(tokenId, destChain, destAddress, amount, sourceAddress, data, checkSendHash);
+            });
+        }
     });
 
     describe('Flow Limits', () => {

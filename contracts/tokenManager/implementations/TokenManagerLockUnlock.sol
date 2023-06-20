@@ -9,6 +9,7 @@ import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar
 
 /**
  * @title TokenManagerLockUnlock
+ * @author Foivos Antoulinakis
  * @notice This contract is an implementation of TokenManager that locks and unlocks a specific token on behalf of the interchain token service.
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
