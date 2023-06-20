@@ -107,16 +107,16 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     ) external payable virtual onlyToken {
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
-        if (metadata.length != 0) {
+        // The first 4 bytes of metadata are used for versioning, so this check ensures that there is meaningfull data that is passed.
+        if (metadata.length > 4) {
             uint32 version;
             (version, metadata) = _decodeMetadata(metadata);
+            // Currently we only support version 0 that either sends the data passed or, in case of empty data it passes just initiates a transfer.
             if (version > 0) {
                 revert InvalidMetadataVersion(version);
             }
-            if (metadata.length > 0) {
-                _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, metadata);
-                return;
-            }
+            _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, metadata);
+            return;
         }
         _transmitSendToken(sender, destinationChain, destinationAddress, amount);
     }
