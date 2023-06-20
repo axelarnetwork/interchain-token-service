@@ -470,7 +470,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
         } else {
             amount = tokenManager.giveToken(expressCaller, amount);
-            emit ExpressExecutionFulfilled(tokenId, destinationAddress, amount, sendHash, expressCaller);
         }
     }
 
@@ -502,16 +501,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             );
             if (expressCaller != address(0)) {
                 amount = tokenManager.giveToken(expressCaller, amount);
-                emit ExpressExecutionWithDataFulfilled(
-                    tokenId,
-                    sourceChain,
-                    sourceAddress,
-                    destinationAddress,
-                    amount,
-                    data,
-                    sendHash,
-                    expressCaller
-                );
                 return;
             }
         }
