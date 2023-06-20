@@ -25,15 +25,7 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplement
         bytes calldata data
     ) external payable;
 
-    function sendSelf(address from, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable;
-
-    function callContractWithSelf(
-        address from,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes calldata data
-    ) external payable;
+    function transmitInterchainTransfer(address from, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount, bytes calldata metadata) external payable;
 
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
 

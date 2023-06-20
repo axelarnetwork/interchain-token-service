@@ -5,7 +5,7 @@ const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
-const { defaultAbiCoder, keccak256 } = ethers.utils;
+const { defaultAbiCoder, solidityPack, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 

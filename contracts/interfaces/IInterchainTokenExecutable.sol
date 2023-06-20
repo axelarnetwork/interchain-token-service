@@ -18,5 +18,5 @@ interface IInterchainTokenExecutable {
         uint256 amount
     ) external;
 
-    function acceptsExpressExecution() external view returns (bool);
+    function acceptsExpressExecution() external returns (bool);
 }

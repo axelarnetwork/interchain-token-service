@@ -53,9 +53,7 @@ contract FlowLimit is IFlowLimit {
         }
     }
 
-    function _addFlow(uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal {
-        uint256 flowLimit = getFlowLimit();
-        if (flowLimit == 0) return;
+    function _addFlow(uint256 flowLimit, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal {
         uint256 flowToAdd;
         uint256 flowToCompare;
         assembly {
@@ -69,16 +67,20 @@ contract FlowLimit is IFlowLimit {
     }
 
     function _addFlowOut(uint256 flowOutAmount) internal {
+        uint256 flowLimit = getFlowLimit();
+        if (flowLimit == 0) return;
         uint256 epoch = block.timestamp / EPOCH_TIME;
         uint256 slotToAdd = _getFlowOutSlot(epoch);
         uint256 slotToCompare = _getFlowInSlot(epoch);
-        _addFlow(slotToAdd, slotToCompare, flowOutAmount);
+        _addFlow(flowLimit, slotToAdd, slotToCompare, flowOutAmount);
     }
 
     function _addFlowIn(uint256 flowInAmount) internal {
+        uint256 flowLimit = getFlowLimit();
+        if (flowLimit == 0) return;
         uint256 epoch = block.timestamp / EPOCH_TIME;
         uint256 slotToAdd = _getFlowInSlot(epoch);
         uint256 slotToCompare = _getFlowOutSlot(epoch);
-        _addFlow(slotToAdd, slotToCompare, flowInAmount);
+        _addFlow(flowLimit, slotToAdd, slotToCompare, flowInAmount);
     }
 }

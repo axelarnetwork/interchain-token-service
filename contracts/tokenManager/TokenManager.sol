@@ -98,14 +98,19 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     /// @param destinationChain the name of the chain to send tokens to.
     /// @param destinationAddress the address of the user to send tokens to.
     /// @param amount the amount of tokens to take from msg.sender.
-    function sendSelf(
+    function transmitInterchainTransfer(
         address sender,
         string calldata destinationChain,
         bytes calldata destinationAddress,
-        uint256 amount
+        uint256 amount,
+        bytes calldata metadata
     ) external payable virtual onlyToken {
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
+        if(metadata.length != 0) {
+            uint32 version;
+            (version, metadata) = _decodeMetadata(metadata);
+        }
         _transmitSendToken(sender, destinationChain, destinationAddress, amount);
     }
 
@@ -215,5 +220,18 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
      */
     function _getTokenId() internal view returns (bytes32 tokenId) {
         tokenId = ITokenManagerProxy(address(this)).tokenId();
+    }
+
+    function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes calldata data) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            data.length := sub(metadata.length, 4)
+            data.offset := add(metadata.offset, 4)
+            version := calldataload(metadata.offset)
+        }
+    }
+
+    function test(bytes calldata metadata) external pure returns (uint32 version, bytes calldata data) {
+        return _decodeMetadata(metadata);
     }
 }
