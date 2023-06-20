@@ -5,7 +5,7 @@ const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
-const { defaultAbiCoder, keccak256 } = ethers.utils;
+const { defaultAbiCoder, solidityPack, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 
@@ -878,8 +878,8 @@ describe('Interchain Token Service', () => {
                 } else if (type === 'liquidityPool') {
                     transferToAddress = liquidityPool.address;
                 }
-
-                await expect(token.interchainTransfer(destChain, destAddress, amount, data, { value: gasValue }))
+                const metadata = solidityPack(['uint32', 'bytes'], [0, data]);
+                await expect(token.interchainTransfer(destChain, destAddress, amount, metadata, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -897,7 +897,7 @@ describe('Interchain Token Service', () => {
         const sourceChain = 'source chain';
         const sourceAddress = '0x1234';
         const amount = 1234;
-        const destinationAddress = (new Wallet(getRandomBytes32())).address;
+        const destinationAddress = new Wallet(getRandomBytes32()).address;
         const tokenName = 'name';
         const tokenSymbol = 'symbol';
         const tokenDecimals = 16;
@@ -908,11 +908,11 @@ describe('Interchain Token Service', () => {
         let token;
 
         before(async () => {
-            [token, , tokenId] = await deployFunctions.lockUnlock(tokenName, tokenSymbol, tokenDecimals, amount*2, true);
-            await (await token.approve(service.address, amount*2)).wait();
+            [token, , tokenId] = await deployFunctions.lockUnlock(tokenName, tokenSymbol, tokenDecimals, amount * 2, true);
+            await (await token.approve(service.address, amount * 2)).wait();
             data = defaultAbiCoder.encode(['address', 'string'], [destinationAddress, message]);
             executable = await deployContract(wallet, 'InterchainExecutableTest');
-        })
+        });
 
         it('Should express execute', async () => {
             await expect(service.expressReceiveToken(tokenId, destinationAddress, amount, sendHash))
@@ -923,7 +923,9 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should express execute with token', async () => {
-            await expect(service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, executable.address, amount, data, sendHash))
+            await expect(
+                service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, executable.address, amount, data, sendHash),
+            )
                 .to.emit(service, 'ExpressReceivedWithData')
                 .withArgs(tokenId, sourceChain, sourceAddress, executable.address, amount, data, sendHash, wallet.address)
                 .and.to.emit(token, 'Transfer')
@@ -933,13 +935,13 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(executable, 'MessageReceived')
                 .withArgs(sourceChain, sourceAddress, destinationAddress, message, tokenId, amount);
         });
-    })   
-    
+    });
+
     describe('Express Receive Remote Tokens', () => {
         const sourceChain = 'source chain';
         let sourceAddress;
         const amount = 1234;
-        const destAddress = (new Wallet(getRandomBytes32())).address;
+        const destAddress = new Wallet(getRandomBytes32()).address;
         before(async () => {
             sourceAddress = service.address.toLowerCase();
         });
@@ -952,7 +954,6 @@ describe('Interchain Token Service', () => {
             const sendHash = getRandomBytes32();
 
             await (await service.expressReceiveToken(tokenId, destAddress, amount, sendHash)).wait();
-            
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'],
@@ -969,7 +970,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive mint/burn token', async () => {
             const [token, , tokenId] = await deployFunctions.mintBurn(`Test Token Mint Burn`, 'TT', 12, amount);
-            
+
             await (await token.approve(service.address, amount)).wait();
 
             const sendHash = getRandomBytes32();
@@ -1031,7 +1032,7 @@ describe('Interchain Token Service', () => {
             await (await token.transfer(tokenManager.address, amount)).wait();
             await (await token.approve(service.address, amount)).wait();
 
-            const sendHash = getRandomBytes32();            
+            const sendHash = getRandomBytes32();
             const msg = `lock/unlock`;
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
             const payload = defaultAbiCoder.encode(
@@ -1039,15 +1040,8 @@ describe('Interchain Token Service', () => {
                 [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddressForService, data, sendHash],
             );
 
-            await (await service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, sendHash)).wait();
-
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(token, 'Transfer')
-                .withArgs(tokenManager.address, wallet.address, amount)
-                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
-                .withArgs(
+            await (
+                await service.expressReceiveTokenWithData(
                     tokenId,
                     sourceChain,
                     sourceAddressForService,
@@ -1055,8 +1049,16 @@ describe('Interchain Token Service', () => {
                     amount,
                     data,
                     sendHash,
-                    wallet.address,
-                );
+                )
+            ).wait();
+
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(tokenManager.address, wallet.address, amount)
+                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
+                .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, sendHash, wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1073,15 +1075,8 @@ describe('Interchain Token Service', () => {
                 [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddressForService, data, sendHash],
             );
 
-            await (await service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, sendHash)).wait();
-
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(token, 'Transfer')
-                .withArgs(AddressZero, wallet.address, amount)
-                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
-                .withArgs(
+            await (
+                await service.expressReceiveTokenWithData(
                     tokenId,
                     sourceChain,
                     sourceAddressForService,
@@ -1089,8 +1084,16 @@ describe('Interchain Token Service', () => {
                     amount,
                     data,
                     sendHash,
-                    wallet.address,
-                );
+                )
+            ).wait();
+
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(AddressZero, wallet.address, amount)
+                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
+                .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, sendHash, wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1108,15 +1111,8 @@ describe('Interchain Token Service', () => {
                 [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddressForService, data, sendHash],
             );
 
-            await (await service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, sendHash)).wait();
-
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
-                .to.emit(token, 'Transfer')
-                .withArgs(liquidityPool.address, wallet.address, amount)
-                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
-                .withArgs(
+            await (
+                await service.expressReceiveTokenWithData(
                     tokenId,
                     sourceChain,
                     sourceAddressForService,
@@ -1124,8 +1120,16 @@ describe('Interchain Token Service', () => {
                     amount,
                     data,
                     sendHash,
-                    wallet.address,
-                );
+                )
+            ).wait();
+
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(liquidityPool.address, wallet.address, amount)
+                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
+                .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, sendHash, wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });

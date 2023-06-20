@@ -10,22 +10,17 @@ import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { Implementation } from './Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
-contract StandardizedToken is InterchainToken, Implementation, Distributable, IERC20BurnableMintable {
+abstract contract StandardizedToken is InterchainToken, Implementation, Distributable, IERC20BurnableMintable {
     using AddressBytesUtils for bytes;
 
     address public tokenManager;
-    bool public tokenManagerRequiresApproval_;
 
-    // bytes32(uint256(keccak256('standardized-token')) - 1)
+    // keccak256('standardized-token'))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 public constant contractId = 0xf1ebb9a018916df92653eef7dc1160cdec8e19ba8f75f1500287c87894dc8db7;
+    bytes32 public constant contractId = 0x8f0d3a2d3a4c902b07e15645c3d56cc5d37941403c982473aeb5a1c964a34cd5;
 
     function getTokenManager() public view override returns (ITokenManager) {
         return ITokenManager(tokenManager);
-    }
-
-    function tokenManagerRequiresApproval() public view override returns (bool) {
-        return tokenManagerRequiresApproval_;
     }
 
     function setup(bytes calldata params) external override onlyProxy {
@@ -36,7 +31,6 @@ contract StandardizedToken is InterchainToken, Implementation, Distributable, IE
             (tokenManager_, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
             _setDistributor(distributor_);
             tokenManager = tokenManager_;
-            tokenManagerRequiresApproval_ = distributor_ != tokenManager;
             _setDomainTypeSignatureHash(tokenName);
             name = tokenName;
             // TODO: symbol, decimals aren't being set

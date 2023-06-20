@@ -10,12 +10,15 @@ import { StandardizedTokenProxy } from '../proxies/StandardizedTokenProxy.sol';
 
 contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
     Create3Deployer public immutable deployer;
-    address public immutable implementationAddress;
+    address public immutable implementationMintBurnAddress;
+    address public immutable implementationLockUnlockAddress;
 
-    constructor(address deployer_, address implementationAddress_) {
-        if (deployer_ == address(0) || implementationAddress_ == address(0)) revert AddressZero();
+    constructor(address deployer_, address implementationLockUnlockAddress_, address implementationMintBurnAddress_) {
+        if (deployer_ == address(0) || implementationLockUnlockAddress_ == address(0) || implementationMintBurnAddress_ == address(0))
+            revert AddressZero();
         deployer = Create3Deployer(deployer_);
-        implementationAddress = implementationAddress_;
+        implementationLockUnlockAddress = implementationLockUnlockAddress_;
+        implementationMintBurnAddress = implementationMintBurnAddress_;
     }
 
     function deployStandardizedToken(
@@ -29,6 +32,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
         address mintTo
     ) external payable {
         bytes memory bytecode;
+        address implementationAddress = distributor == tokenManager ? implementationMintBurnAddress : implementationLockUnlockAddress;
         {
             bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
             bytecode = abi.encodePacked(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));

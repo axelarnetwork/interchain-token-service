@@ -368,7 +368,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
         amount = token.balanceOf(destinationAddress) - balance;
-        if(!IInterchainTokenExecutable(destinationAddress).acceptsExpressExecution()) revert DoesNotAcceptExpressExecute(destinationAddress);
+        if (!IInterchainTokenExecutable(destinationAddress).acceptsExpressExecution())
+            revert DoesNotAcceptExpressExecute(destinationAddress);
         _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
         _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
     }
@@ -439,8 +440,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     /// @param flowLimits and array of the flowLimit to set, identical in size to tokenIds.
     function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOwner {
         uint256 length = tokenIds.length;
-        if(length != flowLimits.length) revert LengthMismatch();
-        for(uint256 i; i < length; ++i) {
+        if (length != flowLimits.length) revert LengthMismatch();
+        for (uint256 i; i < length; ++i) {
             ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
             tokenManager.setFlowLimit(flowLimits[i]);
         }
