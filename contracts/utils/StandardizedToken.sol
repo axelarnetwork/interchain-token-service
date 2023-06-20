@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.9;
 
+import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+
 import { InterchainToken } from '../interchainToken/InterchainToken.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
@@ -14,7 +16,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-contract StandardizedToken is InterchainToken, Implementation, Distributable {
+contract StandardizedToken is InterchainToken, Implementation, Distributable, IERC20BurnableMintable {
     using AddressBytesUtils for bytes;
 
     address public tokenManager;
