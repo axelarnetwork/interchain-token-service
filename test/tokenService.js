@@ -781,50 +781,52 @@ describe('Interchain Token Service', () => {
         const gasValue = 90;
 
         for (const type of ['lockUnlock', 'mintBurn', 'liquidityPool']) {
-            it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
-                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, true);
+            for(const metadata of ['0x', '0x00000000']) {
+                it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
+                    const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, true);
 
-                let sendHash;
-                let payloadHash;
+                    let sendHash;
+                    let payloadHash;
 
-                function checkSendHash(hash) {
-                    return sendHash === hash;
-                }
+                    function checkSendHash(hash) {
+                        return sendHash === hash;
+                    }
 
-                function checkPayloadHash(hash) {
-                    return payloadHash === hash;
-                }
+                    function checkPayloadHash(hash) {
+                        return payloadHash === hash;
+                    }
 
-                function checkPayload(payload) {
-                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
+                    function checkPayload(payload) {
+                        const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes32'], payload);
 
-                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
-                    if (emmitted[1] !== tokenId) return false;
-                    if (emmitted[2] !== destAddress) return false;
-                    if (Number(emmitted[3]) !== amount) return false;
-                    sendHash = emmitted[4];
-                    payloadHash = keccak256(payload);
-                    return true;
-                }
+                        if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
+                        if (emmitted[1] !== tokenId) return false;
+                        if (emmitted[2] !== destAddress) return false;
+                        if (Number(emmitted[3]) !== amount) return false;
+                        sendHash = emmitted[4];
+                        payloadHash = keccak256(payload);
+                        return true;
+                    }
 
-                let transferToAddress = AddressZero;
+                    let transferToAddress = AddressZero;
 
-                if (type === 'lockUnlock') {
-                    transferToAddress = tokenManager.address;
-                } else if (type === 'liquidityPool') {
-                    transferToAddress = liquidityPool.address;
-                }
+                    if (type === 'lockUnlock') {
+                        transferToAddress = tokenManager.address;
+                    } else if (type === 'liquidityPool') {
+                        transferToAddress = liquidityPool.address;
+                    }
 
-                await expect(token.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
-                    .and.to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, transferToAddress, amount)
-                    .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
-                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'TokenSent')
-                    .withArgs(tokenId, destChain, destAddress, amount, checkSendHash);
-            });
+                    await expect(token.interchainTransfer(destChain, destAddress, amount, metadata, { value: gasValue }))
+                        .and.to.emit(token, 'Transfer')
+                        .withArgs(wallet.address, transferToAddress, amount)
+                        .and.to.emit(gateway, 'ContractCall')
+                        .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
+                        .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                        .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
+                        .to.emit(service, 'TokenSent')
+                        .withArgs(tokenId, destChain, destAddress, amount, checkSendHash);
+                });
+            }
         }
     });
 
@@ -878,7 +880,7 @@ describe('Interchain Token Service', () => {
                 } else if (type === 'liquidityPool') {
                     transferToAddress = liquidityPool.address;
                 }
-                
+
                 const metadata = solidityPack(['uint32', 'bytes'], [0, data]);
                 await expect(token.interchainTransfer(destChain, destAddress, amount, metadata, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
