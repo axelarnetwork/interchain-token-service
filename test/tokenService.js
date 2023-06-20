@@ -878,6 +878,7 @@ describe('Interchain Token Service', () => {
                 } else if (type === 'liquidityPool') {
                     transferToAddress = liquidityPool.address;
                 }
+                
                 const metadata = solidityPack(['uint32', 'bytes'], [0, data]);
                 await expect(token.interchainTransfer(destChain, destAddress, amount, metadata, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')

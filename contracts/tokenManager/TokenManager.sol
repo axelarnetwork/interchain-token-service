@@ -116,9 +116,9 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
                 revert InvalidMetadataVersion(version);
             }
             _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, metadata);
-            return;
+        } else {
+            _transmitSendToken(sender, destinationChain, destinationAddress, amount);
         }
-        _transmitSendToken(sender, destinationChain, destinationAddress, amount);
     }
 
     /// @notice Calls the service to initiate the a cross-chain transfer with data after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
