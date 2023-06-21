@@ -143,9 +143,11 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert when registering a canonical token if paused', async () => {
-            await service.setPaused(true);
+            let tx = await service.setPaused(true);
+            await tx.wait();
             await expect(service.registerCanonicalToken(token.address)).to.be.revertedWithCustomError(service, 'Paused');
-            await service.setPaused(false);
+            tx = await service.setPaused(false);
+            await tx.wait();
         });
     });
 
@@ -209,7 +211,9 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote standardized token deployment if paused', async () => {
-            await service.setPaused(true);
+            let tx = await service.setPaused(true);
+            await tx.wait();
+
             const chain = 'chain1';
             const gasValue = 1e6;
 
@@ -217,7 +221,8 @@ describe('Interchain Token Service', () => {
                 service,
                 'Paused',
             );
-            await service.setPaused(false);
+            tx = await service.setPaused(false);
+            await tx.wait();
         });
     });
 
@@ -306,7 +311,9 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert when registering a standardized token if paused', async () => {
-            await service.setPaused(true);
+            let tx = await service.setPaused(true);
+            await tx.wait();
+            await tx.wait();
 
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
@@ -314,7 +321,8 @@ describe('Interchain Token Service', () => {
             await expect(
                 service.deployAndRegisterStandardizedToken(salt, tokenName, tokenSymbol, tokenDecimals, mintAmount, tokenManagerAddress),
             ).to.be.revertedWithCustomError(service, 'Paused');
-            await service.setPaused(false);
+            tx = await service.setPaused(false);
+            await tx.wait();
         });
     });
 
@@ -354,7 +362,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote standardized token deployment if paused', async () => {
-            await service.setPaused(true);
+            let tx = await service.setPaused(true);
+            await tx.wait();
 
             await expect(
                 service.deployAndRegisterRemoteStandardizedTokens(
@@ -368,7 +377,8 @@ describe('Interchain Token Service', () => {
                     { value: gasValue },
                 ),
             ).to.be.revertedWithCustomError(service, 'Paused');
-            await service.setPaused(false);
+            tx = await service.setPaused(false);
+            await tx.wait();
         });
     });
 
@@ -528,7 +538,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert when deploying a custom token manager if paused', async () => {
-            await service.setPaused(true);
+            let txPaused = await service.setPaused(true);
+            await txPaused.wait();
 
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
@@ -541,7 +552,8 @@ describe('Interchain Token Service', () => {
 
             const tx = service.deployCustomTokenManager(salt, LOCK_UNLOCK, params);
             await expect(tx).to.be.revertedWithCustomError(service, 'Paused');
-            await service.setPaused(false);
+            txPaused = await service.setPaused(false);
+            await txPaused.wait();
         });
     });
 
@@ -568,7 +580,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote custom token manager deployment if paused', async () => {
-            await service.setPaused(true);
+            let tx = await service.setPaused(true);
+            await tx.wait();
 
             const salt = getRandomBytes32();
             const chain = 'chain1';
@@ -579,7 +592,8 @@ describe('Interchain Token Service', () => {
             await expect(
                 service.deployRemoteCustomTokenManager(salt, chain, type, params, gasValue, { value: gasValue }),
             ).to.be.revertedWithCustomError(service, 'Paused');
-            await service.setPaused(false);
+            tx = await service.setPaused(false);
+            await tx.wait();
         });
     });
 
@@ -606,7 +620,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote custom token manager deployment if paused', async () => {
-            await service.setPaused(true);
+            let tx = await service.setPaused(true);
+            await tx.wait();
 
             const salt = getRandomBytes32();
             const chain = 'chain1';
@@ -617,7 +632,8 @@ describe('Interchain Token Service', () => {
             await expect(
                 service.deployRemoteCustomTokenManager(salt, chain, type, params, gasValue, { value: gasValue }),
             ).to.be.revertedWithCustomError(service, 'Paused');
-            await service.setPaused(false);
+            tx = await service.setPaused(false);
+            await tx.wait();
         });
     });
 
