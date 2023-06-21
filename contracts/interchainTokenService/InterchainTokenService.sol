@@ -329,15 +329,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     /// @param tokenId the tokenId of the TokenManager used.
     /// @param destinationAddress the destinationAddress for the sendToken.
     /// @param amount the amount of token to give.
-    /// @param sendHash the sendHash detected at the sourceChain.
-    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash) external notPaused {
+    /// @param commandId the commandId calculated from the event at the sourceChain.
+    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external {
+        if(gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
         uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
         amount = token.balanceOf(destinationAddress) - balance;
-        _setExpressReceiveToken(tokenId, destinationAddress, amount, sendHash, caller);
+        _setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, caller);
     }
 
     // TODO: express receive with data should be opt-in since the data is opaque and might be high value
@@ -352,7 +353,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     /// @param destinationAddress the destinationAddress for the sendToken.
     /// @param amount the amount of token to give.
     /// @param data the data to be passed to destinationAddress after giving them the tokens specified.
-    /// @param sendHash the sendHash detected at the sourceChain.
+    /// @param commandId the commandId calculated from the event at the sourceChain.
     function expressReceiveTokenWithData(
         bytes32 tokenId,
         string memory sourceChain,
@@ -360,8 +361,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         address destinationAddress,
         uint256 amount,
         bytes calldata data,
-        bytes32 sendHash
-    ) external notPaused {
+        bytes32 commandId
+    ) external {
+        if(gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
@@ -371,14 +373,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         if (!IInterchainTokenExecutable(destinationAddress).acceptsExpressExecution())
             revert DoesNotAcceptExpressExecute(destinationAddress);
         _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
-        _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, caller);
+        _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, caller);
     }
 
     /*********************\
     TOKEN MANAGER FUNCTIONS
     \*********************/
 
-    /// @notice Transmit a sendToken for the given tokenId.
+    /// @notice Transmit a sendToken for the given tokenId after decoding the metadata.
     /// @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
     /// @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
     /// @param destinationChain the name of the chain to send tokens to.
@@ -389,45 +391,26 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         address sourceAddress,
         string calldata destinationChain,
         bytes calldata destinationAddress,
-        uint256 amount
-    ) external payable onlyTokenManager(tokenId) notPaused {
-        // TODO: what's the point of sendHash? block.number can't always enforce uniqueness
-        // TODO: For express calls, I think we can accept the similar restriction as forecallable. For express with data, the app can provide unique data in payload if it wants.
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
-        bytes memory payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount, sendHash);
-        _callContract(destinationChain, payload, msg.value, sourceAddress);
-        emit TokenSent(tokenId, destinationChain, destinationAddress, amount, sendHash);
-    }
-
-    /// @notice Transmit a sendTokenWithData for the given tokenId.
-    /// @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
-    /// @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
-    /// @param destinationChain the name of the chain to send tokens to.
-    /// @param destinationAddress the destinationAddress for the sendToken.
-    /// @param amount the amount of token to give.
-    /// @param data the data to be passed to the destiantion.
-    function transmitSendTokenWithData(
-        bytes32 tokenId,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes memory destinationAddress,
         uint256 amount,
-        bytes calldata data
+        bytes calldata metadata
     ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes32 sendHash = keccak256(abi.encode(tokenId, block.number, amount, sourceAddress));
-        {
-            bytes memory payload = abi.encode(
-                SELECTOR_SEND_TOKEN_WITH_DATA,
-                tokenId,
-                destinationAddress,
-                amount,
-                sourceAddress.toBytes(),
-                data,
-                sendHash
-            );
+        bytes memory payload;
+        if (metadata.length < 4) {
+            payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount);
             _callContract(destinationChain, payload, msg.value, sourceAddress);
+            emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
+            return;
         }
-        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, data, sendHash);
+        {
+            uint32 version;
+            (version, metadata) = _decodeMetadata(metadata);
+            if (version > 0) {
+                revert InvalidMetadataVersion(version);
+            }
+        }
+        payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
+        _callContract(destinationChain, payload, msg.value, sourceAddress);
+        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
     }
 
     /*************\
@@ -480,16 +463,21 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     }
 
     function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
-        (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount, bytes32 sendHash) = abi.decode(
+        (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
             payload,
-            (uint256, bytes32, bytes, uint256, bytes32)
+            (uint256, bytes32, bytes, uint256)
         );
+        bytes32 commandId;
+        // solhint-disable-next-line no-inline-solidity
+        assembly {
+            commandId := calldataload(4)
+        }
         address destinationAddress = destinationAddressBytes.toAddress();
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        address expressCaller = _popExpressReceiveToken(tokenId, destinationAddress, amount, sendHash);
+        address expressCaller = _popExpressReceiveToken(tokenId, destinationAddress, amount, commandId);
         if (expressCaller == address(0)) {
             amount = tokenManager.giveToken(destinationAddress, amount);
-            emit TokenReceived(tokenId, sourceChain, destinationAddress, amount, sendHash);
+            emit TokenReceived(tokenId, sourceChain, destinationAddress, amount);
         } else {
             amount = tokenManager.giveToken(expressCaller, amount);
         }
@@ -500,13 +488,17 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         uint256 amount;
         bytes memory sourceAddress;
         bytes memory data;
-        bytes32 sendHash;
         address destinationAddress;
+        bytes32 commandId;
+        // solhint-disable-next-line no-inline-solidity
+        assembly {
+            commandId := calldataload(4)
+        }
         {
             bytes memory destinationAddressBytes;
-            (, tokenId, destinationAddressBytes, amount, sourceAddress, data, sendHash) = abi.decode(
+            (, tokenId, destinationAddressBytes, amount, sourceAddress, data) = abi.decode(
                 payload,
-                (uint256, bytes32, bytes, uint256, bytes, bytes, bytes32)
+                (uint256, bytes32, bytes, uint256, bytes, bytes)
             );
             destinationAddress = destinationAddressBytes.toAddress();
         }
@@ -519,7 +511,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
                 destinationAddress,
                 amount,
                 data,
-                sendHash
+                commandId
             );
             if (expressCaller != address(0)) {
                 amount = tokenManager.giveToken(expressCaller, amount);
@@ -528,7 +520,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         }
         amount = tokenManager.giveToken(destinationAddress, amount);
         _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
-        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data, sendHash);
+        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
     }
 
     function _processDeployTokenManagerPayload(bytes calldata payload) internal {
@@ -671,5 +663,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             revert StandardizedTokenDeploymentFailed();
         }
         emit StandardizedTokenDeployed(tokenId, name, symbol, decimals, mintAmount, mintTo);
+    }
+
+    function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes calldata data) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            data.length := sub(metadata.length, 4)
+            data.offset := add(metadata.offset, 4)
+            version := calldataload(sub(metadata.offset, 28))
+        }
     }
 }
