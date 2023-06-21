@@ -34,7 +34,9 @@
   },
   "devDependencies": {
     "axios": "^0.27.2",
-    "dotenv": "^16.0.1"
+    "dotenv": "^16.0.1",
+    "solidity-coverage": "^0.8.2",
+    "solidity-docgen": "^0.6.0-beta.35"
   },
   "description": ""
 }

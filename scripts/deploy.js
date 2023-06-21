@@ -53,7 +53,6 @@ async function deployInterchainTokenService(
     const proxy = await deployCreate3Contract(create3DeployerAddress, wallet, InterchainTokenServiceProxy, deploymentKey, [
         implementation.address,
         wallet.address,
-        '0x',
     ]);
     const service = new Contract(proxy.address, implementation.interface, wallet);
     return service;
