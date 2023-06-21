@@ -132,30 +132,34 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
-        bytes calldata destinationAddress,
+        bytes memory destinationAddress,
         uint256 amount,
         bytes calldata metadata
     ) external payable;
 
-    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
+    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;
 
     function setPaused(bool paused) external;
 
-    /// @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
-    /// @param tokenId the tokenId of the TokenManager used.
-    /// @param destinationAddress the destinationAddress for the sendToken.
-    /// @param amount the amount of token to give.
-    /// @param commandId the commandId calculated from the event at the sourceChain.
+    /**
+     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
+     * @param tokenId the tokenId of the TokenManager used.
+     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param amount the amount of token to give.
+     * @param commandId the commandId calculated from the event at the sourceChain.
+     */
     function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external;
 
-    /// @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
-    /// @param tokenId the tokenId of the TokenManager used.
-    /// @param sourceChain the name of the chain where the call came from.
-    /// @param sourceAddress the caller of callContractWithInterchainToken.
-    /// @param destinationAddress the destinationAddress for the sendToken.
-    /// @param amount the amount of token to give.
-    /// @param data the data to be passed to destinationAddress after giving them the tokens specified.
-    /// @param commandId the commandId calculated from the event at the sourceChain.
+    /**
+     * @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
+     * @param tokenId the tokenId of the TokenManager used.
+     * @param sourceChain the name of the chain where the call came from.
+     * @param sourceAddress the caller of callContractWithInterchainToken.
+     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param amount the amount of token to give.
+     * @param data the data to be passed to destinationAddress after giving them the tokens specified.
+     * @param commandId the commandId calculated from the event at the sourceChain.
+     */
     function expressReceiveTokenWithData(
         bytes32 tokenId,
         string memory sourceChain,

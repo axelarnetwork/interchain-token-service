@@ -11,15 +11,18 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { Implementation } from '../utils/Implementation.sol';
 
-/// @title The main functionality of TokenManagers.
-/// @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
+/**
+ * @title The main functionality of TokenManagers.
+ * @author Foivos Antoulinakis
+ * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
+ */
 abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implementation {
     using AddressBytesUtils for bytes;
 
     IInterchainTokenService public immutable interchainTokenService;
 
     /**
-     * @dev Constructs the TokenManager contract.
+     * @notice Constructs the TokenManager contract.
      * @param interchainTokenService_ The address of the interchain token service
      */
     constructor(address interchainTokenService_) {
@@ -44,18 +47,25 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     }
 
     /**
-     * @dev A function that should return the address of the token.
+     * @notice A function that should return the address of the token.
      * Must be overridden in the inheriting contract.
      * @return address address of the token.
      */
     function tokenAddress() public view virtual returns (address);
 
-    /// @dev This is supposed to be hidden by the proxy and only be called once from the proxy constructor
-    /// @param params the parameters to be used to initialize the TokenManager. The exact format depends on the type of TokenManager used but the first 32 bytes are reserved for the address of the admin, stored as bytes (to be compatible with non-EVM chains)
+    /**
+     * @dev This function should only be called by the proxy, and only once from the proxy constructor
+     * @param params the parameters to be used to initialize the TokenManager. The exact format depends
+     * on the type of TokenManager used but the first 32 bytes are reserved for the address of the admin,
+     * stored as bytes (to be compatible with non-EVM chains)
+     */
     function setup(bytes calldata params) external override onlyProxy {
         bytes memory adminBytes = abi.decode(params, (bytes));
         address admin_;
-        // Specifying an empty admin will default to the service being the admin. This makes it easy to deploy remote standardized tokens without knowing anything about the service address at the destination.
+        /**
+         * @dev Specifying an empty admin will default to the service being the admin. This makes it easy to deploy
+         * remote standardized tokens without knowing anything about the service address at the destination.
+         */
         if (adminBytes.length == 0) {
             admin_ = address(interchainTokenService);
         } else {
@@ -65,10 +75,12 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         _setup(params);
     }
 
-    /// @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user.
-    /// @param destinationChain the name of the chain to send tokens to.
-    /// @param destinationAddress the address of the user to send tokens to.
-    /// @param amount the amount of tokens to take from msg.sender.
+    /**
+     * @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user.
+     * @param destinationChain the name of the chain to send tokens to.
+     * @param destinationAddress the address of the user to send tokens to.
+     * @param amount the amount of tokens to take from msg.sender.
+     */
     function sendToken(
         string calldata destinationChain,
         bytes calldata destinationAddress,
@@ -88,11 +100,13 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         );
     }
 
-    /// @notice Calls the service to initiate the a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
-    /// @param destinationChain the name of the chain to send tokens to.
-    /// @param destinationAddress the address of the user to send tokens to.
-    /// @param amount the amount of tokens to take from msg.sender.
-    /// @param data the data to pass to the destination contract.
+    /**
+     * @notice Calls the service to initiate the a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
+     * @param destinationChain the name of the chain to send tokens to.
+     * @param destinationAddress the address of the user to send tokens to.
+     * @param amount the amount of tokens to take from msg.sender.
+     * @param data the data to pass to the destination contract.
+     */
     function callContractWithInterchainToken(
         string calldata destinationChain,
         bytes calldata destinationAddress,
@@ -137,24 +151,28 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         );
     }
 
-    /// @notice This function gives token to a specified address. Can only be called by the service.
-    /// @param destinationAddress the address to give tokens to.
-    /// @param amount the amount of token to give.
-    /// @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+    /**
+     * @notice This function gives token to a specified address. Can only be called by the service.
+     * @param destinationAddress the address to give tokens to.
+     * @param amount the amount of token to give.
+     * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+     */
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
         amount = _giveToken(destinationAddress, amount);
         _addFlowIn(amount);
         return amount;
     }
 
-    /// @notice This function sets the flow limit for this TokenManager. Can only be called by the admin.
-    /// @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
+    /**
+     * @notice This function sets the flow limit for this TokenManager. Can only be called by the admin.
+     * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
+     */
     function setFlowLimit(uint256 flowLimit) external onlyAdmin {
         _setFlowLimit(flowLimit);
     }
 
     /**
-     * @dev Transfers tokens from a specific address to this contract.
+     * @notice Transfers tokens from a specific address to this contract.
      * Must be overridden in the inheriting contract.
      * @param from The address from which the tokens will be sent
      * @param amount The amount of tokens to receive
@@ -163,7 +181,7 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     function _takeToken(address from, uint256 amount) internal virtual returns (uint256);
 
     /**
-     * @dev Transfers tokens from this contract to a specific address.
+     * @notice Transfers tokens from this contract to a specific address.
      * Must be overridden in the inheriting contract.
      * @param from The address to which the tokens will be sent
      * @param amount The amount of tokens to send
@@ -179,7 +197,7 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     function _setup(bytes calldata params) internal virtual;
 
     /**
-     * @dev Gets the token ID from the token manager proxy.
+     * @notice Gets the token ID from the token manager proxy.
      * @return tokenId The ID of the token
      */
     function _getTokenId() internal view returns (bytes32 tokenId) {

@@ -27,10 +27,13 @@ import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
 import { Multicall } from '../utils/Multicall.sol';
 
-/// @title The Interchain Token Service
-/// @notice This contract is responsible for facilitating cross chain token transfers.
-/// It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
-/// @dev The only storage used here is for ExpressCalls
+/**
+ * @title The Interchain Token Service
+ * @author Foivos Antoulinakis
+ * @notice This contract is responsible for facilitating cross chain token transfers.
+ * It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
+ * @dev The only storage used here is for ExpressCalls
+ */
 contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Upgradable, ExpressCallHandler, Pausable, Multicall {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
@@ -61,14 +64,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
 
-    /// @dev All of the varaibles passed here are stored as immutable variables.
-    /// @param tokenManagerDeployer_ the address of the TokenManagerDeployer.
-    /// @param standardizedTokenDeployer_ the address of the StandardizedTokenDeployer.
-    /// @param gateway_ the address of the AxelarGateway.
-    /// @param gasService_ the address of the AxelarGasService.
-    /// @param linkerRouter_ the address of the LinkerRouter.
-    /// @param tokenManagerImplementations this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool.
-    /// @param chainName_ the name of the current chain.
+    /**
+     * @dev All of the varaibles passed here are stored as immutable variables.
+     * @param tokenManagerDeployer_ the address of the TokenManagerDeployer.
+     * @param standardizedTokenDeployer_ the address of the StandardizedTokenDeployer.
+     * @param gateway_ the address of the AxelarGateway.
+     * @param gasService_ the address of the AxelarGasService.
+     * @param linkerRouter_ the address of the LinkerRouter.
+     * @param tokenManagerImplementations this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool.
+     * @param chainName_ the name of the current chain.
+     */
     constructor(
         address tokenManagerDeployer_,
         address standardizedTokenDeployer_,
@@ -107,16 +112,20 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     MODIFIERS
     \*******/
 
-    /// @notice This modifier is used to ensure that only a remote InterchainTokenService can _execute this one.
-    /// @param sourceChain the source of the contract call.
-    /// @param sourceAddress the address that the call came from.
+    /**
+     * @notice This modifier is used to ensure that only a remote InterchainTokenService can _execute this one.
+     * @param sourceChain the source of the contract call.
+     * @param sourceAddress the address that the call came from.
+     */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
         if (!linkerRouter.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
         _;
     }
 
-    /// @notice This modifier is used to ensure certain functions can only be called by TokenManagers.
-    /// @param tokenId the `tokenId` of the TokenManager trying to perform the call.
+    /**
+     * @notice This modifier is used to ensure certain functions can only be called by TokenManagers.
+     * @param tokenId the `tokenId` of the TokenManager trying to perform the call.
+     */
     modifier onlyTokenManager(bytes32 tokenId) {
         if (msg.sender != getTokenManagerAddress(tokenId)) revert NotTokenManager();
         _;
@@ -126,61 +135,81 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     GETTERS
     \*****/
 
-    /// @notice Getter for the chain name.
-    /// @return name the name of the chain
+    /**
+     * @notice Getter for the chain name.
+     * @return name the name of the chain
+     */
     function getChainName() public view returns (string memory name) {
         name = chainName.toTrimmedString();
     }
 
-    /// @notice Calculates the address of a TokenManager from a specific tokenId. The TokenManager does not need to exist already.
-    /// @param tokenId the tokenId.
-    /// @return tokenManagerAddress deployement address of the TokenManager.
+    /**
+     * @notice Calculates the address of a TokenManager from a specific tokenId. The TokenManager does not need to exist already.
+     * @param tokenId the tokenId.
+     * @return tokenManagerAddress deployement address of the TokenManager.
+     */
     function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = deployer.deployedAddress(address(this), tokenId);
     }
 
-    /// @notice Returns the address of a TokenManager from a specific tokenId. The TokenManager needs to exist already.
-    /// @param tokenId the tokenId.
-    /// @return tokenManagerAddress deployement address of the TokenManager.
+    /**
+     * @notice Returns the address of a TokenManager from a specific tokenId. The TokenManager needs to exist already.
+     * @param tokenId the tokenId.
+     * @return tokenManagerAddress deployement address of the TokenManager.
+     */
     function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = getTokenManagerAddress(tokenId);
         if (ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerNotDeployed(tokenId);
     }
 
-    /// @notice Returns the address of the token that an existing tokenManager points to.
-    /// @param tokenId the tokenId.
-    /// @return tokenAddress the address of the token.
+    /**
+     * @notice Returns the address of the token that an existing tokenManager points to.
+     * @param tokenId the tokenId.
+     * @return tokenAddress the address of the token.
+     */
     function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress) {
         address tokenManagerAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenManagerAddress).tokenAddress();
     }
 
-    /// @notice Returns the address of the standardized token that would be deployed with a given tokenId. The token does not need to exist.
-    /// @param tokenId the tokenId.
-    /// @return tokenAddress the address of the standardized token.
+    /**
+     * @notice Returns the address of the standardized token that would be deployed with a given tokenId.
+     * The token does not need to exist.
+     * @param tokenId the tokenId.
+     * @return tokenAddress the address of the standardized token.
+     */
     function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
         tokenId = _getStandardizedTokenSalt(tokenId);
         tokenAddress = deployer.deployedAddress(address(this), tokenId);
     }
 
-    /// @notice Calculates the tokenId that would correspond to a canonical link for a given token. This will depend on what chain it is called from, unlike custom tokenIds.
-    /// @param tokenAddress the address of the token.
-    /// @return tokenId the tokenId that the canonical TokenManager would get (or has gotten) for the token.
+    /**
+     * @notice Calculates the tokenId that would correspond to a canonical link for a given token.
+     * This will depend on what chain it is called from, unlike custom tokenIds.
+     * @param tokenAddress the address of the token.
+     * @return tokenId the tokenId that the canonical TokenManager would get (or has gotten) for the token.
+     */
     function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_ID, chainNameHash, tokenAddress));
     }
 
-    /// @notice Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt. This will not depend on what chain it is called from, unlike canonical tokenIds.
-    /// @param sender the address of the TokenManager deployer.
-    /// @param salt the salt that the deployer uses for the deployment.
-    /// @return tokenId the tokenId that the custom TokenManager would get (or has gotten).
+    /**
+     * @notice Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt.
+     * This will not depend on what chain it is called from, unlike canonical tokenIds.
+     * @param sender the address of the TokenManager deployer.
+     * @param salt the salt that the deployer uses for the deployment.
+     * @return tokenId the tokenId that the custom TokenManager would get (or has gotten).
+     */
     function getCustomTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, sender, salt));
     }
 
-    /// @notice Getter function for TokenManager implementations. This will mainly be called by TokenManagerProxies to figure out their implementations
-    /// @param tokenManagerType the type of the TokenManager.
-    /// @return tokenManagerAddress the address of the TokenManagerImplementation.
+    /**
+     * @notice Getter function for TokenManager implementations. This will mainly be called by TokenManagerProxies
+     * to figure out their implementations
+     * @param tokenManagerType the type of the TokenManager.
+     * @return tokenManagerAddress the address of the TokenManagerImplementation.
+     */
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress) {
         // There could be a way to rewrite the following using assembly switch statements, which would be more gas efficient,
         // but accessing immutable variables and/or enum values seems to be tricky, and would reduce code readability.
@@ -193,27 +222,33 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         }
     }
 
-    /// @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-    /// @param admin the admin of the TokenManager.
-    /// @param tokenAddress the token to be managed.
-    /// @return params the resulting params to be passed to custom TokenManager deployments.
+    /**
+     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+     * @param admin the admin of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
     function getParamsLockUnlock(bytes memory admin, address tokenAddress) public pure returns (bytes memory params) {
         params = abi.encode(admin, tokenAddress);
     }
 
-    /// @notice Getter function for the parameters of a mint/burn TokenManager. Mainly to be used by frontends.
-    /// @param admin the admin of the TokenManager.
-    /// @param tokenAddress the token to be managed.
-    /// @return params the resulting params to be passed to custom TokenManager deployments.
+    /**
+     * @notice Getter function for the parameters of a mint/burn TokenManager. Mainly to be used by frontends.
+     * @param admin the admin of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
     function getParamsMintBurn(bytes memory admin, address tokenAddress) public pure returns (bytes memory params) {
         params = abi.encode(admin, tokenAddress);
     }
 
-    /// @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
-    /// @param admin the admin of the TokenManager.
-    /// @param tokenAddress the token to be managed.
-    /// @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
-    /// @return params the resulting params to be passed to custom TokenManager deployments.
+    /**
+     * @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
+     * @param admin the admin of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
     function getParamsLiquidityPool(
         bytes memory admin,
         address tokenAddress,
@@ -226,9 +261,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     USER FUNCTIONS
     \************/
 
-    /// @notice Used to register canonical tokens. Caller does not matter.
-    /// @param tokenAddress the token to be bridged.
-    /// @return tokenId the tokenId that was used for this canonical token.
+    /**
+     * @notice Used to register canonical tokens. Caller does not matter.
+     * @param tokenAddress the token to be bridged.
+     * @return tokenId the tokenId that was used for this canonical token.
+     */
     function registerCanonicalToken(address tokenAddress) external payable notPaused returns (bytes32 tokenId) {
         (, string memory tokenSymbol, ) = _validateToken(tokenAddress);
         if (gateway.tokenAddresses(tokenSymbol) == tokenAddress) revert GatewayToken();
@@ -236,11 +273,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
     }
 
-    /// @notice Used to deploy remote TokenManagers and standardized tokens for a canonical token. This needs to be called from the chain that registered the canonical token, and anyone can call it.
-    /// @param tokenId the tokenId of the canonical token.
-    /// @param destinationChain the name of the chain to deploy the TokenManager and standardized token to.
-    /// @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount specified needs to be passed to the call
-    /// @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
+    /**
+     * @notice Used to deploy remote TokenManagers and standardized tokens for a canonical token. This needs to be
+     * called from the chain that registered the canonical token, and anyone can call it.
+     * @param tokenId the tokenId of the canonical token.
+     * @param destinationChain the name of the chain to deploy the TokenManager and standardized token to.
+     * @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment.
+     * At least the amount specified needs to be passed to the call
+     * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
+     */
     function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable notPaused {
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
@@ -249,22 +290,28 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', '', destinationChain, gasValue);
     }
 
-    /// @notice Used to deploy custom TokenManagers with the specified salt. Different callers would result in different tokenIds.
-    /// @param salt the salt to be used.
-    /// @param tokenManagerType the type of TokenManager to be deployed.
-    /// @param params the params that will be used to initialize the TokenManager.
+    /**
+     * @notice Used to deploy custom TokenManagers with the specified salt. Different callers would result in different tokenIds.
+     * @param salt the salt to be used.
+     * @param tokenManagerType the type of TokenManager to be deployed.
+     * @param params the params that will be used to initialize the TokenManager.
+     */
     function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) public payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
-    /// @notice Used to deploy remote custom TokenManagers.
-    /// @param salt the salt to be used.
-    /// @param destinationChain the name of the chain to deploy the TokenManager and standardized token to.
-    /// @param tokenManagerType the type of TokenManager to be deployed.
-    /// @param params the params that will be used to initialize the TokenManager.
-    /// @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount specified needs to be passed to the call
-    /// @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
+    /**
+     * @notice Used to deploy remote custom TokenManagers.
+     * @param salt the salt to be used.
+     * @param destinationChain the name of the chain to deploy the TokenManager and standardized token to.
+     * @param tokenManagerType the type of TokenManager to be deployed.
+     * @param params the params that will be used to initialize the TokenManager.
+     * @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least
+     * the amount specified needs to be passed to the call
+     * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions
+     * that could make remote contract calls.
+     */
     function deployRemoteCustomTokenManager(
         bytes32 salt,
         string calldata destinationChain,
@@ -276,13 +323,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
-    /// @notice Used to deploy a standardized token alongside a TokenManager. If the `distributor` is the address of the TokenManager (which can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
-    /// @param salt the salt to be used.
-    /// @param name the name of the token to be deployed.
-    /// @param symbol the symbol of the token to be deployed.
-    /// @param decimals the decimals of the token to be deployed.
-    /// @param mintAmount the amount of token to be mint during deployment to msg.sender.
-    /// @param distributor the address that will be able to mint and burn the deployed token.
+    /**
+     * @notice Used to deploy a standardized token alongside a TokenManager. If the `distributor` is the address of the TokenManager (which
+     * can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
+     * @param salt the salt to be used.
+     * @param name the name of the token to be deployed.
+     * @param symbol the symbol of the token to be deployed.
+     * @param decimals the decimals of the token to be deployed.
+     * @param mintAmount the amount of token to be mint during deployment to msg.sender.
+     * @param distributor the address that will be able to mint and burn the deployed token.
+     */
     function deployAndRegisterStandardizedToken(
         bytes32 salt,
         string calldata name,
@@ -299,15 +349,19 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployTokenManager(tokenId, tokenManagerType, abi.encode(msg.sender.toBytes(), tokenAddress));
     }
 
-    /// @notice Used to deploy a standardized token alongside a TokenManager in another chain. If the `distributor` is empty bytes then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
-    /// @param salt the salt to be used.
-    /// @param name the name of the token to be deployed.
-    /// @param symbol the symbol of the token to be deployed.
-    /// @param decimals the decimals of the token to be deployed.
-    /// @param distributor the address that will be able to mint and burn the deployed token.
-    /// @param destinationChain the name of the destination chain to deploy to.
-    /// @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount specified needs to be passed to the call
-    /// @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
+    /**
+     * @notice Used to deploy a standardized token alongside a TokenManager in another chain. If the `distributor` is empty
+     * bytes then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
+     * @param salt the salt to be used.
+     * @param name the name of the token to be deployed.
+     * @param symbol the symbol of the token to be deployed.
+     * @param decimals the decimals of the token to be deployed.
+     * @param distributor the address that will be able to mint and burn the deployed token.
+     * @param destinationChain the name of the destination chain to deploy to.
+     * @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount
+     * specified needs to be passed to the call
+     * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
+     */
     function deployAndRegisterRemoteStandardizedTokens(
         bytes32 salt,
         string calldata name,
@@ -322,13 +376,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, admin, destinationChain, gasValue);
     }
 
-    /// @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
-    /// @param tokenId the tokenId of the TokenManager used.
-    /// @param destinationAddress the destinationAddress for the sendToken.
-    /// @param amount the amount of token to give.
-    /// @param commandId the commandId calculated from the event at the sourceChain.
-    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external {
-        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
+    /**
+     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
+     * sendToken that matches the parameters passed here.
+     * @param tokenId the tokenId of the TokenManager used.
+     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param amount the amount of token to give.
+     * @param commandId the sendHash detected at the sourceChain.
+     */
+    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external notPaused {
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
@@ -338,14 +394,17 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, caller);
     }
 
-    /// @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
-    /// @param tokenId the tokenId of the TokenManager used.
-    /// @param sourceChain the name of the chain where the call came from.
-    /// @param sourceAddress the caller of callContractWithInterchainToken.
-    /// @param destinationAddress the destinationAddress for the sendToken.
-    /// @param amount the amount of token to give.
-    /// @param data the data to be passed to destinationAddress after giving them the tokens specified.
-    /// @param commandId the commandId calculated from the event at the sourceChain.
+    /**
+     * @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have
+     * detected an outgoing sendToken that matches the parameters passed here.
+     * @param tokenId the tokenId of the TokenManager used.
+     * @param sourceChain the name of the chain where the call came from.
+     * @param sourceAddress the caller of callContractWithInterchainToken.
+     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param amount the amount of token to give.
+     * @param data the data to be passed to destinationAddress after giving them the tokens specified.
+     * @param commandId the sendHash detected at the sourceChain.
+     */
     function expressReceiveTokenWithData(
         bytes32 tokenId,
         string memory sourceChain,
@@ -370,17 +429,20 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     TOKEN MANAGER FUNCTIONS
     \*********************/
 
-    /// @notice Transmit a sendToken for the given tokenId after decoding the metadata.
-    /// @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
-    /// @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
-    /// @param destinationChain the name of the chain to send tokens to.
-    /// @param destinationAddress the destinationAddress for the sendToken.
-    /// @param amount the amount of token to give.
+    /**
+     * @notice Transmit a sendTokenWithData for the given tokenId.
+     * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
+     * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
+     * @param destinationChain the name of the chain to send tokens to.
+     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param amount the amount of token to give.
+     * @param metadata the data to be passed to the destiantion.
+     */
     function transmitSendToken(
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
-        bytes calldata destinationAddress,
+        bytes memory destinationAddress,
         uint256 amount,
         bytes calldata metadata
     ) external payable onlyTokenManager(tokenId) notPaused {
@@ -391,13 +453,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
             return;
         }
-        {
-            uint32 version;
-            (version, metadata) = _decodeMetadata(metadata);
-            if (version > 0) {
-                revert InvalidMetadataVersion(version);
-            }
-        }
+        uint32 version;
+        (version, metadata) = _decodeMetadata(metadata);
+        if (version > 0) revert InvalidMetadataVersion(version);
         payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
         _callContract(destinationChain, payload, msg.value, sourceAddress);
         emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
@@ -407,21 +465,20 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     OWNER FUNCTIONS
     \*************/
 
-    // TODO: allow passing a list of tokens and limits for convenience. a single owner tx is easier to prepare
-    /// @notice Used to set a flow limit for a token manager that has the service as its admin.
-    /// @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
-    /// @param flowLimits and array of the flowLimit to set, identical in size to tokenIds.
-    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOwner {
-        uint256 length = tokenIds.length;
-        if (length != flowLimits.length) revert LengthMismatch();
-        for (uint256 i; i < length; ++i) {
-            ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
-            tokenManager.setFlowLimit(flowLimits[i]);
-        }
+    /**
+     * @notice Used to set a flow limit for a token manager that has the service as its admin.
+     * @param tokenId the token Id of the tokenManager to set the flow limit.
+     * @param flowLimit the flowLimit to set
+     */
+    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external onlyOwner {
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        tokenManager.setFlowLimit(flowLimit);
     }
 
-    /// @notice Used to pause the entire service, as an emergency measure.
-    /// @param paused what value to set paused to.
+    /**
+     * @notice Used to pause the entire service.
+     * @param paused what value to set paused to.
+     */
     function setPaused(bool paused) external onlyOwner {
         _setPaused(paused);
         emit PausedSet(paused);
@@ -431,6 +488,12 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     INTERNAL FUNCTIONS
     \****************/
 
+    /**
+     * @notice Executes operations based on the payload and selector.
+     * @param sourceChain The chain where the transaction originates from
+     * @param sourceAddress The address where the transaction originates from
+     * @param payload The encoded data payload for the transaction
+     */
     function _execute(
         string calldata sourceChain,
         string calldata sourceAddress,
@@ -448,10 +511,13 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         } else {
             revert SelectorUnknown();
         }
-
-        // TODO: revert if selector is not recognized
     }
 
+    /**
+     * @notice Processes the payload data for a send token call
+     * @param sourceChain The chain where the transaction originates from
+     * @param payload The encoded data payload to be processed
+     */
     function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
         (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
         bytes32 commandId;
@@ -470,6 +536,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         }
     }
 
+    /**
+     * @notice Processes a send token with data payload.
+     * @param sourceChain The chain where the transaction originates from
+     * @param payload The encoded data payload to be processed
+     */
     function _processSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
         bytes32 tokenId;
         uint256 amount;
@@ -510,6 +581,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
     }
 
+    /**
+     * @notice Processes a deploy token manager payload.
+     * @param payload The encoded data payload to be processed
+     */
     function _processDeployTokenManagerPayload(bytes calldata payload) internal {
         (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
             payload,
@@ -518,6 +593,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
+    /**
+     * @notice Process a deploy standardized token and manager payload.
+     * @param payload The encoded data payload to be processed
+     */
     function _processDeployStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
         (
             ,
@@ -539,6 +618,13 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         );
     }
 
+    /**
+     * @notice Calls a contract on a specific destination chain with the given payload
+     * @param destinationChain The target chain where the contract will be called
+     * @param payload The data payload for the transaction
+     * @param gasValue The amount of gas to be paid for the transaction
+     * @param refundTo The address where the unused gas amount should be refunded to
+     */
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue, address refundTo) internal {
         string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
         if (gasValue > 0) {
@@ -560,6 +646,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         decimals = token.decimals();
     }
 
+    /**
+     * @notice Deploys a token manager on a destination chain.
+     * @param tokenId The ID of the token
+     * @param destinationChain The chain where the token manager will be deployed
+     * @param gasValue The amount of gas to be paid for the transaction
+     * @param tokenManagerType The type of token manager to be deployed
+     * @param params Additional parameters for the token manager deployment
+     */
     function _deployRemoteTokenManager(
         bytes32 tokenId,
         string calldata destinationChain,
@@ -572,6 +666,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
+    /**
+     * @notice Deploys a standardized token on a destination chain.
+     * @param tokenId The ID of the token
+     * @param name The name of the token
+     * @param symbol The symbol of the token
+     * @param decimals The number of decimals of the token
+     * @param distributor The distributor address for the token
+     * @param destinationChain The destination chain where the token will be deployed
+     * @param gasValue The amount of gas to be paid for the transaction
+     */
     function _deployRemoteStandardizedToken(
         bytes32 tokenId,
         string memory name,
@@ -595,6 +699,12 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         emit RemoteStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
     }
 
+    /**
+     * @notice Deploys a token manager
+     * @param tokenId The ID of the token
+     * @param tokenManagerType The type of the token manager to be deployed
+     * @param params Additional parameters for the token manager deployment
+     */
     function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = tokenManagerDeployer.delegatecall(
@@ -606,10 +716,25 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         emit TokenManagerDeployed(tokenId, tokenManagerType, params);
     }
 
+    /**
+     * @notice Compute the salt for a standardized token deployment.
+     * @param tokenId The ID of the token
+     * @return salt The computed salt for the token deployment
+     */
     function _getStandardizedTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
         return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, tokenId));
     }
 
+    /**
+     * @notice Deploys a standardized token.
+     * @param tokenId The ID of the token
+     * @param distributor The distributor address for the token
+     * @param name The name of the token
+     * @param symbol The symbol of the token
+     * @param decimals The number of decimals of the token
+     * @param mintAmount The amount of tokens to be minted upon deployment
+     * @param mintTo The address where the minted tokens will be sent upon deployment
+     */
     function _deployStandardizedToken(
         bytes32 tokenId,
         address distributor,
