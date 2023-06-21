@@ -123,7 +123,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         string calldata name,
         string calldata symbol,
         uint8 decimals,
-        bytes calldata distributor,
+        bytes memory distributor,
+        bytes memory admin,
         string calldata destinationChain,
         uint256 gasValue
     ) external payable;
@@ -145,25 +146,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes memory destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external payable;
-
-    function transmitSendTokenWithToken(
-        bytes32 tokenId,
-        string calldata symbol,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount
-    ) external payable;
-
-    function transmitSendTokenWithDataWithToken(
-        bytes32 tokenId,
-        string memory symbol,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes memory destinationAddress,
-        uint256 amount,
-        bytes memory data
     ) external payable;
 
     function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;

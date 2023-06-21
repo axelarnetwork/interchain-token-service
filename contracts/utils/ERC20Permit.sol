@@ -7,12 +7,20 @@ import { IERC20Permit } from '@axelar-network/axelar-cgp-solidity/contracts/inte
 
 import { ERC20 } from './ERC20.sol';
 
+/**
+ * @title ERC20Permit Contract
+ * @dev Extension of ERC20 to include permit functionality (EIP-2612).
+ * Allows for approval of ERC20 tokens by signature rather than transaction.
+ */
 abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
     error PermitExpired();
     error InvalidS();
     error InvalidV();
     error InvalidSignature();
 
+    /**
+     * @dev Represents hash of the EIP-712 Domain Separator.
+     */
     // solhint-disable-next-line var-name-mixedcase
     bytes32 public DOMAIN_SEPARATOR;
 
@@ -24,14 +32,33 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
     // keccak256('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)')
     bytes32 private constant PERMIT_SIGNATURE_HASH = bytes32(0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9);
 
+    /**
+     * @dev Mapping of nonces for each address.
+     */
     mapping(address => uint256) public nonces;
 
+    /**
+     * @notice Internal function to set the domain type signature hash
+     * @param name The token name
+     */
     function _setDomainTypeSignatureHash(string memory name) internal {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(DOMAIN_TYPE_SIGNATURE_HASH, keccak256(bytes(name)), keccak256(bytes('1')), block.chainid, address(this))
         );
     }
 
+    /**
+     * @notice Permit the designated spender to spend the holder's tokens
+     * @dev The permit function is used to allow a holder to designate a spender
+     * to spend tokens on their behalf via a signed message.
+     * @param issuer The address of the token holder
+     * @param spender The address of the designated spender
+     * @param value The number of tokens to be spent
+     * @param deadline The time at which the permission to spend expires
+     * @param v The recovery id of the signature
+     * @param r Half of the ECDSA signature pair
+     * @param s Half of the ECDSA signature pair
+     */
     function permit(address issuer, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         // solhint-disable-next-line not-rely-on-time
         if (block.timestamp > deadline) revert PermitExpired();
