@@ -313,7 +313,6 @@ describe('Interchain Token Service', () => {
         it('Should revert when registering a standardized token if paused', async () => {
             let tx = await service.setPaused(true);
             await tx.wait();
-            await tx.wait();
 
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
