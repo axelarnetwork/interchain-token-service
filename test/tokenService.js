@@ -127,8 +127,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert when trying to register a gateway token', async () => {
-            let cap = 1000000;
-            let mintLimit = 1000000;
+            const cap = 1000000;
+            const mintLimit = 1000000;
             const gatewayParams1 = defaultAbiCoder.encode(
                 ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
                 [tokenName, tokenSymbol, tokenDecimals, cap, token.address, mintLimit],
