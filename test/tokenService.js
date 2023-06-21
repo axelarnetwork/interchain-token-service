@@ -100,7 +100,7 @@ describe('Interchain Token Service', () => {
         const tokenDecimals = 13;
         let tokenId;
 
-        before(async () => {
+        beforeEach(async () => {
             token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, service.address]);
             tokenId = await service.getCanonicalTokenId(token.address);
             await (await token.setTokenManager(await service.getTokenManagerAddress(tokenId))).wait();
@@ -119,7 +119,11 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert if canonical token has already been registered', async () => {
-            // Token manager has already been deployed, should fail
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
+            await expect(service.registerCanonicalToken(token.address))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, LOCK_UNLOCK, params);
+
             await expect(service.registerCanonicalToken(token.address)).to.be.revertedWithCustomError(
                 service,
                 'TokenManagerDeploymentFailed',
@@ -157,7 +161,8 @@ describe('Interchain Token Service', () => {
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
         let tokenId;
-        before(async () => {
+
+        beforeEach(async () => {
             token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, service.address]);
             await (await service.registerCanonicalToken(token.address)).wait();
             tokenId = await service.getCanonicalTokenId(token.address);
