@@ -632,10 +632,7 @@ describe('Interchain Token Service', () => {
                 }
 
                 function checkPayload(payload) {
-                    const emmitted = defaultAbiCoder.decode(
-                        ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'],
-                        payload,
-                    );
+                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'], payload);
                     if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN_WITH_DATA) return false;
                     if (emmitted[1] !== tokenId) return false;
                     if (emmitted[2] !== destAddress) return false;
@@ -677,7 +674,7 @@ describe('Interchain Token Service', () => {
 
         before(async () => {
             sourceAddress = service.address.toLowerCase();
-            executable = await deployContract(wallet, 'InterchainExecutableTest');
+            executable = await deployContract(wallet, 'InterchainExecutableTest', [service.address]);
             destAddress = executable.address;
         });
 
@@ -826,10 +823,7 @@ describe('Interchain Token Service', () => {
                 }
 
                 function checkPayload(payload) {
-                    const emmitted = defaultAbiCoder.decode(
-                        ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'],
-                        payload,
-                    );
+                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'], payload);
                     if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN_WITH_DATA) return false;
                     if (emmitted[1] !== tokenId) return false;
                     if (emmitted[2] !== destAddress) return false;
@@ -881,7 +875,7 @@ describe('Interchain Token Service', () => {
             [token, , tokenId] = await deployFunctions.lockUnlock(tokenName, tokenSymbol, tokenDecimals, amount * 2, true);
             await (await token.approve(service.address, amount * 2)).wait();
             data = defaultAbiCoder.encode(['address', 'string'], [destinationAddress, message]);
-            executable = await deployContract(wallet, 'InterchainExecutableTest');
+            executable = await deployContract(wallet, 'InterchainExecutableTest', [service.address]);
         });
 
         it('Should express execute', async () => {
@@ -929,8 +923,6 @@ describe('Interchain Token Service', () => {
 
             await (await service.expressReceiveToken(tokenId, destAddress, amount, commandId)).wait();
 
-
-
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
@@ -951,7 +943,6 @@ describe('Interchain Token Service', () => {
 
             await (await service.expressReceiveToken(tokenId, destAddress, amount, commandId)).wait();
 
-
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, amount)
@@ -963,7 +954,7 @@ describe('Interchain Token Service', () => {
             const [token, , tokenId] = await deployFunctions.liquidityPool(`Test Token Liquidity Pool`, 'TTLP', 12, amount * 2);
             await (await token.transfer(liquidityPool.address, amount)).wait();
             await (await token.approve(service.address, amount)).wait();
-            
+
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'uint256'],
                 [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
@@ -971,7 +962,6 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await (await service.expressReceiveToken(tokenId, destAddress, amount, commandId)).wait();
-
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
@@ -991,7 +981,7 @@ describe('Interchain Token Service', () => {
 
         before(async () => {
             sourceAddress = service.address.toLowerCase();
-            executable = await deployContract(wallet, 'InterchainExecutableTest');
+            executable = await deployContract(wallet, 'InterchainExecutableTest', [service.address]);
             destAddress = executable.address;
         });
 
@@ -1076,7 +1066,7 @@ describe('Interchain Token Service', () => {
             );
 
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-            
+
             await (
                 await service.expressReceiveTokenWithData(
                     tokenId,
@@ -1123,7 +1113,6 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive token only if it does not trigger the mint limit', async () => {
             async function receiveToken(sendAmount) {
-
                 const payload = defaultAbiCoder.encode(
                     ['uint256', 'bytes32', 'bytes', 'uint256'],
                     [SELECTOR_SEND_TOKEN, tokenId, wallet.address, sendAmount],

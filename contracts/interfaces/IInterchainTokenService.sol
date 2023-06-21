@@ -37,12 +37,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         address indexed sourceAddress,
         bytes data
     );
-    event TokenReceived(
-        bytes32 indexed tokenId,
-        string sourceChain,
-        address indexed destinationAddress,
-        uint256 indexed amount
-    );
+    event TokenReceived(bytes32 indexed tokenId, string sourceChain, address indexed destinationAddress, uint256 indexed amount);
     event TokenReceivedWithData(
         bytes32 indexed tokenId,
         string sourceChain,
@@ -145,7 +140,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
 
     function setPaused(bool paused) external;
-    
+
     /// @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
     /// @param tokenId the tokenId of the TokenManager used.
     /// @param destinationAddress the destinationAddress for the sendToken.

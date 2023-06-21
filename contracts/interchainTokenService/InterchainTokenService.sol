@@ -12,7 +12,7 @@ import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.s
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
-import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
+import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
@@ -57,7 +57,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
     uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
-    // TODO: For contract Id, we can stick to not using the -1 convention
     // keccak256('interchain-token-service')
     // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
@@ -323,15 +322,13 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, admin, destinationChain, gasValue);
     }
 
-    // TODO: pause check isn't needed for this since it's just passing tokens through, so we can save some gas
-    // TODO: Add commandID to help express vs execute reorder protection, i.e check if commandID is already executed
     /// @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
     /// @param tokenId the tokenId of the TokenManager used.
     /// @param destinationAddress the destinationAddress for the sendToken.
     /// @param amount the amount of token to give.
     /// @param commandId the commandId calculated from the event at the sourceChain.
     function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external {
-        if(gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
+        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
@@ -341,11 +338,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         _setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, caller);
     }
 
-    // TODO: express receive with data should be opt-in since the data is opaque and might be high value
-    // TODO: I think we should have an InterchainTokenExpressExecutable interface that apps can add/customize. This method can just call that, and the app can track the express relayer.
-    // TODO: Alternatively, ITS tracks it and queries the contract to check for opt-in status (default is opt out), at the cost of more gas usage and less flexibility, but some more trust.
-    // TODO: similar comment on forwarding commandID
-    // TODO: similar comment on pause
     /// @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
     /// @param tokenId the tokenId of the TokenManager used.
     /// @param sourceChain the name of the chain where the call came from.
@@ -363,16 +355,14 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         bytes calldata data,
         bytes32 commandId
     ) external {
-        if(gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
+        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
         uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
         amount = token.balanceOf(destinationAddress) - balance;
-        if (!IInterchainTokenExecutable(destinationAddress).acceptsExpressExecution())
-            revert DoesNotAcceptExpressExecute(destinationAddress);
-        _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
+        _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
         _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, caller);
     }
 
@@ -463,12 +453,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     }
 
     function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
-        (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
-            payload,
-            (uint256, bytes32, bytes, uint256)
-        );
+        (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
         bytes32 commandId;
-        // solhint-disable-next-line no-inline-solidity
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             commandId := calldataload(4)
         }
@@ -490,7 +477,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         bytes memory data;
         address destinationAddress;
         bytes32 commandId;
-        // solhint-disable-next-line no-inline-solidity
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             commandId := calldataload(4)
         }
@@ -519,7 +506,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             }
         }
         amount = tokenManager.giveToken(destinationAddress, amount);
-        _passData(destinationAddress, tokenId, sourceChain, sourceAddress, amount, data);
+        IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
         emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
     }
 
@@ -608,17 +595,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         emit RemoteStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
     }
 
-    function _passData(
-        address destinationAddress,
-        bytes32 tokenId,
-        string memory sourceChain,
-        bytes memory sourceAddress,
-        uint256 amount,
-        bytes memory data
-    ) internal {
-        IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
-    }
-
     function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = tokenManagerDeployer.delegatecall(
@@ -672,5 +648,22 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
             data.offset := add(metadata.offset, 4)
             version := calldataload(sub(metadata.offset, 28))
         }
+    }
+
+    function _expressExecuteWithInterchainTokenToken(
+        bytes32 tokenId,
+        address destinationAddress,
+        string memory sourceChain,
+        bytes memory sourceAddress,
+        bytes calldata data,
+        uint256 amount
+    ) internal {
+        IInterchainTokenExpressExecutable(destinationAddress).expressExecuteWithInterchainToken(
+            sourceChain,
+            sourceAddress,
+            data,
+            tokenId,
+            amount
+        );
     }
 }

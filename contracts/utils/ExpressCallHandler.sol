@@ -79,7 +79,15 @@ contract ExpressCallHandler is IExpressCallHandler {
         bytes32 commandId,
         address expressCaller
     ) internal {
-        uint256 slot = _getExpressReceiveTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId);
+        uint256 slot = _getExpressReceiveTokenWithDataSlot(
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data,
+            commandId
+        );
         address prevExpressCaller;
         assembly {
             prevExpressCaller := sload(slot)
@@ -114,7 +122,15 @@ contract ExpressCallHandler is IExpressCallHandler {
         bytes calldata data,
         bytes32 commandId
     ) public view returns (address expressCaller) {
-        uint256 slot = _getExpressReceiveTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId);
+        uint256 slot = _getExpressReceiveTokenWithDataSlot(
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data,
+            commandId
+        );
         assembly {
             expressCaller := sload(slot)
         }
