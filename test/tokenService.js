@@ -5,7 +5,7 @@ const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
-const { defaultAbiCoder, keccak256 } = ethers.utils;
+const { defaultAbiCoder, keccak256, formatBytes32String } = ethers.utils;
 const { Contract } = ethers;
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 
@@ -339,6 +339,7 @@ describe('Interchain Token Service', () => {
             await expect(
                 service.deployAndRegisterStandardizedToken(salt, tokenName, tokenSymbol, tokenDecimals, mintAmount, tokenManagerAddress),
             ).to.be.revertedWithCustomError(service, 'Paused');
+
             tx = await service.setPaused(false);
             await tx.wait();
         });
@@ -349,7 +350,7 @@ describe('Interchain Token Service', () => {
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
         const distributor = '0x12345678';
-        const destinationChain = 'dest';
+        const destinationChain = formatBytes32String('dest');
         const gasValue = 1234;
         const salt = getRandomBytes32();
         let txPaused;
