@@ -45,6 +45,6 @@ contract Pausable is IPausable {
             sstore(PAUSE_SLOT, paused)
         }
 
-        // TODO: add event
+        emit PausedSet(paused);
     }
 }

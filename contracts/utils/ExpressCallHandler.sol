@@ -12,9 +12,7 @@ import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
  */
 contract ExpressCallHandler is IExpressCallHandler {
     // solhint-disable no-inline-assembly
-    // TODO: we can stick to {contract-name}-{purpose} for naming: prefix-express-give-token -> express-call-handler-send-token
     // uint256(keccak256('prefix-express-give-token'));
-    // TODO: GIVE -> RECEIVE
     uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN = 0x67c7b41c1cb0375e36084c4ec399d005168e83425fa471b9224f6115af865619;
     // uint256(keccak256('prefix-express-give-token-with-data'));
     uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN_WITH_DATA = 0x3e607cc12a253b1d9f677a03d298ad869a90a8ba4bd0fb5739e7d79db7cdeaad;
@@ -139,10 +137,8 @@ contract ExpressCallHandler is IExpressCallHandler {
         }
         if (prevExpressCaller != address(0)) revert AlreadyExpressCalled();
         assembly {
-            // TODO: same as above
             sstore(slot, expressCaller)
         }
-        // TODO: ExpressReceivedWithData -> ExpressReceived / ExpressReceivedWithReceive maybe?
         emit ExpressReceivedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, expressCaller);
     }
 

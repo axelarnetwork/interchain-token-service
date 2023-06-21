@@ -481,7 +481,6 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
      */
     function setPaused(bool paused) external onlyOwner {
         _setPaused(paused);
-        emit PausedSet(paused);
     }
 
     /****************\

@@ -48,7 +48,6 @@ abstract contract StandardizedToken is InterchainToken, Implementation, Distribu
             tokenManager = tokenManager_;
             _setDomainTypeSignatureHash(tokenName);
             name = tokenName;
-            // TODO: symbol, decimals aren't being set
         }
         {
             uint256 mintAmount;
