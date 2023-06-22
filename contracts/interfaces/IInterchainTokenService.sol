@@ -136,7 +136,10 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes calldata metadata
     ) external payable;
 
+    // TODO: allow setting multiple flow limits at once for convenience
     function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;
+
+    // TODO: add a flow limit getter given a token id for convenience for apps
 
     function setPaused(bool paused) external;
 
