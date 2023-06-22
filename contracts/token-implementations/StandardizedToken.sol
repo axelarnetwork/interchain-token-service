@@ -4,10 +4,11 @@ pragma solidity 0.8.9;
 
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
 
-import { InterchainToken } from '../interchainToken/InterchainToken.sol';
+import { InterchainToken } from '../interchain-token/InterchainToken.sol';
+import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { Implementation } from './Implementation.sol';
+import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
 // TODO: Maybe move the token contracts to a tokens folder since they're more than a basic util
@@ -17,7 +18,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-abstract contract StandardizedToken is InterchainToken, Implementation, Distributable, IERC20BurnableMintable {
+abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable, IERC20BurnableMintable {
     using AddressBytesUtils for bytes;
 
     address public tokenManager;

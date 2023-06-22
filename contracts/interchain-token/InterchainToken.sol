@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { ERC20Permit } from '../utils/ERC20Permit.sol';
+import { ERC20 } from '../token-implementations/ERC20.sol';
 
 /**
  * @title An example implementation of the IInterchainToken.
@@ -17,7 +17,7 @@ import { ERC20Permit } from '../utils/ERC20Permit.sol';
 // TODO: Actually let's move ERC20Permit inheritance to standardized token.
 // We should inherit ERC20Permit for the standardized tokens directly, so this is flexible.
 // We can define a virtual _approve method below that should be instantiated by the implementation.
-abstract contract InterchainToken is IInterchainToken, ERC20Permit {
+abstract contract InterchainToken is IInterchainToken, ERC20 {
     // TODO: These don't need to be defined here
     string public name;
     string public symbol;
