@@ -473,8 +473,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.admin()).to.equal(admin);
         });
 
-        // Isn't this the same test as above?
-        it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager', async () => {
+        it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager with empty distributor and admin', async () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             const distributor = '0x';
