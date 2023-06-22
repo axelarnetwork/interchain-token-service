@@ -44,5 +44,8 @@ contract Pausable is IPausable {
         assembly {
             sstore(PAUSE_SLOT, paused)
         }
+
+        // TODO: move event here
+        // emit PausedSet(paused);
     }
 }

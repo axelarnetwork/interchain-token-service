@@ -25,7 +25,7 @@ async function deployMockGateway(wallet) {
 }
 
 async function deployGasService(wallet) {
-    const gasService = await deployContract(wallet, 'AxelarGasService', []);
+    const gasService = await deployContract(wallet, 'AxelarGasService', [wallet.address]);
     return gasService;
 }
 
@@ -74,10 +74,12 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
     const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
     const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', [create3Deployer.address]);
-    const standardizedToken = await deployContract(wallet, 'StandardizedToken');
+    const standardizedTokenLockUnlock = await deployContract(wallet, 'StandardizedTokenLockUnlock');
+    const standardizedTokenMintBurn = await deployContract(wallet, 'StandardizedTokenMintBurn');
     const standardizedTokenDeployer = await deployContract(wallet, 'StandardizedTokenDeployer', [
         create3Deployer.address,
-        standardizedToken.address,
+        standardizedTokenLockUnlock.address,
+        standardizedTokenMintBurn.address,
     ]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const linkerRouter = await deployLinkerRouter(wallet, interchainTokenServiceAddress);

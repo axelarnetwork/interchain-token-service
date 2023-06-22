@@ -12,7 +12,7 @@ module.exports = {
             evmVersion: process.env.EVM_VERSION || 'london',
             optimizer: {
                 enabled: true,
-                runs: 1000,
+                runs: 1000, // TODO: increase and test gas difference
                 details: {
                     peephole: process.env.COVERAGE === undefined,
                     inliner: process.env.COVERAGE === undefined,

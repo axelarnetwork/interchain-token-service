@@ -4,17 +4,21 @@ pragma solidity 0.8.9;
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-// You can have your own implementation of ERC20, but unfortunatelly we had to include an implementations to have access to the _approve method as well as the allowance mapping
 import { ERC20Permit } from '../utils/ERC20Permit.sol';
 
 /**
- * @title An example implementation of the IInterchainTokenInterface.
+ * @title An example implementation of the IInterchainToken.
+ * // TODO: probably should omit author due to company branding
  * @author Foivos Antoulinakis
  * @notice The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
  * that can be used to create approvals, and that `allowance` is a mapping.
- * @dev You can skip the `tokenManagerRequiresApproval()` function alltogether if you know what it should return for your token.
+ * @dev You can skip the `tokenManagerRequiresApproval()` function altogether if you know what it should return for your token.
  */
+// TODO: Actually let's move ERC20Permit inheritance to standardized token.
+// We should inherit ERC20Permit for the standardized tokens directly, so this is flexible.
+// We can define a virtual _approve method below that should be instantiated by the implementation.
 abstract contract InterchainToken is IInterchainToken, ERC20Permit {
+    // TODO: These don't need to be defined here
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -41,10 +45,10 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
      * @notice Implementation of the interchainTransfer method
      * @dev We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
      * A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well.
-     * @param destinationChain the string representation of the destination chain.
-     * @param recipient the bytes representation of the address of the recipient.
-     * @param amount the amount of token to be transfered.
-     * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
+     * @param destinationChain The destination chain identifier.
+     * @param recipient The bytes representation of the address of the recipient.
+     * @param amount The amount of token to be transfered.
+     * @param metadata Either empty, to just facilitate an interchain transfer, or the data can be passed for an interchain contract call with transfer as per semantics defined by the token service.
      */
     function interchainTransfer(
         string calldata destinationChain,
@@ -60,11 +64,9 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
         if (tokenManagerRequiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
-        if (metadata.length == 0) {
-            tokenManager.sendSelf{ value: msg.value }(sender, destinationChain, recipient, amount);
-        } else {
-            tokenManager.callContractWithSelf{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
-        }
+
+        // Metadata semantics are defined by the token service and thus should be passed as-is.
+        tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
 
     /**
@@ -94,10 +96,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20Permit {
         if (tokenManagerRequiresApproval()) {
             _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
         }
-        if (metadata.length == 0) {
-            tokenManager.sendSelf{ value: msg.value }(sender, destinationChain, recipient, amount);
-        } else {
-            tokenManager.callContractWithSelf{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
-        }
+
+        tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
 }

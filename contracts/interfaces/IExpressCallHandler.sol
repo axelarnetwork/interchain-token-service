@@ -3,7 +3,9 @@
 pragma solidity 0.8.9;
 
 interface IExpressCallHandler {
-    event ExpressExecuted(
+    error AlreadyExpressCalled();
+
+    event ExpressReceived(
         bytes32 indexed tokenId,
         address indexed destinationAddress,
         uint256 amount,
@@ -18,7 +20,7 @@ interface IExpressCallHandler {
         address expressCaller
     );
 
-    event ExpressExecutedWithData(
+    event ExpressReceivedWithData(
         bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,
@@ -39,14 +41,14 @@ interface IExpressCallHandler {
         address expressCaller
     );
 
-    function getExpressSendToken(
+    function getExpressReceiveToken(
         bytes32 tokenId,
         address destinationAddress,
         uint256 amount,
         bytes32 sendHash
     ) external view returns (address expressCaller);
 
-    function getExpressSendTokenWithData(
+    function getExpressReceiveTokenWithData(
         bytes32 tokenId,
         string memory sourceChain,
         bytes memory sourceAddress,
