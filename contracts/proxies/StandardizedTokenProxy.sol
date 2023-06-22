@@ -8,6 +8,7 @@ import { IStandardizedTokenProxy } from '../interfaces/IStandardizedTokenProxy.s
 
 /**
  * @title StandardizedTokenProxy
+ * @author Foivos Antoulinakis
  * @dev Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy.
  */
 contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {

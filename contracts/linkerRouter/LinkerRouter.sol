@@ -7,6 +7,7 @@ import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 
 /**
  * @title LinkerRouter
+ * @author Foivos Antoulinakis
  * @dev Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract
  */
 contract LinkerRouter is ILinkerRouter, Upgradable {

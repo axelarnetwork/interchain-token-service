@@ -8,6 +8,7 @@ import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 
 /**
  * @title TokenManagerAddressStorage
+ * @author Foivos Antoulinakis
  * @notice This contract extends the TokenManager contract and provides additional functionality to store and retrieve
  * the token address using a predetermined storage slot
  */

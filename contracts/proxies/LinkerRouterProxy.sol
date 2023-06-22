@@ -6,6 +6,7 @@ import { Proxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgrada
 
 /**
  * @title LinkerRouterProxy
+ * @author Foivos Antoulinakis
  * @dev Proxy contract for the LinkerRouter contract. Inherits from the Proxy contract.
  */
 contract LinkerRouterProxy is Proxy {

@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 
 /**
  * @title AddressBytesUtils
+ * @author Foivos Antoulinakis
  * @dev This library provides utility functions to convert between `address` and `bytes`.
  */
 library AddressBytesUtils {

@@ -6,6 +6,7 @@ import { FinalProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 
 /**
  * @title InterchainTokenServiceProxy
+ * @author Foivos Antoulinakis
  * @dev Proxy contract for interchain token service contracts. Inherits from the FinalProxy contract.
  */
 contract InterchainTokenServiceProxy is FinalProxy {

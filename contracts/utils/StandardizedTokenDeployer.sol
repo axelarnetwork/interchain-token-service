@@ -8,11 +8,22 @@ import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDepl
 
 import { StandardizedTokenProxy } from '../proxies/StandardizedTokenProxy.sol';
 
+/**
+ * @title StandardizedTokenDeployer
+ * @author Foivos Antoulinakis
+ * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
+ */
 contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
     Create3Deployer public immutable deployer;
     address public immutable implementationMintBurnAddress;
     address public immutable implementationLockUnlockAddress;
 
+    /**
+     * @notice Constructor for the StandardizedTokenDeployer contract
+     * @param deployer_ Address of the Create3Deployer contract
+     * @param implementationLockUnlockAddress_ Address of the StandardizedTokenLockUnlock contract
+     * @param implementationMintBurnAddress_ Address of the StandardizedTokenMintBurn contract
+     */
     constructor(address deployer_, address implementationLockUnlockAddress_, address implementationMintBurnAddress_) {
         if (deployer_ == address(0) || implementationLockUnlockAddress_ == address(0) || implementationMintBurnAddress_ == address(0))
             revert AddressZero();
@@ -21,6 +32,17 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
         implementationMintBurnAddress = implementationMintBurnAddress_;
     }
 
+    /**
+     * @notice Deploys a new instance of the StandardizedTokenProxy contract
+     * @param salt The salt used by Create3Deployer
+     * @param tokenManager Address of the token manager
+     * @param distributor Address of the distributor
+     * @param name Name of the token
+     * @param symbol Symbol of the token
+     * @param decimals Decimals of the token
+     * @param mintAmount Amount of tokens to mint initially
+     * @param mintTo Address to mint initial tokens to
+     */
     function deployStandardizedToken(
         bytes32 salt,
         address tokenManager,
