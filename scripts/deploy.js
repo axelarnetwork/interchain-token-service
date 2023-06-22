@@ -25,7 +25,7 @@ async function deployMockGateway(wallet) {
 }
 
 async function deployGasService(wallet) {
-    const gasService = await deployContract(wallet, 'AxelarGasService', []);
+    const gasService = await deployContract(wallet, 'AxelarGasService', [wallet.address]);
     return gasService;
 }
 
