@@ -6,4 +6,10 @@ interface IPausable {
     event PausedSet(bool paused);
 
     error Paused();
+
+    // TODO: define event here
+    // event PausedSet(bool paused);
+
+    // TODO: add method to interface
+    // function isPaused() external view returns (bool);
 }

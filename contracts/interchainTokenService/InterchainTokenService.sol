@@ -27,6 +27,7 @@ import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
 import { Multicall } from '../utils/Multicall.sol';
 
+// TODO: Change folder name to interchain-token-service, and similarly for other folders for consistent naming convention
 /**
  * @title The Interchain Token Service
  * @author Foivos Antoulinakis
@@ -104,6 +105,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         if (tokenManagerImplementations[uint256(TokenManagerType.LIQUIDITY_POOL)] == address(0)) revert ZeroAddress();
         implementationLiquidityPool = tokenManagerImplementations[uint256(TokenManagerType.LIQUIDITY_POOL)];
 
+        // TODO: save this as a string instead. chainNameHash is read on-chain so the gas saving is useful there, but we don't need to truncate chainName
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -155,7 +157,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     /**
      * @notice Returns the address of a TokenManager from a specific tokenId. The TokenManager needs to exist already.
      * @param tokenId the tokenId.
-     * @return tokenManagerAddress deployement address of the TokenManager.
+     * @return tokenManagerAddress deployment address of the TokenManager.
      */
     function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = getTokenManagerAddress(tokenId);
@@ -430,7 +432,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     \*********************/
 
     /**
-     * @notice Transmit a sendTokenWithData for the given tokenId.
+     * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
      * @param destinationChain the name of the chain to send tokens to.
