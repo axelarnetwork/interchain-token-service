@@ -3,10 +3,12 @@
 // can we add ^ for all versions. We're enforcing version via hardhat config
 pragma solidity ^0.8.9;
 
+import { IInterchainTokenExecutable } from './IInterchainTokenExecutable.sol';
+
 // All interfaces should be documented, especially since external devs look at interfaces first
 // General interface for upgradable contracts
-interface IInterchainTokenExecutable {
-    function executeWithInterchainToken(
+interface IInterchainTokenExpressExecutable is IInterchainTokenExecutable {
+    function expressExecuteWithInterchainToken(
         string calldata sourceChain,
         bytes calldata sourceAddress,
         bytes calldata data,

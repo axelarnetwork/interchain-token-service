@@ -23,32 +23,28 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error GatewayToken();
     error TokenManagerDeploymentFailed();
     error StandardizedTokenDeploymentFailed();
+    error DoesNotAcceptExpressExecute(address contractAddress);
+    error SelectorUnknown();
+    error InvalidMetadataVersion(uint32 version);
+    error AlreadyExecuted(bytes32 commandId);
 
-    event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount, bytes32 sendHahs);
+    event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event TokenSentWithData(
         bytes32 tokenId,
         string destinationChain,
         bytes destinationAddress,
         uint256 indexed amount,
         address indexed sourceAddress,
-        bytes data,
-        bytes32 sendHash
+        bytes data
     );
-    event TokenReceived(
-        bytes32 indexed tokenId,
-        string sourceChain,
-        address indexed destinationAddress,
-        uint256 indexed amount,
-        bytes32 sendHash
-    );
+    event TokenReceived(bytes32 indexed tokenId, string sourceChain, address indexed destinationAddress, uint256 indexed amount);
     event TokenReceivedWithData(
         bytes32 indexed tokenId,
         string sourceChain,
         address indexed destinationAddress,
         uint256 indexed amount,
         bytes sourceAddress,
-        bytes data,
-        bytes32 sendHash
+        bytes data
     );
     event RemoteTokenManagerDeploymentInitialized(
         bytes32 indexed tokenId,
@@ -135,20 +131,41 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount
-    ) external payable;
-
-    function transmitSendTokenWithData(
-        bytes32 tokenId,
-        address sourceAddress,
-        string calldata destinationChain,
         bytes memory destinationAddress,
         uint256 amount,
-        bytes calldata data
+        bytes calldata metadata
     ) external payable;
 
     function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;
 
     function setPaused(bool paused) external;
+
+    /**
+     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
+     * @param tokenId the tokenId of the TokenManager used.
+     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param amount the amount of token to give.
+     * @param commandId the commandId calculated from the event at the sourceChain.
+     */
+    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external;
+
+    /**
+     * @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
+     * @param tokenId the tokenId of the TokenManager used.
+     * @param sourceChain the name of the chain where the call came from.
+     * @param sourceAddress the caller of callContractWithInterchainToken.
+     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param amount the amount of token to give.
+     * @param data the data to be passed to destinationAddress after giving them the tokens specified.
+     * @param commandId the commandId calculated from the event at the sourceChain.
+     */
+    function expressReceiveTokenWithData(
+        bytes32 tokenId,
+        string memory sourceChain,
+        bytes memory sourceAddress,
+        address destinationAddress,
+        uint256 amount,
+        bytes calldata data,
+        bytes32 commandId
+    ) external;
 }

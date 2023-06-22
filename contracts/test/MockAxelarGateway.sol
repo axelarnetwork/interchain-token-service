@@ -11,8 +11,6 @@ import { ITokenDeployer } from '@axelar-network/axelar-cgp-solidity/contracts/in
 import { EternalStorage } from '@axelar-network/axelar-cgp-solidity/contracts/EternalStorage.sol';
 import { DepositHandler } from '@axelar-network/axelar-cgp-solidity/contracts/DepositHandler.sol';
 
-// This should be moved under `test/` along with Imports.sol
-// Not urgent, but we should remove everything else except token deployer, send token, call contract w/token, approvals I think
 contract MockAxelarGateway is IAxelarGateway, EternalStorage {
     using SafeTokenCall for IERC20;
     using SafeTokenTransfer for IERC20;

@@ -12,10 +12,10 @@ import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
  */
 contract ExpressCallHandler is IExpressCallHandler {
     // solhint-disable no-inline-assembly
-    // uint256(keccak256('prefix-express-give-token')) - 1;
-    uint256 internal constant PREFIX_EXPRESS_GIVE_TOKEN = 0x67c7b41c1cb0375e36084c4ec399d005168e83425fa471b9224f6115af86561a;
-    // uint256(keccak256('prefix-express-give-token-with-data')) - 1;
-    uint256 internal constant PREFIX_EXPRESS_GIVE_TOKEN_WITH_DATA = 0x3e607cc12a253b1d9f677a03d298ad869a90a8ba4bd0fb5739e7d79db7cdeaae;
+    // uint256(keccak256('prefix-express-give-token'));
+    uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN = 0x67c7b41c1cb0375e36084c4ec399d005168e83425fa471b9224f6115af865619;
+    // uint256(keccak256('prefix-express-give-token-with-data'));
+    uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN_WITH_DATA = 0x3e607cc12a253b1d9f677a03d298ad869a90a8ba4bd0fb5739e7d79db7cdeaad;
     mapping(bytes32 => address) private expressGiveToken;
     mapping(bytes32 => address) private expressGiveTokenWithData;
 
@@ -24,16 +24,16 @@ contract ExpressCallHandler is IExpressCallHandler {
      * @param tokenId The ID of the token being sent
      * @param destinationAddress The address of the recipient
      * @param amount The amount of tokens to be sent
-     * @param sendHash The unique hash for this token transfer
+     * @param commandId The unique hash for this token transfer
      * @return slot The calculated slot for this token transfer
      */
-    function _getExpressSendTokenSlot(
+    function _getExpressReceiveTokenSlot(
         bytes32 tokenId,
         address destinationAddress,
         uint256 amount,
-        bytes32 sendHash
+        bytes32 commandId
     ) internal pure returns (uint256 slot) {
-        slot = uint256(keccak256(abi.encode(PREFIX_EXPRESS_GIVE_TOKEN, tokenId, destinationAddress, amount, sendHash)));
+        slot = uint256(keccak256(abi.encode(PREFIX_EXPRESS_RECEIVE_TOKEN, tokenId, destinationAddress, amount, commandId)));
     }
 
     /**
@@ -44,29 +44,29 @@ contract ExpressCallHandler is IExpressCallHandler {
      * @param destinationAddress The address of the recipient on the destination chain
      * @param amount The amount of tokens to be sent
      * @param data The data associated with the token transfer
-     * @param sendHash The unique hash for this token transfer
+     * @param commandId The unique hash for this token transfer
      * @return slot The calculated slot for this token transfer
      */
-    function _getExpressSendTokenWithDataSlot(
+    function _getExpressReceiveTokenWithDataSlot(
         bytes32 tokenId,
         string memory sourceChain,
         bytes memory sourceAddress,
         address destinationAddress,
         uint256 amount,
         bytes memory data,
-        bytes32 sendHash
+        bytes32 commandId
     ) internal pure returns (uint256 slot) {
         slot = uint256(
             keccak256(
                 abi.encode(
-                    PREFIX_EXPRESS_GIVE_TOKEN_WITH_DATA,
+                    PREFIX_EXPRESS_RECEIVE_TOKEN_WITH_DATA,
                     tokenId,
                     sourceChain,
                     sourceAddress,
                     destinationAddress,
                     amount,
                     data,
-                    sendHash
+                    commandId
                 )
             )
         );
@@ -77,21 +77,27 @@ contract ExpressCallHandler is IExpressCallHandler {
      * @param tokenId The ID of the token being sent
      * @param destinationAddress The address of the recipient
      * @param amount The amount of tokens to be sent
-     * @param sendHash The unique hash for this token transfer
+     * @param commandId The unique hash for this token transfer
      * @param expressCaller The address of the express caller
      */
-    function _setExpressSendToken(
+    function _setExpressReceiveToken(
         bytes32 tokenId,
         address destinationAddress,
         uint256 amount,
-        bytes32 sendHash,
+        bytes32 commandId,
         address expressCaller
     ) internal {
-        uint256 slot = _getExpressSendTokenSlot(tokenId, destinationAddress, amount, sendHash);
+        uint256 slot = _getExpressReceiveTokenSlot(tokenId, destinationAddress, amount, commandId);
+        address prevExpressCaller;
+        assembly {
+            prevExpressCaller := sload(slot)
+        }
+        if (prevExpressCaller != address(0)) revert AlreadyExpressCalled();
         assembly {
             sstore(slot, expressCaller)
         }
-        emit ExpressExecuted(tokenId, destinationAddress, amount, sendHash, expressCaller);
+        // TODO: ExpressReceived -> ExpressReceive, since not really executing arbitrary logic
+        emit ExpressReceived(tokenId, destinationAddress, amount, commandId, expressCaller);
     }
 
     /**
@@ -103,24 +109,37 @@ contract ExpressCallHandler is IExpressCallHandler {
      * @param destinationAddress The address of the recipient on the destination chain
      * @param amount The amount of tokens to be sent
      * @param data The data associated with the token transfer
-     * @param sendHash The unique hash for this token transfer
+     * @param commandId The unique hash for this token transfer
      * @param expressCaller The address of the express caller
      */
-    function _setExpressSendTokenWithData(
+    function _setExpressReceiveTokenWithData(
         bytes32 tokenId,
         string memory sourceChain,
         bytes memory sourceAddress,
         address destinationAddress,
         uint256 amount,
         bytes calldata data,
-        bytes32 sendHash,
+        bytes32 commandId,
         address expressCaller
     ) internal {
-        uint256 slot = _getExpressSendTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
+        uint256 slot = _getExpressReceiveTokenWithDataSlot(
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data,
+            commandId
+        );
+        address prevExpressCaller;
+        assembly {
+            prevExpressCaller := sload(slot)
+        }
+        if (prevExpressCaller != address(0)) revert AlreadyExpressCalled();
         assembly {
             sstore(slot, expressCaller)
         }
-        emit ExpressExecutedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash, expressCaller);
+        emit ExpressReceivedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, expressCaller);
     }
 
     /**
@@ -128,16 +147,16 @@ contract ExpressCallHandler is IExpressCallHandler {
      * @param tokenId The ID of the token being sent
      * @param destinationAddress The address of the recipient
      * @param amount The amount of tokens to be sent
-     * @param sendHash The unique hash for this token transfer
+     * @param commandId The unique hash for this token transfer
      * @return expressCaller The address of the express caller for this token transfer
      */
-    function getExpressSendToken(
+    function getExpressReceiveToken(
         bytes32 tokenId,
         address destinationAddress,
         uint256 amount,
-        bytes32 sendHash
+        bytes32 commandId
     ) public view returns (address expressCaller) {
-        uint256 slot = _getExpressSendTokenSlot(tokenId, destinationAddress, amount, sendHash);
+        uint256 slot = _getExpressReceiveTokenSlot(tokenId, destinationAddress, amount, commandId);
         assembly {
             expressCaller := sload(slot)
         }
@@ -151,19 +170,27 @@ contract ExpressCallHandler is IExpressCallHandler {
      * @param destinationAddress The address of the recipient on the destination chain
      * @param amount The amount of tokens to be sent
      * @param data The data associated with the token transfer
-     * @param sendHash The unique hash for this token transfer
+     * @param commandId The unique hash for this token transfer
      * @return expressCaller The address of the express caller for this token transfer
      */
-    function getExpressSendTokenWithData(
+    function getExpressReceiveTokenWithData(
         bytes32 tokenId,
         string memory sourceChain,
         bytes memory sourceAddress,
         address destinationAddress,
         uint256 amount,
         bytes calldata data,
-        bytes32 sendHash
+        bytes32 commandId
     ) public view returns (address expressCaller) {
-        uint256 slot = _getExpressSendTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
+        uint256 slot = _getExpressReceiveTokenWithDataSlot(
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data,
+            commandId
+        );
         assembly {
             expressCaller := sload(slot)
         }
@@ -174,16 +201,16 @@ contract ExpressCallHandler is IExpressCallHandler {
      * @param tokenId The ID of the token being sent
      * @param destinationAddress The address of the recipient
      * @param amount The amount of tokens to be sent
-     * @param sendHash The unique hash for this token transfer
+     * @param commandId The unique hash for this token transfer
      * @return expressCaller The address of the express caller for this token transfer
      */
-    function _popExpressSendToken(
+    function _popExpressReceiveToken(
         bytes32 tokenId,
         address destinationAddress,
         uint256 amount,
-        bytes32 sendHash
+        bytes32 commandId
     ) internal returns (address expressCaller) {
-        uint256 slot = _getExpressSendTokenSlot(tokenId, destinationAddress, amount, sendHash);
+        uint256 slot = _getExpressReceiveTokenSlot(tokenId, destinationAddress, amount, commandId);
         assembly {
             expressCaller := sload(slot)
         }
@@ -191,7 +218,7 @@ contract ExpressCallHandler is IExpressCallHandler {
             assembly {
                 sstore(slot, 0)
             }
-            emit ExpressExecutionFulfilled(tokenId, destinationAddress, amount, sendHash, expressCaller);
+            emit ExpressExecutionFulfilled(tokenId, destinationAddress, amount, commandId, expressCaller);
         }
     }
 
@@ -203,19 +230,27 @@ contract ExpressCallHandler is IExpressCallHandler {
      * @param destinationAddress The address of the recipient on the destination chain
      * @param amount The amount of tokens to be sent
      * @param data The data associated with the token transfer
-     * @param sendHash The unique hash for this token transfer
+     * @param commandId The unique hash for this token transfer
      * @return expressCaller The address of the express caller for this token transfer
      */
-    function _popExpressSendTokenWithData(
+    function _popExpressReceiveTokenWithData(
         bytes32 tokenId,
         string memory sourceChain,
         bytes memory sourceAddress,
         address destinationAddress,
         uint256 amount,
         bytes memory data,
-        bytes32 sendHash
+        bytes32 commandId
     ) internal returns (address expressCaller) {
-        uint256 slot = _getExpressSendTokenWithDataSlot(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, sendHash);
+        uint256 slot = _getExpressReceiveTokenWithDataSlot(
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data,
+            commandId
+        );
         assembly {
             expressCaller := sload(slot)
         }
@@ -230,7 +265,7 @@ contract ExpressCallHandler is IExpressCallHandler {
                 destinationAddress,
                 amount,
                 data,
-                sendHash,
+                commandId,
                 expressCaller
             );
         }

@@ -81,11 +81,23 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
      */
-    function sendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable virtual {
+    function sendToken(
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata
+    ) external payable virtual {
         address sender = msg.sender;
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
-        _transmitSendToken(sender, destinationChain, destinationAddress, amount);
+        interchainTokenService.transmitSendToken{ value: msg.value }(
+            _getTokenId(),
+            sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            metadata
+        );
     }
 
     /**
@@ -104,46 +116,39 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         address sender = msg.sender;
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
-        _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, data);
+        uint32 version = 0;
+        interchainTokenService.transmitSendToken{ value: msg.value }(
+            _getTokenId(),
+            sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            abi.encodePacked(version, data)
+        );
     }
 
-    /**
-     * @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
-     * @param sender the address of the user paying for the cross chain transfer.
-     * @param destinationChain the name of the chain to send tokens to.
-     * @param destinationAddress the address of the user to send tokens to.
-     * @param amount the amount of tokens to take from msg.sender.
-     */
-    function sendSelf(
-        address sender,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount
-    ) external payable virtual onlyToken {
-        amount = _takeToken(sender, amount);
-        _addFlowOut(amount);
-        _transmitSendToken(sender, destinationChain, destinationAddress, amount);
-    }
-
-    /**
-     * @notice Calls the service to initiate the a cross-chain transfer with data after taking the appropriate
-     * amount of tokens from the user. This can only be called by the token itself.
-     * @param sender the address of the user paying for the cross chain transfer.
-     * @param destinationChain the name of the chain to send tokens to.
-     * @param destinationAddress the address of the user to send tokens to.
-     * @param amount the amount of tokens to take from msg.sender.
-     * @param data the data to pass to the destination contract.
-     */
-    function callContractWithSelf(
+    /// @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
+    /// @param sender the address of the user paying for the cross chain transfer.
+    /// @param destinationChain the name of the chain to send tokens to.
+    /// @param destinationAddress the address of the user to send tokens to.
+    /// @param amount the amount of tokens to take from msg.sender.
+    function transmitInterchainTransfer(
         address sender,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata data
+        bytes calldata metadata
     ) external payable virtual onlyToken {
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
-        _transmitSendTokenWithData(sender, destinationChain, destinationAddress, amount, data);
+        interchainTokenService.transmitSendToken{ value: msg.value }(
+            _getTokenId(),
+            sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            metadata
+        );
     }
 
     /**
@@ -185,48 +190,7 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     function _giveToken(address from, uint256 amount) internal virtual returns (uint256);
 
     /**
-     * @notice Calls the interchain token service to send tokens to an address on another chain
-     * @param sender The sender of the tokens
-     * @param destinationChain The chain to which the tokens will be sent
-     * @param destinationAddress The address on the destination chain where the tokens will be sent
-     * @param amount The amount of tokens to send
-     */
-    function _transmitSendToken(
-        address sender,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount
-    ) internal virtual {
-        interchainTokenService.transmitSendToken{ value: msg.value }(_getTokenId(), sender, destinationChain, destinationAddress, amount);
-    }
-
-    /**
-     * @notice Calls the interchain token service to send tokens to and call a function on a contract on another chain
-     * @param sender The sender of the tokens
-     * @param destinationChain The chain to which the tokens will be sent
-     * @param destinationAddress The address on the destination chain where the tokens will be sent
-     * @param amount The amount of tokens to send
-     * @param data The data needed to call the contract on the destination chain
-     */
-    function _transmitSendTokenWithData(
-        address sender,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes calldata data
-    ) internal virtual {
-        interchainTokenService.transmitSendTokenWithData{ value: msg.value }(
-            _getTokenId(),
-            sender,
-            destinationChain,
-            destinationAddress,
-            amount,
-            data
-        );
-    }
-
-    /**
-     * @notice Additional setup logic to perform
+     * @dev Additional setup logic to perform
      * Must be overridden in the inheriting contract.
      * @param params The setup parameters
      */

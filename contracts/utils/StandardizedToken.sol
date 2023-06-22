@@ -16,15 +16,14 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-contract StandardizedToken is InterchainToken, Implementation, Distributable, IERC20BurnableMintable {
+abstract contract StandardizedToken is InterchainToken, Implementation, Distributable, IERC20BurnableMintable {
     using AddressBytesUtils for bytes;
 
     address public tokenManager;
-    bool public tokenManagerRequiresApproval_;
 
-    // bytes32(uint256(keccak256('standardized-token')) - 1)
+    // keccak256('standardized-token'))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 public constant contractId = 0xf1ebb9a018916df92653eef7dc1160cdec8e19ba8f75f1500287c87894dc8db7;
+    bytes32 public constant contractId = 0x8f0d3a2d3a4c902b07e15645c3d56cc5d37941403c982473aeb5a1c964a34cd5;
 
     /**
      * @notice Returns the token manager for this token
@@ -32,14 +31,6 @@ contract StandardizedToken is InterchainToken, Implementation, Distributable, IE
      */
     function getTokenManager() public view override returns (ITokenManager) {
         return ITokenManager(tokenManager);
-    }
-
-    /**
-     * @notice Indicates if the token manager requires approval
-     * @return bool True if token manager requires approval, false otherwise
-     */
-    function tokenManagerRequiresApproval() public view override returns (bool) {
-        return tokenManagerRequiresApproval_;
     }
 
     /**
@@ -55,7 +46,6 @@ contract StandardizedToken is InterchainToken, Implementation, Distributable, IE
             (tokenManager_, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
             _setDistributor(distributor_);
             tokenManager = tokenManager_;
-            tokenManagerRequiresApproval_ = distributor_ != tokenManager;
             _setDomainTypeSignatureHash(tokenName);
             name = tokenName;
         }

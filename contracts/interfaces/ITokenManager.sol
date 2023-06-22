@@ -16,7 +16,12 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplement
 
     function tokenAddress() external view returns (address);
 
-    function sendToken(string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable;
+    function sendToken(
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata
+    ) external payable;
 
     function callContractWithInterchainToken(
         string calldata destinationChain,
@@ -25,14 +30,12 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplement
         bytes calldata data
     ) external payable;
 
-    function sendSelf(address from, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount) external payable;
-
-    function callContractWithSelf(
+    function transmitInterchainTransfer(
         address from,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata data
+        bytes calldata metadata
     ) external payable;
 
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
