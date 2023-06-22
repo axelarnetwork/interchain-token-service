@@ -9,7 +9,7 @@ const { defaultAbiCoder, solidityPack, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 
-const TokenManager = require('../artifacts/contracts/tokenManager/TokenManager.sol/TokenManager.json');
+const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
 
 const { approveContractCall, getRandomBytes32 } = require('../scripts/utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
