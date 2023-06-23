@@ -9,7 +9,6 @@ import { ERC20 } from '../token-implementations/ERC20.sol';
 /**
  * @title An example implementation of the IInterchainToken.
  * // TODO: probably should omit author due to company branding
- * @author Foivos Antoulinakis
  * @notice The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
  * that can be used to create approvals, and that `allowance` is a mapping.
  * @dev You can skip the `tokenManagerRequiresApproval()` function altogether if you know what it should return for your token.
@@ -62,7 +61,14 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
          * @dev if you know the value of `tokenManagerRequiresApproval()` you can just skip the if statement and just do nothing or _approve.
          */
         if (tokenManagerRequiresApproval()) {
-            _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
+            uint256 allowance_ = allowance[sender][address(tokenManager)];
+            if (allowance_ != type(uint256).max) {
+                if (allowance_ > type(uint256).max - amount) {
+                    allowance_ = type(uint256).max - amount;
+                }
+
+                _approve(sender, address(tokenManager), allowance_ + amount);
+            }
         }
 
         // Metadata semantics are defined by the token service and thus should be passed as-is.

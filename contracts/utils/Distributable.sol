@@ -6,7 +6,6 @@ import { IDistributable } from '../interfaces/IDistributable.sol';
 
 /**
  * @title Distributable Contract
- * @author Foivos Antoulinakis
  * @dev A contract module which provides a basic access control mechanism, where
  * there is an account (a distributor) that can be granted exclusive access to
  * specific functions. This module is used through inheritance.
@@ -43,6 +42,7 @@ contract Distributable is IDistributable {
         assembly {
             sstore(DISTRIBUTOR_SLOT, distributor_)
         }
+        emit DistributorChanged(distributor_);
     }
 
     /**

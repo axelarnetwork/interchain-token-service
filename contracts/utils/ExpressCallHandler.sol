@@ -6,7 +6,6 @@ import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
 
 /**
  * @title ExpressCallHandler
- * @author Foivos Antoulinakis
  * @dev Integrates the interchain token service with the GMP express service by providing methods to handle express calls for
  * token transfers and token transfers with contract calls between chains. Implements the IExpressCallHandler interface.
  */
@@ -16,8 +15,6 @@ contract ExpressCallHandler is IExpressCallHandler {
     uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN = 0x67c7b41c1cb0375e36084c4ec399d005168e83425fa471b9224f6115af865619;
     // uint256(keccak256('prefix-express-give-token-with-data'));
     uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN_WITH_DATA = 0x3e607cc12a253b1d9f677a03d298ad869a90a8ba4bd0fb5739e7d79db7cdeaad;
-    mapping(bytes32 => address) private expressGiveToken;
-    mapping(bytes32 => address) private expressGiveTokenWithData;
 
     /**
      * @notice Calculates the unique slot for a given express token transfer.

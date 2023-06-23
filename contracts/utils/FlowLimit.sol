@@ -8,7 +8,6 @@ import { IFlowLimit } from '../interfaces/IFlowLimit.sol';
 // solhint-disable not-rely-on-time
 /**
  * @title FlowLimit
- * @author Foivos Antoulinakis
  * @notice Implements flow limit logic for interchain token transfers.
  * @dev This contract implements low-level assembly for optimization purposes.
  */

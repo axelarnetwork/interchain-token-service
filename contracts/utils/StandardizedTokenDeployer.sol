@@ -10,7 +10,6 @@ import { StandardizedTokenProxy } from '../proxies/StandardizedTokenProxy.sol';
 
 /**
  * @title StandardizedTokenDeployer
- * @author Foivos Antoulinakis
  * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
  */
 contract StandardizedTokenDeployer is IStandardizedTokenDeployer {

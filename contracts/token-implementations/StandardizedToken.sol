@@ -14,7 +14,6 @@ import { Distributable } from '../utils/Distributable.sol';
 // TODO: Maybe move the token contracts to a tokens folder since they're more than a basic util
 /**
  * @title StandardizedToken
- * @author Foivos Antoulinakis
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */

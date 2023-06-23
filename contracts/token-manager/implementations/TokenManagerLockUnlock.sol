@@ -9,7 +9,6 @@ import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar
 
 /**
  * @title TokenManagerLockUnlock
- * @author Foivos Antoulinakis
  * @notice This contract is an implementation of TokenManager that locks and unlocks a specific token on behalf of the interchain token service.
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
@@ -26,6 +25,10 @@ contract TokenManagerLockUnlock is TokenManagerAddressStorage {
         // solhint-disable-next-line no-empty-blocks
         TokenManagerAddressStorage(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
+
+    function implementationType() external pure returns (uint256) {
+        return 0;
+    }
 
     /**
      * @dev Sets up the token address.

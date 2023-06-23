@@ -13,7 +13,6 @@ import { Implementation } from '../utils/Implementation.sol';
 
 /**
  * @title The main functionality of TokenManagers.
- * @author Foivos Antoulinakis
  * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
  */
 abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implementation {

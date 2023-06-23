@@ -6,7 +6,6 @@ import { IImplementation } from '../interfaces/IImplementation.sol';
 
 /**
  * @title Implementation
- * @author Foivos Antoulinakis
  * @notice This contract serves as a base for other contracts and enforces a proxy-first access restriction.
  * @dev Derived contracts must implement the setup function.
  */

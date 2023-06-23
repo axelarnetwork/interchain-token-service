@@ -2,16 +2,14 @@
 
 pragma solidity 0.8.9;
 import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
-import { StringToAddress, AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/AddressString.sol';
+import { AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/AddressString.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
 /**
  * @title LinkerRouter
- * @author Foivos Antoulinakis
  * @dev Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract
  */
 contract LinkerRouter is ILinkerRouter, Upgradable {
-    using StringToAddress for string;
     using AddressToString for address;
 
     mapping(string => bytes32) public remoteAddressHashes;
@@ -26,15 +24,17 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     /**
      * @dev Constructs the LinkerRouter contract, both array parameters must be equal in length
      * @param _interchainTokenServiceAddress Address of the interchain token service
-     * @param trustedChainNames List of trusted chain names
-     * @param trustedAddresses List of trusted addresses
      */
-    constructor(address _interchainTokenServiceAddress, string[] memory trustedChainNames, string[] memory trustedAddresses) {
+    constructor(address _interchainTokenServiceAddress) {
         if (_interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         interchainTokenServiceAddress = _interchainTokenServiceAddress;
+        interchainTokenServiceAddressHash = keccak256(bytes(_lowerCase(interchainTokenServiceAddress.toString())));
+    }
+
+    function _setup(bytes calldata params) internal override {
+        (string[] memory trustedChainNames, string[] memory trustedAddresses) = abi.decode(params, (string[], string[]));
         uint256 length = trustedChainNames.length;
         if (length != trustedAddresses.length) revert LengthMismatch();
-        interchainTokenServiceAddressHash = keccak256(bytes(_lowerCase(interchainTokenServiceAddress.toString())));
         for (uint256 i; i < length; ++i) {
             addTrustedAddress(trustedChainNames[i], trustedAddresses[i]);
         }
@@ -79,6 +79,7 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
         if (bytes(addr).length == 0) revert ZeroStringLength();
         remoteAddressHashes[chain] = keccak256(bytes(_lowerCase(addr)));
         remoteAddresses[chain] = addr;
+        emit TrustedAddressAdded(chain, addr);
     }
 
     /**
@@ -89,6 +90,7 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
         if (bytes(chain).length == 0) revert ZeroStringLength();
         remoteAddressHashes[chain] = bytes32(0);
         remoteAddresses[chain] = '';
+        emit TrustedAddressRemoved(chain);
     }
 
     /**
@@ -98,7 +100,9 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     function addGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
         uint256 length = chainNames.length;
         for (uint256 i; i < length; ++i) {
-            supportedByGateway[chainNames[i]] = true;
+            string calldata chainName = chainNames[i];
+            supportedByGateway[chainName] = true;
+            emit GatewaySupportedChainAdded(chainName);
         }
     }
 
@@ -109,7 +113,9 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     function removeGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
         uint256 length = chainNames.length;
         for (uint256 i; i < length; ++i) {
-            supportedByGateway[chainNames[i]] = false;
+            string calldata chainName = chainNames[i];
+            supportedByGateway[chainName] = false;
+            emit GatewaySupportedChainRemoved(chainName);
         }
     }
 

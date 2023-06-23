@@ -10,7 +10,6 @@ import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts
 
 /**
  * @title TokenManagerMintBurn
- * @author Foivos Antoulinakis
  * @notice This contract is an implementation of TokenManager that mints and burns a specific token on behalf of the interchain token service.
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
@@ -27,6 +26,10 @@ contract TokenManagerMintBurn is TokenManagerAddressStorage {
         // solhint-disable-next-line no-empty-blocks
         TokenManagerAddressStorage(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
+
+    function implementationType() external pure returns (uint256) {
+        return 1;
+    }
 
     /**
      * @dev Sets up the token address.

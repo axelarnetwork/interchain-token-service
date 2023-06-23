@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 
 interface IExpressCallHandler {
     error AlreadyExpressCalled();
+    error SameDestinationAsCaller();
 
     event ExpressReceived(
         bytes32 indexed tokenId,
