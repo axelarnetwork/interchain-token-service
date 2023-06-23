@@ -30,7 +30,6 @@ import { Multicall } from '../utils/Multicall.sol';
 // TODO: Change folder name to interchain-token-service, and similarly for other folders for consistent naming convention
 /**
  * @title The Interchain Token Service
- * @author Foivos Antoulinakis
  * @notice This contract is responsible for facilitating cross chain token transfers.
  * It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
  * @dev The only storage used here is for ExpressCalls
@@ -98,14 +97,11 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
-        if (tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)] == address(0)) revert ZeroAddress();
-        implementationLockUnlock = tokenManagerImplementations[uint256(TokenManagerType.LOCK_UNLOCK)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)] == address(0)) revert ZeroAddress();
-        implementationMintBurn = tokenManagerImplementations[uint256(TokenManagerType.MINT_BURN)];
-        if (tokenManagerImplementations[uint256(TokenManagerType.LIQUIDITY_POOL)] == address(0)) revert ZeroAddress();
-        implementationLiquidityPool = tokenManagerImplementations[uint256(TokenManagerType.LIQUIDITY_POOL)];
+        implementationLockUnlock = _sanitizeTokenManageImplementaion(tokenManagerImplementations, uint256(TokenManagerType.LOCK_UNLOCK));
+        implementationMintBurn = _sanitizeTokenManageImplementaion(tokenManagerImplementations, uint256(TokenManagerType.MINT_BURN));
+        implementationLiquidityPool = _sanitizeTokenManageImplementaion(tokenManagerImplementations, uint256(TokenManagerType.LIQUIDITY_POOL));
 
-        // TODO: save this as a string instead. chainNameHash is read on-chain so the gas saving is useful there, but we don't need to truncate chainName
+
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -161,7 +157,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
      */
     function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = getTokenManagerAddress(tokenId);
-        if (ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerNotDeployed(tokenId);
+        if (ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerDoesNotExist(tokenId);
     }
 
     /**
@@ -488,6 +484,12 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     /****************\
     INTERNAL FUNCTIONS
     \****************/
+
+    function _sanitizeTokenManageImplementaion(address[] memory implementaions, uint256 i) internal pure returns(address impl) {
+        impl = implementaions[i];
+        if(impl == address(0)) revert ZeroAddress();
+        if(ITokenManager(impl).implementationType() != i) revert InvalidTokenManagerImplementation();
+    }
 
     /**
      * @notice Executes operations based on the payload and selector.

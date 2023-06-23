@@ -1014,10 +1014,10 @@ error LengthMismatch()
 error NotRemoteService()
 ```
 
-### TokenManagerNotDeployed
+### TokenManagerDoesNotExist
 
 ```solidity
-error TokenManagerNotDeployed(bytes32 tokenId)
+error TokenManagerDoesNotExist(bytes32 tokenId)
 ```
 
 ### NotTokenManager

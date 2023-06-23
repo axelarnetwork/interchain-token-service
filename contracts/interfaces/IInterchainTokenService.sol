@@ -15,8 +15,9 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     // more generic error
     error ZeroAddress();
     error LengthMismatch();
+    error InvalidTokenManagerImplementation();
     error NotRemoteService();
-    error TokenManagerNotDeployed(bytes32 tokenId);
+    error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager();
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error NotCanonicalTokenManager();

@@ -1,5 +1,6 @@
 const { ethers } = require('hardhat');
 const { Contract } = ethers;
+const { defaultAbiCoder } = ethers.utils;
 const InterchainTokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
 const { deployCreate3Contract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 
@@ -11,9 +12,10 @@ async function deployContract(wallet, contractName, args = []) {
 }
 
 async function deployLinkerRouter(wallet, interchainTokenServiceAddress) {
-    const linkerRouterImpl = await deployContract(wallet, 'LinkerRouter', [interchainTokenServiceAddress, [], []]);
+    const linkerRouterImpl = await deployContract(wallet, 'LinkerRouter', [interchainTokenServiceAddress]);
+    const params = defaultAbiCoder.encode(['string[]', 'string[]'], [[], []]);
 
-    const linkerRouterProxy = await deployContract(wallet, 'LinkerRouterProxy', [linkerRouterImpl.address, wallet.address]);
+    const linkerRouterProxy = await deployContract(wallet, 'LinkerRouterProxy', [linkerRouterImpl.address, wallet.address, params]);
     const linkerRouter = new Contract(linkerRouterProxy.address, linkerRouterImpl.interface, wallet);
     return linkerRouter;
 }

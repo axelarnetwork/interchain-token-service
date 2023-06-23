@@ -16,6 +16,8 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplement
 
     function tokenAddress() external view returns (address);
 
+    function implementationType() external pure returns (uint256);
+
     function sendToken(
         string calldata destinationChain,
         bytes calldata destinationAddress,

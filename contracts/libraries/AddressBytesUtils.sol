@@ -4,16 +4,18 @@ pragma solidity 0.8.9;
 
 /**
  * @title AddressBytesUtils
- * @author Foivos Antoulinakis
  * @dev This library provides utility functions to convert between `address` and `bytes`.
  */
 library AddressBytesUtils {
+    error InvalidBytesLength(bytes bytesAddress);
+
     /**
      * @dev Converts a bytes address to an address type.
      * @param bytesAddress The bytes representation of an address
      * @return addr The converted address
      */
     function toAddress(bytes memory bytesAddress) internal pure returns (address addr) {
+        if(bytesAddress.length != 20) revert InvalidBytesLength(bytesAddress);
         // solhint-disable-next-line no-inline-assembly
         assembly {
             addr := mload(add(bytesAddress, 20))

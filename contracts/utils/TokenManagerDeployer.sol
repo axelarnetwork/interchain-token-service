@@ -10,7 +10,6 @@ import { TokenManagerProxy } from '../proxies/TokenManagerProxy.sol';
 
 /**
  * @title TokenManagerDeployer
- * @author Foivos Antoulinakis
  * @notice This contract is used to deploy new instances of the TokenManagerProxy contract.
  */
 contract TokenManagerDeployer is ITokenManagerDeployer {

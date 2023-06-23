@@ -6,7 +6,6 @@ import { IAdminable } from '../interfaces/IAdminable.sol';
 
 /**
  * @title Adminable Contract
- * @author Foivos Antoulinakis
  * @dev A contract module which provides a basic access control mechanism, where
  * there is an account (an admin) that can be granted exclusive access to
  * specific functions. This module is used through inheritance.
@@ -43,6 +42,7 @@ contract Adminable is IAdminable {
         assembly {
             sstore(ADMIN_SLOT, admin_)
         }
+        emit AdminChanged(admin_);
     }
 
     /**

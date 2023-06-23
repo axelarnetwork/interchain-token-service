@@ -6,7 +6,6 @@ import { IMulticall } from '../interfaces/IMulticall.sol';
 
 /**
  * @title Multicall
- * @author Foivos Antoulinakis
  * @notice This contract is a multi-functional smart contract which allows for multiple
  * contract calls in a single transaction.
  */

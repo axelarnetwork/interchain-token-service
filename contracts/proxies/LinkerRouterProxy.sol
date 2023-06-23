@@ -6,7 +6,6 @@ import { Proxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgrada
 
 /**
  * @title LinkerRouterProxy
- * @author Foivos Antoulinakis
  * @dev Proxy contract for the LinkerRouter contract. Inherits from the Proxy contract.
  */
 contract LinkerRouterProxy is Proxy {
@@ -14,12 +13,14 @@ contract LinkerRouterProxy is Proxy {
      * @dev Constructs the LinkerRouterProxy contract.
      * @param implementationAddress Address of the LinkerRouter implementation
      * @param owner Address of the owner of the proxy
+     * @param params The params to be passed to the _setup function of the implementation.
      */
     constructor(
         address implementationAddress,
-        address owner
+        address owner,
+        bytes memory params
     )
-        Proxy(implementationAddress, owner, new bytes(0)) // solhint-disable-next-line no-empty-blocks
+        Proxy(implementationAddress, owner, params) // solhint-disable-next-line no-empty-blocks
     {}
 
     /**
