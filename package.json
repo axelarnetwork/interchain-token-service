@@ -1,13 +1,14 @@
 {
-  "name": "@axelar-network/interchain-token-standard",
+  "name": "@axelar-network/interchain-token-service",
   "version": "0.1.0",
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
     "build": "rm -rf cache artifacts && npx hardhat compile",
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/*.js'",
-    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js'",
-    "flatten": "sh scripts/flatten-contracts.sh"
+    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",
+    "flatten": "sh scripts/flatten-contracts.sh",
+    "coverage": "cross-env COVERAGE=true hardhat coverage"
   },
   "keywords": [],
   "author": "",
@@ -17,16 +18,18 @@
     "@axelar-network/axelar-gmp-sdk-solidity": "^3.2.1"
   },
   "devDependencies": {
+    "@axelar-network/axelar-contract-deployments": "git://github.com/axelarnetwork/axelar-contract-deployments.git#7ca071fc69fb2cd39b175cdb92eb0e04b71acb15",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "dotenv": "^16.0.1",
     "chai": "^4.3.7",
-    "eslint": "^8.36.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.0.1",
+    "eslint": "^8.43.0",
     "eslint-config-richardpringle": "^2.0.0",
     "fs-extra": "^11.1.1",
     "hardhat": "^2.13.0",
     "mocha": "^10.2.0",
-    "prettier": "^2.8.7",
-    "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "prettier": "^2.8.8",
+    "prettier-plugin-solidity": "^1.1.3",
     "solhint": "^3.4.1",
     "solidity-docgen": "^0.6.0-beta.35"
   },
