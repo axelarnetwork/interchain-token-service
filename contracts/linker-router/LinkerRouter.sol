@@ -29,7 +29,6 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
         if (_interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         interchainTokenServiceAddress = _interchainTokenServiceAddress;
         interchainTokenServiceAddressHash = keccak256(bytes(_lowerCase(interchainTokenServiceAddress.toString())));
-
     }
 
     function _setup(bytes calldata params) internal override {

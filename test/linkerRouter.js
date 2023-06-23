@@ -108,7 +108,9 @@ describe('LinkerRouter', () => {
     });
 
     it('Should be able to add a chain as gateway supported as the onwer', async () => {
-        await expect(linkerRouter.addGatewaySupportedChains([otherChain])).to.emit(linkerRouter, 'GatewaySupportedChainAdded').withArgs(otherChain);
+        await expect(linkerRouter.addGatewaySupportedChains([otherChain]))
+            .to.emit(linkerRouter, 'GatewaySupportedChainAdded')
+            .withArgs(otherChain);
         expect(await linkerRouter.supportedByGateway(otherChain)).to.equal(true);
     });
 
@@ -120,7 +122,9 @@ describe('LinkerRouter', () => {
     });
 
     it('Should be able to remove a chain as gateway supported as the onwer', async () => {
-        await expect(linkerRouter.removeGatewaySupportedChains([otherChain])).to.emit(linkerRouter, 'GatewaySupportedChainRemoved').withArgs(otherChain);
+        await expect(linkerRouter.removeGatewaySupportedChains([otherChain]))
+            .to.emit(linkerRouter, 'GatewaySupportedChainRemoved')
+            .withArgs(otherChain);
         expect(await linkerRouter.supportedByGateway(otherChain)).to.equal(false);
     });
 });

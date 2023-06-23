@@ -15,7 +15,7 @@ library AddressBytesUtils {
      * @return addr The converted address
      */
     function toAddress(bytes memory bytesAddress) internal pure returns (address addr) {
-        if(bytesAddress.length != 20) revert InvalidBytesLength(bytesAddress);
+        if (bytesAddress.length != 20) revert InvalidBytesLength(bytesAddress);
         // solhint-disable-next-line no-inline-assembly
         assembly {
             addr := mload(add(bytesAddress, 20))

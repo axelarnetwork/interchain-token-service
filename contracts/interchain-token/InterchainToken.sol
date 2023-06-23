@@ -62,7 +62,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
          */
         if (tokenManagerRequiresApproval()) {
             uint256 allowance_ = allowance[sender][address(tokenManager)];
-            if(allowance_ != type(uint256).max) {
+            if (allowance_ != type(uint256).max) {
                 _approve(sender, address(tokenManager), allowance_ + amount);
             }
         }

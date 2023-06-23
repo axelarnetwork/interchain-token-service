@@ -97,10 +97,12 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
-        implementationLockUnlock = _sanitizeTokenManageImplementaion(tokenManagerImplementations, uint256(TokenManagerType.LOCK_UNLOCK));
-        implementationMintBurn = _sanitizeTokenManageImplementaion(tokenManagerImplementations, uint256(TokenManagerType.MINT_BURN));
-        implementationLiquidityPool = _sanitizeTokenManageImplementaion(tokenManagerImplementations, uint256(TokenManagerType.LIQUIDITY_POOL));
-
+        implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, uint256(TokenManagerType.LOCK_UNLOCK));
+        implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, uint256(TokenManagerType.MINT_BURN));
+        implementationLiquidityPool = _sanitizeTokenManagerImplementation(
+            tokenManagerImplementations,
+            uint256(TokenManagerType.LIQUIDITY_POOL)
+        );
 
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
@@ -386,9 +388,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
-        uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
-        amount = token.balanceOf(destinationAddress) - balance;
         _setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, caller);
     }
 
@@ -416,9 +416,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
-        uint256 balance = token.balanceOf(destinationAddress);
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
-        amount = token.balanceOf(destinationAddress) - balance;
         _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
         _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, caller);
     }
@@ -485,10 +483,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     INTERNAL FUNCTIONS
     \****************/
 
-    function _sanitizeTokenManageImplementaion(address[] memory implementaions, uint256 i) internal pure returns(address impl) {
-        impl = implementaions[i];
-        if(impl == address(0)) revert ZeroAddress();
-        if(ITokenManager(impl).implementationType() != i) revert InvalidTokenManagerImplementation();
+    function _sanitizeTokenManagerImplementation(address[] memory implementaions, uint256 i) internal pure returns (address implementation) {
+        implementation = implementaions[i];
+        if (implementation == address(0)) revert ZeroAddress();
+        if (ITokenManager(implementation).implementationType() != i) revert InvalidTokenManagerImplementation();
     }
 
     /**

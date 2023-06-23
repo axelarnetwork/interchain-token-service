@@ -15,12 +15,6 @@ contract ExpressCallHandler is IExpressCallHandler {
     uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN = 0x67c7b41c1cb0375e36084c4ec399d005168e83425fa471b9224f6115af865619;
     // uint256(keccak256('prefix-express-give-token-with-data'));
     uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN_WITH_DATA = 0x3e607cc12a253b1d9f677a03d298ad869a90a8ba4bd0fb5739e7d79db7cdeaad;
-
-    modifier onlyDifferentCaller(address destinationAddress, address expressCaller) {
-        if(destinationAddress == expressCaller) revert SameDestinationAsCaller();
-        _;
-    }
-
     /**
      * @notice Calculates the unique slot for a given express token transfer.
      * @param tokenId The ID of the token being sent
@@ -88,7 +82,7 @@ contract ExpressCallHandler is IExpressCallHandler {
         uint256 amount,
         bytes32 commandId,
         address expressCaller
-    ) internal onlyDifferentCaller(destinationAddress, expressCaller) {
+    ) internal {
         uint256 slot = _getExpressReceiveTokenSlot(tokenId, destinationAddress, amount, commandId);
         address prevExpressCaller;
         assembly {
@@ -123,7 +117,7 @@ contract ExpressCallHandler is IExpressCallHandler {
         bytes calldata data,
         bytes32 commandId,
         address expressCaller
-    ) internal onlyDifferentCaller(destinationAddress, expressCaller) {
+    ) internal {
         uint256 slot = _getExpressReceiveTokenWithDataSlot(
             tokenId,
             sourceChain,

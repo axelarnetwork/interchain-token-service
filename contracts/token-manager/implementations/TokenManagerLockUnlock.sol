@@ -26,7 +26,6 @@ contract TokenManagerLockUnlock is TokenManagerAddressStorage {
         TokenManagerAddressStorage(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
     {}
 
-
     function implementationType() external pure returns (uint256) {
         return 0;
     }
