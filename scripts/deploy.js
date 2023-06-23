@@ -21,7 +21,6 @@ async function deployLinkerRouter(wallet, interchainTokenServiceAddress) {
 }
 
 async function deployMockGateway(wallet) {
-    const tokenDeployer = await deployContract(wallet, 'TokenDeployer', []);
     const gateway = await deployContract(wallet, 'MockAxelarGateway');
     return gateway;
 }

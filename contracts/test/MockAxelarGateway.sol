@@ -11,7 +11,7 @@ contract MockAxelarGateway is IMockAxelarGateway {
     mapping(bytes32 => bytes) private _bytesStorage;
     mapping(bytes32 => bool) private _boolStorage;
     mapping(bytes32 => int256) private _intStorage;
-    
+
     bytes32 internal constant PREFIX_COMMAND_EXECUTED = keccak256('command-executed');
     bytes32 internal constant PREFIX_TOKEN_ADDRESS = keccak256('token-address');
     bytes32 internal constant PREFIX_TOKEN_TYPE = keccak256('token-type');
@@ -64,9 +64,13 @@ contract MockAxelarGateway is IMockAxelarGateway {
         return _boolStorage[_getIsCommandExecutedKey(commandId)];
     }
 
-    /******************\
-    |* Self Functions *|
-    \******************/
+    function tokenAddresses(string calldata symbol) external view returns (address tokenAddress) {
+        tokenAddress = _addressStorage[_getTokenAddressKey(symbol)];
+    }
+
+    /********************\
+    |* Setter Functions *|
+    \********************/
 
     function approveContractCall(bytes calldata params, bytes32 commandId) external {
         (
@@ -82,10 +86,13 @@ contract MockAxelarGateway is IMockAxelarGateway {
         emit ContractCallApproved(commandId, sourceChain, sourceAddress, contractAddress, payloadHash, sourceTxHash, sourceEventIndex);
     }
 
+    function setTokenAddress(string calldata symbol, address tokenAddress) external {
+        _addressStorage[_getTokenAddressKey(symbol)] = tokenAddress;
+    }
+
     /********************\
     |* Pure Key Getters *|
     \********************/
-
 
     function _getIsCommandExecutedKey(bytes32 commandId) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(PREFIX_COMMAND_EXECUTED, commandId));
@@ -99,6 +106,10 @@ contract MockAxelarGateway is IMockAxelarGateway {
         bytes32 payloadHash
     ) internal pure returns (bytes32) {
         return keccak256(abi.encode(PREFIX_CONTRACT_CALL_APPROVED, commandId, sourceChain, sourceAddress, contractAddress, payloadHash));
+    }
+
+    function _getTokenAddressKey(string memory symbol) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(PREFIX_TOKEN_ADDRESS, symbol));
     }
 
     /********************\

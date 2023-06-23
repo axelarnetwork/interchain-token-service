@@ -29,13 +29,7 @@ interface IMockAxelarGateway {
     |* Events *|
     \**********/
 
-    event TokenSent(
-        address indexed sender,
-        string destinationChain,
-        string destinationAddress,
-        string symbol,
-        uint256 amount
-    );
+    event TokenSent(address indexed sender, string destinationChain, string destinationAddress, string symbol, uint256 amount);
 
     event ContractCall(
         address indexed sender,
@@ -91,11 +85,7 @@ interface IMockAxelarGateway {
     |* Public Functions *|
     \********************/
 
-    function callContract(
-        string calldata destinationChain,
-        string calldata contractAddress,
-        bytes calldata payload
-    ) external;
+    function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload) external;
 
     function isContractCallApproved(
         bytes32 commandId,
@@ -112,9 +102,15 @@ interface IMockAxelarGateway {
         bytes32 payloadHash
     ) external returns (bool);
 
+    function setTokenAddress(string calldata symbol, address tokenAddress) external;
+
+    function approveContractCall(bytes calldata params, bytes32 commandId) external;
+
     /***********\
     |* Getters *|
     \***********/
 
     function isCommandExecuted(bytes32 commandId) external view returns (bool);
+
+    function tokenAddresses(string calldata symbol) external view returns (address tokenAddress);
 }

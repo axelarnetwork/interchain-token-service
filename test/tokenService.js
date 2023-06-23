@@ -147,18 +147,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert when trying to register a gateway token', async () => {
-            const cap = 1000000;
-            const mintLimit = 1000000;
-            const gatewayParams1 = defaultAbiCoder.encode(
-                ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
-                [tokenName, tokenSymbol, tokenDecimals, cap, token.address, mintLimit],
-            );
-            const gatewayParams2 = defaultAbiCoder.encode(['bytes32'], [ethers.constants.HashZero]);
-
-            await expect(gateway.deployToken(gatewayParams1, gatewayParams2))
-                .to.emit(gateway, 'TokenDeployed')
-                .withArgs(tokenSymbol, token.address);
-
+            await (await gateway.setTokenAddress(tokenSymbol, token.address)).wait();
             await expect(service.registerCanonicalToken(token.address)).to.be.revertedWithCustomError(service, 'GatewayToken');
         });
 
