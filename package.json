@@ -6,7 +6,7 @@
     "test": "npx hardhat test",
     "build": "rm -rf cache artifacts && npx hardhat compile",
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/*.js'",
-    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js'",
+    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",
     "flatten": "sh scripts/flatten-contracts.sh",
     "coverage": "cross-env COVERAGE=true hardhat coverage"
   },
