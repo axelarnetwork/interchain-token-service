@@ -97,12 +97,9 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
-        implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, uint256(TokenManagerType.LOCK_UNLOCK));
-        implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, uint256(TokenManagerType.MINT_BURN));
-        implementationLiquidityPool = _sanitizeTokenManagerImplementation(
-            tokenManagerImplementations,
-            uint256(TokenManagerType.LIQUIDITY_POOL)
-        );
+        implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
+        implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
+        implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
 
         chainName = chainName_.toBytes32();
         chainNameHash = keccak256(bytes(chainName_));
@@ -483,10 +480,13 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     INTERNAL FUNCTIONS
     \****************/
 
-    function _sanitizeTokenManagerImplementation(address[] memory implementaions, uint256 i) internal pure returns (address implementation) {
-        implementation = implementaions[i];
+    function _sanitizeTokenManagerImplementation(
+        address[] memory implementaions,
+        TokenManagerType tokenManagerType
+    ) internal pure returns (address implementation) {
+        implementation = implementaions[uint256(tokenManagerType)];
         if (implementation == address(0)) revert ZeroAddress();
-        if (ITokenManager(implementation).implementationType() != i) revert InvalidTokenManagerImplementation();
+        if (ITokenManager(implementation).implementationType() != uint256(tokenManagerType)) revert InvalidTokenManagerImplementation();
     }
 
     /**
