@@ -6,10 +6,7 @@
     "bracketSpacing": true,
     "overrides": [
         {
-            "files": "*.sol",
-            "options": {
-                "explicitTypes": "always"
-            }
+            "files": "*.sol"
         },
         {
             "files": "*.js",
