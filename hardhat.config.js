@@ -2,6 +2,13 @@ require('@nomicfoundation/hardhat-toolbox');
 require('solidity-coverage');
 require('solidity-docgen');
 
+const fs = require('fs');
+const env = process.env.ENV || 'testnet';
+const { importNetworks } = require('@axelar-network/axelar-contract-deployments/evm/utils');
+const chains = require(`@axelar-network/axelar-contract-deployments/info/${env}.json`);
+const keys = fs.existsSync(`${__dirname}/info/keys.json`) ? require(`${__dirname}/info/keys.json`) : undefined; // Load keys if they exist
+const { networks, etherscan } = importNetworks(chains, keys);
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -30,6 +37,8 @@ module.exports = {
         },
     },
     defaultNetwork: 'hardhat',
+    networks,
+    etherscan,
     mocha: {
         timeout: 1000000,
     },
