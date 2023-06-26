@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.17;
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IAdminable } from './IAdminable.sol';

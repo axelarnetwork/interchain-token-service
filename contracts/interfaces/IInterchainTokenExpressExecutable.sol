@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-// can we add ^ for all versions. We're enforcing version via hardhat config
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.17;
 
 import { IInterchainTokenExecutable } from './IInterchainTokenExecutable.sol';
 
