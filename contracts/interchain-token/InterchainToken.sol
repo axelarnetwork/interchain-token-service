@@ -8,19 +8,11 @@ import { ERC20 } from '../token-implementations/ERC20.sol';
 
 /**
  * @title An example implementation of the IInterchainToken.
- * // TODO: probably should omit author due to company branding
  * @notice The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
  * that can be used to create approvals, and that `allowance` is a mapping.
  * @dev You can skip the `tokenManagerRequiresApproval()` function altogether if you know what it should return for your token.
  */
-// TODO: Actually let's move ERC20Permit inheritance to standardized token.
-// We should inherit ERC20Permit for the standardized tokens directly, so this is flexible.
-// We can define a virtual _approve method below that should be instantiated by the implementation.
 abstract contract InterchainToken is IInterchainToken, ERC20 {
-    // TODO: These don't need to be defined here
-    string public name;
-    string public symbol;
-    uint8 public decimals;
 
     /**
      * @notice Getter for the tokenManager used for this token.

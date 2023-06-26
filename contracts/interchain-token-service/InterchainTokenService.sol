@@ -27,7 +27,6 @@ import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
 import { Multicall } from '../utils/Multicall.sol';
 
-// TODO: Change folder name to interchain-token-service, and similarly for other folders for consistent naming convention
 /**
  * @title The Interchain Token Service
  * @notice This contract is responsible for facilitating cross chain token transfers.
@@ -254,6 +253,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         params = abi.encode(admin, tokenAddress, liquidityPoolAddress);
     }
 
+    /**
+     * @notice Getter function for the flow limit of an existing token manager with a give token ID.
+     * @param tokenId the token ID of the TokenManager.
+     * @return flowLimit the flow limit.
+     */
+    function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit) {
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        flowLimit = tokenManager.getFlowLimit();
+    }
+
     /************\
     USER FUNCTIONS
     \************/
@@ -460,12 +469,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
 
     /**
      * @notice Used to set a flow limit for a token manager that has the service as its admin.
-     * @param tokenId the token Id of the tokenManager to set the flow limit.
-     * @param flowLimit the flowLimit to set
+     * @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
+     * @param flowLimits the flowLimits to set
      */
-    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external onlyOwner {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        tokenManager.setFlowLimit(flowLimit);
+    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOwner {
+        uint256 length = tokenIds.length;
+        if(length != flowLimits.length) revert LengthMismatch();
+        for(uint256 i; i < length; ++i) {
+            ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
+            tokenManager.setFlowLimit(flowLimits[i]);
+        }
     }
 
     /**

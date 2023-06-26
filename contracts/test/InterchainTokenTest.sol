@@ -10,6 +10,9 @@ import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol
 contract InterchainTokenTest is InterchainToken, Distributable, IERC20BurnableMintable {
     ITokenManager internal tokenManager;
     bool internal tokenManagerRequiresApproval_ = true;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
 
     constructor(string memory name_, string memory symbol_, uint8 decimals_, address tokenManager_) {
         name = name_;

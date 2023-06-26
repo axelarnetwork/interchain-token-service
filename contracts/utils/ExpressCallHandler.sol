@@ -93,8 +93,7 @@ contract ExpressCallHandler is IExpressCallHandler {
         assembly {
             sstore(slot, expressCaller)
         }
-        // TODO: ExpressReceived -> ExpressReceive, since not really executing arbitrary logic
-        emit ExpressReceived(tokenId, destinationAddress, amount, commandId, expressCaller);
+        emit ExpressReceive(tokenId, destinationAddress, amount, commandId, expressCaller);
     }
 
     /**
@@ -136,7 +135,7 @@ contract ExpressCallHandler is IExpressCallHandler {
         assembly {
             sstore(slot, expressCaller)
         }
-        emit ExpressReceivedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, expressCaller);
+        emit ExpressReceiveWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, expressCaller);
     }
 
     /**

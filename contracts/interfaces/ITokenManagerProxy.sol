@@ -2,15 +2,28 @@
 
 pragma solidity 0.8.17;
 
-// Let's avoid using TokenManagerType in the Proxy. If we add from types in the future, it'll change the proxy address.
-// While we're using Create3, to minimize changes to Proxies, I think we should just store a uint256 in the proxy. We can use the enum in ITS.
-interface ITokenManagerProxy {
+/**
+ * @title TokenManagerProxy
+ * @dev This contract is a proxy for token manager contracts. It implements ITokenManagerProxy and
+ * inherits from FixedProxy from the gmp sdk repo
+ */
+ interface ITokenManagerProxy {
     error ImplementationLookupFailed();
     error SetupFailed();
 
+    /**
+     * @notice Returns implementation type of this token manager
+     */
     function implementationType() external view returns (uint256);
 
+    /**
+     * @notice Returns the address of the current implementation.
+     * @return impl The address of the current implementation
+     */
     function implementation() external view returns (address);
 
+    /**
+     * @notice Returns token ID of the token manager.
+     */
     function tokenId() external view returns (bytes32);
 }

@@ -24,12 +24,12 @@ contract Adminable is IAdminable {
 
     /**
      * @notice Get the address of the admin
-     * @return distr of the admin
+     * @return admin_ of the admin
      */
-    function admin() public view returns (address distr) {
+    function admin() public view returns (address admin_) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            distr := sload(ADMIN_SLOT)
+            admin_ := sload(ADMIN_SLOT)
         }
     }
 
