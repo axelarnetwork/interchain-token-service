@@ -1,11 +1,21 @@
 // SPDX-License-Identifier: MIT
 
-// TODO: can we add ^ for all versions and use ^0.8.0 instead? We're enforcing version via hardhat config, but don't wanna restrict for other people
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.0;
 
-// TODO: All interfaces should be documented, especially since external devs look at interfaces first. Implementations can mention some implementation details if needed instead.
-// General interface for upgradable contracts
+/**
+ * @title IInterchainTokenExecutable
+ * @notice Implement this to accept calls from the InterchainTokenService.
+ */
 interface IInterchainTokenExecutable {
+    /**
+     * @notice This will be called after the tokens arrive to this contract
+     * @dev You are revert unless the msg.sender is the InterchainTokenService
+     * @param sourceChain the name of the source chain
+     * @param sourceAddress the address that sent the contract call
+     * @param data the data to be proccessed
+     * @param tokenId the tokenId of the token manager managing the token. You can access it's address by querrying the service
+     * @param amount the amount of token that was sent
+     */
     function executeWithInterchainToken(
         string calldata sourceChain,
         bytes calldata sourceAddress,

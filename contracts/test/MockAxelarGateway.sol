@@ -1,31 +1,18 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 
 import { IMockAxelarGateway } from '../interfaces/IMockAxelarGateway.sol';
 
 contract MockAxelarGateway is IMockAxelarGateway {
-    mapping(bytes32 => uint256) private _uintStorage;
-    mapping(bytes32 => string) private _stringStorage;
     mapping(bytes32 => address) private _addressStorage;
-    mapping(bytes32 => bytes) private _bytesStorage;
     mapping(bytes32 => bool) private _boolStorage;
-    mapping(bytes32 => int256) private _intStorage;
 
     bytes32 internal constant PREFIX_COMMAND_EXECUTED = keccak256('command-executed');
     bytes32 internal constant PREFIX_TOKEN_ADDRESS = keccak256('token-address');
     bytes32 internal constant PREFIX_TOKEN_TYPE = keccak256('token-type');
     bytes32 internal constant PREFIX_CONTRACT_CALL_APPROVED = keccak256('contract-call-approved');
     bytes32 internal constant PREFIX_CONTRACT_CALL_APPROVED_WITH_MINT = keccak256('contract-call-approved-with-mint');
-    bytes32 internal constant PREFIX_TOKEN_MINT_LIMIT = keccak256('token-mint-limit');
-    bytes32 internal constant PREFIX_TOKEN_MINT_AMOUNT = keccak256('token-mint-amount');
-
-    bytes32 internal constant SELECTOR_BURN_TOKEN = keccak256('burnToken');
-    bytes32 internal constant SELECTOR_DEPLOY_TOKEN = keccak256('deployToken');
-    bytes32 internal constant SELECTOR_MINT_TOKEN = keccak256('mintToken');
-    bytes32 internal constant SELECTOR_APPROVE_CONTRACT_CALL = keccak256('approveContractCall');
-    bytes32 internal constant SELECTOR_APPROVE_CONTRACT_CALL_WITH_MINT = keccak256('approveContractCallWithMint');
-    bytes32 internal constant SELECTOR_TRANSFER_OPERATORSHIP = keccak256('transferOperatorship');
 
     /******************\
     |* Public Methods *|

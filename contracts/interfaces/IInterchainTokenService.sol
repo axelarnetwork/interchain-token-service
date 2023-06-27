@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.0;
 
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarExecutable.sol';
@@ -137,10 +137,13 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes calldata metadata
     ) external payable;
 
-    // TODO: allow setting multiple flow limits at once for convenience
-    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external;
+    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
 
-    // TODO: add a flow limit getter given a token id for convenience for apps
+    function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit);
+
+    function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount);
+
+    function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount);
 
     function setPaused(bool paused) external;
 

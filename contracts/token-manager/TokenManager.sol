@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
@@ -126,11 +126,13 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
         );
     }
 
-    /// @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
-    /// @param sender the address of the user paying for the cross chain transfer.
-    /// @param destinationChain the name of the chain to send tokens to.
-    /// @param destinationAddress the address of the user to send tokens to.
-    /// @param amount the amount of tokens to take from msg.sender.
+    /**
+     * @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
+     * @param sender the address of the user paying for the cross chain transfer.
+     * @param destinationChain the name of the chain to send tokens to.
+     * @param destinationAddress the address of the user to send tokens to.
+     * @param amount the amount of tokens to take from msg.sender.
+     */
     function transmitInterchainTransfer(
         address sender,
         string calldata destinationChain,

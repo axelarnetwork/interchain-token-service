@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.0;
 
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
@@ -27,7 +27,6 @@ import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
 import { Multicall } from '../utils/Multicall.sol';
 
-// TODO: Change folder name to interchain-token-service, and similarly for other folders for consistent naming convention
 /**
  * @title The Interchain Token Service
  * @notice This contract is responsible for facilitating cross chain token transfers.
@@ -254,6 +253,36 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         params = abi.encode(admin, tokenAddress, liquidityPoolAddress);
     }
 
+    /**
+     * @notice Getter function for the flow limit of an existing token manager with a give token ID.
+     * @param tokenId the token ID of the TokenManager.
+     * @return flowLimit the flow limit.
+     */
+    function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit) {
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        flowLimit = tokenManager.getFlowLimit();
+    }
+
+    /**
+     * @notice Getter function for the flow out amount of an existing token manager with a give token ID.
+     * @param tokenId the token ID of the TokenManager.
+     * @return flowOutAmount the flow out amount.
+     */
+    function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount) {
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        flowOutAmount = tokenManager.getFlowOutAmount();
+    }
+
+    /**
+     * @notice Getter function for the flow in amount of an existing token manager with a give token ID.
+     * @param tokenId the token ID of the TokenManager.
+     * @return flowInAmount the flow in amount.
+     */
+    function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount) {
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        flowInAmount = tokenManager.getFlowInAmount();
+    }
+
     /************\
     USER FUNCTIONS
     \************/
@@ -337,7 +366,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         uint8 decimals,
         uint256 mintAmount,
         address distributor
-    ) public payable {
+    ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
@@ -381,11 +410,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
      * @param amount the amount of token to give.
      * @param commandId the sendHash detected at the sourceChain.
      */
-    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external notPaused {
+    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external {
+        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
+
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
+
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
+
         _setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, caller);
     }
 
@@ -410,11 +443,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         bytes32 commandId
     ) external {
         if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
+
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
+
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
+
         _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
+
         _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, caller);
     }
 
@@ -460,12 +497,16 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
 
     /**
      * @notice Used to set a flow limit for a token manager that has the service as its admin.
-     * @param tokenId the token Id of the tokenManager to set the flow limit.
-     * @param flowLimit the flowLimit to set
+     * @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
+     * @param flowLimits the flowLimits to set
      */
-    function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external onlyOwner {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        tokenManager.setFlowLimit(flowLimit);
+    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOwner {
+        uint256 length = tokenIds.length;
+        if (length != flowLimits.length) revert LengthMismatch();
+        for (uint256 i; i < length; ++i) {
+            ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
+            tokenManager.setFlowLimit(flowLimits[i]);
+        }
     }
 
     /**

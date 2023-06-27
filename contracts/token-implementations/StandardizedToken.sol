@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.9;
+pragma solidity ^0.8.0;
 
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
 
@@ -11,7 +11,6 @@ import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
-// TODO: Maybe move the token contracts to a tokens folder since they're more than a basic util
 /**
  * @title StandardizedToken
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
@@ -21,6 +20,9 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
     using AddressBytesUtils for bytes;
 
     address public tokenManager;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
 
     // keccak256('standardized-token'))
     // solhint-disable-next-line const-name-snakecase

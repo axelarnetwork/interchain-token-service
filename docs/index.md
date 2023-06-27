@@ -1014,10 +1014,10 @@ function decimals() external returns (uint8)
 error AlreadyExpressCalled()
 ```
 
-### ExpressReceived
+### ExpressReceive
 
 ```solidity
-event ExpressReceived(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash, address expressCaller)
+event ExpressReceive(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash, address expressCaller)
 ```
 
 ### ExpressExecutionFulfilled
@@ -1026,10 +1026,10 @@ event ExpressReceived(bytes32 tokenId, address destinationAddress, uint256 amoun
 event ExpressExecutionFulfilled(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 sendHash, address expressCaller)
 ```
 
-### ExpressReceivedWithData
+### ExpressReceiveWithData
 
 ```solidity
-event ExpressReceivedWithData(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount, bytes data, bytes32 sendHash, address expressCaller)
+event ExpressReceiveWithData(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount, bytes data, bytes32 sendHash, address expressCaller)
 ```
 
 ### ExpressExecutionWithDataFulfilled
