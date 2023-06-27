@@ -346,7 +346,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         uint8 decimals,
         uint256 mintAmount,
         address distributor
-    ) public payable {
+    ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
@@ -390,11 +390,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
      * @param amount the amount of token to give.
      * @param commandId the sendHash detected at the sourceChain.
      */
-    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external notPaused {
+    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external {
+        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
+
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
+
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
+
         _setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, caller);
     }
 
@@ -419,11 +423,15 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         bytes32 commandId
     ) external {
         if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
+
         address caller = msg.sender;
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
+
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
+
         _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
+
         _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, caller);
     }
 
@@ -474,8 +482,8 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
      */
     function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOwner {
         uint256 length = tokenIds.length;
-        if(length != flowLimits.length) revert LengthMismatch();
-        for(uint256 i; i < length; ++i) {
+        if (length != flowLimits.length) revert LengthMismatch();
+        for (uint256 i; i < length; ++i) {
             ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
             tokenManager.setFlowLimit(flowLimits[i]);
         }
