@@ -141,6 +141,10 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
 
     function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit);
 
+    function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount);
+
+    function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount);
+
     function setPaused(bool paused) external;
 
     /**

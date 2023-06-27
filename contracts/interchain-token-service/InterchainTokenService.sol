@@ -263,6 +263,26 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
         flowLimit = tokenManager.getFlowLimit();
     }
 
+    /**
+     * @notice Getter function for the flow out amount of an existing token manager with a give token ID.
+     * @param tokenId the token ID of the TokenManager.
+     * @return flowOutAmount the flow out amount.
+     */
+    function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount) {
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        flowOutAmount = tokenManager.getFlowOutAmount();
+    }
+
+    /**
+     * @notice Getter function for the flow in amount of an existing token manager with a give token ID.
+     * @param tokenId the token ID of the TokenManager.
+     * @return flowInAmount the flow in amount.
+     */
+    function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount) {
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        flowInAmount = tokenManager.getFlowInAmount();
+    }
+
     /************\
     USER FUNCTIONS
     \************/
