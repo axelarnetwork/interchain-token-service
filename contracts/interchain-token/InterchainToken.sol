@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { ERC20 } from '../token-implementations/ERC20.sol';
+// import { ERC20 } from '../token-implementations/ERC20.sol';
+import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 /**
  * @title An example implementation of the IInterchainToken.
@@ -12,7 +13,9 @@ import { ERC20 } from '../token-implementations/ERC20.sol';
  * that can be used to create approvals, and that `allowance` is a mapping.
  * @dev You can skip the `tokenManagerRequiresApproval()` function altogether if you know what it should return for your token.
  */
-abstract contract InterchainToken is IInterchainToken, ERC20 {
+abstract contract InterchainToken is IInterchainToken {
+    function _approve(address owner, address spender, uint256 amount) internal virtual;
+
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwitten.
@@ -52,13 +55,21 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
          * @dev if you know the value of `tokenManagerRequiresApproval()` you can just skip the if statement and just do nothing or _approve.
          */
         if (tokenManagerRequiresApproval()) {
-            uint256 allowance_ = allowance[sender][address(tokenManager)];
+            uint256 allowance_ = IERC20(address(this)).allowance(sender, address(tokenManager));
             if (allowance_ != type(uint256).max) {
                 if (allowance_ > type(uint256).max - amount) {
                     allowance_ = type(uint256).max - amount;
                 }
 
                 _approve(sender, address(tokenManager), allowance_ + amount);
+
+                // (bool success, ) = address(this).delegatecall(
+                //     abi.encodeWithSelector(IERC20.approve.selector, address(tokenManager), allowance_ + amount)
+                // );
+
+                // if (!success) {
+                //     revert('InterchainToken: approve failed');
+                // }
             }
         }
 
@@ -83,15 +94,16 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
         uint256 amount,
         bytes calldata metadata
     ) external payable {
-        uint256 _allowance = allowance[sender][msg.sender];
+        uint256 _allowance = IERC20(address(this)).allowance(sender, msg.sender);
 
         if (_allowance != type(uint256).max) {
             _approve(sender, msg.sender, _allowance - amount);
+
         }
 
         ITokenManager tokenManager = getTokenManager();
         if (tokenManagerRequiresApproval()) {
-            uint256 allowance_ = allowance[sender][address(tokenManager)];
+            uint256 allowance_ = IERC20(address(this)).allowance(sender, address(tokenManager));
             if (allowance_ != type(uint256).max) {
                 if (allowance_ > type(uint256).max - amount) {
                     allowance_ = type(uint256).max - amount;
