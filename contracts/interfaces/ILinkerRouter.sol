@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-
 /**
  * @title ILinkerRouter
  * @dev Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract
@@ -25,14 +24,13 @@ interface ILinkerRouter {
      */
     function validateSender(string calldata sourceChain, string calldata sourceAddress) external view returns (bool);
 
-
     /**
      * @dev Adds a trusted interchain token service address for the specified chain
      * @param sourceChain Chain name of the interchain token service
      * @param sourceAddress Interchain token service address to be added
      */
     function addTrustedAddress(string memory sourceChain, string memory sourceAddress) external;
-    
+
     /**
      * @dev Removes a trusted interchain token service address
      * @param sourceChain Chain name of the interchain token service to be removed

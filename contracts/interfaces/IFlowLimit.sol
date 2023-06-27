@@ -16,7 +16,7 @@ interface IFlowLimit {
      * @return flowOutAmount The current flow out amount
      */
     function getFlowOutAmount() external view returns (uint256 flowOutAmount);
-   
+
     /**
      * @notice Returns the current flow in amount
      * @return flowInAmount The current flow in amount

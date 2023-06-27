@@ -13,7 +13,6 @@ import { ERC20 } from '../token-implementations/ERC20.sol';
  * @dev You can skip the `tokenManagerRequiresApproval()` function altogether if you know what it should return for your token.
  */
 abstract contract InterchainToken is IInterchainToken, ERC20 {
-
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwitten.

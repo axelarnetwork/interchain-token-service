@@ -2,8 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-
-/** 
+/**
  * @title ITokenManagerType
  * @notice A simple interface that defines all the token manager types
  */

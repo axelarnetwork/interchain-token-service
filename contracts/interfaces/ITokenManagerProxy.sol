@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
  * @dev This contract is a proxy for token manager contracts. It implements ITokenManagerProxy and
  * inherits from FixedProxy from the gmp sdk repo
  */
- interface ITokenManagerProxy {
+interface ITokenManagerProxy {
     error ImplementationLookupFailed();
     error SetupFailed();
 

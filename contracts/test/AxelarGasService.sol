@@ -77,30 +77,13 @@ contract AxelarGasService {
         address refundAddress
     );
 
-    event GasAdded(
-        bytes32 indexed txHash,
-        uint256 indexed logIndex,
-        address gasToken,
-        uint256 gasFeeAmount,
-        address refundAddress
-    );
+    event GasAdded(bytes32 indexed txHash, uint256 indexed logIndex, address gasToken, uint256 gasFeeAmount, address refundAddress);
 
     event NativeGasAdded(bytes32 indexed txHash, uint256 indexed logIndex, uint256 gasFeeAmount, address refundAddress);
 
-    event ExpressGasAdded(
-        bytes32 indexed txHash,
-        uint256 indexed logIndex,
-        address gasToken,
-        uint256 gasFeeAmount,
-        address refundAddress
-    );
+    event ExpressGasAdded(bytes32 indexed txHash, uint256 indexed logIndex, address gasToken, uint256 gasFeeAmount, address refundAddress);
 
-    event NativeExpressGasAdded(
-        bytes32 indexed txHash,
-        uint256 indexed logIndex,
-        uint256 gasFeeAmount,
-        address refundAddress
-    );
+    event NativeExpressGasAdded(bytes32 indexed txHash, uint256 indexed logIndex, uint256 gasFeeAmount, address refundAddress);
 
     address public immutable gasCollector;
 
@@ -201,33 +184,19 @@ contract AxelarGasService {
         );
     }
 
-    function addGas(
-        bytes32 txHash,
-        uint256 logIndex,
-        address gasToken,
-        uint256 gasFeeAmount,
-        address refundAddress
-    ) external {
+    function addGas(bytes32 txHash, uint256 logIndex, address gasToken, uint256 gasFeeAmount, address refundAddress) external {
         _safeTransferFrom(gasToken, msg.sender, gasFeeAmount);
 
         emit GasAdded(txHash, logIndex, gasToken, gasFeeAmount, refundAddress);
     }
 
-    function addNativeGas(
-        bytes32 txHash,
-        uint256 logIndex,
-        address refundAddress
-    ) external payable {
+    function addNativeGas(bytes32 txHash, uint256 logIndex, address refundAddress) external payable {
         if (msg.value == 0) revert NothingReceived();
 
         emit NativeGasAdded(txHash, logIndex, msg.value, refundAddress);
     }
 
-    function collectFees(
-        address payable receiver,
-        address[] calldata tokens,
-        uint256[] calldata amounts
-    ) external onlyCollector {
+    function collectFees(address payable receiver, address[] calldata tokens, uint256[] calldata amounts) external onlyCollector {
         if (receiver == address(0)) revert InvalidAddress();
 
         uint256 tokensLength = tokens.length;
@@ -246,11 +215,7 @@ contract AxelarGasService {
         }
     }
 
-    function refund(
-        address payable receiver,
-        address token,
-        uint256 amount
-    ) external onlyCollector {
+    function refund(address payable receiver, address token, uint256 amount) external onlyCollector {
         if (receiver == address(0)) revert InvalidAddress();
 
         if (token == address(0)) {
@@ -260,11 +225,7 @@ contract AxelarGasService {
         }
     }
 
-    function _safeTransfer(
-        address tokenAddress,
-        address receiver,
-        uint256 amount
-    ) internal {
+    function _safeTransfer(address tokenAddress, address receiver, uint256 amount) internal {
         if (amount == 0) revert NothingReceived();
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -274,11 +235,7 @@ contract AxelarGasService {
         if (!transferred || tokenAddress.code.length == 0) revert TransferFailed();
     }
 
-    function _safeTransferFrom(
-        address tokenAddress,
-        address from,
-        uint256 amount
-    ) internal {
+    function _safeTransferFrom(address tokenAddress, address from, uint256 amount) internal {
         if (amount == 0) revert NothingReceived();
 
         // solhint-disable-next-line avoid-low-level-calls
