@@ -92,7 +92,14 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
 
         ITokenManager tokenManager = getTokenManager();
         if (tokenManagerRequiresApproval()) {
-            _approve(sender, address(tokenManager), allowance[sender][address(tokenManager)] + amount);
+            uint256 allowance_ = allowance[sender][address(tokenManager)];
+            if (allowance_ != type(uint256).max) {
+                if (allowance_ > type(uint256).max - amount) {
+                    allowance_ = type(uint256).max - amount;
+                }
+
+                _approve(sender, address(tokenManager), allowance_ + amount);
+            }
         }
 
         tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
