@@ -5,6 +5,8 @@ pragma solidity ^0.8.0;
 interface IFlowLimit {
     error FlowLimitExceeded();
 
+    event FlowLimitSet(uint256 flowLimit);
+
     /**
      * @notice Returns the current flow limit
      * @return flowLimit The current flow limit value

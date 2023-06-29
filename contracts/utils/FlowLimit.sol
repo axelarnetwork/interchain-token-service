@@ -37,6 +37,7 @@ contract FlowLimit is IFlowLimit {
         assembly {
             sstore(FLOW_LIMIT_SLOT, flowLimit)
         }
+        emit FlowLimitSet(flowLimit);
     }
 
     /**
