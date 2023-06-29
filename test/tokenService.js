@@ -7,7 +7,6 @@ const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
 const { defaultAbiCoder, solidityPack, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
-const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
 

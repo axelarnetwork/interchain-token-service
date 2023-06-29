@@ -4,27 +4,26 @@ const chai = require('chai');
 const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
-const { AddressZero, MaxUint256 } = ethers.constants;
-const { defaultAbiCoder, solidityPack, keccak256 } = ethers.utils;
+const { AddressZero } = ethers.constants;
+const { defaultAbiCoder, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
-const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 
 const IStandardizedTokenDeployer = require('../artifacts/contracts/interfaces/IStandardizedTokenDeployer.sol/IStandardizedTokenDeployer.json');
 const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const Create3Deployer = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
-const { approveContractCall, getRandomBytes32 } = require('../scripts/utils');
-const { deployAll, deployContract } = require('../scripts/deploy');
+const { getRandomBytes32 } = require('../scripts/utils');
+const { deployAll } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
-const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
-const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
+// const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
+// const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const LOCK_UNLOCK = 0;
-const MINT_BURN = 1;
-const LIQUIDITY_POOL = 2;
+// const MINT_BURN = 1;
+// const LIQUIDITY_POOL = 2;
 
 describe('Interchain Token Service', () => {
     let wallet;
@@ -32,8 +31,6 @@ describe('Interchain Token Service', () => {
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const decimals = 18;
-
-    const deployFunctions = {};
 
     before(async () => {
         const wallets = await ethers.getSigners();
@@ -83,11 +80,13 @@ describe('Interchain Token Service', () => {
             const tx1 = await service.populateTransaction.registerCanonicalToken(token.address);
             const data = [tx1.data];
             let value = 0;
+
             for (const i in otherChains) {
                 const tx = await service.populateTransaction.deployRemoteCanonicalToken(tokenId, otherChains[i], gasValues[i]);
                 data.push(tx.data);
                 value += gasValues[i];
             }
+
             const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],

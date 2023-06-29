@@ -8,8 +8,8 @@ const { Wallet, Contract } = ethers;
 const { AddressZero } = ethers.constants;
 const { defaultAbiCoder } = ethers.utils;
 const { expect } = chai;
-const { deployLinkerRouter, deployContract } = require('../scripts/deploy');
-const { approveContractCall, getRandomBytes32 } = require('../scripts/utils');
+const { getRandomBytes32 } = require('../scripts/utils');
+const { deployContract } = require('../scripts/deploy');
 
 const ImplemenationTest = require('../artifacts/contracts/test/utils/ImplementationTest.sol/ImplementationTest.json');
 const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
@@ -225,6 +225,7 @@ describe('FlowLimit', async () => {
 
     it('Should test flow in', async () => {
         await nextEpoch();
+
         for (let i = 0; i < flowLimit; i++) {
             await (await test.addFlowIn(1)).wait();
             expect(await test.getFlowInAmount()).to.equal(i + 1);
@@ -240,6 +241,7 @@ describe('FlowLimit', async () => {
 
     it('Should test flow out', async () => {
         await nextEpoch();
+
         for (let i = 0; i < flowLimit; i++) {
             await (await test.addFlowOut(1)).wait();
             expect(await test.getFlowOutAmount()).to.equal(i + 1);
@@ -309,6 +311,7 @@ describe('Mutlicall', () => {
             .and.to.emit(test, 'Function2Called')
             .withArgs(nonce + 3);
         const lastReturns = await test.getLastMulticallReturns();
+
         for (let i = 0; i < lastReturns.length; i++) {
             const val = Number(defaultAbiCoder.decode(['uint256'], lastReturns[i]));
             expect(val).to.equal(nonce + i);
