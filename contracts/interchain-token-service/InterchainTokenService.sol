@@ -34,7 +34,15 @@ import { Multicall } from '../utils/Multicall.sol';
  * It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
  * @dev The only storage used here is for ExpressCalls
  */
-contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Upgradable, Adminable, ExpressCallHandler, Pausable, Multicall {
+contract InterchainTokenService is
+    IInterchainTokenService,
+    AxelarExecutable,
+    Upgradable,
+    Adminable,
+    ExpressCallHandler,
+    Pausable,
+    Multicall
+{
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using AddressBytesUtils for bytes;
