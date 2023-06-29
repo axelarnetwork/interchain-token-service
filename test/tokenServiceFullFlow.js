@@ -102,7 +102,7 @@ describe('Interchain Token Service', () => {
         });
 
 
-        it('Should send some token to other chains', async () => {
+        it('Should send some token to another chain', async () => {
             const amount = 1234;
             const destAddress = '0x1234';
             const destChain = otherChains[0];
@@ -122,6 +122,20 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
                 .to.emit(service, 'TokenSent')
                 .withArgs(tokenId, destChain, destAddress, amount);
+        });
+
+        // For this test the token must be a standardized token (or a distributable token in general)
+        it('Should be able to change the token distributor distributor', async () => {
+            const newAddress = (new Wallet(getRandomBytes32())).address;
+            const amount = 1234;
+
+            await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
+            await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
+            
+            await expect(token.setDistributor(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
+            
+            await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+            await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
         });
     });
 });

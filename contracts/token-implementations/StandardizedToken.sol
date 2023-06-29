@@ -16,7 +16,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable, IERC20BurnableMintable {
+abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
     address public tokenManager;
