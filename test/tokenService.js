@@ -771,7 +771,10 @@ describe('Interchain Token Service', () => {
         for (const type of ['lockUnlock', 'mintBurn', 'liquidityPool']) {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
-                const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'uint256'], [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount]);
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256'],
+                    [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                );
                 const payloadHash = keccak256(payload);
 
                 let transferToAddress = AddressZero;
@@ -870,7 +873,10 @@ describe('Interchain Token Service', () => {
         for (const type of ['lockUnlock', 'mintBurn', 'liquidityPool']) {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
-                const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'], [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress,amount,sourceAddress,data ]);
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'],
+                    [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddress, data],
+                );
                 const payloadHash = keccak256(payload);
 
                 let transferToAddress = AddressZero;
@@ -992,7 +998,10 @@ describe('Interchain Token Service', () => {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, true);
 
-                const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'uint256'], [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount]);
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256'],
+                    [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                );
                 const payloadHash = keccak256(payload);
 
                 let transferToAddress = AddressZero;
@@ -1032,7 +1041,10 @@ describe('Interchain Token Service', () => {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, false);
 
-                const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'], [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress,amount,sourceAddress,data ]);
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'],
+                    [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddress, data],
+                );
                 const payloadHash = keccak256(payload);
 
                 let transferToAddress = AddressZero;

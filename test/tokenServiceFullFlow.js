@@ -62,7 +62,16 @@ describe('Interchain Token Service', () => {
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
 
             await expect(
-                tokenDeployer.deployStandardizedToken(salt, tokenManagerAddress, wallet.address, name, symbol, decimals, tokenCap, wallet.address),
+                tokenDeployer.deployStandardizedToken(
+                    salt,
+                    tokenManagerAddress,
+                    wallet.address,
+                    name,
+                    symbol,
+                    decimals,
+                    tokenCap,
+                    wallet.address,
+                ),
             )
                 .to.emit(token, 'DistributorChanged')
                 .withArgs(wallet.address)
@@ -101,17 +110,21 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
         });
 
-
         it('Should send some token to another chain', async () => {
             const amount = 1234;
             const destAddress = '0x1234';
             const destChain = otherChains[0];
             const gasValue = 6789;
 
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'uint256'], [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+            );
             const payloadHash = keccak256(payload);
 
-            await expect(token.approve(tokenManager.address, amount)).to.emit(token, 'Approval').withArgs(wallet.address, tokenManager.address, amount);
+            await expect(token.approve(tokenManager.address, amount))
+                .to.emit(token, 'Approval')
+                .withArgs(wallet.address, tokenManager.address, amount);
 
             await expect(tokenManager.sendToken(destChain, destAddress, amount, '0x', { value: gasValue }))
                 .and.to.emit(token, 'Transfer')
@@ -126,14 +139,14 @@ describe('Interchain Token Service', () => {
 
         // For this test the token must be a standardized token (or a distributable token in general)
         it('Should be able to change the token distributor distributor', async () => {
-            const newAddress = (new Wallet(getRandomBytes32())).address;
+            const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
 
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
-            
+
             await expect(token.setDistributor(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
-            
+
             await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
             await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
         });
