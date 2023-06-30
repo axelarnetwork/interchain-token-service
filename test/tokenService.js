@@ -10,10 +10,7 @@ const { Contract, Wallet } = ethers;
 
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
 
-const {
-    approveContractCall,
-    getRandomBytes32,
-} = require('../scripts/utils');
+const { approveContractCall, getRandomBytes32 } = require('../scripts/utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
