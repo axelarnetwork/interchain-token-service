@@ -25,6 +25,7 @@ import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 
 import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
+import { Adminable } from '../utils/Adminable.sol';
 import { Multicall } from '../utils/Multicall.sol';
 
 /**
@@ -33,7 +34,15 @@ import { Multicall } from '../utils/Multicall.sol';
  * It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
  * @dev The only storage used here is for ExpressCalls
  */
-contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Upgradable, ExpressCallHandler, Pausable, Multicall {
+contract InterchainTokenService is
+    IInterchainTokenService,
+    AxelarExecutable,
+    Upgradable,
+    Adminable,
+    ExpressCallHandler,
+    Pausable,
+    Multicall
+{
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using AddressBytesUtils for bytes;
@@ -500,7 +509,7 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
      * @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
      * @param flowLimits the flowLimits to set
      */
-    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOwner {
+    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyAdmin {
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
@@ -520,6 +529,10 @@ contract InterchainTokenService is IInterchainTokenService, AxelarExecutable, Up
     /****************\
     INTERNAL FUNCTIONS
     \****************/
+
+    function _setup(bytes calldata params) internal override {
+        _setAdmin(params.toAddress());
+    }
 
     function _sanitizeTokenManagerImplementation(
         address[] memory implementaions,
