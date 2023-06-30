@@ -6,7 +6,7 @@ import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
-import { Adminable } from '../utils/Adminable.sol';
+import { Operatable } from '../utils/Operatable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { Implementation } from '../utils/Implementation.sol';
@@ -15,7 +15,7 @@ import { Implementation } from '../utils/Implementation.sol';
  * @title The main functionality of TokenManagers.
  * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
  */
-abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implementation {
+abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
     using AddressBytesUtils for bytes;
 
     IInterchainTokenService public immutable interchainTokenService;
@@ -55,14 +55,14 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     /**
      * @dev This function should only be called by the proxy, and only once from the proxy constructor
      * @param params the parameters to be used to initialize the TokenManager. The exact format depends
-     * on the type of TokenManager used but the first 32 bytes are reserved for the address of the admin,
+     * on the type of TokenManager used but the first 32 bytes are reserved for the address of the operator,
      * stored as bytes (to be compatible with non-EVM chains)
      */
     function setup(bytes calldata params) external override onlyProxy {
         bytes memory adminBytes = abi.decode(params, (bytes));
         address admin_;
         /**
-         * @dev Specifying an empty admin will default to the service being the admin. This makes it easy to deploy
+         * @dev Specifying an empty operator will default to the service being the operator. This makes it easy to deploy
          * remote standardized tokens without knowing anything about the service address at the destination.
          */
         if (adminBytes.length == 0) {
@@ -165,7 +165,7 @@ abstract contract TokenManager is ITokenManager, Adminable, FlowLimit, Implement
     }
 
     /**
-     * @notice This function sets the flow limit for this TokenManager. Can only be called by the admin.
+     * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.
      * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
     function setFlowLimit(uint256 flowLimit) external onlyAdmin {

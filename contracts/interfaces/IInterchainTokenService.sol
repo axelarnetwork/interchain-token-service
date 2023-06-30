@@ -78,14 +78,14 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
 
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
-    function getCustomTokenId(address admin, bytes32 salt) external view returns (bytes32 tokenId);
+    function getCustomTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId);
 
-    function getParamsLockUnlock(bytes memory admin, address tokenAddress) external pure returns (bytes memory params);
+    function getParamsLockUnlock(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
 
-    function getParamsMintBurn(bytes memory admin, address tokenAddress) external pure returns (bytes memory params);
+    function getParamsMintBurn(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
 
     function getParamsLiquidityPool(
-        bytes memory admin,
+        bytes memory operator,
         address tokenAddress,
         address liquidityPoolAddress
     ) external pure returns (bytes memory params);
@@ -121,7 +121,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         string calldata symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory admin,
+        bytes memory operator,
         string calldata destinationChain,
         uint256 gasValue
     ) external payable;
