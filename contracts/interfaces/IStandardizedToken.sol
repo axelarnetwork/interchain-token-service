@@ -3,13 +3,15 @@
 pragma solidity ^0.8.0;
 
 import { IInterchainToken } from './IInterchainToken.sol';
+import { IDistributable } from './IDistributable.sol';
+import { IERC20BurnableMintable } from './IERC20BurnableMintable.sol';
 
 /**
  * @title StandardizedToken
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-interface IStandardizedToken is IInterchainToken {
+interface IStandardizedToken is IInterchainToken, IDistributable, IERC20BurnableMintable {
     /**
      * @notice Returns the contract id, which a proxy can check to ensure no false implementation was used.
      */

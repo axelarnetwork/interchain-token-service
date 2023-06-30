@@ -7,7 +7,6 @@ const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
 const { defaultAbiCoder, solidityPack, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
-const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
 
@@ -771,23 +770,11 @@ describe('Interchain Token Service', () => {
         for (const type of ['lockUnlock', 'mintBurn', 'liquidityPool']) {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
-
-                let payloadHash;
-
-                function checkPayloadHash(hash) {
-                    return payloadHash === hash;
-                }
-
-                function checkPayload(payload) {
-                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256'], payload);
-
-                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
-                    if (emmitted[1] !== tokenId) return false;
-                    if (emmitted[2] !== destAddress) return false;
-                    if (Number(emmitted[3]) !== amount) return false;
-                    payloadHash = keccak256(payload);
-                    return true;
-                }
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256'],
+                    [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                );
+                const payloadHash = keccak256(payload);
 
                 let transferToAddress = AddressZero;
 
@@ -801,9 +788,9 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'TokenSent')
                     .withArgs(tokenId, destChain, destAddress, amount);
             });
@@ -885,24 +872,11 @@ describe('Interchain Token Service', () => {
         for (const type of ['lockUnlock', 'mintBurn', 'liquidityPool']) {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
-
-                let payloadHash;
-
-                function checkPayloadHash(hash) {
-                    return payloadHash === hash;
-                }
-
-                function checkPayload(payload) {
-                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'], payload);
-                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN_WITH_DATA) return false;
-                    if (emmitted[1] !== tokenId) return false;
-                    if (emmitted[2] !== destAddress) return false;
-                    if (Number(emmitted[3]) !== amount) return false;
-                    if (emmitted[4] !== sourceAddress.toLowerCase()) return false;
-                    if (emmitted[5] !== data) return false;
-                    payloadHash = keccak256(payload);
-                    return true;
-                }
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'],
+                    [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddress, data],
+                );
+                const payloadHash = keccak256(payload);
 
                 let transferToAddress = AddressZero;
 
@@ -916,9 +890,9 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'TokenSentWithData')
                     .withArgs(tokenId, destChain, destAddress, amount, sourceAddress, data);
             });
@@ -1023,22 +997,11 @@ describe('Interchain Token Service', () => {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, true);
 
-                let payloadHash;
-
-                function checkPayloadHash(hash) {
-                    return payloadHash === hash;
-                }
-
-                function checkPayload(payload) {
-                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256'], payload);
-
-                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN) return false;
-                    if (emmitted[1] !== tokenId) return false;
-                    if (emmitted[2] !== destAddress) return false;
-                    if (Number(emmitted[3]) !== amount) return false;
-                    payloadHash = keccak256(payload);
-                    return true;
-                }
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256'],
+                    [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                );
+                const payloadHash = keccak256(payload);
 
                 let transferToAddress = AddressZero;
 
@@ -1052,9 +1015,9 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'TokenSent')
                     .withArgs(tokenId, destChain, destAddress, amount);
             });
@@ -1077,23 +1040,11 @@ describe('Interchain Token Service', () => {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, false);
 
-                let payloadHash;
-
-                function checkPayloadHash(hash) {
-                    return payloadHash === hash;
-                }
-
-                function checkPayload(payload) {
-                    const emmitted = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'], payload);
-                    if (Number(emmitted[0]) !== SELECTOR_SEND_TOKEN_WITH_DATA) return false;
-                    if (emmitted[1] !== tokenId) return false;
-                    if (emmitted[2] !== destAddress) return false;
-                    if (Number(emmitted[3]) !== amount) return false;
-                    if (emmitted[4] !== sourceAddress.toLowerCase()) return false;
-                    if (emmitted[5] !== data) return false;
-                    payloadHash = keccak256(payload);
-                    return true;
-                }
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', 'bytes'],
+                    [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, amount, sourceAddress, data],
+                );
+                const payloadHash = keccak256(payload);
 
                 let transferToAddress = AddressZero;
 
@@ -1108,9 +1059,9 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), anyValue, checkPayload)
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), checkPayloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'TokenSentWithData')
                     .withArgs(tokenId, destChain, destAddress, amount, sourceAddress, data);
             });
