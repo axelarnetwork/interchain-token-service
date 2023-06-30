@@ -213,7 +213,7 @@ contract InterchainTokenService is
     }
 
     function getCanonicalStandardizedTokenId(address deployer_, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = keccak256(abi.encode(PREFIX_CANONICAL_STANDARDIZED_TOKEN_ID, deployer_, salt));
+        tokenId = keccak256(abi.encode(PREFIX_CANONICAL_STANDARDIZED_TOKEN_ID, chainNameHash, deployer_, salt));
     }
 
     function isCanonical(bytes32 tokenId) external view returns (bool) {
