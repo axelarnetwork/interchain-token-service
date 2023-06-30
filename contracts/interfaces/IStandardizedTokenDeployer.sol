@@ -37,5 +37,5 @@ interface IStandardizedTokenDeployer {
         uint8 decimals,
         uint256 mintAmount,
         address mintTo
-    ) external payable;
+    ) external payable returns (address tokenAddress);
 }

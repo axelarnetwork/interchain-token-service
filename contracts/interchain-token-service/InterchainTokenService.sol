@@ -60,13 +60,15 @@ contract InterchainTokenService is
     bytes32 internal immutable chainName;
 
     bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
-    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_ID = keccak256('its-standardized-token-id');
-    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_SALT = keccak256('its-standardized-token-salt');
+    bytes32 internal constant PREFIX_CANONICAL_TOKEN_ID = keccak256('its-canonical-token-id');
+    bytes32 internal constant PREFIX_CANONICAL_STANDARDIZED_TOKEN_SALT = keccak256('its-canonical-standardized-token-salt');
+    bytes32 internal constant PREFIX_CUSTOM_STANDARDIZED_TOKEN_SALT = keccak256('its-custom-standardized-token-salt');
 
     uint256 private constant SELECTOR_SEND_TOKEN = 1;
     uint256 private constant SELECTOR_SEND_TOKEN_WITH_DATA = 2;
     uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
-    uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
+    uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_CANONICAL_STANDARDIZED_TOKEN = 4;
+    uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_CUSTOM_STANDARDIZED_TOKEN = 5;
 
     // keccak256('interchain-token-service')
     // solhint-disable-next-line const-name-snakecase
@@ -178,13 +180,24 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Returns the address of the standardized token that would be deployed with a given tokenId.
+     * @notice Returns the address of the custom standardized token that would be deployed with a given tokenId.
      * The token does not need to exist.
      * @param tokenId the tokenId.
      * @return tokenAddress the address of the standardized token.
      */
-    function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
-        tokenId = _getStandardizedTokenSalt(tokenId);
+    function getCustomStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
+        tokenId = _getCustomStandardizedTokenSalt(tokenId);
+        tokenAddress = deployer.deployedAddress(address(this), tokenId);
+    }
+
+    /**
+     * @notice Returns the address of the canonical standardized token that would be deployed with a given tokenId.
+     * The token does not need to exist.
+     * @param tokenId the tokenId.
+     * @return tokenAddress the address of the standardized token.
+     */
+    function getCanonicalStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
+        tokenId = _getCanonicalStandardizedTokenSalt(tokenId);
         tokenAddress = deployer.deployedAddress(address(this), tokenId);
     }
 
@@ -195,7 +208,18 @@ contract InterchainTokenService is
      * @return tokenId the tokenId that the canonical TokenManager would get (or has gotten) for the token.
      */
     function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_ID, chainNameHash, tokenAddress));
+        tokenId = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_ID, chainNameHash, tokenAddress));
+    }
+
+    function getCanonicalStandardizedTokenId(address deployer_, bytes32 salt) public view returns (bytes32 tokenId) {
+        tokenId = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_ID, chainNameHash, deployer_, salt));
+    }
+
+
+    function isCanonical(bytes32 tokenId) external view returns (bool) {
+        address tokenManager = getValidTokenManagerAddress(tokenId);
+        address tokenAddress = ITokenManager(tokenManager).tokenAddress();
+        return getCanonicalTokenId(tokenAddress) == tokenId || getCanonicalStandardizedTokenAddress(tokenId) == tokenAddress;
     }
 
     /**
@@ -320,9 +344,9 @@ contract InterchainTokenService is
     function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable notPaused {
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
-        if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalTokenManager();
+        if (getCanonicalTokenId(tokenAddress) != tokenId && getCanonicalStandardizedTokenAddress(tokenId) != tokenAddress) revert NotCanonicalTokenManager();
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', '', destinationChain, gasValue);
+        _deployRemoteCanonicalStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, destinationChain, gasValue);
     }
 
     /**
@@ -376,7 +400,11 @@ contract InterchainTokenService is
         uint256 mintAmount,
         address distributor
     ) external payable {
-
+        bytes32 tokenId = getCanonicalStandardizedTokenId(msg.sender, salt);
+        address tokenAddress = _deployStandardizedToken(tokenId, _getCanonicalStandardizedTokenSalt(tokenId), distributor, name, symbol, decimals, mintAmount, msg.sender);
+        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
+        _deployTokenManager(tokenId, tokenManagerType, abi.encode(msg.sender.toBytes(), tokenAddress));
     }
 
     /**
@@ -398,10 +426,9 @@ contract InterchainTokenService is
         address distributor
     ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
+        address tokenAddress = _deployStandardizedToken(tokenId, _getCustomStandardizedTokenSalt(tokenId), distributor, name, symbol, decimals, mintAmount, msg.sender);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
         TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
-        address tokenAddress = getStandardizedTokenAddress(tokenId);
         _deployTokenManager(tokenId, tokenManagerType, abi.encode(msg.sender.toBytes(), tokenAddress));
     }
 
@@ -429,7 +456,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
+        _deployRemoteCustomStandardizedToken(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
     }
 
     /**
@@ -582,8 +609,10 @@ contract InterchainTokenService is
             _processSendTokenWithDataPayload(sourceChain, payload);
         } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
-        } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
-            _processDeployStandardizedTokenAndManagerPayload(payload);
+        } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_CANONICAL_STANDARDIZED_TOKEN) {
+            _processDeployCanonicalStandardizedTokenAndManagerPayload(payload);
+        } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_CUSTOM_STANDARDIZED_TOKEN) {
+            _processDeployCustomStandardizedTokenAndManagerPayload(payload);
         } else {
             revert SelectorUnknown();
         }
@@ -669,11 +698,34 @@ contract InterchainTokenService is
         _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
+        /**
+     * @notice Process a deploy standardized token and manager payload.
+     * @param payload The encoded data payload to be processed
+     */
+    function _processDeployCanonicalStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
+        (
+            ,
+            bytes32 tokenId,
+            string memory name,
+            string memory symbol,
+            uint8 decimals
+        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8));
+        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        address distributor = tokenManagerAddress;
+        address tokenAddress = _deployStandardizedToken(tokenId, _getCanonicalStandardizedTokenSalt(tokenId), distributor, name, symbol, decimals, 0, distributor);
+        TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
+        _deployTokenManager(
+            tokenId,
+            tokenManagerType,
+            abi.encode('', tokenAddress)
+        );
+    }
+
     /**
      * @notice Process a deploy standardized token and manager payload.
      * @param payload The encoded data payload to be processed
      */
-    function _processDeployStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
+    function _processDeployCustomStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
         (
             ,
             bytes32 tokenId,
@@ -683,10 +735,10 @@ contract InterchainTokenService is
             bytes memory distributorBytes,
             bytes memory adminBytes
         ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
-        address tokenAddress = getStandardizedTokenAddress(tokenId);
-        address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : address(this);
-        _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);
-        TokenManagerType tokenManagerType = distributor == address(this) ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
+        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : tokenManagerAddress;
+        address tokenAddress = _deployStandardizedToken(tokenId, _getCustomStandardizedTokenSalt(tokenId), distributor, name, symbol, decimals, 0, distributor);
+        TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
         _deployTokenManager(
             tokenId,
             tokenManagerType,
@@ -742,6 +794,25 @@ contract InterchainTokenService is
         emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
+    function _deployRemoteCanonicalStandardizedToken(
+        bytes32 tokenId,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        string calldata destinationChain,
+        uint256 gasValue
+    ) internal {
+        bytes memory payload = abi.encode(
+            SELECTOR_DEPLOY_AND_REGISTER_CANONICAL_STANDARDIZED_TOKEN,
+            tokenId,
+            name,
+            symbol,
+            decimals
+        );
+        _callContract(destinationChain, payload, gasValue, msg.sender);
+        emit RemoteCanonicalStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
+    }
+
     /**
      * @notice Deploys a standardized token on a destination chain.
      * @param tokenId The ID of the token
@@ -752,7 +823,7 @@ contract InterchainTokenService is
      * @param destinationChain The destination chain where the token will be deployed
      * @param gasValue The amount of gas to be paid for the transaction
      */
-    function _deployRemoteStandardizedToken(
+    function _deployRemoteCustomStandardizedToken(
         bytes32 tokenId,
         string memory name,
         string memory symbol,
@@ -763,7 +834,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) internal {
         bytes memory payload = abi.encode(
-            SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+            SELECTOR_DEPLOY_AND_REGISTER_CUSTOM_STANDARDIZED_TOKEN,
             tokenId,
             name,
             symbol,
@@ -772,7 +843,7 @@ contract InterchainTokenService is
             operator
         );
         _callContract(destinationChain, payload, gasValue, msg.sender);
-        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
+        emit RemoteCustomStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
     }
 
     /**
@@ -797,9 +868,14 @@ contract InterchainTokenService is
      * @param tokenId The ID of the token
      * @return salt The computed salt for the token deployment
      */
-    function _getStandardizedTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
-        return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, tokenId));
+    function _getCustomStandardizedTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
+        return keccak256(abi.encode(PREFIX_CUSTOM_STANDARDIZED_TOKEN_SALT, tokenId));
     }
+
+    function _getCanonicalStandardizedTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
+        return keccak256(abi.encode(PREFIX_CANONICAL_STANDARDIZED_TOKEN_SALT, tokenId));
+    }
+    
 
     /**
      * @notice Deploys a standardized token.
@@ -813,20 +889,20 @@ contract InterchainTokenService is
      */
     function _deployStandardizedToken(
         bytes32 tokenId,
+        bytes32 deploymentSalt,
         address distributor,
         string memory name,
         string memory symbol,
         uint8 decimals,
         uint256 mintAmount,
         address mintTo
-    ) internal {
-        bytes32 salt = _getStandardizedTokenSalt(tokenId);
+    ) internal returns (address tokenAddress) {
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = standardizedTokenDeployer.delegatecall(
+        (bool success, bytes memory data) = standardizedTokenDeployer.delegatecall(
             abi.encodeWithSelector(
                 IStandardizedTokenDeployer.deployStandardizedToken.selector,
-                salt,
+                deploymentSalt,
                 tokenManagerAddress,
                 distributor,
                 name,
@@ -839,7 +915,8 @@ contract InterchainTokenService is
         if (!success) {
             revert StandardizedTokenDeploymentFailed();
         }
-        emit StandardizedTokenDeployed(tokenId, name, symbol, decimals, mintAmount, mintTo);
+        tokenAddress = abi.decode(data, (address));
+        emit StandardizedTokenDeployed(tokenId, name, symbol, decimals, mintAmount, mintTo, tokenAddress);
     }
 
     function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes calldata data) {

@@ -1,7 +1,7 @@
 const { ethers } = require('hardhat');
 const { deployContract } = require('./deploy');
 const { AddressZero } = ethers.constants;
-const { defaultAbiCoder, keccak256 } = ethers.utils;
+const { defaultAbiCoder, keccak256, solidityKeccak256 } = ethers.utils;
 
 function getRandomBytes32() {
     return keccak256(defaultAbiCoder.encode(['uint256'], [Math.floor(new Date().getTime() * Math.random())]));
@@ -42,8 +42,21 @@ async function deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals
     await (await gateway.deployToken(params, commandId)).wait();
 }
 
+
+function getCustomStandardizedTokenSalt(tokenId) {
+    const prefix =solidityKeccak256(['string'], ['its-custom-standardized-token-salt']);
+    return keccak256(defaultAbiCoder.encode(['bytes32','bytes32'], [prefix, tokenId]));
+}
+
+function getCanonicalStandardizedTokenSalt(tokenId) {
+    const prefix =solidityKeccak256(['string'], ['its-canonical-standardized-token-salt']);
+    return keccak256(defaultAbiCoder.encode(['bytes32','bytes32'], [prefix, tokenId]));
+}
+
 module.exports = {
     getRandomBytes32,
     approveContractCall,
     deployGatewayToken,
+    getCanonicalStandardizedTokenSalt,
+    getCustomStandardizedTokenSalt,
 };

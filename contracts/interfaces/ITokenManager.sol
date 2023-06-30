@@ -17,6 +17,7 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     error TakeTokenFailed();
     error GiveTokenFailed();
     error NotToken();
+    error TokenNotDeployed();
 
     /**
      * @notice A function that should return the address of the token.

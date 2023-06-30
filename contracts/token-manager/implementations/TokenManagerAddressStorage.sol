@@ -42,6 +42,7 @@ abstract contract TokenManagerAddressStorage is TokenManager {
      * @param tokenAddress_ The address of the token to store
      */
     function _setTokenAddress(address tokenAddress_) internal {
+        if(tokenAddress_.code.length == 0) revert TokenNotDeployed();
         // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(TOKEN_ADDRESS_SLOT, tokenAddress_)

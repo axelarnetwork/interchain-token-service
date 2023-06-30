@@ -13,16 +13,16 @@ const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardi
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const Create3Deployer = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
-const { getRandomBytes32 } = require('../scripts/utils');
+const { getRandomBytes32, getCanonicalStandardizedTokenSalt } = require('../scripts/utils');
 const { deployAll } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
 // const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
 // const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
-const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
+const SELECTOR_DEPLOY_AND_REGISTER_CANONICAL_STANDARDIZED_TOKEN = 4;
 
 const LOCK_UNLOCK = 0;
-// const MINT_BURN = 1;
+const MINT_BURN = 1;
 // const LIQUIDITY_POOL = 2;
 
 describe('Interchain Token Service', () => {
@@ -38,7 +38,7 @@ describe('Interchain Token Service', () => {
         [service, gateway, gasService] = await deployAll(wallet, 'Test');
     });
 
-    describe('Full canonical token registration, remote deployment and token send', async () => {
+    describe('Pre-existing canonical token registration, and remote deployment', async () => {
         let token;
         const salt = getRandomBytes32();
         const otherChains = ['chain 1', 'chain 2'];
@@ -76,7 +76,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(AddressZero, wallet.address, tokenCap);
         });
 
-        it('Should register the token and initiate its deployment on other chains', async () => {
+        it('Should register the pre-existing token and initiate its deployment on other chains', async () => {
             const tx1 = await service.populateTransaction.registerCanonicalToken(token.address);
             const data = [tx1.data];
             let value = 0;
@@ -86,33 +86,108 @@ describe('Interchain Token Service', () => {
                 data.push(tx.data);
                 value += gasValues[i];
             }
-
             const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x'],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8'],
+                [SELECTOR_DEPLOY_AND_REGISTER_CANONICAL_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals],
             );
             await expect(service.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, params)
-                .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
+                .and.to.emit(service, 'RemoteCanonicalStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
-                .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
+                .and.to.emit(service, 'RemoteCanonicalStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, otherChains[1], gasValues[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
         });
+    });
+
+    describe('Pre-existing canonical token registration, and remote deployment', async () => {
+        const salt = getRandomBytes32();
+        const otherChains = ['chain 1', 'chain 2'];
+        const gasValues = [1234, 5678];
+        const tokenCap = BigInt(1e18);
+
+        it('Should deploy a canonical standardized token and initiate remote token deployment', async () => {
+            const tokenId = await service.getCanonicalStandardizedTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const tokenAddress = await service.getCanonicalStandardizedTokenAddress(tokenId);
+            const token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
+
+            const tx1 = await service.populateTransaction.deployAndRegisterCanonicalStandardizedToken(salt, name, symbol, decimals, tokenCap, tokenManagerAddress);
+            const data = [tx1.data];
+            let value = 0;
+
+            for (const i in otherChains) {
+                const tx = await service.populateTransaction.deployRemoteCanonicalToken(tokenId, otherChains[i], gasValues[i]);
+                data.push(tx.data);
+                value += gasValues[i];
+            }
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'string', 'string', 'uint8'],
+                [SELECTOR_DEPLOY_AND_REGISTER_CANONICAL_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals],
+            );
+
+            await expect(service.multicall(data, { value }))
+                .to.emit(service, 'StandardizedTokenDeployed')
+                .withArgs(tokenId, name, symbol, decimals, tokenCap, wallet.address, tokenAddress)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(AddressZero, wallet.address, tokenCap)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, MINT_BURN, params)
+                .and.to.emit(service, 'RemoteCanonicalStandardizedTokenAndManagerDeploymentInitialized')
+                .withArgs(tokenId, otherChains[0], gasValues[0])
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
+                .and.to.emit(service, 'RemoteCanonicalStandardizedTokenAndManagerDeploymentInitialized')
+                .withArgs(tokenId, otherChains[1], gasValues[1])
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
+        });
+    
+    });
+
+    describe('Token send and manage', () => {
+        let token, tokenId, tokenManager;
+
+        before(async () => {
+            const salt = getRandomBytes32();
+            const tokenCap = BigInt(1e18);
+            tokenId = await service.getCanonicalStandardizedTokenId(wallet.address, salt);
+            const tokenAddress = await service.getCanonicalStandardizedTokenAddress(tokenId);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
+            
+            token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
+
+            await expect(service.deployAndRegisterCanonicalStandardizedToken(salt, name, symbol, decimals, tokenCap, wallet.address))
+                .to.emit(service, 'StandardizedTokenDeployed')
+                .withArgs(tokenId, name, symbol, decimals, tokenCap, wallet.address, tokenAddress)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(AddressZero, wallet.address, tokenCap)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, LOCK_UNLOCK, params)
+
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+        })
 
         it('Should send some token to another chain', async () => {
             const amount = 1234;
             const destAddress = '0x1234';
-            const destChain = otherChains[0];
+            const destChain = 'chain';
             const gasValue = 6789;
 
             const payload = defaultAbiCoder.encode(

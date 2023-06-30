@@ -54,13 +54,18 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
-    event RemoteStandardizedTokenAndManagerDeploymentInitialized(
+    event RemoteCanonicalStandardizedTokenAndManagerDeploymentInitialized(
+        bytes32 indexed tokenId,
+        string destinationChain,
+        uint256 indexed gasValue
+    );
+    event RemoteCustomStandardizedTokenAndManagerDeploymentInitialized(
         bytes32 indexed tokenId,
         string destinationChain,
         uint256 indexed gasValue
     );
     event TokenManagerDeployed(bytes32 tokenId, TokenManagerType tokenManagerType, bytes params);
-    event StandardizedTokenDeployed(bytes32 tokenId, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo);
+    event StandardizedTokenDeployed(bytes32 tokenId, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo, address tokenAddress);
 
     function tokenManagerDeployer() external view returns (address);
 
@@ -74,11 +79,17 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
 
     function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
-    function getStandardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
+    function getCustomStandardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
+
+    function getCanonicalStandardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
-    function getCustomTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId);
+    function isCanonical(bytes32 tokenId) external view returns (bool);
+
+    function getCanonicalStandardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
+
+    function getCustomTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
 
     function getParamsLockUnlock(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
 

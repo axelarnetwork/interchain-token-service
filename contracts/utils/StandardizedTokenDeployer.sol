@@ -51,14 +51,14 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
         uint8 decimals,
         uint256 mintAmount,
         address mintTo
-    ) external payable {
+    ) external payable returns (address tokenAddress) {
         bytes memory bytecode;
         address implementationAddress = distributor == tokenManager ? implementationMintBurnAddress : implementationLockUnlockAddress;
         {
             bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
             bytecode = abi.encodePacked(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
         }
-        address tokenAddress = deployer.deploy(bytecode, salt);
+        tokenAddress = deployer.deploy(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
     }
 }
