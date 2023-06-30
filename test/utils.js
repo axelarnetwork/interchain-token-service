@@ -22,25 +22,25 @@ before(async () => {
     otherWallet = wallets[1];
 });
 
-describe('Adminable', () => {
+describe('Operatable', () => {
     let test;
     before(async () => {
         test = await deployContract(ownerWallet, 'AdminableTest', [ownerWallet.address]);
     });
 
-    it('Should be able to run the onlyAdminable function as the admin', async () => {
+    it('Should be able to run the onlyAdminable function as the operator', async () => {
         await (await test.testAdminable()).wait();
         expect(await test.nonce()).to.equal(1);
     });
 
-    it('Should not be able to run the onlyAdminable function as not the admin', async () => {
+    it('Should not be able to run the onlyAdminable function as not the operator', async () => {
         await expect(test.connect(otherWallet).testAdminable()).to.be.revertedWithCustomError(test, 'NotAdmin');
     });
 
-    it('Should be able to change the admin only as the admin', async () => {
-        expect(await test.admin()).to.equal(ownerWallet.address);
+    it('Should be able to change the operator only as the operator', async () => {
+        expect(await test.operator()).to.equal(ownerWallet.address);
         await expect(test.setAdmin(otherWallet.address)).to.emit(test, 'AdminChanged').withArgs(otherWallet.address);
-        expect(await test.admin()).to.equal(otherWallet.address);
+        expect(await test.operator()).to.equal(otherWallet.address);
         await expect(test.setAdmin(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotAdmin');
     });
 });

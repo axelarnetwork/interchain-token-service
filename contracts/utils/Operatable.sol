@@ -2,31 +2,31 @@
 
 pragma solidity ^0.8.0;
 
-import { IAdminable } from '../interfaces/IAdminable.sol';
+import { IOperatable } from '../interfaces/IOperatable.sol';
 
 /**
- * @title Adminable Contract
+ * @title Operatable Contract
  * @dev A contract module which provides a basic access control mechanism, where
- * there is an account (an admin) that can be granted exclusive access to
+ * there is an account (an operator) that can be granted exclusive access to
  * specific functions. This module is used through inheritance.
  */
-contract Adminable is IAdminable {
-    // uint256(keccak256('admin')) - 1
+contract Operatable is IOperatable {
+    // uint256(keccak256('operator')) - 1
     uint256 internal constant ADMIN_SLOT = 0xf23ec0bb4210edd5cba85afd05127efcd2fc6a781bfed49188da1081670b22d7;
 
     /**
-     * @dev Throws a NotAdmin custom error if called by any account other than the admin.
+     * @dev Throws a NotAdmin custom error if called by any account other than the operator.
      */
     modifier onlyAdmin() {
-        if (admin() != msg.sender) revert NotAdmin();
+        if (operator() != msg.sender) revert NotAdmin();
         _;
     }
 
     /**
-     * @notice Get the address of the admin
-     * @return admin_ of the admin
+     * @notice Get the address of the operator
+     * @return admin_ of the operator
      */
-    function admin() public view returns (address admin_) {
+    function operator() public view returns (address admin_) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             admin_ := sload(ADMIN_SLOT)
@@ -34,8 +34,8 @@ contract Adminable is IAdminable {
     }
 
     /**
-     * @dev Internal function that stores the new admin address in the admin storage slot
-     * @param admin_ The address of the new admin
+     * @dev Internal function that stores the new operator address in the operator storage slot
+     * @param admin_ The address of the new operator
      */
     function _setAdmin(address admin_) internal {
         // solhint-disable-next-line no-inline-assembly
@@ -46,9 +46,9 @@ contract Adminable is IAdminable {
     }
 
     /**
-     * @notice Change the admin of the contract
-     * @dev Can only be called by the current admin
-     * @param admin_ The address of the new admin
+     * @notice Change the operator of the contract
+     * @dev Can only be called by the current operator
+     * @param admin_ The address of the new operator
      */
     function setAdmin(address admin_) external onlyAdmin {
         _setAdmin(admin_);

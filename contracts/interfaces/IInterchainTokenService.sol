@@ -78,14 +78,14 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
 
     function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
-    function getCustomTokenId(address admin, bytes32 salt) external view returns (bytes32 tokenId);
+    function getCustomTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId);
 
-    function getParamsLockUnlock(bytes memory admin, address tokenAddress) external pure returns (bytes memory params);
+    function getParamsLockUnlock(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
 
-    function getParamsMintBurn(bytes memory admin, address tokenAddress) external pure returns (bytes memory params);
+    function getParamsMintBurn(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
 
     function getParamsLiquidityPool(
-        bytes memory admin,
+        bytes memory operator,
         address tokenAddress,
         address liquidityPoolAddress
     ) external pure returns (bytes memory params);
@@ -104,9 +104,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint256 gasValue
     ) external payable;
 
-    // This deploys a standardized token, mints mintAmount to msg.sender.
-    // Then if the distributor is the tokenManagerAddress for the tokenId calculated based on the salt then it deploys a Mint/Burn tokenManager, or it deploys a Lock/Unlock one otherwise.
-    function deployAndRegisterStandardizedToken(
+    function deployAndRegisterCanonicalStandardizedToken(
         bytes32 salt,
         string calldata name,
         string calldata symbol,
@@ -115,13 +113,24 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         address distributor
     ) external payable;
 
-    function deployAndRegisterRemoteStandardizedTokens(
+    // This deploys a standardized token, mints mintAmount to msg.sender.
+    // Then if the distributor is the tokenManagerAddress for the tokenId calculated based on the salt then it deploys a Mint/Burn tokenManager, or it deploys a Lock/Unlock one otherwise.
+    function deployAndRegisterCustomStandardizedToken(
+        bytes32 salt,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        uint256 mintAmount,
+        address distributor
+    ) external payable;
+
+    function deployAndRegisterRemoteCustomStandardizedToken(
         bytes32 salt,
         string calldata name,
         string calldata symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory admin,
+        bytes memory operator,
         string calldata destinationChain,
         uint256 gasValue
     ) external payable;
