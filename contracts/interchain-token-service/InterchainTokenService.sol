@@ -61,6 +61,7 @@ contract InterchainTokenService is
 
     bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_ID = keccak256('its-canonical-token-id');
+    bytes32 internal constant PREFIX_CANONICAL_STANDARDIZED_TOKEN_ID = keccak256('its-canonical-standardized-token-id');
     bytes32 internal constant PREFIX_CANONICAL_STANDARDIZED_TOKEN_SALT = keccak256('its-canonical-standardized-token-salt');
     bytes32 internal constant PREFIX_CUSTOM_STANDARDIZED_TOKEN_SALT = keccak256('its-custom-standardized-token-salt');
 
@@ -212,7 +213,7 @@ contract InterchainTokenService is
     }
 
     function getCanonicalStandardizedTokenId(address deployer_, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_ID, chainNameHash, deployer_, salt));
+        tokenId = keccak256(abi.encode(PREFIX_CANONICAL_STANDARDIZED_TOKEN_ID, deployer_, salt));
     }
 
     function isCanonical(bytes32 tokenId) external view returns (bool) {
