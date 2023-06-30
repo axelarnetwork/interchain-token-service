@@ -13,7 +13,7 @@ const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardi
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const Create3Deployer = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
-const { getRandomBytes32, getCanonicalStandardizedTokenSalt } = require('../scripts/utils');
+const { getRandomBytes32 } = require('../scripts/utils');
 const { deployAll } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
@@ -27,7 +27,7 @@ const MINT_BURN = 1;
 
 describe('Interchain Token Service', () => {
     let wallet;
-    let service, gateway, gasService, tokenManager, tokenId;
+    let service, gateway, gasService, tokenId;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const decimals = 18;
@@ -56,7 +56,6 @@ describe('Interchain Token Service', () => {
 
             tokenId = await service.getCanonicalTokenId(tokenAddress);
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
 
             await expect(
                 tokenDeployer.deployStandardizedToken(
@@ -86,6 +85,7 @@ describe('Interchain Token Service', () => {
                 data.push(tx.data);
                 value += gasValues[i];
             }
+
             const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8'],
@@ -121,7 +121,14 @@ describe('Interchain Token Service', () => {
             const tokenAddress = await service.getCanonicalStandardizedTokenAddress(tokenId);
             const token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
 
-            const tx1 = await service.populateTransaction.deployAndRegisterCanonicalStandardizedToken(salt, name, symbol, decimals, tokenCap, tokenManagerAddress);
+            const tx1 = await service.populateTransaction.deployAndRegisterCanonicalStandardizedToken(
+                salt,
+                name,
+                symbol,
+                decimals,
+                tokenCap,
+                tokenManagerAddress,
+            );
             const data = [tx1.data];
             let value = 0;
 
@@ -157,7 +164,6 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
         });
-    
     });
 
     describe('Token send and manage', () => {
@@ -169,7 +175,7 @@ describe('Interchain Token Service', () => {
             tokenId = await service.getCanonicalStandardizedTokenId(wallet.address, salt);
             const tokenAddress = await service.getCanonicalStandardizedTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
-            
+
             token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
 
             await expect(service.deployAndRegisterCanonicalStandardizedToken(salt, name, symbol, decimals, tokenCap, wallet.address))
@@ -178,11 +184,11 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, tokenCap)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params)
+                .withArgs(tokenId, LOCK_UNLOCK, params);
 
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
-        })
+        });
 
         it('Should send some token to another chain', async () => {
             const amount = 1234;
