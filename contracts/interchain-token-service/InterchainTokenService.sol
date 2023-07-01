@@ -332,8 +332,10 @@ contract InterchainTokenService is
      * @param params the params that will be used to initialize the TokenManager.
      */
     function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) public payable notPaused {
-        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        address deployer_ = msg.sender;
+        bytes32 tokenId = getCustomTokenId(deployer_, salt);
         _deployTokenManager(tokenId, tokenManagerType, params);
+        emit CustomTokenIdClaimed(tokenId, deployer_, salt);
     }
 
     /**
@@ -354,8 +356,10 @@ contract InterchainTokenService is
         bytes calldata params,
         uint256 gasValue
     ) external payable notPaused {
-        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        address deployer_ = msg.sender;
+        bytes32 tokenId = getCustomTokenId(deployer_, salt);
         _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
+        emit CustomTokenIdClaimed(tokenId, deployer_, salt);
     }
 
     /**
@@ -397,7 +401,7 @@ contract InterchainTokenService is
      * specified needs to be passed to the call
      * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
      */
-    function deployAndRegisterRemoteStandardizedTokens(
+    function deployAndRegisterRemoteStandardizedToken(
         bytes32 salt,
         string calldata name,
         string calldata symbol,
@@ -751,7 +755,16 @@ contract InterchainTokenService is
             operator
         );
         _callContract(destinationChain, payload, gasValue, msg.sender);
-        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
+        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(            
+            tokenId,
+            name,
+            symbol,
+            decimals,
+            distributor,
+            operator,
+            destinationChain,
+            gasValue
+        );
     }
 
     /**

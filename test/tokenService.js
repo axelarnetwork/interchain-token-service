@@ -188,7 +188,7 @@ describe('Interchain Token Service', () => {
             );
             await expect(service.deployRemoteCanonicalToken(tokenId, chain, gasValue, { value: gasValue }))
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, chain, gasValue)
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, '0x', '0x', chain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, chain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -368,7 +368,7 @@ describe('Interchain Token Service', () => {
                 ),
             )
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, destinationChain, gasValue)
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator, destinationChain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
