@@ -4,14 +4,14 @@ pragma solidity ^0.8.0;
 
 import { Operatable } from '../../utils/Operatable.sol';
 
-contract AdminableTest is Operatable {
+contract OperatorableTest is Operatable {
     uint256 public nonce;
 
     constructor(address operator) {
-        _setAdmin(operator);
+        _setOperator(operator);
     }
 
-    function testAdminable() external onlyAdmin {
+    function testOperatorable() external onlyOperator {
         nonce++;
     }
 }

@@ -509,7 +509,7 @@ contract InterchainTokenService is
      * @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
      * @param flowLimits the flowLimits to set
      */
-    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyAdmin {
+    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOperator {
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
@@ -531,7 +531,7 @@ contract InterchainTokenService is
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        _setAdmin(params.toAddress());
+        _setOperator(params.toAddress());
     }
 
     function _sanitizeTokenManagerImplementation(
@@ -660,7 +660,7 @@ contract InterchainTokenService is
             string memory symbol,
             uint8 decimals,
             bytes memory distributorBytes,
-            bytes memory adminBytes
+            bytes memory operatorBytes
         ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
         address tokenAddress = getStandardizedTokenAddress(tokenId);
         address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : address(this);
@@ -669,7 +669,7 @@ contract InterchainTokenService is
         _deployTokenManager(
             tokenId,
             tokenManagerType,
-            abi.encode(adminBytes.length == 0 ? address(this).toBytes() : adminBytes, tokenAddress)
+            abi.encode(operatorBytes.length == 0 ? address(this).toBytes() : operatorBytes, tokenAddress)
         );
     }
 

@@ -59,18 +59,18 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * stored as bytes (to be compatible with non-EVM chains)
      */
     function setup(bytes calldata params) external override onlyProxy {
-        bytes memory adminBytes = abi.decode(params, (bytes));
-        address admin_;
+        bytes memory operatorBytes = abi.decode(params, (bytes));
+        address operator_;
         /**
          * @dev Specifying an empty operator will default to the service being the operator. This makes it easy to deploy
          * remote standardized tokens without knowing anything about the service address at the destination.
          */
-        if (adminBytes.length == 0) {
-            admin_ = address(interchainTokenService);
+        if (operatorBytes.length == 0) {
+            operator_ = address(interchainTokenService);
         } else {
-            admin_ = adminBytes.toAddress();
+            operator_ = operatorBytes.toAddress();
         }
-        _setAdmin(admin_);
+        _setOperator(operator_);
         _setup(params);
     }
 
@@ -168,7 +168,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.
      * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
-    function setFlowLimit(uint256 flowLimit) external onlyAdmin {
+    function setFlowLimit(uint256 flowLimit) external onlyOperator {
         _setFlowLimit(flowLimit);
     }
 

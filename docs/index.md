@@ -930,22 +930,22 @@ A different implementation could have `metadata` that tells this function which 
 
 ## IOperatable
 
-### NotAdmin
+### NotOperator
 
 ```solidity
-error NotAdmin()
+error NotOperator()
 ```
 
 ### operator
 
 ```solidity
-function operator() external view returns (address admin_)
+function operator() external view returns (address operator_)
 ```
 
-### setAdmin
+### setOperator
 
 ```solidity
-function setAdmin(address admin_) external
+function setOperator(address operator_) external
 ```
 
 ## IDistributable
@@ -2427,29 +2427,29 @@ tokens that were deployed before the token freeze functionality was removed_
 function isCommandExecuted(bytes32 commandId) public view returns (bool)
 ```
 
-### adminEpoch
+### operatorEpoch
 
 ```solidity
-function adminEpoch() external pure returns (uint256)
+function operatorEpoch() external pure returns (uint256)
 ```
 
-_Returns the current `adminEpoch`._
+_Returns the current `operatorEpoch`._
 
-### adminThreshold
+### operatorThreshold
 
 ```solidity
-function adminThreshold(uint256) external pure returns (uint256)
+function operatorThreshold(uint256) external pure returns (uint256)
 ```
 
-_Returns the operator threshold for a given `adminEpoch`._
+_Returns the operator threshold for a given `operatorEpoch`._
 
-### admins
+### operators
 
 ```solidity
-function admins(uint256) external pure returns (address[] results)
+function operators(uint256) external pure returns (address[] results)
 ```
 
-_Returns the array of admins within a given `adminEpoch`._
+_Returns the array of operators within a given `operatorEpoch`._
 
 ### setTokenMintLimits
 
@@ -3610,13 +3610,13 @@ specific functions. This module is used through inheritance._
 uint256 ADMIN_SLOT
 ```
 
-### onlyAdmin
+### onlyOperator
 
 ```solidity
-modifier onlyAdmin()
+modifier onlyOperator()
 ```
 
-_Throws a NotAdmin custom error if called by any account other than the operator._
+_Throws a NotOperator custom error if called by any account other than the operator._
 
 ### operator
 
@@ -3632,10 +3632,10 @@ Get the address of the operator
 | ---- | ---- | ----------- |
 | distr | address | of the operator |
 
-### _setAdmin
+### _setOperator
 
 ```solidity
-function _setAdmin(address admin_) internal
+function _setOperator(address operator_) internal
 ```
 
 _Internal function that stores the new operator address in the operator storage slot_
@@ -3644,23 +3644,23 @@ _Internal function that stores the new operator address in the operator storage 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| admin_ | address | The address of the new operator |
+| operator_ | address | The address of the new operator |
 
-### setAdmin
+### setOperator
 
 ```solidity
-function setAdmin(address admin_) external
+function setOperator(address operator_) external
 ```
 
 Change the operator of the contract
 
-_Can only be called by the current admin_
+_Can only be called by the current operator_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| admin_ | address | The address of the new operator |
+| operator_ | address | The address of the new operator |
 
 ## Distributable
 
