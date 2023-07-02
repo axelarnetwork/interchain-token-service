@@ -65,7 +65,14 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint256 indexed gasValue
     );
     event TokenManagerDeployed(bytes32 indexed tokenId, TokenManagerType indexed tokenManagerType, bytes params);
-    event StandardizedTokenDeployed(bytes32 indexed tokenId, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo);
+    event StandardizedTokenDeployed(
+        bytes32 indexed tokenId,
+        string name,
+        string symbol,
+        uint8 decimals,
+        uint256 mintAmount,
+        address mintTo
+    );
     event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
 
     /**
@@ -145,7 +152,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      */
     function getParamsMintBurn(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
 
-
     /**
      * @notice Returns the parameters for the liquidity pool operation.
      * @param operator The operator address.
@@ -181,7 +187,11 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @param params The deployment parameters.
      * @return tokenId The tokenId of the deployed token manager.
      */
-    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) external payable returns (bytes32 tokenId);
+    function deployCustomTokenManager(
+        bytes32 salt,
+        TokenManagerType tokenManagerType,
+        bytes memory params
+    ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Deploys a custom token manager contract on a remote chain.
@@ -197,7 +207,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         TokenManagerType tokenManagerType,
         bytes calldata params,
         uint256 gasValue
-    ) external payable;
+    ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Deploys a standardized token and registers it. The token manager type will be lock/unlock unless the distributor matches its address, in which case it will be a mint/burn one.
@@ -264,7 +274,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes calldata metadata
     ) external payable;
 
-
     /**
      * @notice Sets the flow limits for multiple tokens.
      * @param tokenIds An array of tokenIds.
@@ -298,7 +307,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @param paused The boolean value indicating whether the contract is paused or not.
      */
     function setPaused(bool paused) external;
-
 
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.

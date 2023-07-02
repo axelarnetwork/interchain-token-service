@@ -355,7 +355,7 @@ describe('Interchain Token Service', () => {
                 [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             await expect(
-                service.deployAndRegisterRemoteStandardizedTokens(
+                service.deployAndRegisterRemoteStandardizedToken(
                     salt,
                     tokenName,
                     tokenSymbol,
@@ -380,7 +380,7 @@ describe('Interchain Token Service', () => {
             await tx.wait();
 
             await expect(
-                service.deployAndRegisterRemoteStandardizedTokens(
+                service.deployAndRegisterRemoteStandardizedToken(
                     salt,
                     tokenName,
                     tokenSymbol,
@@ -441,7 +441,7 @@ describe('Interchain Token Service', () => {
         it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager', async () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-            const distributor = service.address;
+            const distributor = tokenManagerAddress;
             const operator = wallet.address;
             const tokenAddress = await service.getStandardizedTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
@@ -453,7 +453,7 @@ describe('Interchain Token Service', () => {
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, service.address)
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, distributor)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
@@ -476,7 +476,7 @@ describe('Interchain Token Service', () => {
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, service.address)
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, 0, tokenManagerAddress)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);

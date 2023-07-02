@@ -331,9 +331,13 @@ contract InterchainTokenService is
      * @param tokenManagerType the type of TokenManager to be deployed.
      * @param params the params that will be used to initialize the TokenManager.
      */
-    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) public payable notPaused {
+    function deployCustomTokenManager(
+        bytes32 salt,
+        TokenManagerType tokenManagerType,
+        bytes memory params
+    ) public payable notPaused returns (bytes32 tokenId) {
         address deployer_ = msg.sender;
-        bytes32 tokenId = getCustomTokenId(deployer_, salt);
+        tokenId = getCustomTokenId(deployer_, salt);
         _deployTokenManager(tokenId, tokenManagerType, params);
         emit CustomTokenIdClaimed(tokenId, deployer_, salt);
     }
@@ -355,9 +359,9 @@ contract InterchainTokenService is
         TokenManagerType tokenManagerType,
         bytes calldata params,
         uint256 gasValue
-    ) external payable notPaused {
+    ) external payable notPaused returns (bytes32 tokenId) {
         address deployer_ = msg.sender;
-        bytes32 tokenId = getCustomTokenId(deployer_, salt);
+        tokenId = getCustomTokenId(deployer_, salt);
         _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
         emit CustomTokenIdClaimed(tokenId, deployer_, salt);
     }
@@ -667,9 +671,10 @@ contract InterchainTokenService is
             bytes memory operatorBytes
         ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
         address tokenAddress = getStandardizedTokenAddress(tokenId);
-        address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : address(this);
+        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : tokenManagerAddress;
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);
-        TokenManagerType tokenManagerType = distributor == address(this) ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
+        TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
         _deployTokenManager(
             tokenId,
             tokenManagerType,
@@ -755,7 +760,7 @@ contract InterchainTokenService is
             operator
         );
         _callContract(destinationChain, payload, gasValue, msg.sender);
-        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(            
+        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(
             tokenId,
             name,
             symbol,
