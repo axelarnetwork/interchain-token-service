@@ -137,7 +137,114 @@ describe('Interchain Token Service', () => {
         });
 
         // For this test the token must be a standardized token (or a distributable token in general)
-        it('Should be able to change the token distributor distributor', async () => {
+        it('Should be able to change the token distributor', async () => {
+            const newAddress = new Wallet(getRandomBytes32()).address;
+            const amount = 1234;
+
+            await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
+            await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
+
+            await expect(token.setDistributor(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
+
+            await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+            await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+        });
+    });
+
+    describe('Full standardized token registration, remote deployment and token send', async () => {
+        let token;
+        let tokenId;
+        const salt = getRandomBytes32();
+        const otherChains = ['chain 1', 'chain 2'];
+        const gasValues = [1234, 5678];
+        const tokenCap = BigInt(1e18);
+
+        before(async () => {
+            tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenAddress = await service.getStandardizedTokenAddress(tokenId);
+            token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+        });
+
+        it('Should register the token and initiate its deployment on other chains', async () => {
+            const tx1 = await service.populateTransaction.deployAndRegisterStandardizedToken(
+                salt,
+                name,
+                symbol,
+                decimals,
+                tokenCap,
+                wallet.address,
+            );
+            const data = [tx1.data];
+            let value = 0;
+
+            for (const i in otherChains) {
+                const tx = await service.populateTransaction.deployAndRegisterRemoteStandardizedToken(
+                    salt,
+                    name,
+                    symbol,
+                    decimals,
+                    '0x',
+                    wallet.address,
+                    otherChains[i],
+                    gasValues[i],
+                );
+                data.push(tx.data);
+                value += gasValues[i];
+            }
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', wallet.address],
+            );
+            await expect(service.multicall(data, { value }))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, LOCK_UNLOCK, params)
+                .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
+                .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address, otherChains[0], gasValues[0])
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
+                .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
+                .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address, otherChains[1], gasValues[1])
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
+        });
+
+        it('Should send some token to another chain', async () => {
+            const amount = 1234;
+            const destAddress = '0x1234';
+            const destChain = otherChains[0];
+            const gasValue = 6789;
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+            );
+            const payloadHash = keccak256(payload);
+
+            await expect(token.approve(tokenManager.address, amount))
+                .to.emit(token, 'Approval')
+                .withArgs(wallet.address, tokenManager.address, amount);
+
+            await expect(tokenManager.sendToken(destChain, destAddress, amount, '0x', { value: gasValue }))
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, tokenManager.address, amount)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
+                .to.emit(service, 'TokenSent')
+                .withArgs(tokenId, destChain, destAddress, amount);
+        });
+
+        // For this test the token must be a standardized token (or a distributable token in general)
+        it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
 
