@@ -69,7 +69,6 @@ contract InterchainTokenService is
     uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
     // keccak256('interchain-token-service')
-    // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
 
     /**
@@ -576,7 +575,7 @@ contract InterchainTokenService is
     function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
         (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
         bytes32 commandId;
-        // solhint-disable-next-line no-inline-assembly
+
         assembly {
             commandId := calldataload(4)
         }
@@ -603,7 +602,7 @@ contract InterchainTokenService is
         bytes memory data;
         address destinationAddress;
         bytes32 commandId;
-        // solhint-disable-next-line no-inline-assembly
+
         assembly {
             commandId := calldataload(4)
         }
@@ -761,7 +760,6 @@ contract InterchainTokenService is
      * @param params Additional parameters for the token manager deployment
      */
     function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
-        // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = tokenManagerDeployer.delegatecall(
             abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
         );
@@ -801,7 +799,7 @@ contract InterchainTokenService is
     ) internal {
         bytes32 salt = _getStandardizedTokenSalt(tokenId);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
-        // solhint-disable-next-line avoid-low-level-calls
+
         (bool success, ) = standardizedTokenDeployer.delegatecall(
             abi.encodeWithSelector(
                 IStandardizedTokenDeployer.deployStandardizedToken.selector,
@@ -822,7 +820,6 @@ contract InterchainTokenService is
     }
 
     function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes calldata data) {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             data.length := sub(metadata.length, 4)
             data.offset := add(metadata.offset, 4)

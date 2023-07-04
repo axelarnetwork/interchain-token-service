@@ -28,7 +28,6 @@ contract TokenManagerProxy is ITokenManagerProxy {
         tokenId = tokenId_;
         address impl = _getImplementation(IInterchainTokenService(interchainTokenServiceAddress_), implementationType_);
 
-        // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = impl.delegatecall(abi.encodeWithSelector(TokenManagerProxy.setup.selector, params));
         if (!success) revert SetupFailed();
     }
@@ -58,16 +57,14 @@ contract TokenManagerProxy is ITokenManagerProxy {
      * @dev Setup function. Empty in this contract.
      * @param setupParams Initialization parameters
      */
-    // solhint-disable-next-line no-empty-blocks
     function setup(bytes calldata setupParams) external {}
 
     /**
      * @dev Fallback function. Delegates the call to the token manager contract.
      */
-    // solhint-disable-next-line no-complex-fallback
     fallback() external payable virtual {
         address implementaion_ = implementation();
-        // solhint-disable-next-line no-inline-assembly
+
         assembly {
             calldatacopy(0, 0, calldatasize())
 
@@ -87,6 +84,5 @@ contract TokenManagerProxy is ITokenManagerProxy {
     /**
      * @dev Receive function which allows this contract to receive ether.
      */
-    // solhint-disable-next-line no-empty-blocks
     receive() external payable virtual {}
 }

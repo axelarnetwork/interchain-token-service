@@ -18,15 +18,12 @@ contract InterchainTokenServiceProxy is FinalProxy {
         address implementationAddress,
         address owner,
         address admin
-    )
-        FinalProxy(implementationAddress, owner, abi.encodePacked(admin)) // solhint-disable-next-line no-empty-blocks
-    {}
+    ) FinalProxy(implementationAddress, owner, abi.encodePacked(admin)) {}
 
     /**
      * @dev Override for the 'contractId' function in FinalProxy. Returns a unique identifier for this contract.
      * @return bytes32 identifier for this contract
      */
-    // solhint-disable-next-line no-empty-blocks
     function contractId() internal pure override returns (bytes32) {
         // keccak256('interchain-token-service')-1
         return 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;

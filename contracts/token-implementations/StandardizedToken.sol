@@ -25,7 +25,6 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
     uint8 public decimals;
 
     // keccak256('standardized-token'))
-    // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = 0x8f0d3a2d3a4c902b07e15645c3d56cc5d37941403c982473aeb5a1c964a34cd5;
 
     /**

@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 
 import { IFlowLimit } from '../interfaces/IFlowLimit.sol';
 
-// solhint-disable no-inline-assembly
-// solhint-disable not-rely-on-time
 /**
  * @title FlowLimit
  * @notice Implements flow limit logic for interchain token transfers.

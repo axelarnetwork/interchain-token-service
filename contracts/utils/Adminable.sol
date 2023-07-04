@@ -27,7 +27,6 @@ contract Adminable is IAdminable {
      * @return admin_ of the admin
      */
     function admin() public view returns (address admin_) {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             admin_ := sload(ADMIN_SLOT)
         }
@@ -38,7 +37,6 @@ contract Adminable is IAdminable {
      * @param admin_ The address of the new admin
      */
     function _setAdmin(address admin_) internal {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(ADMIN_SLOT, admin_)
         }

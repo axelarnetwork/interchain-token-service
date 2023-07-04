@@ -10,7 +10,6 @@ import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
  * token transfers and token transfers with contract calls between chains. Implements the IExpressCallHandler interface.
  */
 contract ExpressCallHandler is IExpressCallHandler {
-    // solhint-disable no-inline-assembly
     // uint256(keccak256('prefix-express-give-token'));
     uint256 internal constant PREFIX_EXPRESS_RECEIVE_TOKEN = 0x67c7b41c1cb0375e36084c4ec399d005168e83425fa471b9224f6115af865619;
     // uint256(keccak256('prefix-express-give-token-with-data'));

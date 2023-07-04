@@ -11,7 +11,6 @@ import { IStandardizedTokenProxy } from '../interfaces/IStandardizedTokenProxy.s
  * @dev Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy.
  */
 contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
-    // solhint-disable-next-line const-name-snakecase
     bytes32 public constant contractId = keccak256('standardized-token');
 
     /**
@@ -19,14 +18,9 @@ contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
      * @param implementationAddress Address of the StandardizedToken implementation
      * @param params Initialization parameters for the StandardizedToken contract
      */
-    constructor(
-        address implementationAddress,
-        bytes memory params
-    )
-        FixedProxy(implementationAddress) // solhint-disable-next-line no-empty-blocks
-    {
+    constructor(address implementationAddress, bytes memory params) FixedProxy(implementationAddress) {
         if (IStandardizedToken(implementationAddress).contractId() != contractId) revert WrongImplementation();
-        // solhint-disable-next-line avoid-low-level-calls
+
         (bool success, ) = implementationAddress.delegatecall(abi.encodeWithSelector(IStandardizedToken.setup.selector, params));
         if (!success) revert SetupFailed();
     }

@@ -18,7 +18,6 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     bytes32 public immutable interchainTokenServiceAddressHash;
     mapping(string => bool) public supportedByGateway;
 
-    // solhint-disable-next-line const-name-snakecase
     bytes32 public constant override contractId = keccak256('remote-address-validator');
 
     /**

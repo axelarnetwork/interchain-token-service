@@ -27,7 +27,6 @@ contract Distributable is IDistributable {
      * @return distr of the distributor
      */
     function distributor() public view returns (address distr) {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             distr := sload(DISTRIBUTOR_SLOT)
         }
@@ -38,7 +37,6 @@ contract Distributable is IDistributable {
      * @param distributor_ The address of the new distributor
      */
     function _setDistributor(address distributor_) internal {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(DISTRIBUTOR_SLOT, distributor_)
         }
