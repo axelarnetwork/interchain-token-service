@@ -23,17 +23,19 @@ describe('RemoteAddressValidator', () => {
 
     it('Should revert on RemoteAddressValidator deployment with invalid interchain token service address', async () => {
         const remoteAddressValidatorFactory = await ethers.getContractFactory('RemoteAddressValidator');
-        await expect(remoteAddressValidatorFactory.deploy(AddressZero)).to.be.revertedWithCustomError(remoteAddressValidator, 'ZeroAddress');
+        await expect(remoteAddressValidatorFactory.deploy(AddressZero)).to.be.revertedWithCustomError(
+            remoteAddressValidator,
+            'ZeroAddress',
+        );
     });
 
     it('Should revert on RemoteAddressValidator deployment with length mismatch between chains and trusted addresses arrays', async () => {
         const remoteAddressValidatorImpl = await deployContract(ownerWallet, 'RemoteAddressValidator', [interchainTokenServiceAddress]);
         const remoteAddressValidatorProxyFactory = await ethers.getContractFactory('RemoteAddressValidatorProxy');
         const params = defaultAbiCoder.encode(['string[]', 'string[]'], [['Chain A'], []]);
-        await expect(remoteAddressValidatorProxyFactory.deploy(remoteAddressValidatorImpl.address, ownerWallet.address, params)).to.be.revertedWithCustomError(
-            remoteAddressValidator,
-            'SetupFailed',
-        );
+        await expect(
+            remoteAddressValidatorProxyFactory.deploy(remoteAddressValidatorImpl.address, ownerWallet.address, params),
+        ).to.be.revertedWithCustomError(remoteAddressValidator, 'SetupFailed');
     });
 
     it('Should get the correct remote address for unregistered chains', async () => {
@@ -47,10 +49,9 @@ describe('RemoteAddressValidator', () => {
     });
 
     it('Should not be able to add a custom remote address as not the owner', async () => {
-        await expect(remoteAddressValidator.connect(otherWallet).addTrustedAddress(otherChain, otherRemoteAddress)).to.be.revertedWithCustomError(
-            remoteAddressValidator,
-            'NotOwner',
-        );
+        await expect(
+            remoteAddressValidator.connect(otherWallet).addTrustedAddress(otherChain, otherRemoteAddress),
+        ).to.be.revertedWithCustomError(remoteAddressValidator, 'NotOwner');
     });
 
     it('Should be able to add a custom remote address as the owner', async () => {
@@ -68,7 +69,10 @@ describe('RemoteAddressValidator', () => {
     });
 
     it('Should revert on adding a custom remote address with an invalid remote address', async () => {
-        await expect(remoteAddressValidator.addTrustedAddress(otherChain, '')).to.be.revertedWithCustomError(remoteAddressValidator, 'ZeroStringLength');
+        await expect(remoteAddressValidator.addTrustedAddress(otherChain, '')).to.be.revertedWithCustomError(
+            remoteAddressValidator,
+            'ZeroStringLength',
+        );
     });
 
     it('Should be able to validate remote addresses properly.', async () => {
@@ -83,12 +87,17 @@ describe('RemoteAddressValidator', () => {
     });
 
     it('Should be able to remove a custom remote address as the owner', async () => {
-        await expect(remoteAddressValidator.removeTrustedAddress(otherChain)).to.emit(remoteAddressValidator, 'TrustedAddressRemoved').withArgs(otherChain);
+        await expect(remoteAddressValidator.removeTrustedAddress(otherChain))
+            .to.emit(remoteAddressValidator, 'TrustedAddressRemoved')
+            .withArgs(otherChain);
         expect(await remoteAddressValidator.getRemoteAddress(otherChain)).to.equal(interchainTokenServiceAddress.toLowerCase());
     });
 
     it('Should revert on removing a custom remote address with an empty chain name', async () => {
-        await expect(remoteAddressValidator.removeTrustedAddress('')).to.be.revertedWithCustomError(remoteAddressValidator, 'ZeroStringLength');
+        await expect(remoteAddressValidator.removeTrustedAddress('')).to.be.revertedWithCustomError(
+            remoteAddressValidator,
+            'ZeroStringLength',
+        );
     });
 
     it('Should be able to validate remote addresses properly.', async () => {

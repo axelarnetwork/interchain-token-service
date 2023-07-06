@@ -15,7 +15,11 @@ async function deployRemoteAddressValidator(wallet, interchainTokenServiceAddres
     const remoteAddressValidatorImpl = await deployContract(wallet, 'RemoteAddressValidator', [interchainTokenServiceAddress]);
     const params = defaultAbiCoder.encode(['string[]', 'string[]'], [[], []]);
 
-    const remoteAddressValidatorProxy = await deployContract(wallet, 'RemoteAddressValidatorProxy', [remoteAddressValidatorImpl.address, wallet.address, params]);
+    const remoteAddressValidatorProxy = await deployContract(wallet, 'RemoteAddressValidatorProxy', [
+        remoteAddressValidatorImpl.address,
+        wallet.address,
+        params,
+    ]);
     const remoteAddressValidator = new Contract(remoteAddressValidatorProxy.address, remoteAddressValidatorImpl.interface, wallet);
     return remoteAddressValidator;
 }
