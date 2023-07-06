@@ -39,7 +39,7 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
      * @param params The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address.
      */
     function _setup(bytes calldata params) internal override {
-        //the first argument is reserved for the operator.
+        // The first argument is reserved for the operator.
         (, address tokenAddress_, address liquidityPool_) = abi.decode(params, (bytes, address, address));
         _setTokenAddress(tokenAddress_);
         _setLiquidityPool(liquidityPool_);
