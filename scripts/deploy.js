@@ -11,13 +11,17 @@ async function deployContract(wallet, contractName, args = []) {
     return contract;
 }
 
-async function deployLinkerRouter(wallet, interchainTokenServiceAddress) {
-    const linkerRouterImpl = await deployContract(wallet, 'LinkerRouter', [interchainTokenServiceAddress]);
+async function deployRemoteAddressValidator(wallet, interchainTokenServiceAddress) {
+    const remoteAddressValidatorImpl = await deployContract(wallet, 'RemoteAddressValidator', [interchainTokenServiceAddress]);
     const params = defaultAbiCoder.encode(['string[]', 'string[]'], [[], []]);
 
-    const linkerRouterProxy = await deployContract(wallet, 'LinkerRouterProxy', [linkerRouterImpl.address, wallet.address, params]);
-    const linkerRouter = new Contract(linkerRouterProxy.address, linkerRouterImpl.interface, wallet);
-    return linkerRouter;
+    const remoteAddressValidatorProxy = await deployContract(wallet, 'RemoteAddressValidatorProxy', [
+        remoteAddressValidatorImpl.address,
+        wallet.address,
+        params,
+    ]);
+    const remoteAddressValidator = new Contract(remoteAddressValidatorProxy.address, remoteAddressValidatorImpl.interface, wallet);
+    return remoteAddressValidator;
 }
 
 async function deployMockGateway(wallet) {
@@ -37,7 +41,7 @@ async function deployInterchainTokenService(
     standardizedTokenDeployerAddress,
     gatewayAddress,
     gasServiceAddress,
-    linkerRouterAddress,
+    remoteAddressValidatorAddress,
     tokenManagerImplementations,
     chainName,
     deploymentKey,
@@ -48,7 +52,7 @@ async function deployInterchainTokenService(
         standardizedTokenDeployerAddress,
         gatewayAddress,
         gasServiceAddress,
-        linkerRouterAddress,
+        remoteAddressValidatorAddress,
         tokenManagerImplementations,
         chainName,
     ]);
@@ -85,7 +89,7 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
         standardizedTokenMintBurn.address,
     ]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-    const linkerRouter = await deployLinkerRouter(wallet, interchainTokenServiceAddress);
+    const remoteAddressValidator = await deployRemoteAddressValidator(wallet, interchainTokenServiceAddress);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
 
     const service = await deployInterchainTokenService(
@@ -95,7 +99,7 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
         standardizedTokenDeployer.address,
         gateway.address,
         gasService.address,
-        linkerRouter.address,
+        remoteAddressValidator.address,
         tokenManagerImplementations.map((impl) => impl.address),
         chainName,
         deploymentKey,
@@ -105,7 +109,7 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
 
 module.exports = {
     deployContract,
-    deployLinkerRouter,
+    deployRemoteAddressValidator,
     deployMockGateway,
     deployGasService,
     deployInterchainTokenService,

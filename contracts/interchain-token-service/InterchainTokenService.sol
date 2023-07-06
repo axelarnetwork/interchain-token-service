@@ -11,7 +11,7 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
-import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
+import { IRemoteAddressValidator } from '../interfaces/IRemoteAddressValidator.sol';
 import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
@@ -52,7 +52,7 @@ contract InterchainTokenService is
     address internal immutable implementationMintBurn;
     address internal immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
-    ILinkerRouter public immutable linkerRouter;
+    IRemoteAddressValidator public immutable remoteAddressValidator;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
     Create3Deployer internal immutable deployer;
@@ -76,7 +76,7 @@ contract InterchainTokenService is
      * @param standardizedTokenDeployer_ the address of the StandardizedTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
-     * @param linkerRouter_ the address of the LinkerRouter.
+     * @param remoteAddressValidator_ the address of the RemoteAddressValidator.
      * @param tokenManagerImplementations this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool.
      * @param chainName_ the name of the current chain.
      */
@@ -85,17 +85,17 @@ contract InterchainTokenService is
         address standardizedTokenDeployer_,
         address gateway_,
         address gasService_,
-        address linkerRouter_,
+        address remoteAddressValidator_,
         address[] memory tokenManagerImplementations,
         string memory chainName_
     ) AxelarExecutable(gateway_) {
         if (
-            linkerRouter_ == address(0) ||
+            remoteAddressValidator_ == address(0) ||
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             standardizedTokenDeployer_ == address(0)
         ) revert ZeroAddress();
-        linkerRouter = ILinkerRouter(linkerRouter_);
+        remoteAddressValidator = IRemoteAddressValidator(remoteAddressValidator_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         standardizedTokenDeployer = standardizedTokenDeployer_;
@@ -121,7 +121,7 @@ contract InterchainTokenService is
      * @param sourceAddress the address that the call came from.
      */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
-        if (!linkerRouter.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
+        if (!remoteAddressValidator.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
         _;
     }
 
@@ -695,7 +695,7 @@ contract InterchainTokenService is
      * @param refundTo The address where the unused gas amount should be refunded to
      */
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue, address refundTo) internal {
-        string memory destinationAddress = linkerRouter.getRemoteAddress(destinationChain);
+        string memory destinationAddress = remoteAddressValidator.getRemoteAddress(destinationChain);
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
                 address(this),

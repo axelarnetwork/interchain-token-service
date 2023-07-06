@@ -3,10 +3,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title ILinkerRouter
+ * @title IRemoteAddressValidator
  * @dev Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract
  */
-interface ILinkerRouter {
+interface IRemoteAddressValidator {
     error ZeroAddress();
     error LengthMismatch();
     error ZeroStringLength();
