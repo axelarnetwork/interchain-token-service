@@ -19,7 +19,7 @@ contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
      * @param params Initialization parameters for the StandardizedToken contract
      */
     constructor(address implementationAddress, bytes memory params) FixedProxy(implementationAddress) {
-        if (IStandardizedToken(implementationAddress).contractId() != CONTRACT_ID) revert WrongImplementation();
+        if (IStandardizedToken(implementationAddress).contractId() != CONTRACT_ID) revert InvalidImplementation();
 
         (bool success, ) = implementationAddress.delegatecall(abi.encodeWithSelector(IStandardizedToken.setup.selector, params));
         if (!success) revert SetupFailed();
