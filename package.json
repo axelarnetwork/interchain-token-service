@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
-    "build": "rm -rf cache artifacts && npx hardhat compile",
+    "build": "rm -rf cache artifacts dist && npx hardhat compile && mkdir dist && cp -r artifacts/contracts/** dist",
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/*.js'",
     "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",
     "flatten": "sh scripts/flatten-contracts.sh",
