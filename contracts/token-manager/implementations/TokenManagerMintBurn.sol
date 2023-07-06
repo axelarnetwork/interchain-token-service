@@ -36,7 +36,7 @@ contract TokenManagerMintBurn is TokenManagerAddressStorage {
      * @param params The setup parameters in bytes. Should be encoded with the token address.
      */
     function _setup(bytes calldata params) internal override {
-        //the first argument is reserved for the admin.
+        // The first argument is reserved for the operator.
         (, address tokenAddress) = abi.decode(params, (bytes, address));
         _setTokenAddress(tokenAddress);
     }

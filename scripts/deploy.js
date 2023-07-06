@@ -41,7 +41,7 @@ async function deployInterchainTokenService(
     tokenManagerImplementations,
     chainName,
     deploymentKey,
-    adminAddress = wallet.address,
+    operatorAddress = wallet.address,
 ) {
     const implementation = await deployContract(wallet, 'InterchainTokenService', [
         tokenManagerDeployerAddress,
@@ -55,7 +55,7 @@ async function deployInterchainTokenService(
     const proxy = await deployCreate3Contract(create3DeployerAddress, wallet, InterchainTokenServiceProxy, deploymentKey, [
         implementation.address,
         wallet.address,
-        adminAddress,
+        operatorAddress,
     ]);
     const service = new Contract(proxy.address, implementation.interface, wallet);
     return service;

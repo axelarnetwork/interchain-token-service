@@ -17,9 +17,9 @@ contract InterchainTokenServiceProxy is FinalProxy {
     constructor(
         address implementationAddress,
         address owner,
-        address admin
+        address operator
     )
-        FinalProxy(implementationAddress, owner, abi.encodePacked(admin)) // solhint-disable-next-line no-empty-blocks
+        FinalProxy(implementationAddress, owner, abi.encodePacked(operator)) // solhint-disable-next-line no-empty-blocks
     {}
 
     /**

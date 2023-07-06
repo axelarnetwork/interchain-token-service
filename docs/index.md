@@ -354,7 +354,7 @@ to figure out their implementations
 ### getParamsLockUnlock
 
 ```solidity
-function getParamsLockUnlock(bytes admin, address tokenAddress) public pure returns (bytes params)
+function getParamsLockUnlock(bytes operator, address tokenAddress) public pure returns (bytes params)
 ```
 
 Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
@@ -363,7 +363,7 @@ Getter function for the parameters of a lock/unlock TokenManager. Mainly to be u
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| admin | bytes | the admin of the TokenManager. |
+| operator | bytes | the operator of the TokenManager. |
 | tokenAddress | address | the token to be managed. |
 
 #### Return Values
@@ -375,7 +375,7 @@ Getter function for the parameters of a lock/unlock TokenManager. Mainly to be u
 ### getParamsMintBurn
 
 ```solidity
-function getParamsMintBurn(bytes admin, address tokenAddress) public pure returns (bytes params)
+function getParamsMintBurn(bytes operator, address tokenAddress) public pure returns (bytes params)
 ```
 
 Getter function for the parameters of a mint/burn TokenManager. Mainly to be used by frontends.
@@ -384,7 +384,7 @@ Getter function for the parameters of a mint/burn TokenManager. Mainly to be use
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| admin | bytes | the admin of the TokenManager. |
+| operator | bytes | the operator of the TokenManager. |
 | tokenAddress | address | the token to be managed. |
 
 #### Return Values
@@ -396,7 +396,7 @@ Getter function for the parameters of a mint/burn TokenManager. Mainly to be use
 ### getParamsLiquidityPool
 
 ```solidity
-function getParamsLiquidityPool(bytes admin, address tokenAddress, address liquidityPoolAddress) public pure returns (bytes params)
+function getParamsLiquidityPool(bytes operator, address tokenAddress, address liquidityPoolAddress) public pure returns (bytes params)
 ```
 
 Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
@@ -405,7 +405,7 @@ Getter function for the parameters of a liquidity pool TokenManager. Mainly to b
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| admin | bytes | the admin of the TokenManager. |
+| operator | bytes | the operator of the TokenManager. |
 | tokenAddress | address | the token to be managed. |
 | liquidityPoolAddress | address | the liquidity pool to be used to store the bridged tokens. |
 
@@ -514,7 +514,7 @@ can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwis
 ### deployAndRegisterRemoteStandardizedTokens
 
 ```solidity
-function deployAndRegisterRemoteStandardizedTokens(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes admin, string destinationChain, uint256 gasValue) external payable
+function deployAndRegisterRemoteStandardizedTokens(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
 ```
 
 Used to deploy a standardized token alongside a TokenManager in another chain. If the `distributor` is empty
@@ -531,7 +531,7 @@ _`gasValue` exists because this function can be part of a multicall involving mu
 | symbol | string | the symbol of the token to be deployed. |
 | decimals | uint8 | the decimals of the token to be deployed. |
 | distributor | bytes | the address that will be able to mint and burn the deployed token. |
-| admin | bytes |  |
+| operator | bytes |  |
 | destinationChain | string | the name of the destination chain to deploy to. |
 | gasValue | uint256 | the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount specified needs to be passed to the call |
 
@@ -599,7 +599,7 @@ Transmit a sendTokenWithData for the given tokenId. Only callable by a token man
 function setFlowLimit(bytes32 tokenId, uint256 flowLimit) external
 ```
 
-Used to set a flow limit for a token manager that has the service as its admin.
+Used to set a flow limit for a token manager that has the service as its operator.
 
 #### Parameters
 
@@ -740,7 +740,7 @@ Deploys a token manager on a destination chain.
 ### _deployRemoteStandardizedToken
 
 ```solidity
-function _deployRemoteStandardizedToken(bytes32 tokenId, string name, string symbol, uint8 decimals, bytes distributor, bytes admin, string destinationChain, uint256 gasValue) internal
+function _deployRemoteStandardizedToken(bytes32 tokenId, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) internal
 ```
 
 Deploys a standardized token on a destination chain.
@@ -754,7 +754,7 @@ Deploys a standardized token on a destination chain.
 | symbol | string | The symbol of the token |
 | decimals | uint8 | The number of decimals of the token |
 | distributor | bytes | The distributor address for the token |
-| admin | bytes |  |
+| operator | bytes |  |
 | destinationChain | string | The destination chain where the token will be deployed |
 | gasValue | uint256 | The amount of gas to be paid for the transaction |
 
@@ -928,24 +928,24 @@ A different implementation could have `metadata` that tells this function which 
 | amount | uint256 | the amount of token to be transfered. |
 | metadata | bytes | either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer. |
 
-## IAdminable
+## IOperatable
 
-### NotAdmin
+### NotOperator
 
 ```solidity
-error NotAdmin()
+error NotOperator()
 ```
 
-### admin
+### operator
 
 ```solidity
-function admin() external view returns (address admin_)
+function operator() external view returns (address operator_)
 ```
 
-### setAdmin
+### setOperator
 
 ```solidity
-function setAdmin(address admin_) external
+function setOperator(address operator_) external
 ```
 
 ## IDistributable
@@ -1301,25 +1301,25 @@ function getCanonicalTokenId(address tokenAddress) external view returns (bytes3
 ### getCustomTokenId
 
 ```solidity
-function getCustomTokenId(address admin, bytes32 salt) external view returns (bytes32 tokenId)
+function getCustomTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
 ```
 
 ### getParamsLockUnlock
 
 ```solidity
-function getParamsLockUnlock(bytes admin, address tokenAddress) external pure returns (bytes params)
+function getParamsLockUnlock(bytes operator, address tokenAddress) external pure returns (bytes params)
 ```
 
 ### getParamsMintBurn
 
 ```solidity
-function getParamsMintBurn(bytes admin, address tokenAddress) external pure returns (bytes params)
+function getParamsMintBurn(bytes operator, address tokenAddress) external pure returns (bytes params)
 ```
 
 ### getParamsLiquidityPool
 
 ```solidity
-function getParamsLiquidityPool(bytes admin, address tokenAddress, address liquidityPoolAddress) external pure returns (bytes params)
+function getParamsLiquidityPool(bytes operator, address tokenAddress, address liquidityPoolAddress) external pure returns (bytes params)
 ```
 
 ### registerCanonicalToken
@@ -1355,7 +1355,7 @@ function deployAndRegisterStandardizedToken(bytes32 salt, string name, string sy
 ### deployAndRegisterRemoteStandardizedTokens
 
 ```solidity
-function deployAndRegisterRemoteStandardizedTokens(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes admin, string destinationChain, uint256 gasValue) external payable
+function deployAndRegisterRemoteStandardizedTokens(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
 ```
 
 ### getImplementation
@@ -2427,29 +2427,29 @@ tokens that were deployed before the token freeze functionality was removed_
 function isCommandExecuted(bytes32 commandId) public view returns (bool)
 ```
 
-### adminEpoch
+### operatorEpoch
 
 ```solidity
-function adminEpoch() external pure returns (uint256)
+function operatorEpoch() external pure returns (uint256)
 ```
 
-_Returns the current `adminEpoch`._
+_Returns the current `operatorEpoch`._
 
-### adminThreshold
+### operatorThreshold
 
 ```solidity
-function adminThreshold(uint256) external pure returns (uint256)
+function operatorThreshold(uint256) external pure returns (uint256)
 ```
 
-_Returns the admin threshold for a given `adminEpoch`._
+_Returns the operator threshold for a given `operatorEpoch`._
 
-### admins
+### operators
 
 ```solidity
-function admins(uint256) external pure returns (address[] results)
+function operators(uint256) external pure returns (address[] results)
 ```
 
-_Returns the array of admins within a given `adminEpoch`._
+_Returns the array of operators within a given `operatorEpoch`._
 
 ### setTokenMintLimits
 
@@ -3100,7 +3100,7 @@ _This function should only be called by the proxy, and only once from the proxy 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| params | bytes | the parameters to be used to initialize the TokenManager. The exact format depends on the type of TokenManager used but the first 32 bytes are reserved for the address of the admin, stored as bytes (to be compatible with non-EVM chains) |
+| params | bytes | the parameters to be used to initialize the TokenManager. The exact format depends on the type of TokenManager used but the first 32 bytes are reserved for the address of the operator, stored as bytes (to be compatible with non-EVM chains) |
 
 ### sendToken
 
@@ -3181,7 +3181,7 @@ This function gives token to a specified address. Can only be called by the serv
 function setFlowLimit(uint256 flowLimit) external
 ```
 
-This function sets the flow limit for this TokenManager. Can only be called by the admin.
+This function sets the flow limit for this TokenManager. Can only be called by the operator.
 
 #### Parameters
 
@@ -3392,7 +3392,7 @@ _Reads the stored liquidity pool address from the specified storage slot_
 function setLiquidityPool(address newLiquidityPool) external
 ```
 
-_Updates the address of the liquidity pool. Can only be called by the admin._
+_Updates the address of the liquidity pool. Can only be called by the operator._
 
 #### Parameters
 
@@ -3598,10 +3598,10 @@ _Mints the specified amount of tokens to a particular address_
 | ---- | ---- | ----------- |
 | [0] | uint256 | uint Amount of tokens minted |
 
-## Adminable
+## Operatable
 
 _A contract module which provides a basic access control mechanism, where
-there is an account (an admin) that can be granted exclusive access to
+there is an account (an operator) that can be granted exclusive access to
 specific functions. This module is used through inheritance._
 
 ### ADMIN_SLOT
@@ -3610,57 +3610,57 @@ specific functions. This module is used through inheritance._
 uint256 ADMIN_SLOT
 ```
 
-### onlyAdmin
+### onlyOperator
 
 ```solidity
-modifier onlyAdmin()
+modifier onlyOperator()
 ```
 
-_Throws a NotAdmin custom error if called by any account other than the admin._
+_Throws a NotOperator custom error if called by any account other than the operator._
 
-### admin
+### operator
 
 ```solidity
-function admin() public view returns (address distr)
+function operator() public view returns (address distr)
 ```
 
-Get the address of the admin
+Get the address of the operator
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| distr | address | of the admin |
+| distr | address | of the operator |
 
-### _setAdmin
+### _setOperator
 
 ```solidity
-function _setAdmin(address admin_) internal
+function _setOperator(address operator_) internal
 ```
 
-_Internal function that stores the new admin address in the admin storage slot_
+_Internal function that stores the new operator address in the operator storage slot_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| admin_ | address | The address of the new admin |
+| operator_ | address | The address of the new operator |
 
-### setAdmin
+### setOperator
 
 ```solidity
-function setAdmin(address admin_) external
+function setOperator(address operator_) external
 ```
 
-Change the admin of the contract
+Change the operator of the contract
 
-_Can only be called by the current admin_
+_Can only be called by the current operator_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| admin_ | address | The address of the new admin |
+| operator_ | address | The address of the new operator |
 
 ## Distributable
 

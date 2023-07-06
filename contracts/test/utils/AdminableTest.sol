@@ -2,16 +2,16 @@
 
 pragma solidity ^0.8.0;
 
-import { Adminable } from '../../utils/Adminable.sol';
+import { Operatable } from '../../utils/Operatable.sol';
 
-contract AdminableTest is Adminable {
+contract OperatorableTest is Operatable {
     uint256 public nonce;
 
-    constructor(address admin) {
-        _setAdmin(admin);
+    constructor(address operator) {
+        _setOperator(operator);
     }
 
-    function testAdminable() external onlyAdmin {
+    function testOperatorable() external onlyOperator {
         nonce++;
     }
 }
