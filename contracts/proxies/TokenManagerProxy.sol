@@ -62,6 +62,7 @@ contract TokenManagerProxy is ITokenManagerProxy {
     /**
      * @dev Fallback function. Delegates the call to the token manager contract.
      */
+    // solhint-disable-next-line no-complex-fallback
     fallback() external payable virtual {
         address implementaion_ = implementation();
 

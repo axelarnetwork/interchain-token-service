@@ -21,6 +21,7 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
     /**
      * @dev Represents hash of the EIP-712 Domain Separator.
      */
+    // solhint-disable-next-line var-name-mixedcase
     bytes32 public DOMAIN_SEPARATOR;
 
     string private constant EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA = '\x19\x01';

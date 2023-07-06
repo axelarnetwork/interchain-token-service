@@ -9,6 +9,7 @@ contract NakedProxy {
         implementation = implementation_;
     }
 
+    // solhint-disable-next-line no-complex-fallback
     fallback() external payable virtual {
         address implementaion_ = implementation;
 

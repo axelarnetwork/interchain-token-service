@@ -18,7 +18,7 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     bytes32 public immutable interchainTokenServiceAddressHash;
     mapping(string => bool) public supportedByGateway;
 
-    bytes32 public constant override contractId = keccak256('remote-address-validator');
+    bytes32 public constant CONTRACT_ID = keccak256('remote-address-validator');
 
     /**
      * @dev Constructs the LinkerRouter contract, both array parameters must be equal in length
@@ -28,6 +28,13 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
         if (_interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         interchainTokenServiceAddress = _interchainTokenServiceAddress;
         interchainTokenServiceAddressHash = keccak256(bytes(_lowerCase(interchainTokenServiceAddress.toString())));
+    }
+
+    /**
+     * @notice Getter for the contract id.
+     */
+    function contractId() external pure returns (bytes32) {
+        return CONTRACT_ID;
     }
 
     function _setup(bytes calldata params) internal override {

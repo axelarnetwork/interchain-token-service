@@ -68,8 +68,7 @@ contract InterchainTokenService is
     uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
     uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
-    // keccak256('interchain-token-service')
-    bytes32 public constant contractId = 0xf407da03daa7b4243ffb261daad9b01d221ea90ab941948cd48101563654ea85;
+    bytes32 public constant CONTRACT_ID = keccak256('interchain-token-service');
 
     /**
      * @dev All of the varaibles passed here are stored as immutable variables.
@@ -138,6 +137,13 @@ contract InterchainTokenService is
     /*****\
     GETTERS
     \*****/
+
+    /**
+     * @notice Getter for the contract id.
+     */
+    function contractId() external pure returns (bytes32) {
+        return CONTRACT_ID;
+    }
 
     /**
      * @notice Getter for the chain name.
