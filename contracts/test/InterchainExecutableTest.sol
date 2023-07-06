@@ -9,7 +9,6 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 contract InterchainExecutableTest is InterchainTokenExpressExecutable {
     event MessageReceived(string sourceChain, bytes sourceAddress, address receiver, string message, bytes32 tokenId, uint256 amount);
 
-    // solhint-disable-next-line no-empty-blocks
     constructor(address interchainTokenService_) InterchainTokenExpressExecutable(interchainTokenService_) {}
 
     string public lastMessage;

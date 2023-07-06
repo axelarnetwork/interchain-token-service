@@ -23,12 +23,7 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
      * of TokenManagerAddressStorage which calls the constructor of TokenManager.
      * @param interchainTokenService_ The address of the interchain token service contract
      */
-    constructor(
-        address interchainTokenService_
-    )
-        // solhint-disable-next-line no-empty-blocks
-        TokenManagerAddressStorage(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
-    {}
+    constructor(address interchainTokenService_) TokenManagerAddressStorage(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
         return 2;
@@ -50,7 +45,6 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
      * @param liquidityPool_ The address of the liquidity pool
      */
     function _setLiquidityPool(address liquidityPool_) internal {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(LIQUIDITY_POOL_SLOT, liquidityPool_)
         }
@@ -61,7 +55,6 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
      * @return liquidityPool_ The address of the liquidity pool
      */
     function liquidityPool() public view returns (address liquidityPool_) {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             liquidityPool_ := sload(LIQUIDITY_POOL_SLOT)
         }

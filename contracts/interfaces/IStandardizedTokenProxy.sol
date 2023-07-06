@@ -7,8 +7,6 @@ pragma solidity ^0.8.0;
  * @dev Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy.
  */
 interface IStandardizedTokenProxy {
-    error WrongImplementation();
-
     /**
      * @notice Returns the contract id, which a proxy can check to ensure no false implementation was used.
      */

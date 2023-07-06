@@ -27,7 +27,6 @@ contract Pausable is IPausable {
      * @return paused A boolean representing the pause status. True if paused, false otherwise.
      */
     function isPaused() public view returns (bool paused) {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             paused := sload(PAUSE_SLOT)
         }
@@ -40,7 +39,6 @@ contract Pausable is IPausable {
      * @param paused The new pause status
      */
     function _setPaused(bool paused) internal {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(PAUSE_SLOT, paused)
         }

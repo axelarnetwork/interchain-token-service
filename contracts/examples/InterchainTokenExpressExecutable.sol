@@ -6,7 +6,6 @@ import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainToke
 import { InterchainTokenExecutable } from './InterchainTokenExecutable.sol';
 
 abstract contract InterchainTokenExpressExecutable is IInterchainTokenExpressExecutable, InterchainTokenExecutable {
-    // solhint-disable-next-line no-empty-blocks
     constructor(address interchainTokenService_) InterchainTokenExecutable(interchainTokenService_) {}
 
     function expressExecuteWithInterchainToken(

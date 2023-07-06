@@ -19,12 +19,7 @@ contract TokenManagerLockUnlock is TokenManagerAddressStorage {
      * of TokenManagerAddressStorage which calls the constructor of TokenManager.
      * @param interchainTokenService_ The address of the interchain token service contract
      */
-    constructor(
-        address interchainTokenService_
-    )
-        // solhint-disable-next-line no-empty-blocks
-        TokenManagerAddressStorage(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
-    {}
+    constructor(address interchainTokenService_) TokenManagerAddressStorage(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
         return 0;

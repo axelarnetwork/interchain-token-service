@@ -16,12 +16,7 @@ abstract contract TokenManagerAddressStorage is TokenManager {
      * @dev Creates an instance of the TokenManagerAddressStorage contract.
      * @param interchainTokenService_ The address of the interchain token service contract
      */
-    constructor(
-        address interchainTokenService_
-    )
-        // solhint-disable-next-line no-empty-blocks
-        TokenManager(interchainTokenService_) // solhint-disable-next-line no-empty-blocks
-    {}
+    constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
     // uint256(keccak256('token-address')) - 1
     uint256 internal constant TOKEN_ADDRESS_SLOT = 0xc4e632779a6a7838736dd7e5e6a0eadf171dd37dfb6230720e265576dfcf42ba;
@@ -31,7 +26,6 @@ abstract contract TokenManagerAddressStorage is TokenManager {
      * @return tokenAddress_ The address of the token
      */
     function tokenAddress() public view override returns (address tokenAddress_) {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             tokenAddress_ := sload(TOKEN_ADDRESS_SLOT)
         }
@@ -42,7 +36,6 @@ abstract contract TokenManagerAddressStorage is TokenManager {
      * @param tokenAddress_ The address of the token to store
      */
     function _setTokenAddress(address tokenAddress_) internal {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(TOKEN_ADDRESS_SLOT, tokenAddress_)
         }
