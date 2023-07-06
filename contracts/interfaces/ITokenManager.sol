@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
-import { IAdminable } from './IAdminable.sol';
+import { IOperatable } from './IOperatable.sol';
 import { IFlowLimit } from './IFlowLimit.sol';
 import { IImplementation } from './IImplementation.sol';
 
@@ -11,7 +11,7 @@ import { IImplementation } from './IImplementation.sol';
  * @title ITokenManager
  * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
  */
-interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplementation {
+interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
     error NotService();
     error TakeTokenFailed();
@@ -81,7 +81,7 @@ interface ITokenManager is ITokenManagerType, IAdminable, IFlowLimit, IImplement
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
 
     /**
-     * @notice This function sets the flow limit for this TokenManager. Can only be called by the admin.
+     * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.
      * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
     function setFlowLimit(uint256 flowLimit) external;

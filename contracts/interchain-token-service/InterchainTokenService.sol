@@ -25,7 +25,7 @@ import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 
 import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
-import { Adminable } from '../utils/Adminable.sol';
+import { Operatable } from '../utils/Operatable.sol';
 import { Multicall } from '../utils/Multicall.sol';
 
 /**
@@ -38,7 +38,7 @@ contract InterchainTokenService is
     IInterchainTokenService,
     AxelarExecutable,
     Upgradable,
-    Adminable,
+    Operatable,
     ExpressCallHandler,
     Pausable,
     Multicall
@@ -234,37 +234,37 @@ contract InterchainTokenService is
 
     /**
      * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-     * @param admin the admin of the TokenManager.
+     * @param operator the operator of the TokenManager.
      * @param tokenAddress the token to be managed.
      * @return params the resulting params to be passed to custom TokenManager deployments.
      */
-    function getParamsLockUnlock(bytes memory admin, address tokenAddress) public pure returns (bytes memory params) {
-        params = abi.encode(admin, tokenAddress);
+    function getParamsLockUnlock(bytes memory operator, address tokenAddress) public pure returns (bytes memory params) {
+        params = abi.encode(operator, tokenAddress);
     }
 
     /**
      * @notice Getter function for the parameters of a mint/burn TokenManager. Mainly to be used by frontends.
-     * @param admin the admin of the TokenManager.
+     * @param operator the operator of the TokenManager.
      * @param tokenAddress the token to be managed.
      * @return params the resulting params to be passed to custom TokenManager deployments.
      */
-    function getParamsMintBurn(bytes memory admin, address tokenAddress) public pure returns (bytes memory params) {
-        params = abi.encode(admin, tokenAddress);
+    function getParamsMintBurn(bytes memory operator, address tokenAddress) public pure returns (bytes memory params) {
+        params = abi.encode(operator, tokenAddress);
     }
 
     /**
      * @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
-     * @param admin the admin of the TokenManager.
+     * @param operator the operator of the TokenManager.
      * @param tokenAddress the token to be managed.
      * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
      * @return params the resulting params to be passed to custom TokenManager deployments.
      */
     function getParamsLiquidityPool(
-        bytes memory admin,
+        bytes memory operator,
         address tokenAddress,
         address liquidityPoolAddress
     ) public pure returns (bytes memory params) {
-        params = abi.encode(admin, tokenAddress, liquidityPoolAddress);
+        params = abi.encode(operator, tokenAddress, liquidityPoolAddress);
     }
 
     /**
@@ -336,9 +336,15 @@ contract InterchainTokenService is
      * @param tokenManagerType the type of TokenManager to be deployed.
      * @param params the params that will be used to initialize the TokenManager.
      */
-    function deployCustomTokenManager(bytes32 salt, TokenManagerType tokenManagerType, bytes memory params) public payable notPaused {
-        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+    function deployCustomTokenManager(
+        bytes32 salt,
+        TokenManagerType tokenManagerType,
+        bytes memory params
+    ) public payable notPaused returns (bytes32 tokenId) {
+        address deployer_ = msg.sender;
+        tokenId = getCustomTokenId(deployer_, salt);
         _deployTokenManager(tokenId, tokenManagerType, params);
+        emit CustomTokenIdClaimed(tokenId, deployer_, salt);
     }
 
     /**
@@ -358,9 +364,11 @@ contract InterchainTokenService is
         TokenManagerType tokenManagerType,
         bytes calldata params,
         uint256 gasValue
-    ) external payable notPaused {
-        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+    ) external payable notPaused returns (bytes32 tokenId) {
+        address deployer_ = msg.sender;
+        tokenId = getCustomTokenId(deployer_, salt);
         _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
+        emit CustomTokenIdClaimed(tokenId, deployer_, salt);
     }
 
     /**
@@ -402,18 +410,18 @@ contract InterchainTokenService is
      * specified needs to be passed to the call
      * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
      */
-    function deployAndRegisterRemoteStandardizedTokens(
+    function deployAndRegisterRemoteStandardizedToken(
         bytes32 salt,
         string calldata name,
         string calldata symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory admin,
+        bytes memory operator,
         string calldata destinationChain,
         uint256 gasValue
     ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, admin, destinationChain, gasValue);
+        _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
     }
 
     /**
@@ -510,11 +518,11 @@ contract InterchainTokenService is
     \*************/
 
     /**
-     * @notice Used to set a flow limit for a token manager that has the service as its admin.
+     * @notice Used to set a flow limit for a token manager that has the service as its operator.
      * @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
      * @param flowLimits the flowLimits to set
      */
-    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyAdmin {
+    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOperator {
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
@@ -536,7 +544,7 @@ contract InterchainTokenService is
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        _setAdmin(params.toAddress());
+        _setOperator(params.toAddress());
     }
 
     function _sanitizeTokenManagerImplementation(
@@ -665,16 +673,17 @@ contract InterchainTokenService is
             string memory symbol,
             uint8 decimals,
             bytes memory distributorBytes,
-            bytes memory adminBytes
+            bytes memory operatorBytes
         ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
         address tokenAddress = getStandardizedTokenAddress(tokenId);
-        address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : address(this);
+        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : tokenManagerAddress;
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);
-        TokenManagerType tokenManagerType = distributor == address(this) ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
+        TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
         _deployTokenManager(
             tokenId,
             tokenManagerType,
-            abi.encode(adminBytes.length == 0 ? address(this).toBytes() : adminBytes, tokenAddress)
+            abi.encode(operatorBytes.length == 0 ? address(this).toBytes() : operatorBytes, tokenAddress)
         );
     }
 
@@ -742,7 +751,7 @@ contract InterchainTokenService is
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory admin,
+        bytes memory operator,
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
@@ -753,10 +762,19 @@ contract InterchainTokenService is
             symbol,
             decimals,
             distributor,
-            admin
+            operator
         );
         _callContract(destinationChain, payload, gasValue, msg.sender);
-        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(tokenId, destinationChain, gasValue);
+        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(
+            tokenId,
+            name,
+            symbol,
+            decimals,
+            distributor,
+            operator,
+            destinationChain,
+            gasValue
+        );
     }
 
     /**
