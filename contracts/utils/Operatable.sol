@@ -12,7 +12,7 @@ import { IOperatable } from '../interfaces/IOperatable.sol';
  */
 contract Operatable is IOperatable {
     // uint256(keccak256('operator')) - 1
-    uint256 internal constant ADMIN_SLOT = 0xf23ec0bb4210edd5cba85afd05127efcd2fc6a781bfed49188da1081670b22d7;
+    uint256 internal constant OPERATOR_SLOT = 0xf23ec0bb4210edd5cba85afd05127efcd2fc6a781bfed49188da1081670b22d7;
 
     /**
      * @dev Throws a NotOperator custom error if called by any account other than the operator.
@@ -27,9 +27,8 @@ contract Operatable is IOperatable {
      * @return operator_ of the operator
      */
     function operator() public view returns (address operator_) {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
-            operator_ := sload(ADMIN_SLOT)
+            operator_ := sload(OPERATOR_SLOT)
         }
     }
 
@@ -38,9 +37,8 @@ contract Operatable is IOperatable {
      * @param operator_ The address of the new operator
      */
     function _setOperator(address operator_) internal {
-        // solhint-disable-next-line no-inline-assembly
         assembly {
-            sstore(ADMIN_SLOT, operator_)
+            sstore(OPERATOR_SLOT, operator_)
         }
         emit OperatorChanged(operator_);
     }

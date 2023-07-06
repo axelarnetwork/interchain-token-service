@@ -9,6 +9,8 @@ import { Proxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgrada
  * @dev Proxy contract for the LinkerRouter contract. Inherits from the Proxy contract.
  */
 contract LinkerRouterProxy is Proxy {
+    bytes32 private constant CONTRACT_ID = keccak256('remote-address-validator');
+
     /**
      * @dev Constructs the LinkerRouterProxy contract.
      * @param implementationAddress Address of the LinkerRouter implementation
@@ -22,7 +24,6 @@ contract LinkerRouterProxy is Proxy {
      * @return bytes32 Identifier for this contract.
      */
     function contractId() internal pure override returns (bytes32) {
-        // bytes32(uint256(keccak256('remote-address-validator')))
-        return 0x5d9f4d5e6bb737c289f92f2a319c66ba484357595194acb7c2122e48550eda7d;
+        return CONTRACT_ID;
     }
 }

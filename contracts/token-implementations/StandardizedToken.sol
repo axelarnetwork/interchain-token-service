@@ -24,7 +24,7 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
     string public symbol;
     uint8 public decimals;
 
-    bytes32 public constant CONTRACT_ID = keccak256('standardized-token');
+    bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
     /**
      * @notice Getter for the contract id.
@@ -32,7 +32,7 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
     function contractId() external pure returns (bytes32) {
         return CONTRACT_ID;
     }
-    
+
     /**
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract

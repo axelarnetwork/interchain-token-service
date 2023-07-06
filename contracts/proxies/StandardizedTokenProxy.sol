@@ -11,7 +11,7 @@ import { IStandardizedTokenProxy } from '../interfaces/IStandardizedTokenProxy.s
  * @dev Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy.
  */
 contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
-    bytes32 public constant CONTRACT_ID = keccak256('standardized-token');
+    bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
     /**
      * @dev Constructs the StandardizedTokenProxy contract.

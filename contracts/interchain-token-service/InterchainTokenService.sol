@@ -68,7 +68,7 @@ contract InterchainTokenService is
     uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
     uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
-    bytes32 public constant CONTRACT_ID = keccak256('interchain-token-service');
+    bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
 
     /**
      * @dev All of the varaibles passed here are stored as immutable variables.
