@@ -5,15 +5,15 @@ pragma solidity ^0.8.0;
 import { Proxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Proxy.sol';
 
 /**
- * @title LinkerRouterProxy
- * @dev Proxy contract for the LinkerRouter contract. Inherits from the Proxy contract.
+ * @title RemoteAddressValidatorProxy
+ * @dev Proxy contract for the RemoteAddressValidator contract. Inherits from the Proxy contract.
  */
-contract LinkerRouterProxy is Proxy {
+contract RemoteAddressValidatorProxy is Proxy {
     bytes32 private constant CONTRACT_ID = keccak256('remote-address-validator');
 
     /**
-     * @dev Constructs the LinkerRouterProxy contract.
-     * @param implementationAddress Address of the LinkerRouter implementation
+     * @dev Constructs the RemoteAddressValidatorProxy contract.
+     * @param implementationAddress Address of the RemoteAddressValidator implementation
      * @param owner Address of the owner of the proxy
      * @param params The params to be passed to the _setup function of the implementation.
      */

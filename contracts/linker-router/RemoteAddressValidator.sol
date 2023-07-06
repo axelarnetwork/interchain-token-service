@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import { ILinkerRouter } from '../interfaces/ILinkerRouter.sol';
+import { IRemoteAddressValidator } from '../interfaces/IRemoteAddressValidator.sol';
 import { AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/AddressString.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
 /**
- * @title LinkerRouter
+ * @title RemoteAddressValidator
  * @dev Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract
  */
-contract LinkerRouter is ILinkerRouter, Upgradable {
+contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     using AddressToString for address;
 
     mapping(string => bytes32) public remoteAddressHashes;
@@ -21,7 +21,7 @@ contract LinkerRouter is ILinkerRouter, Upgradable {
     bytes32 private constant CONTRACT_ID = keccak256('remote-address-validator');
 
     /**
-     * @dev Constructs the LinkerRouter contract, both array parameters must be equal in length
+     * @dev Constructs the RemoteAddressValidator contract, both array parameters must be equal in length
      * @param _interchainTokenServiceAddress Address of the interchain token service
      */
     constructor(address _interchainTokenServiceAddress) {

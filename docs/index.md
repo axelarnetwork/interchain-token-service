@@ -251,9 +251,9 @@ _Override for the 'contractId' function in FinalProxy. Returns a unique identifi
 | ---- | ---- | ----------- |
 | [0] | bytes32 | bytes32 identifier for this contract |
 
-## LinkerRouterProxy
+## RemoteAddressValidatorProxy
 
-_Proxy contract for the LinkerRouter contract. Inherits from the Proxy contract._
+_Proxy contract for the RemoteAddressValidator contract. Inherits from the Proxy contract._
 
 ### constructor
 
@@ -261,13 +261,13 @@ _Proxy contract for the LinkerRouter contract. Inherits from the Proxy contract.
 constructor(address implementationAddress, address owner, bytes params) public
 ```
 
-_Constructs the LinkerRouterProxy contract._
+_Constructs the RemoteAddressValidatorProxy contract._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| implementationAddress | address | Address of the LinkerRouter implementation |
+| implementationAddress | address | Address of the RemoteAddressValidator implementation |
 | owner | address | Address of the owner of the proxy |
 | params | bytes | The params to be passed to the _setup function of the implementation. |
 
@@ -404,10 +404,10 @@ address implementationLiquidityPool
 contract IAxelarGasService gasService
 ```
 
-### linkerRouter
+### remoteAddressValidator
 
 ```solidity
-contract ILinkerRouter linkerRouter
+contract IRemoteAddressValidator remoteAddressValidator
 ```
 
 ### tokenManagerDeployer
@@ -475,7 +475,7 @@ bytes32 PREFIX_STANDARDIZED_TOKEN_SALT
 ### constructor
 
 ```solidity
-constructor(address tokenManagerDeployer_, address standardizedTokenDeployer_, address gateway_, address gasService_, address linkerRouter_, address[] tokenManagerImplementations, string chainName_) public
+constructor(address tokenManagerDeployer_, address standardizedTokenDeployer_, address gateway_, address gasService_, address remoteAddressValidator_, address[] tokenManagerImplementations, string chainName_) public
 ```
 
 _All of the varaibles passed here are stored as immutable variables._
@@ -488,7 +488,7 @@ _All of the varaibles passed here are stored as immutable variables._
 | standardizedTokenDeployer_ | address | the address of the StandardizedTokenDeployer. |
 | gateway_ | address | the address of the AxelarGateway. |
 | gasService_ | address | the address of the AxelarGasService. |
-| linkerRouter_ | address | the address of the LinkerRouter. |
+| remoteAddressValidator_ | address | the address of the RemoteAddressValidator. |
 | tokenManagerImplementations | address[] | this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool. |
 | chainName_ | string | the name of the current chain. |
 
@@ -2200,7 +2200,7 @@ Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of 
 | data | bytes | the data to be passed to destinationAddress after giving them the tokens specified. |
 | commandId | bytes32 | the commandId calculated from the event at the sourceChain. |
 
-## ILinkerRouter
+## IRemoteAddressValidator
 
 _Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract_
 
@@ -2756,7 +2756,7 @@ _Converts an address to bytes._
 | ---- | ---- | ----------- |
 | bytesAddress | bytes | The bytes representation of the address |
 
-## LinkerRouter
+## RemoteAddressValidator
 
 _Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract_
 
@@ -2803,7 +2803,7 @@ Returns true if the gateway delivers token to this chain.
 constructor(address _interchainTokenServiceAddress) public
 ```
 
-_Constructs the LinkerRouter contract, both array parameters must be equal in length_
+_Constructs the RemoteAddressValidator contract, both array parameters must be equal in length_
 
 #### Parameters
 
