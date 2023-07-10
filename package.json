@@ -1,25 +1,27 @@
 {
   "name": "@axelar-network/interchain-token-service",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
-    "build": "rm -rf cache artifacts dist && npx hardhat compile && mkdir dist && cp -r artifacts/contracts/** dist",
+    "build": "npx hardhat clean && npx hardhat compile && rm -rf dist && mkdir dist && cp -r artifacts/contracts/** dist",
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/*.js'",
     "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",
     "flatten": "sh scripts/flatten-contracts.sh",
     "coverage": "cross-env COVERAGE=true hardhat coverage"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "axelar",
+    "ethereum"
+  ],
+  "author": "axelar-network",
+  "license": "MIT",
   "dependencies": {
     "@axelar-network/axelar-cgp-solidity": "^4.5.0",
-    "@axelar-network/axelar-gmp-sdk-solidity": "^3.2.1"
+    "@axelar-network/axelar-gmp-sdk-solidity": "^3.6.1"
   },
   "devDependencies": {
-    "@axelar-network/axelar-contract-deployments": "git://github.com/axelarnetwork/axelar-contract-deployments.git#7ca071fc69fb2cd39b175cdb92eb0e04b71acb15",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@axelar-network/axelar-contract-deployments": "git://github.com/axelarnetwork/axelar-contract-deployments.git#f2d55c39967c8a55c7f9ac775a250cb8be6d74d9",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "chai": "^4.3.7",
     "cross-env": "^7.0.3",
@@ -34,5 +36,14 @@
     "solhint": "^3.4.1",
     "solidity-docgen": "^0.6.0-beta.35"
   },
-  "description": ""
+  "description": "Interchain token service for EVM chains to faciliate cross-chain token transfers and contract calls",
+  "files": [
+    "contracts",
+    "dist",
+    "docs",
+    "scripts",
+    "DESIGN.md",
+    "README.md",
+    "hardhat.config.js"
+  ]
 }
