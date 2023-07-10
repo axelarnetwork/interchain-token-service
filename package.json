@@ -4,15 +4,18 @@
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
-    "build": "rm -rf cache artifacts dist && npx hardhat compile && mkdir dist && cp -r artifacts/contracts/** dist",
+    "build": "npx hardhat clean && npx hardhat compile && rm -rf dist && mkdir dist && cp -r artifacts/contracts/** dist",
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/*.js'",
     "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",
     "flatten": "sh scripts/flatten-contracts.sh",
     "coverage": "cross-env COVERAGE=true hardhat coverage"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "axelar",
+    "ethereum"
+  ],
+  "author": "axelar-network",
+  "license": "MIT",
   "dependencies": {
     "@axelar-network/axelar-cgp-solidity": "^4.5.0",
     "@axelar-network/axelar-gmp-sdk-solidity": "^3.2.1"
