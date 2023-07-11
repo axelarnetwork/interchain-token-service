@@ -14,6 +14,4 @@ npm ci
 npm run build
 
 npm run test
-
-npm run coverage  # Generate unit test coverage report, ./coverage/index.html
 ```
