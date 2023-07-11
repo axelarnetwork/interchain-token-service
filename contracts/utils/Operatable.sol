@@ -53,7 +53,7 @@ contract Operatable is IOperatable {
     function setOperator(address operator_) external onlyOperator {
         _setOperator(operator_);
     }
-    
+
     /**
      * @notice Proposed a change of the operator of the contract
      * @dev Can only be called by the current operator
@@ -64,7 +64,7 @@ contract Operatable is IOperatable {
             sstore(PROPOSED_OPERATOR_SLOT, operator_)
         }
     }
-    
+
     /**
      * @notice Accept a proposed change of operatorship
      * @dev Can only be called by the proposed operator
@@ -74,7 +74,7 @@ contract Operatable is IOperatable {
         assembly {
             proposedOperator := sload(PROPOSED_OPERATOR_SLOT)
         }
-        if(msg.sender != proposedOperator) revert NotProposedOperator();
+        if (msg.sender != proposedOperator) revert NotProposedOperator();
         _setOperator(proposedOperator);
     }
 }

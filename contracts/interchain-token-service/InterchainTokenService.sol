@@ -221,7 +221,7 @@ contract InterchainTokenService is
      * @return tokenManagerAddress the address of the TokenManagerImplementation.
      */
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress) {
-        if(tokenManagerType > uint256(type(TokenManagerType).max)) revert InvalidImplementation();
+        if (tokenManagerType > uint256(type(TokenManagerType).max)) revert InvalidImplementation();
         if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK) {
             return implementationLockUnlock;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
@@ -677,7 +677,7 @@ contract InterchainTokenService is
         address tokenAddress = getStandardizedTokenAddress(tokenId);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
         address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : tokenManagerAddress;
-        if(distributor == address(0)) revert ZeroAddress();
+        if (distributor == address(0)) revert ZeroAddress();
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);
         TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
         _deployTokenManager(

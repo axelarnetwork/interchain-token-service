@@ -75,7 +75,7 @@ contract Distributable is IDistributable {
         assembly {
             proposedDistributor := sload(PROPOSED_DISTRIBUTOR_SLOT)
         }
-        if(msg.sender != proposedDistributor) revert NotProposedDistributor();
+        if (msg.sender != proposedDistributor) revert NotProposedDistributor();
         _setDistributor(proposedDistributor);
     }
 }
