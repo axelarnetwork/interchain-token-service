@@ -13,6 +13,8 @@ import { IOperatable } from '../interfaces/IOperatable.sol';
 contract Operatable is IOperatable {
     // uint256(keccak256('operator')) - 1
     uint256 internal constant OPERATOR_SLOT = 0xf23ec0bb4210edd5cba85afd05127efcd2fc6a781bfed49188da1081670b22d7;
+    // uint256(keccak256('proposed-operator')) - 1
+    uint256 internal constant PROPOSED_OPERATOR_SLOT = 0x18dd7104fe20f6107b1523000995e8f87ac02b734a65cf0a45fafa7635a2c526;
 
     /**
      * @dev Throws a NotOperator custom error if called by any account other than the operator.
@@ -50,5 +52,29 @@ contract Operatable is IOperatable {
      */
     function setOperator(address operator_) external onlyOperator {
         _setOperator(operator_);
+    }
+    
+    /**
+     * @notice Proposed a change of the operator of the contract
+     * @dev Can only be called by the current operator
+     * @param operator_ The address of the new operator
+     */
+    function proposeOperatorChange(address operator_) external onlyOperator {
+        assembly {
+            sstore(PROPOSED_OPERATOR_SLOT, operator_)
+        }
+    }
+    
+    /**
+     * @notice Accept a proposed change of operatorship
+     * @dev Can only be called by the proposed operator
+     */
+    function acceptOperatorChange() external {
+        address proposedOperator;
+        assembly {
+            proposedOperator := sload(PROPOSED_OPERATOR_SLOT)
+        }
+        if(msg.sender != proposedOperator) revert NotProposedOperator();
+        _setOperator(proposedOperator);
     }
 }
