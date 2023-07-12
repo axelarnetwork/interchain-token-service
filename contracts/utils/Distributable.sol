@@ -60,9 +60,9 @@ contract Distributable is IDistributable {
      * @dev Can only be called by the current distributor
      * @param distr The address of the new distributor
      */
-    function proposeDistributorChange(address distr) external onlyDistributor {
+    function proposeDistributorChange(address distributor_) external onlyDistributor {
         assembly {
-            sstore(PROPOSED_DISTRIBUTOR_SLOT, distr)
+            sstore(PROPOSED_DISTRIBUTOR_SLOT, distributor_)
         }
     }
 
