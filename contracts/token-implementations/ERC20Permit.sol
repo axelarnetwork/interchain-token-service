@@ -78,7 +78,6 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
 
         if (recoveredAddress != issuer) revert InvalidSignature();
 
-        // TODO: Add a unit test for this
         // _approve will revert if issuer is address(0x0)
         _approve(issuer, spender, value);
     }

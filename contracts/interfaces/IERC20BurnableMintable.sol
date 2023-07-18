@@ -16,7 +16,6 @@ interface IERC20BurnableMintable is IERC20 {
      */
     function mint(address to, uint256 amount) external;
 
-    // TODO: need to understand what the common interface is for burning, burnFrom etc.
     /**
      * @notice Function to burn tokens
      * Can only be called by the distributor address.
