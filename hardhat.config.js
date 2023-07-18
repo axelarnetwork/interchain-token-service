@@ -13,7 +13,7 @@ const { networks, etherscan } = importNetworks(chains, keys);
  */
 module.exports = {
     solidity: {
-        version: '0.8.19',
+        version: '0.8.18',
         settings: {
             evmVersion: process.env.EVM_VERSION || 'london',
             optimizer: {
