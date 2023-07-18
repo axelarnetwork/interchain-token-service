@@ -2,11 +2,10 @@ require('@nomicfoundation/hardhat-toolbox');
 require('solidity-coverage');
 require('solidity-docgen');
 
-const fs = require('fs');
 const env = process.env.ENV || 'testnet';
-const { importNetworks } = require('@axelar-network/axelar-contract-deployments/evm/utils');
+const { importNetworks, readJSON } = require('@axelar-network/axelar-contract-deployments/evm/utils');
 const chains = require(`@axelar-network/axelar-contract-deployments/info/${env}.json`);
-const keys = fs.existsSync(`${__dirname}/info/keys.json`) ? require(`${__dirname}/info/keys.json`) : undefined; // Load keys if they exist
+const keys = readJSON(`${__dirname}/info/keys.json`);
 const { networks, etherscan } = importNetworks(chains, keys);
 
 /**
@@ -14,7 +13,7 @@ const { networks, etherscan } = importNetworks(chains, keys);
  */
 module.exports = {
     solidity: {
-        version: '0.8.17',
+        version: '0.8.19',
         settings: {
             evmVersion: process.env.EVM_VERSION || 'london',
             optimizer: {
