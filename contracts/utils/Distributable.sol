@@ -64,6 +64,7 @@ contract Distributable is IDistributable {
         assembly {
             sstore(PROPOSED_DISTRIBUTOR_SLOT, distributor_)
         }
+        emit DistributorChangeProposed(distributor_);
     }
 
     /**

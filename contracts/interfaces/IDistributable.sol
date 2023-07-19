@@ -6,7 +6,8 @@ interface IDistributable {
     error NotDistributor();
     error NotProposedDistributor();
 
-    event DistributorChanged(address distributor);
+    event DistributorChanged(address indexed distributor);
+    event DistributorChangeProposed(address indexed distributor);
 
     /**
      * @notice Get the address of the distributor

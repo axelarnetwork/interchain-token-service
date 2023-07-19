@@ -6,7 +6,8 @@ interface IOperatable {
     error NotOperator();
     error NotProposedOperator();
 
-    event OperatorChanged(address operator);
+    event OperatorChanged(address indexed operator);
+    event OperatorChangeProposed(address indexed operator);
 
     /**
      * @notice Get the address of the operator
