@@ -24,7 +24,7 @@ interface IDistributable {
     /**
      * @notice Proposed a change of the distributor of the contract
      * @dev Can only be called by the current distributor
-     * @param distr The address of the new distributor
+     * @param distributor_ The address of the new distributor
      */
     function proposeDistributorChange(address distributor_) external;
 
