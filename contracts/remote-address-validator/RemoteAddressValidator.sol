@@ -16,7 +16,11 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     mapping(string => string) public remoteAddresses;
     address public immutable interchainTokenServiceAddress;
     bytes32 public immutable interchainTokenServiceAddressHash;
+    uint256 private immutable interchainTokenServiceAddress1;
+    uint256 private immutable interchainTokenServiceAddress2;
     mapping(string => bool) public supportedByGateway;
+
+    
 
     bytes32 private constant CONTRACT_ID = keccak256('remote-address-validator');
 
@@ -27,7 +31,17 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     constructor(address _interchainTokenServiceAddress) {
         if (_interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         interchainTokenServiceAddress = _interchainTokenServiceAddress;
-        interchainTokenServiceAddressHash = keccak256(bytes(_lowerCase(interchainTokenServiceAddress.toString())));
+        string memory interchainTokenServiceAddressString = interchainTokenServiceAddress.toString();
+        interchainTokenServiceAddressHash = keccak256(bytes(_lowerCase(interchainTokenServiceAddressString)));
+        uint256 p1;
+        uint256 p2;
+        assembly {
+            p1 := mload(add(interchainTokenServiceAddressString, 32))
+            p2 := mload(add(interchainTokenServiceAddressString, 64))
+        }
+        interchainTokenServiceAddress1 = p1;
+        interchainTokenServiceAddress2 = p2;
+
     }
 
     /**
@@ -58,6 +72,16 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
             if ((b >= 65) && (b <= 70)) bytes(s)[i] = bytes1(b + uint8(32));
         }
         return s;
+    }
+
+    function _interchainTokenServiceAddressString() internal view returns (string memory interchainTokenServiceAddressString) {
+        interchainTokenServiceAddressString = new string(42);
+        uint256 p1 = interchainTokenServiceAddress1;
+        uint256 p2 = interchainTokenServiceAddress2;
+        assembly{
+            mstore(add(interchainTokenServiceAddressString, 32), p1)
+            mstore(add(interchainTokenServiceAddressString, 64), p2)
+        }
     }
 
     /**
@@ -133,7 +157,7 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     function getRemoteAddress(string calldata chainName) external view returns (string memory remoteAddress) {
         remoteAddress = remoteAddresses[chainName];
         if (bytes(remoteAddress).length == 0) {
-            remoteAddress = interchainTokenServiceAddress.toString();
+            remoteAddress = _interchainTokenServiceAddressString();
         }
     }
 }
