@@ -26,8 +26,16 @@ contract InterchainTokenTest is InterchainToken, Distributable, IERC20BurnableMi
         return tokenManager;
     }
 
-    function tokenManagerRequiresApproval() public view override returns (bool) {
-        return tokenManagerRequiresApproval_;
+    function _beforeInterchainTransfer(address sender, string calldata /*destinationChain*/, bytes calldata /*destinationAddress*/, uint256 amount, bytes calldata /*metadata*/) internal override {
+        if(!tokenManagerRequiresApproval_) return;
+        uint256 allowance_ = allowance[sender][address(tokenManager)];
+        if (allowance_ != type(uint256).max) {
+            if (allowance_ > type(uint256).max - amount) {
+                allowance_ = type(uint256).max - amount;
+            }
+
+            _approve(sender, address(tokenManager), allowance_ + amount);
+        }
     }
 
     function setTokenManagerRequiresApproval(bool requiresApproval) public {

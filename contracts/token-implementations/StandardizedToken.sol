@@ -16,7 +16,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable {
+contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
     address public tokenManager;
@@ -25,6 +25,13 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
     uint8 public decimals;
 
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
+
+    modifier onlyDistributorOrTokenManager {
+        if(msg.sender != tokenManager) {
+            if(msg.sender != distributor()) revert NotDistributor();
+        }
+        _;
+    }
 
     /**
      * @notice Getter for the contract id.
@@ -73,7 +80,7 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
      * @param account The address that will receive the minted tokens
      * @param amount The amount of tokens to mint
      */
-    function mint(address account, uint256 amount) external onlyDistributor {
+    function mint(address account, uint256 amount) external onlyDistributorOrTokenManager {
         _mint(account, amount);
     }
 
@@ -83,7 +90,7 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
      * @param account The address that will have its tokens burnt
      * @param amount The amount of tokens to burn
      */
-    function burn(address account, uint256 amount) external onlyDistributor {
+    function burn(address account, uint256 amount) external onlyDistributorOrTokenManager {
         _burn(account, amount);
     }
 }

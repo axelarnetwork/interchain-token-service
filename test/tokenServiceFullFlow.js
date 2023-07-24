@@ -22,7 +22,7 @@ const SELECTOR_SEND_TOKEN = 1;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const LOCK_UNLOCK = 0;
-// const MINT_BURN = 1;
+const MINT_BURN = 1;
 // const LIQUIDITY_POOL = 2;
 
 describe('Interchain Token Service', () => {
@@ -200,8 +200,10 @@ describe('Interchain Token Service', () => {
                 [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', wallet.address],
             );
             await expect(service.multicall(data, { value }))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params)
+                .to.emit(service, 'StandardizedTokenDeployed')
+                .withArgs(tokenId, name, symbol, decimals, tokenCap, wallet.address)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, MINT_BURN, params)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address, otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -228,13 +230,9 @@ describe('Interchain Token Service', () => {
             );
             const payloadHash = keccak256(payload);
 
-            await expect(token.approve(tokenManager.address, amount))
-                .to.emit(token, 'Approval')
-                .withArgs(wallet.address, tokenManager.address, amount);
-
             await expect(tokenManager.sendToken(destChain, destAddress, amount, '0x', { value: gasValue }))
                 .and.to.emit(token, 'Transfer')
-                .withArgs(wallet.address, tokenManager.address, amount)
+                .withArgs(wallet.address, AddressZero, amount)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')

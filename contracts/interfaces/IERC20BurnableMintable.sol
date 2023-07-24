@@ -2,12 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
-interface IERC20BurnableMintable is IERC20 {
+interface IERC20BurnableMintable {
     /**
      * @notice Function to mint new tokens
      * Can only be called by the distributor address.

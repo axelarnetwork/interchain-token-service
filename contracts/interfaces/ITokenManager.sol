@@ -19,6 +19,11 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     error NotToken();
 
     /**
+     * @notice A function that returns the token id.
+     */
+    function tokenId() external view returns (bytes32);
+
+    /**
      * @notice A function that should return the address of the token.
      * Must be overridden in the inheriting contract.
      * @return address address of the token.

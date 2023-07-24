@@ -53,6 +53,13 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     function tokenAddress() public view virtual returns (address);
 
     /**
+     * @notice A function that returns the token id.
+     */
+    function tokenId() external view returns (bytes32) {
+        return this.tokenId();
+    }
+
+    /**
      * @dev This function should only be called by the proxy, and only once from the proxy constructor
      * @param params the parameters to be used to initialize the TokenManager. The exact format depends
      * on the type of TokenManager used but the first 32 bytes are reserved for the address of the operator,

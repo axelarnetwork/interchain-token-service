@@ -391,9 +391,8 @@ contract InterchainTokenService is
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
-        TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
         address tokenAddress = getStandardizedTokenAddress(tokenId);
-        _deployTokenManager(tokenId, tokenManagerType, abi.encode(msg.sender.toBytes(), tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(msg.sender.toBytes(), tokenAddress));
     }
 
     /**
@@ -679,10 +678,9 @@ contract InterchainTokenService is
         address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : tokenManagerAddress;
         if (distributor == address(0)) revert ZeroAddress();
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);
-        TokenManagerType tokenManagerType = distributor == tokenManagerAddress ? TokenManagerType.MINT_BURN : TokenManagerType.LOCK_UNLOCK;
         _deployTokenManager(
             tokenId,
-            tokenManagerType,
+            TokenManagerType.MINT_BURN,
             abi.encode(operatorBytes.length == 0 ? address(this).toBytes() : operatorBytes, tokenAddress)
         );
     }
