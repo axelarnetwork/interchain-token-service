@@ -14,6 +14,9 @@ contract Distributable is IDistributable {
     // uint256(keccak256('distributor')) - 1
     uint256 internal constant DISTRIBUTOR_SLOT = 0x71c5a35e45a25c49e8f747acd4bcb869814b3d104c492d2554f4c46e12371f56;
 
+    // uint256(keccak256('proposed-distributor')) - 1
+    uint256 internal constant PROPOSED_DISTRIBUTOR_SLOT = 0xbb1aa7d30971a97896e14e460c5ace030e39b624cf8f7c1ce200eeb378d7dcf1;
+
     /**
      * @dev Throws a NotDistributor custom eror if called by any account other than the distributor.
      */
@@ -50,5 +53,30 @@ contract Distributable is IDistributable {
      */
     function setDistributor(address distr) external onlyDistributor {
         _setDistributor(distr);
+    }
+
+    /**
+     * @notice Proposed a change of the distributor of the contract
+     * @dev Can only be called by the current distributor
+     * @param distributor_ The address of the new distributor
+     */
+    function proposeDistributorChange(address distributor_) external onlyDistributor {
+        assembly {
+            sstore(PROPOSED_DISTRIBUTOR_SLOT, distributor_)
+        }
+        emit DistributorChangeProposed(distributor_);
+    }
+
+    /**
+     * @notice Accept a change of the distributor of the contract
+     * @dev Can only be called by the proposed distributor
+     */
+    function acceptDistributorChange() external {
+        address proposedDistributor;
+        assembly {
+            proposedDistributor := sload(PROPOSED_DISTRIBUTOR_SLOT)
+        }
+        if (msg.sender != proposedDistributor) revert NotProposedDistributor();
+        _setDistributor(proposedDistributor);
     }
 }
