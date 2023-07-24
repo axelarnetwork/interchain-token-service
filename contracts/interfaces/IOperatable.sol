@@ -20,7 +20,7 @@ interface IOperatable {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function setOperator(address operator_) external;
+    function transferOperatorship(address operator_) external;
 
     /**
      * @notice Proposed a change of the operator of the contract

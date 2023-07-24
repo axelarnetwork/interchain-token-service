@@ -51,7 +51,7 @@ contract Distributable is IDistributable {
      * @dev Can only be called by the current distributor
      * @param distr The address of the new distributor
      */
-    function setDistributor(address distr) external onlyDistributor {
+    function transferDistributorship(address distr) external onlyDistributor {
         _setDistributor(distr);
     }
 

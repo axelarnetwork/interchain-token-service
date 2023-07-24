@@ -144,7 +144,7 @@ describe('Interchain Token Service', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.setDistributor(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
 
             await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
             await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
@@ -251,7 +251,7 @@ describe('Interchain Token Service', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.setDistributor(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
 
             await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
             await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');

@@ -64,7 +64,7 @@ describe('Interchain Token Service', () => {
             await (await token.mint(wallet.address, mintAmount)).wait();
         }
 
-        await (await token.setDistributor(tokenManagerAddress)).wait();
+        await (await token.transferDistributorship(tokenManagerAddress)).wait();
 
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
         await (await service.deployCustomTokenManager(salt, MINT_BURN, params)).wait();

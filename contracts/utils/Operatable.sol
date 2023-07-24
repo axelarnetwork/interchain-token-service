@@ -50,7 +50,7 @@ contract Operatable is IOperatable {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function setOperator(address operator_) external onlyOperator {
+    function transferOperatorship(address operator_) external onlyOperator {
         _setOperator(operator_);
     }
 

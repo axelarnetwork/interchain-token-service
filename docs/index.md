@@ -1799,10 +1799,10 @@ Get the address of the operator
 | ---- | ---- | ----------- |
 | operator_ | address | of the operator |
 
-### setOperator
+### transferOperatorship
 
 ```solidity
-function setOperator(address operator_) external
+function transferOperatorship(address operator_) external
 ```
 
 Change the operator of the contract
@@ -2851,10 +2851,10 @@ _Internal function that stores the new operator address in the operator storage 
 | ---- | ---- | ----------- |
 | operator_ | address | The address of the new operator |
 
-### setOperator
+### transferOperatorship
 
 ```solidity
-function setOperator(address operator_) external
+function transferOperatorship(address operator_) external
 ```
 
 Change the operator of the contract
@@ -3111,10 +3111,10 @@ Get the address of the distributor
 | ---- | ---- | ----------- |
 | distributor | address | of the distributor |
 
-### setDistributor
+### transferDistributorship
 
 ```solidity
-function setDistributor(address distributor) external
+function transferDistributorship(address distributor) external
 ```
 
 Change the distributor of the contract
@@ -4722,10 +4722,10 @@ _Internal function that stores the new distributor address in the correct storag
 | ---- | ---- | ----------- |
 | distributor_ | address | The address of the new distributor |
 
-### setDistributor
+### transferDistributorship
 
 ```solidity
-function setDistributor(address distr) external
+function transferDistributorship(address distr) external
 ```
 
 Change the distributor of the contract

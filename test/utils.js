@@ -39,9 +39,9 @@ describe('Operatable', () => {
 
     it('Should be able to change the operator only as the operator', async () => {
         expect(await test.operator()).to.equal(ownerWallet.address);
-        await expect(test.setOperator(otherWallet.address)).to.emit(test, 'OperatorChanged').withArgs(otherWallet.address);
+        await expect(test.transferOperatorship(otherWallet.address)).to.emit(test, 'OperatorChanged').withArgs(otherWallet.address);
         expect(await test.operator()).to.equal(otherWallet.address);
-        await expect(test.setOperator(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotOperator');
+        await expect(test.transferOperatorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotOperator');
     });
 });
 
@@ -62,9 +62,9 @@ describe('Distributable', () => {
 
     it('Should be able to change the distributor only as the distributor', async () => {
         expect(await test.distributor()).to.equal(ownerWallet.address);
-        await expect(test.setDistributor(otherWallet.address)).to.emit(test, 'DistributorChanged').withArgs(otherWallet.address);
+        await expect(test.transferDistributorship(otherWallet.address)).to.emit(test, 'DistributorChanged').withArgs(otherWallet.address);
         expect(await test.distributor()).to.equal(otherWallet.address);
-        await expect(test.setDistributor(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotDistributor');
+        await expect(test.transferDistributorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotDistributor');
     });
 });
 
