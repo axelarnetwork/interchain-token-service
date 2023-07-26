@@ -8,33 +8,34 @@ import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
 
 contract InterchainTokenTest is InterchainToken, Distributable, IERC20BurnableMintable {
-    ITokenManager internal tokenManager;
+    ITokenManager public tokenManager_;
     bool internal tokenManagerRequiresApproval_ = true;
     string public name;
     string public symbol;
     uint8 public decimals;
 
-    constructor(string memory name_, string memory symbol_, uint8 decimals_, address tokenManager_) {
+    constructor(string memory name_, string memory symbol_, uint8 decimals_, address tokenManagerAddress) {
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
         _setDistributor(msg.sender);
-        tokenManager = ITokenManager(tokenManager_);
+        tokenManager_ = ITokenManager(tokenManagerAddress);
     }
 
-    function getTokenManager() public view override returns (ITokenManager) {
-        return tokenManager;
+    function tokenManager() public view override returns (ITokenManager) {
+        return tokenManager_;
     }
 
     function _beforeInterchainTransfer(address sender, string calldata /*destinationChain*/, bytes calldata /*destinationAddress*/, uint256 amount, bytes calldata /*metadata*/) internal override {
         if(!tokenManagerRequiresApproval_) return;
-        uint256 allowance_ = allowance[sender][address(tokenManager)];
+        address tokenManagerAddress = address(tokenManager_);
+        uint256 allowance_ = allowance[sender][tokenManagerAddress];
         if (allowance_ != type(uint256).max) {
             if (allowance_ > type(uint256).max - amount) {
                 allowance_ = type(uint256).max - amount;
             }
 
-            _approve(sender, address(tokenManager), allowance_ + amount);
+            _approve(sender, tokenManagerAddress, allowance_ + amount);
         }
     }
 
@@ -50,7 +51,7 @@ contract InterchainTokenTest is InterchainToken, Distributable, IERC20BurnableMi
         _burn(account, amount);
     }
 
-    function setTokenManager(ITokenManager tokenManager_) external {
-        tokenManager = tokenManager_;
+    function setTokenManager(ITokenManager tokenManagerAddress) external {
+        tokenManager_ = tokenManagerAddress;
     }
 }

@@ -16,9 +16,9 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwitten.
-     * @return tokenManager the TokenManager called to facilitate cross chain transfers.
+     * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
      */
-    function getTokenManager() public view virtual returns (ITokenManager tokenManager);
+    function tokenManager() public view virtual returns (ITokenManager tokenManager_);
 
     /**
      * @notice Implementation of the interchainTransfer method
@@ -39,8 +39,8 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
  
         _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
-        ITokenManager tokenManager = getTokenManager();
-        tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
+        ITokenManager tokenManager_ = tokenManager();
+        tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
 
     /**
@@ -68,8 +68,8 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
         
         _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
-        ITokenManager tokenManager = getTokenManager();
-        tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
+        ITokenManager tokenManager_ = tokenManager();
+        tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
 
     /**

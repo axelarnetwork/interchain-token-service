@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { IInterchainToken } from './IInterchainToken.sol';
 import { IDistributable } from './IDistributable.sol';
 import { IERC20BurnableMintable } from './IERC20BurnableMintable.sol';
+import { ITokenManager } from './ITokenManager.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 
@@ -25,4 +26,12 @@ interface IStandardizedToken is IInterchainToken, IDistributable, IERC20Burnable
      * @param params the data to be used for the initialization.
      */
     function setup(bytes calldata params) external;
+
+    /**
+     * @notice Getter for the tokenManager used for this token.
+     * @dev Needs to be overwitten.
+     * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
+     */
+    function tokenManager() external view returns (ITokenManager tokenManager_);
+
 }

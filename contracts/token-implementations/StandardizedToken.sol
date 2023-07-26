@@ -19,7 +19,7 @@ import { Distributable } from '../utils/Distributable.sol';
 contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
-    address public tokenManager;
+    address internal tokenManager_;
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -27,7 +27,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
     modifier onlyDistributorOrTokenManager {
-        if(msg.sender != tokenManager) {
+        if(msg.sender != tokenManager_) {
             if(msg.sender != distributor()) revert NotDistributor();
         }
         _;
@@ -44,8 +44,8 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract
      */
-    function getTokenManager() public view override returns (ITokenManager) {
-        return ITokenManager(tokenManager);
+    function tokenManager() public view override returns (ITokenManager) {
+        return ITokenManager(tokenManager_);
     }
 
     /**
@@ -56,11 +56,11 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
     function setup(bytes calldata params) external override onlyProxy {
         {
             address distributor_;
-            address tokenManager_;
+            address tokenManagerAddress;
             string memory tokenName;
-            (tokenManager_, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
+            (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
             _setDistributor(distributor_);
-            tokenManager = tokenManager_;
+            tokenManager_ = tokenManagerAddress;
             _setDomainTypeSignatureHash(tokenName);
             name = tokenName;
         }

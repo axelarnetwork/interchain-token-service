@@ -2,19 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import { ITokenManager } from './ITokenManager.sol';
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IInterchainToken {
-
-    /**
-     * @notice Getter for the tokenManager used for this token.
-     * @dev Needs to be overwitten.
-     * @return tokenManager the TokenManager called to facilitate cross chain transfers.
-     */
-    function getTokenManager() external view returns (ITokenManager tokenManager);
 
     /**
      * @notice Implementation of the interchainTransfer method
