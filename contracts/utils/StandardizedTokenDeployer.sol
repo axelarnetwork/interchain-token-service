@@ -22,8 +22,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
      * @param implementationAddress_ Address of the StandardizedToken contract
      */
     constructor(address deployer_, address implementationAddress_) {
-        if (deployer_ == address(0) || implementationAddress_ == address(0))
-            revert AddressZero();
+        if (deployer_ == address(0) || implementationAddress_ == address(0)) revert AddressZero();
         deployer = Create3Deployer(deployer_);
         implementationAddress = implementationAddress_;
     }

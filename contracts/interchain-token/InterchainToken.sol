@@ -36,7 +36,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
         bytes calldata metadata
     ) external payable {
         address sender = msg.sender;
- 
+
         _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
         ITokenManager tokenManager_ = tokenManager();
@@ -65,7 +65,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
         if (_allowance != type(uint256).max) {
             _approve(sender, msg.sender, _allowance - amount);
         }
-        
+
         _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
         ITokenManager tokenManager_ = tokenManager();
@@ -80,5 +80,11 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
      * @param amount the amount of token to be transfered.
      * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
      */
-    function _beforeInterchainTransfer(address from, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount, bytes calldata metadata) internal virtual {}
+    function _beforeInterchainTransfer(
+        address from,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata
+    ) internal virtual {}
 }

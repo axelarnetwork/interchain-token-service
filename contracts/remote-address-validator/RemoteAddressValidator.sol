@@ -20,8 +20,6 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     uint256 private immutable interchainTokenServiceAddress2;
     mapping(string => bool) public supportedByGateway;
 
-    
-
     bytes32 private constant CONTRACT_ID = keccak256('remote-address-validator');
 
     /**
@@ -41,7 +39,6 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
         }
         interchainTokenServiceAddress1 = p1;
         interchainTokenServiceAddress2 = p2;
-
     }
 
     /**
@@ -78,7 +75,7 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
         interchainTokenServiceAddressString = new string(42);
         uint256 p1 = interchainTokenServiceAddress1;
         uint256 p2 = interchainTokenServiceAddress2;
-        assembly{
+        assembly {
             mstore(add(interchainTokenServiceAddressString, 32), p1)
             mstore(add(interchainTokenServiceAddressString, 64), p2)
         }

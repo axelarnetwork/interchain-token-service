@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IInterchainToken {
-
     /**
      * @notice Implementation of the interchainTransfer method
      * @dev We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.

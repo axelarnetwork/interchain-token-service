@@ -8,7 +8,6 @@ import { IERC20BurnableMintable } from './IERC20BurnableMintable.sol';
 import { ITokenManager } from './ITokenManager.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
-
 /**
  * @title StandardizedToken
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
@@ -33,5 +32,4 @@ interface IStandardizedToken is IInterchainToken, IDistributable, IERC20Burnable
      * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
      */
     function tokenManager() external view returns (ITokenManager tokenManager_);
-
 }

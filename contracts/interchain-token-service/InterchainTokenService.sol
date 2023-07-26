@@ -421,7 +421,18 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, mintTo, mintAmount, operator, destinationChain, gasValue);
+        _deployRemoteStandardizedToken(
+            tokenId,
+            name,
+            symbol,
+            decimals,
+            distributor,
+            mintTo,
+            mintAmount,
+            operator,
+            destinationChain,
+            gasValue
+        );
     }
 
     /**

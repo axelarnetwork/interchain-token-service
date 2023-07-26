@@ -62,7 +62,9 @@ describe('Distributable', () => {
 
     it('Should be able to change the distributor only as the distributor', async () => {
         expect(await test.distributor()).to.equal(ownerWallet.address);
-        await expect(test.transferDistributorship(otherWallet.address)).to.emit(test, 'DistributorshipTransferred').withArgs(otherWallet.address);
+        await expect(test.transferDistributorship(otherWallet.address))
+            .to.emit(test, 'DistributorshipTransferred')
+            .withArgs(otherWallet.address);
         expect(await test.distributor()).to.equal(otherWallet.address);
         await expect(test.transferDistributorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotDistributor');
     });
@@ -344,7 +346,6 @@ describe('Pausable', () => {
 describe('StandardizedTokenDeployer', () => {
     let create3Deployer, standardizedToken, standardizedTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
-    const distributor = new Wallet(getRandomBytes32()).address;
     const mintTo = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';

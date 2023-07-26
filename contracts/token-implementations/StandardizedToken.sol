@@ -26,9 +26,9 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
 
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
-    modifier onlyDistributorOrTokenManager {
-        if(msg.sender != tokenManager_) {
-            if(msg.sender != distributor()) revert NotDistributor();
+    modifier onlyDistributorOrTokenManager() {
+        if (msg.sender != tokenManager_) {
+            if (msg.sender != distributor()) revert NotDistributor();
         }
         _;
     }
@@ -58,7 +58,10 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
             address distributor_;
             address tokenManagerAddress;
             string memory tokenName;
-            (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
+            (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(
+                params,
+                (address, address, string, string, uint8)
+            );
             _setDistributor(distributor_);
             tokenManager_ = tokenManagerAddress;
             _setDomainTypeSignatureHash(tokenName);
