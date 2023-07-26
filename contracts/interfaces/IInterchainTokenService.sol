@@ -60,13 +60,16 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         string tokenSymbol,
         uint8 tokenDecimals,
         bytes distributor,
-        bytes indexed operator,
+        bytes mintTo,
+        uint256 mintAmount,
+        bytes operator,
         string destinationChain,
         uint256 indexed gasValue
     );
     event TokenManagerDeployed(bytes32 indexed tokenId, TokenManagerType indexed tokenManagerType, bytes params);
     event StandardizedTokenDeployed(
         bytes32 indexed tokenId,
+        address distributor,
         string name,
         string symbol,
         uint8 decimals,
@@ -240,10 +243,12 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      */
     function deployAndRegisterRemoteStandardizedToken(
         bytes32 salt,
-        string calldata name,
-        string calldata symbol,
+        string memory name,
+        string memory symbol,
         uint8 decimals,
         bytes memory distributor,
+        bytes memory mintTo,
+        uint256 mintAmount,
         bytes memory operator,
         string calldata destinationChain,
         uint256 gasValue

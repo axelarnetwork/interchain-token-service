@@ -55,7 +55,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     /**
      * @notice A function that returns the token id.
      */
-    function tokenId() external view returns (bytes32) {
+    function tokenId() public view returns (bytes32) {
         return this.tokenId();
     }
 
@@ -97,7 +97,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            _getTokenId(),
+            this.tokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -124,7 +124,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         _addFlowOut(amount);
         uint32 version = 0;
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            _getTokenId(),
+            this.tokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -150,7 +150,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            _getTokenId(),
+            this.tokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -203,12 +203,4 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param params The setup parameters
      */
     function _setup(bytes calldata params) internal virtual;
-
-    /**
-     * @notice Gets the token ID from the token manager proxy.
-     * @return tokenId The ID of the token
-     */
-    function _getTokenId() internal view returns (bytes32 tokenId) {
-        tokenId = ITokenManagerProxy(address(this)).tokenId();
-    }
 }

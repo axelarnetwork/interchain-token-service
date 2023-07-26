@@ -70,7 +70,7 @@ describe('Interchain Token Service', () => {
                     wallet.address,
                 ),
             )
-                .to.emit(token, 'DistributorChanged')
+                .to.emit(token, 'DistributorshipTransferred')
                 .withArgs(wallet.address)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, tokenCap);
@@ -89,20 +89,20 @@ describe('Interchain Token Service', () => {
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x'],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
             );
             await expect(service.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, params)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', otherChains[0], gasValues[0])
+                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', otherChains[1], gasValues[1])
+                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', otherChains[1], gasValues[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -144,7 +144,7 @@ describe('Interchain Token Service', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
 
             await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
             await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
@@ -186,6 +186,8 @@ describe('Interchain Token Service', () => {
                     symbol,
                     decimals,
                     '0x',
+                    '0x',
+                    0,
                     wallet.address,
                     otherChains[i],
                     gasValues[i],
@@ -196,22 +198,24 @@ describe('Interchain Token Service', () => {
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', wallet.address],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address],
             );
-            await expect(service.multicall(data, { value }))
+            const tx = service.multicall(data, { value });
+
+            await expect(tx)
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, name, symbol, decimals, tokenCap, wallet.address)
+                .withArgs(tokenId, wallet.address, name, symbol, decimals, tokenCap, wallet.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, MINT_BURN, params)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address, otherChains[0], gasValues[0])
+                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address, otherChains[1], gasValues[1])
+                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), otherChains[1], gasValues[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -249,7 +253,7 @@ describe('Interchain Token Service', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorChanged').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
 
             await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
             await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');

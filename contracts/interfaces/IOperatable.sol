@@ -6,7 +6,7 @@ interface IOperatable {
     error NotOperator();
     error NotProposedOperator();
 
-    event OperatorChanged(address indexed operator);
+    event OperatorshipTransferred(address indexed operator);
     event OperatorChangeProposed(address indexed operator);
 
     /**

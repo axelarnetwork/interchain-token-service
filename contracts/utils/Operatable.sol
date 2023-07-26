@@ -42,7 +42,7 @@ contract Operatable is IOperatable {
         assembly {
             sstore(OPERATOR_SLOT, operator_)
         }
-        emit OperatorChanged(operator_);
+        emit OperatorshipTransferred(operator_);
     }
 
     /**

@@ -39,7 +39,7 @@ describe('Operatable', () => {
 
     it('Should be able to change the operator only as the operator', async () => {
         expect(await test.operator()).to.equal(ownerWallet.address);
-        await expect(test.transferOperatorship(otherWallet.address)).to.emit(test, 'OperatorChanged').withArgs(otherWallet.address);
+        await expect(test.transferOperatorship(otherWallet.address)).to.emit(test, 'OperatorshipTransferred').withArgs(otherWallet.address);
         expect(await test.operator()).to.equal(otherWallet.address);
         await expect(test.transferOperatorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotOperator');
     });
@@ -62,7 +62,7 @@ describe('Distributable', () => {
 
     it('Should be able to change the distributor only as the distributor', async () => {
         expect(await test.distributor()).to.equal(ownerWallet.address);
-        await expect(test.transferDistributorship(otherWallet.address)).to.emit(test, 'DistributorChanged').withArgs(otherWallet.address);
+        await expect(test.transferDistributorship(otherWallet.address)).to.emit(test, 'DistributorshipTransferred').withArgs(otherWallet.address);
         expect(await test.distributor()).to.equal(otherWallet.address);
         await expect(test.transferDistributorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotDistributor');
     });
@@ -373,7 +373,7 @@ describe('StandardizedTokenDeployer', () => {
         )
             .to.emit(token, 'Transfer')
             .withArgs(AddressZero, mintTo, mintAmount)
-            .and.to.emit(token, 'DistributorChanged')
+            .and.to.emit(token, 'DistributorshipTransferred')
             .withArgs(tokenManager);
 
         expect(await tokenProxy.implementation()).to.equal(standardizedToken.address);

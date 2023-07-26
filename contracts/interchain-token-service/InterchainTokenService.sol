@@ -326,7 +326,7 @@ contract InterchainTokenService is
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
         if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalTokenManager();
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', '', destinationChain, gasValue);
+        _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', '', 0, '', destinationChain, gasValue);
     }
 
     /**
@@ -390,7 +390,6 @@ contract InterchainTokenService is
     ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
-        address tokenManagerAddress = getTokenManagerAddress(tokenId);
         address tokenAddress = getStandardizedTokenAddress(tokenId);
         _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(msg.sender.toBytes(), tokenAddress));
     }
@@ -410,16 +409,18 @@ contract InterchainTokenService is
      */
     function deployAndRegisterRemoteStandardizedToken(
         bytes32 salt,
-        string calldata name,
-        string calldata symbol,
+        string memory name,
+        string memory symbol,
         uint8 decimals,
         bytes memory distributor,
+        bytes memory mintTo,
+        uint256 mintAmount,
         bytes memory operator,
         string calldata destinationChain,
         uint256 gasValue
     ) external payable notPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
+        _deployRemoteStandardizedToken(tokenId, name, symbol, decimals, distributor, mintTo, mintAmount, operator, destinationChain, gasValue);
     }
 
     /**
@@ -671,13 +672,16 @@ contract InterchainTokenService is
             string memory symbol,
             uint8 decimals,
             bytes memory distributorBytes,
+            bytes memory mintToBytes,
+            uint256 mintAmount,
             bytes memory operatorBytes
-        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
+        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes, uint256, bytes));
         address tokenAddress = getStandardizedTokenAddress(tokenId);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
         address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : tokenManagerAddress;
         if (distributor == address(0)) revert ZeroAddress();
-        _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, 0, distributor);
+        address mintTo = mintToBytes.length > 0 ? mintToBytes.toAddress() : distributor;
+        _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
         _deployTokenManager(
             tokenId,
             TokenManagerType.MINT_BURN,
@@ -749,6 +753,8 @@ contract InterchainTokenService is
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
+        bytes memory mintTo,
+        uint256 mintAmount,
         bytes memory operator,
         string calldata destinationChain,
         uint256 gasValue
@@ -760,6 +766,8 @@ contract InterchainTokenService is
             symbol,
             decimals,
             distributor,
+            mintTo,
+            mintAmount,
             operator
         );
         _callContract(destinationChain, payload, gasValue, msg.sender);
@@ -769,6 +777,8 @@ contract InterchainTokenService is
             symbol,
             decimals,
             distributor,
+            mintTo,
+            mintAmount,
             operator,
             destinationChain,
             gasValue
@@ -838,7 +848,7 @@ contract InterchainTokenService is
         if (!success) {
             revert StandardizedTokenDeploymentFailed();
         }
-        emit StandardizedTokenDeployed(tokenId, name, symbol, decimals, mintAmount, mintTo);
+        emit StandardizedTokenDeployed(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
     }
 
     function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes calldata data) {
