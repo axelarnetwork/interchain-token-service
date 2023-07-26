@@ -54,6 +54,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
 
     /**
      * @notice A function that returns the token id.
+     * @dev This will only work when called by a proxy, which hides this and returns the correct value.
      */
     function tokenId() public view returns (bytes32) {
         return this.tokenId();

@@ -87,7 +87,7 @@ describe('Interchain Token Service', () => {
                 value += gasValues[i];
             }
 
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],

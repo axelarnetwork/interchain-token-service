@@ -158,6 +158,7 @@ contract InterchainTokenService is
      * @param tokenId the tokenId.
      * @return tokenManagerAddress deployement address of the TokenManager.
      */
+    // TODO: Maybe copy the code of the create3Deployer to save gas, but would introduce duplicate code problems.
     function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = deployer.deployedAddress(address(this), tokenId);
     }
@@ -169,7 +170,7 @@ contract InterchainTokenService is
      */
     function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = getTokenManagerAddress(tokenId);
-        if (ITokenManagerProxy(tokenManagerAddress).tokenId() != tokenId) revert TokenManagerDoesNotExist(tokenId);
+        if (tokenManagerAddress.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
     }
 
     /**
@@ -309,7 +310,7 @@ contract InterchainTokenService is
         (, string memory tokenSymbol, ) = _validateToken(tokenAddress);
         if (gateway.tokenAddresses(tokenSymbol) == tokenAddress) revert GatewayToken();
         tokenId = getCanonicalTokenId(tokenAddress);
-        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode(address(this).toBytes(), tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode('', tokenAddress));
     }
 
     /**

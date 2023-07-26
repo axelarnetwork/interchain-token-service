@@ -123,7 +123,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should register a canonical token', async () => {
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             await expect(service.registerCanonicalToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, params);
@@ -135,7 +135,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert if canonical token has already been registered', async () => {
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [service.address, token.address]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             await expect(service.registerCanonicalToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, params);

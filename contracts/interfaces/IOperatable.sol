@@ -27,11 +27,11 @@ interface IOperatable {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function proposeOperatorChange(address operator_) external;
+    function proposeOperatorship(address operator_) external;
 
     /**
      * @notice Accept a proposed change of operatorship
      * @dev Can only be called by the proposed operator
      */
-    function acceptOperatorChange() external;
+    function acceptOperatorship() external;
 }

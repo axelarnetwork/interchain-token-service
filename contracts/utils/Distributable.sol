@@ -79,29 +79,4 @@ contract Distributable is IDistributable {
         if (msg.sender != proposedDistributor) revert NotProposedDistributor();
         _setDistributor(proposedDistributor);
     }
-
-    /**
-     * @notice Proposed a change of the distributor of the contract
-     * @dev Can only be called by the current distributor
-     * @param distributor_ The address of the new distributor
-     */
-    function proposeDistributorChange(address distributor_) external onlyDistributor {
-        assembly {
-            sstore(PROPOSED_DISTRIBUTOR_SLOT, distributor_)
-        }
-        emit DistributorChangeProposed(distributor_);
-    }
-
-    /**
-     * @notice Accept a change of the distributor of the contract
-     * @dev Can only be called by the proposed distributor
-     */
-    function acceptDistributorChange() external {
-        address proposedDistributor;
-        assembly {
-            proposedDistributor := sload(PROPOSED_DISTRIBUTOR_SLOT)
-        }
-        if (msg.sender != proposedDistributor) revert NotProposedDistributor();
-        _setDistributor(proposedDistributor);
-    }
 }

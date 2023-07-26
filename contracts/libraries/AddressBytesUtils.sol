@@ -29,7 +29,7 @@ library AddressBytesUtils {
      */
     function toBytes(address addr) internal pure returns (bytes memory bytesAddress) {
         bytesAddress = new bytes(20);
-
+        // we can test if using a single 32 byte variable that is the address with the length together and using one mstore would be slightly cheaper.
         assembly {
             mstore(add(bytesAddress, 20), addr)
             mstore(bytesAddress, 20)
