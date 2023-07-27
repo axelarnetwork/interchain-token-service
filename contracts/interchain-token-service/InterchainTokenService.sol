@@ -691,7 +691,6 @@ contract InterchainTokenService is
         address tokenAddress = getStandardizedTokenAddress(tokenId);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
         address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : tokenManagerAddress;
-        if (distributor == address(0)) revert ZeroAddress();
         address mintTo = mintToBytes.length > 0 ? mintToBytes.toAddress() : distributor;
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
         _deployTokenManager(
