@@ -13,11 +13,6 @@ interface ITokenManagerDeployer {
     error TokenManagerDeploymentFailed();
 
     /**
-     * @notice Getter for the Create3Deployer.
-     */
-    function deployer() external view returns (Create3Deployer);
-
-    /**
      * @notice Deploys a new instance of the TokenManagerProxy contract
      * @param tokenId The unique identifier for the token
      * @param implementationType Token manager implementation type

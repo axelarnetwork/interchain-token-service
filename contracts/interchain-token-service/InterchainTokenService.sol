@@ -21,7 +21,7 @@ import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
-import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol';
+import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 
 import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
@@ -55,7 +55,6 @@ contract InterchainTokenService is
     IRemoteAddressValidator public immutable remoteAddressValidator;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
-    Create3Deployer internal immutable deployer;
     bytes32 internal immutable chainNameHash;
     bytes32 internal immutable chainName;
 
@@ -99,7 +98,6 @@ contract InterchainTokenService is
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         standardizedTokenDeployer = standardizedTokenDeployer_;
-        deployer = ITokenManagerDeployer(tokenManagerDeployer_).deployer();
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
@@ -160,7 +158,7 @@ contract InterchainTokenService is
      */
     // TODO: Maybe copy the code of the create3Deployer to save gas, but would introduce duplicate code problems.
     function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
-        tokenManagerAddress = deployer.deployedAddress(address(this), tokenId);
+        tokenManagerAddress = Create3.deployedAddress(address(this), tokenId);
     }
 
     /**
@@ -191,7 +189,7 @@ contract InterchainTokenService is
      */
     function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
         tokenId = _getStandardizedTokenSalt(tokenId);
-        tokenAddress = deployer.deployedAddress(address(this), tokenId);
+        tokenAddress = Create3.deployedAddress(address(this), tokenId);
     }
 
     /**

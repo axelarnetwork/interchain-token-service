@@ -11,11 +11,16 @@ import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 interface IStandardizedTokenDeployer {
     error AddressZero();
     error TokenDeploymentFailed();
+    /**
+     * @notice Returns the standardized token implementation address
+    */
+    function implementationAddress() external view returns(address);
 
     /**
-     * @notice Getter for the Create3Deployer.
-     */
-    function deployer() external view returns (Create3Deployer);
+     * @notice Returns the standardized token deployment address.
+     * @return tokenAddress the token address.
+    */
+    function deployedAddress(bytes32 salt) external view returns (address tokenAddress);
 
     /**
      * @notice Deploys a new instance of the StandardizedTokenProxy contract
