@@ -693,28 +693,24 @@ contract InterchainTokenService is
         address distributor;
         address mintTo;
 
-        if(distributorBytes.length == 0) {
+        if (distributorBytes.length == 0) {
             distributor = tokenManagerAddress;
         } else {
             distributor = distributorBytes.toAddress();
         }
-        
-        if(mintToBytes.length == 0) {
+
+        if (mintToBytes.length == 0) {
             mintTo = distributor;
         } else {
             mintTo = mintToBytes.toAddress();
         }
 
-        if(operatorBytes.length == 0) {
+        if (operatorBytes.length == 0) {
             operatorBytes = address(this).toBytes();
         }
 
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
-        _deployTokenManager(
-            tokenId,
-            TokenManagerType.MINT_BURN,
-            abi.encode(operatorBytes, tokenAddress)
-        );
+        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(operatorBytes, tokenAddress));
     }
 
     /**
