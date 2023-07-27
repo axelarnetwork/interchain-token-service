@@ -688,15 +688,27 @@ contract InterchainTokenService is
         ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes, uint256, bytes));
         address tokenAddress = getStandardizedTokenAddress(tokenId);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
-        address distributor = distributorBytes.length > 0 ? distributorBytes.toAddress() : tokenManagerAddress;
-        if (distributor == address(0)) revert ZeroAddress();
-        address mintTo = mintToBytes.length > 0 ? mintToBytes.toAddress() : distributor;
+        address distributor;
+        address mintTo;
+
+        if (distributorBytes.length == 0) {
+            distributor = tokenManagerAddress;
+        } else {
+            distributor = distributorBytes.toAddress();
+        }
+
+        if (mintToBytes.length == 0) {
+            mintTo = distributor;
+        } else {
+            mintTo = mintToBytes.toAddress();
+        }
+
+        if (operatorBytes.length == 0) {
+            operatorBytes = address(this).toBytes();
+        }
+
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
-        _deployTokenManager(
-            tokenId,
-            TokenManagerType.MINT_BURN,
-            abi.encode(operatorBytes.length == 0 ? address(this).toBytes() : operatorBytes, tokenAddress)
-        );
+        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(operatorBytes, tokenAddress));
     }
 
     /**
