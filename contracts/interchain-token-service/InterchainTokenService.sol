@@ -50,12 +50,13 @@ contract InterchainTokenService is
 
     address internal immutable implementationLockUnlock;
     address internal immutable implementationMintBurn;
+    address internal immutable implementationLockUnlockFee;
     address internal immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
     IRemoteAddressValidator public immutable remoteAddressValidator;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
-    bytes32 internal immutable chainNameHash;
+    bytes32 public immutable chainNameHash;
     bytes32 internal immutable chainName;
 
     bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
@@ -103,6 +104,10 @@ contract InterchainTokenService is
 
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
+        implementationLockUnlockFee = _sanitizeTokenManagerImplementation(
+            tokenManagerImplementations,
+            TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER
+        );
         implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
 
         chainName = chainName_.toBytes32();
@@ -141,14 +146,6 @@ contract InterchainTokenService is
      */
     function contractId() external pure returns (bytes32) {
         return CONTRACT_ID;
-    }
-
-    /**
-     * @notice Getter for the chain name.
-     * @return name the name of the chain
-     */
-    function getChainName() public view returns (string memory name) {
-        name = chainName.toTrimmedString();
     }
 
     /**
@@ -225,6 +222,8 @@ contract InterchainTokenService is
             return implementationLockUnlock;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
             return implementationMintBurn;
+        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER) {
+            return implementationLockUnlockFee;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) {
             return implementationLiquidityPool;
         }

@@ -26,7 +26,7 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
     constructor(address interchainTokenService_) TokenManagerAddressStorage(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        return 2;
+        return 3;
     }
 
     /**
@@ -82,7 +82,11 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
         SafeTokenTransferFrom.safeTransferFrom(token, from, liquidityPool_, amount);
 
         // Note: This allows support for fee-on-transfer tokens
-        return IERC20(token).balanceOf(liquidityPool_) - balance;
+        uint256 diff = IERC20(token).balanceOf(liquidityPool_) - balance;
+        if (diff < amount) {
+            amount = diff;
+        }
+        return amount;
     }
 
     /**
