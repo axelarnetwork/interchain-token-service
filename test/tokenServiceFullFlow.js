@@ -8,7 +8,6 @@ const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
 
-const IStandardizedTokenDeployer = require('../artifacts/contracts/interfaces/IStandardizedTokenDeployer.sol/IStandardizedTokenDeployer.json');
 const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 
@@ -45,7 +44,7 @@ describe('Interchain Token Service', () => {
 
         before(async () => {
             // The below is used to deploy a token, but any ERC20 can be used instead.
-            token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address])
+            token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
             tokenId = await service.getCanonicalTokenId(token.address);
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();

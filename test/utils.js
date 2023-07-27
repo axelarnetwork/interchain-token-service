@@ -344,7 +344,7 @@ describe('Pausable', () => {
 });
 
 describe('StandardizedTokenDeployer', () => {
-    let create3Deployer, standardizedToken, standardizedTokenDeployer;
+    let standardizedToken, standardizedTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
     const mintTo = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
@@ -354,9 +354,7 @@ describe('StandardizedTokenDeployer', () => {
 
     before(async () => {
         standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');
-        standardizedTokenDeployer = await deployContract(ownerWallet, 'StandardizedTokenDeployer', [
-            standardizedToken.address,
-        ]);
+        standardizedTokenDeployer = await deployContract(ownerWallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
     });
 
     it('Should deploy a mint burn token only once', async () => {
