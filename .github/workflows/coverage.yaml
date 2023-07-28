@@ -17,13 +17,13 @@ jobs:
           node-version: 18.x
 
       - name: Install Dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
       - name: Build
-        run: yarn compile
+        run: npm run build
 
       - name: Run Coverage Tests
-        run: yarn coverage
+        run: npm run coverage
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
