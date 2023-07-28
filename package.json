@@ -20,9 +20,12 @@
   ],
   "author": "axelar-network",
   "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  },
   "dependencies": {
-    "@axelar-network/axelar-cgp-solidity": "^5.0.0",
-    "@axelar-network/axelar-gmp-sdk-solidity": "^4.0.0"
+    "@axelar-network/axelar-cgp-solidity": "5.0.0",
+    "@axelar-network/axelar-gmp-sdk-solidity": "4.0.2"
   },
   "devDependencies": {
     "@axelar-network/axelar-contract-deployments": "git://github.com/axelarnetwork/axelar-contract-deployments.git#f2d55c39967c8a55c7f9ac775a250cb8be6d74d9",
@@ -42,6 +45,7 @@
   },
   "description": "Interchain token service for EVM chains to faciliate cross-chain token transfers and contract calls",
   "files": [
+    "artifacts",
     "contracts",
     "dist",
     "docs",
