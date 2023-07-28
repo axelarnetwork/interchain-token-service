@@ -30,7 +30,7 @@ contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Perm
         if (msg.sender != tokenManager_) {
             if (msg.sender != distributor()) revert NotDistributor();
         }
-        
+
         _;
     }
 
