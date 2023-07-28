@@ -47,7 +47,7 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
             p1 := mload(add(interchainTokenServiceAddressString, 32))
             p2 := mload(add(interchainTokenServiceAddressString, 64))
         }
-        
+
         interchainTokenServiceAddress1 = p1;
         interchainTokenServiceAddress2 = p2;
     }
@@ -84,16 +84,6 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
         }
 
         return s;
-    }
-
-    function _interchainTokenServiceAddressString() internal view returns (string memory interchainTokenServiceAddressString) {
-        interchainTokenServiceAddressString = new string(42);
-        uint256 p1 = interchainTokenServiceAddress1;
-        uint256 p2 = interchainTokenServiceAddress2;
-        assembly {
-            mstore(add(interchainTokenServiceAddressString, 32), p1)
-            mstore(add(interchainTokenServiceAddressString, 64), p2)
-        }
     }
 
     /**
