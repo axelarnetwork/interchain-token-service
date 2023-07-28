@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
+import { ITokenManagerGetter } from '../interfaces/ITokenManagerGetter.sol';
 
 /**
  * @title TokenManagerProxy
@@ -11,22 +12,23 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
  * inherits from FixedProxy from the gmp sdk repo
  */
 contract TokenManagerProxy is ITokenManagerProxy {
-    IInterchainTokenService public immutable interchainTokenServiceAddress;
+    ITokenManagerGetter internal immutable tokenManagerGetter;
     uint256 public immutable implementationType;
     bytes32 public immutable tokenId;
 
     /**
      * @dev Constructs the TokenManagerProxy contract.
-     * @param interchainTokenServiceAddress_ The address of the interchain token service
      * @param implementationType_ The token manager type
      * @param tokenId_ The identifier for the token
      * @param params The initialization parameters for the token manager contract
      */
-    constructor(address interchainTokenServiceAddress_, uint256 implementationType_, bytes32 tokenId_, bytes memory params) {
-        interchainTokenServiceAddress = IInterchainTokenService(interchainTokenServiceAddress_);
+    constructor(uint256 implementationType_, address interchainTokenServiceAddress, bytes32 tokenId_, bytes memory params) {
+        IInterchainTokenService interchainTokenService = IInterchainTokenService(interchainTokenServiceAddress);
         implementationType = implementationType_;
         tokenId = tokenId_;
-        address impl = _getImplementation(IInterchainTokenService(interchainTokenServiceAddress_), implementationType_);
+        address tokenManagerGetterAddress = interchainTokenService.tokenManagerGetter();
+        tokenManagerGetter = ITokenManagerGetter(tokenManagerGetterAddress);
+        address impl = _getImplementation(tokenManagerGetter, implementationType_);
 
         (bool success, ) = impl.delegatecall(abi.encodeWithSelector(TokenManagerProxy.setup.selector, params));
         if (!success) revert SetupFailed();
@@ -37,20 +39,20 @@ contract TokenManagerProxy is ITokenManagerProxy {
      * @return impl The address of the current implementation
      */
     function implementation() public view returns (address impl) {
-        impl = _getImplementation(interchainTokenServiceAddress, implementationType);
+        impl = _getImplementation(tokenManagerGetter, implementationType);
     }
 
     /**
      * @dev Returns the implementation address from the interchain token service for the provided type.
-     * @param interchainTokenServiceAddress_ The address of the interchain token service
+     * @param tokenManagerGetter_ The address of the interchain token service
      * @param implementationType_ The token manager type
      * @return impl The address of the implementation
      */
     function _getImplementation(
-        IInterchainTokenService interchainTokenServiceAddress_,
+        ITokenManagerGetter tokenManagerGetter_,
         uint256 implementationType_
     ) internal view returns (address impl) {
-        impl = interchainTokenServiceAddress_.getImplementation(implementationType_);
+        impl = tokenManagerGetter_.getImplementation(implementationType_);
     }
 
     /**

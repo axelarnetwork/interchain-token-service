@@ -15,7 +15,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     // more generic error
     error ZeroAddress();
     error LengthMismatch();
-    error InvalidTokenManagerImplementation();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager();
@@ -91,6 +90,12 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     function standardizedTokenDeployer() external view returns (address standardizedTokenDeployerAddress);
 
     /**
+     * @notice Returns the address of the token manager getter contract.
+     * @return tokenManagerGetterAddress The address of the token manager getter  contract.
+     */
+    function tokenManagerGetter() external view returns (address tokenManagerGetterAddress);
+    
+    /**
      * @notice Returns the address of the token manager associated with the given tokenId.
      * @param tokenId The tokenId of the token manager.
      * @return tokenManagerAddress The address of the token manager.
@@ -132,35 +137,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @return tokenId The custom tokenId associated with the operator and salt.
      */
     function getCustomTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId);
-
-    /**
-     * @notice Returns the parameters for the lock/unlock operation.
-     * @param operator The operator address.
-     * @param tokenAddress The address of the token.
-     * @return params The parameters for the lock/unlock operation.
-     */
-    function getParamsLockUnlock(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
-
-    /**
-     * @notice Returns the parameters for the mint/burn operation.
-     * @param operator The operator address.
-     * @param tokenAddress The address of the token.
-     * @return params The parameters for the mint/burn operation.
-     */
-    function getParamsMintBurn(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
-
-    /**
-     * @notice Returns the parameters for the liquidity pool operation.
-     * @param operator The operator address.
-     * @param tokenAddress The address of the token.
-     * @param liquidityPoolAddress The address of the liquidity pool.
-     * @return params The parameters for the liquidity pool operation.
-     */
-    function getParamsLiquidityPool(
-        bytes memory operator,
-        address tokenAddress,
-        address liquidityPoolAddress
-    ) external pure returns (bytes memory params);
 
     /**
      * @notice Registers a canonical token and returns its associated tokenId.
@@ -247,13 +223,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         string calldata destinationChain,
         uint256 gasValue
     ) external payable;
-
-    /**
-     * @notice Returns the implementation address for a given token manager type.
-     * @param tokenManagerType The type of token manager.
-     * @return tokenManagerAddress The address of the token manager implementation.
-     */
-    function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
 
     /**
      * @notice Initiates an interchain token transfer. Only callable by TokenManagers

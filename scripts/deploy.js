@@ -42,8 +42,7 @@ async function deployInterchainTokenService(
     gatewayAddress,
     gasServiceAddress,
     remoteAddressValidatorAddress,
-    tokenManagerImplementations,
-    chainName,
+    tokenManagerGetter,
     deploymentKey,
     operatorAddress = wallet.address,
 ) {
@@ -53,7 +52,7 @@ async function deployInterchainTokenService(
         gatewayAddress,
         gasServiceAddress,
         remoteAddressValidatorAddress,
-        tokenManagerImplementations,
+        tokenManagerGetter,
     ]);
     const proxy = await deployCreate3Contract(create3DeployerAddress, wallet, InterchainTokenServiceProxy, deploymentKey, [
         implementation.address,
@@ -85,7 +84,7 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const remoteAddressValidator = await deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
-
+    const tokenManagerGetter = await deployContract(wallet, 'TokenManagerGetter', [tokenManagerImplementations.map((impl) => impl.address)]);
     const service = await deployInterchainTokenService(
         wallet,
         create3Deployer.address,
@@ -94,8 +93,7 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
         gateway.address,
         gasService.address,
         remoteAddressValidator.address,
-        tokenManagerImplementations.map((impl) => impl.address),
-        chainName,
+        tokenManagerGetter.address,
         deploymentKey,
     );
     return [service, gateway, gasService];

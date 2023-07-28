@@ -48,14 +48,11 @@ contract InterchainTokenService is
     using AddressBytesUtils for bytes;
     using AddressBytesUtils for address;
 
-    address internal immutable implementationLockUnlock;
-    address internal immutable implementationMintBurn;
-    address internal immutable implementationLockUnlockFee;
-    address internal immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
     IRemoteAddressValidator public immutable remoteAddressValidator;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
+    address public immutable tokenManagerGetter;
     bytes32 public immutable chainNameHash;
 
     bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
@@ -76,7 +73,7 @@ contract InterchainTokenService is
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
      * @param remoteAddressValidator_ the address of the RemoteAddressValidator.
-     * @param tokenManagerImplementations this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool.
+     * @param tokenManagerGetter_ the address of the TokenManagerGetter.
      */
     constructor(
         address tokenManagerDeployer_,
@@ -84,28 +81,21 @@ contract InterchainTokenService is
         address gateway_,
         address gasService_,
         address remoteAddressValidator_,
-        address[] memory tokenManagerImplementations
+        address tokenManagerGetter_
     ) AxelarExecutable(gateway_) {
         if (
             remoteAddressValidator_ == address(0) ||
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
-            standardizedTokenDeployer_ == address(0)
+            standardizedTokenDeployer_ == address(0) ||
+            tokenManagerGetter_ == address(0)
         ) revert ZeroAddress();
         remoteAddressValidator = IRemoteAddressValidator(remoteAddressValidator_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         standardizedTokenDeployer = standardizedTokenDeployer_;
-
-        if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
-
-        implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
-        implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
-        implementationLockUnlockFee = _sanitizeTokenManagerImplementation(
-            tokenManagerImplementations,
-            TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER
-        );
-        implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
+        tokenManagerGetter = tokenManagerGetter_;
+        
         string memory chainName_ = remoteAddressValidator.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -204,60 +194,6 @@ contract InterchainTokenService is
      */
     function getCustomTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, sender, salt));
-    }
-
-    /**
-     * @notice Getter function for TokenManager implementations. This will mainly be called by TokenManagerProxies
-     * to figure out their implementations
-     * @param tokenManagerType the type of the TokenManager.
-     * @return tokenManagerAddress the address of the TokenManagerImplementation.
-     */
-    function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress) {
-        if (tokenManagerType > uint256(type(TokenManagerType).max)) revert InvalidImplementation();
-        if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK) {
-            return implementationLockUnlock;
-        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
-            return implementationMintBurn;
-        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER) {
-            return implementationLockUnlockFee;
-        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) {
-            return implementationLiquidityPool;
-        }
-    }
-
-    /**
-     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
-     */
-    function getParamsLockUnlock(bytes memory operator, address tokenAddress) public pure returns (bytes memory params) {
-        params = abi.encode(operator, tokenAddress);
-    }
-
-    /**
-     * @notice Getter function for the parameters of a mint/burn TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
-     */
-    function getParamsMintBurn(bytes memory operator, address tokenAddress) public pure returns (bytes memory params) {
-        params = abi.encode(operator, tokenAddress);
-    }
-
-    /**
-     * @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
-     * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
-     */
-    function getParamsLiquidityPool(
-        bytes memory operator,
-        address tokenAddress,
-        address liquidityPoolAddress
-    ) public pure returns (bytes memory params) {
-        params = abi.encode(operator, tokenAddress, liquidityPoolAddress);
     }
 
     /**
@@ -551,15 +487,6 @@ contract InterchainTokenService is
 
     function _setup(bytes calldata params) internal override {
         _setOperator(params.toAddress());
-    }
-
-    function _sanitizeTokenManagerImplementation(
-        address[] memory implementaions,
-        TokenManagerType tokenManagerType
-    ) internal pure returns (address implementation) {
-        implementation = implementaions[uint256(tokenManagerType)];
-        if (implementation == address(0)) revert ZeroAddress();
-        if (ITokenManager(implementation).implementationType() != uint256(tokenManagerType)) revert InvalidTokenManagerImplementation();
     }
 
     /**
