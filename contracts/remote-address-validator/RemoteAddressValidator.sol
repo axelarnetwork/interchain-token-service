@@ -77,9 +77,9 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
      */
     function _lowerCase(string memory s) internal pure returns (string memory) {
         uint256 length = bytes(s).length;
-
-        for (uint256 i; i < length; i++) {
-            uint8 b = uint8(bytes(s)[i]);
+        uint b;
+        for (uint256 i; i < length; ++i) {
+            b = uint8(bytes(s)[i]);
             if ((b >= 65) && (b <= 90)) bytes(s)[i] = bytes1(b + uint8(32));
         }
 
