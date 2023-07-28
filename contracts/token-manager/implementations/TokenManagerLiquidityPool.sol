@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
 import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { ITokenManagerLiquidityPool } from '../../interfaces/ITokenManagerLiquidityPool.sol';
 
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 
@@ -15,7 +16,7 @@ import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/c
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLiquidityPool is TokenManagerAddressStorage, NoReEntrancy {
+contract TokenManagerLiquidityPool is TokenManagerAddressStorage, NoReEntrancy, ITokenManagerLiquidityPool {
     // uint256(keccak256('liquidity-pool-slot')) - 1
     uint256 internal constant LIQUIDITY_POOL_SLOT = 0x8e02741a3381812d092c5689c9fc701c5185c1742fdf7954c4c4472be4cc4807;
 
@@ -112,7 +113,7 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage, NoReEntrancy {
         bytes memory operator,
         address tokenAddress,
         address liquidityPoolAddress
-    ) public pure returns (bytes memory params) {
+    ) external pure returns (bytes memory params) {
         params = abi.encode(operator, tokenAddress, liquidityPoolAddress);
     }
 }
