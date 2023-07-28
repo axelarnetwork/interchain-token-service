@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
+import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
@@ -14,7 +15,7 @@ import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/c
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
+contract TokenManagerLiquidityPool is TokenManagerAddressStorage, NoReEntrancy {
     // uint256(keccak256('liquidity-pool-slot')) - 1
     uint256 internal constant LIQUIDITY_POOL_SLOT = 0x8e02741a3381812d092c5689c9fc701c5185c1742fdf7954c4c4472be4cc4807;
 
@@ -74,7 +75,7 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
      * @param amount The amount of tokens to transfer
      * @return uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
      */
-    function _takeToken(address from, uint256 amount) internal override returns (uint256) {
+    function _takeToken(address from, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
         address liquidityPool_ = liquidityPool();
         uint256 balance = token.balanceOf(liquidityPool_);
@@ -82,11 +83,7 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
         SafeTokenTransferFrom.safeTransferFrom(token, from, liquidityPool_, amount);
 
         // Note: This allows support for fee-on-transfer tokens
-        uint256 diff = IERC20(token).balanceOf(liquidityPool_) - balance;
-        if (diff < amount) {
-            amount = diff;
-        }
-        return amount;
+        return IERC20(token).balanceOf(liquidityPool_) - balance;
     }
 
     /**
@@ -95,16 +92,12 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
      * @param amount The amount of tokens to transfer
      * @return uint The actual amount of tokens transferred
      */
-    function _giveToken(address to, uint256 amount) internal override returns (uint256) {
+    function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
         uint256 balance = IERC20(token).balanceOf(to);
 
         SafeTokenTransferFrom.safeTransferFrom(token, liquidityPool(), to, amount);
 
-        uint256 diff = IERC20(token).balanceOf(to) - balance;
-        if (diff < amount) {
-            amount = diff;
-        }
-        return amount;
+        return IERC20(token).balanceOf(to) - balance;
     }
 }
