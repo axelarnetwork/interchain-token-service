@@ -100,4 +100,19 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage, NoReEntrancy {
 
         return IERC20(token).balanceOf(to) - balance;
     }
+
+    /**
+     * @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
+     * @param operator the operator of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
+    function getParams(
+        bytes memory operator,
+        address tokenAddress,
+        address liquidityPoolAddress
+    ) public pure returns (bytes memory params) {
+        params = abi.encode(operator, tokenAddress, liquidityPoolAddress);
+    }
 }

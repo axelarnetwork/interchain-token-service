@@ -20,7 +20,7 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
      * @param params Additional parameters used in the setup of the token manager
      */
     function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes calldata params) external payable {
-        bytes memory args = abi.encode(implementationType, address(this), tokenId, params);
+        bytes memory args = abi.encode(address(this), implementationType, tokenId, params);
         bytes memory bytecode = abi.encodePacked(type(TokenManagerProxy).creationCode, args);
         address tokenManagerAddress = Create3.deploy(tokenId, bytecode);
         if (tokenManagerAddress.code.length == 0) revert TokenManagerDeploymentFailed();

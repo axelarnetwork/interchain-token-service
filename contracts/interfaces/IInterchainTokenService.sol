@@ -15,6 +15,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     // more generic error
     error ZeroAddress();
     error LengthMismatch();
+    error InvalidTokenManagerImplementation();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager();
@@ -88,12 +89,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @return standardizedTokenDeployerAddress The address of the standardized token deployer contract.
      */
     function standardizedTokenDeployer() external view returns (address standardizedTokenDeployerAddress);
-
-    /**
-     * @notice Returns the address of the token manager getter contract.
-     * @return tokenManagerGetterAddress The address of the token manager getter  contract.
-     */
-    function tokenManagerGetter() external view returns (address tokenManagerGetterAddress);
 
     /**
      * @notice Returns the address of the token manager associated with the given tokenId.
@@ -223,6 +218,13 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         string calldata destinationChain,
         uint256 gasValue
     ) external payable;
+
+    /**
+     * @notice Returns the implementation address for a given token manager type.
+     * @param tokenManagerType The type of token manager.
+     * @return tokenManagerAddress The address of the token manager implementation.
+     */
+    function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
 
     /**
      * @notice Initiates an interchain token transfer. Only callable by TokenManagers
