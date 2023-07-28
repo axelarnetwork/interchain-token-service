@@ -21,6 +21,7 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
      */
     constructor(address deployer_) {
         if (deployer_ == address(0)) revert AddressZero();
+
         deployer = Create3Deployer(deployer_);
     }
 
@@ -33,7 +34,9 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
     function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes calldata params) external payable {
         bytes memory args = abi.encode(address(this), implementationType, tokenId, params);
         bytes memory bytecode = abi.encodePacked(type(TokenManagerProxy).creationCode, args);
+
         address tokenManagerAddress = deployer.deploy(bytecode, tokenId);
+
         if (tokenManagerAddress.code.length == 0) revert TokenManagerDeploymentFailed();
     }
 }

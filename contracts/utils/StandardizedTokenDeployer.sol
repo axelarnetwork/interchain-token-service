@@ -23,6 +23,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
      */
     constructor(address deployer_, address implementationAddress_) {
         if (deployer_ == address(0) || implementationAddress_ == address(0)) revert AddressZero();
+
         deployer = Create3Deployer(deployer_);
         implementationAddress = implementationAddress_;
     }
@@ -48,12 +49,11 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
         uint256 mintAmount,
         address mintTo
     ) external payable {
-        bytes memory bytecode;
-        {
-            bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
-            bytecode = abi.encodePacked(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
-        }
+        bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
+        bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
+
         address tokenAddress = deployer.deploy(bytecode, salt);
+
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
     }
 }

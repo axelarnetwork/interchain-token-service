@@ -78,6 +78,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         } else {
             operator_ = operatorBytes.toAddress();
         }
+
         _setOperator(operator_);
         _setup(params);
     }
@@ -95,8 +96,10 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         bytes calldata metadata
     ) external payable virtual {
         address sender = msg.sender;
+
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
+
         interchainTokenService.transmitSendToken{ value: msg.value }(
             this.tokenId(),
             sender,
