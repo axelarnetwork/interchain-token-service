@@ -19,6 +19,10 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
 
     address public immutable interchainTokenServiceAddress;
     bytes32 public immutable interchainTokenServiceAddressHash;
+
+    /**
+     * @dev Store the interchain token service address as string across two immutable variables to avoid recomputation and save gas
+     */
     uint256 private immutable interchainTokenServiceAddress1;
     uint256 private immutable interchainTokenServiceAddress2;
 
@@ -82,6 +86,9 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
         return s;
     }
 
+    /**
+     * @dev Return the interchain token service address as a string by constructing it from the two immutable variables caching it
+     */
     function _interchainTokenServiceAddressString() internal view returns (string memory interchainTokenServiceAddressString) {
         interchainTokenServiceAddressString = new string(42);
 
