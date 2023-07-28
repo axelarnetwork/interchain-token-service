@@ -14,7 +14,7 @@ import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLockUnlockFee is TokenManagerAddressStorage, NoReEntrancy{
+contract TokenManagerLockUnlockFee is TokenManagerAddressStorage, NoReEntrancy {
     /**
      * @dev Constructs an instance of TokenManagerLockUnlock. Calls the constructor
      * of TokenManagerAddressStorage which calls the constructor of TokenManager.

@@ -511,7 +511,7 @@ contract InterchainTokenService is
         bytes memory payload;
         if (metadata.length < 4) {
             payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount);
-            _callContract(destinationChain, payload, msg.value, sourceAddress);
+            _callContract(destinationChain, payload, msg.value);
             emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
             return;
         }
@@ -519,7 +519,7 @@ contract InterchainTokenService is
         (version, metadata) = _decodeMetadata(metadata);
         if (version > 0) revert InvalidMetadataVersion(version);
         payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
-        _callContract(destinationChain, payload, msg.value, sourceAddress);
+        _callContract(destinationChain, payload, msg.value);
         emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
     }
 
@@ -717,17 +717,16 @@ contract InterchainTokenService is
      * @param destinationChain The target chain where the contract will be called
      * @param payload The data payload for the transaction
      * @param gasValue The amount of gas to be paid for the transaction
-     * @param refundTo The address where the unused gas amount should be refunded to
      */
-    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue, address refundTo) internal {
+    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
         string memory destinationAddress = remoteAddressValidator.getRemoteAddress(destinationChain);
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
                 address(this),
                 destinationChain,
                 destinationAddress,
-                payload,
-                refundTo
+                payload, // solhint-disable-next-line avoid-tx-origin
+                tx.origin
             );
         }
         gateway.callContract(destinationChain, destinationAddress, payload);
@@ -756,7 +755,7 @@ contract InterchainTokenService is
         bytes memory params
     ) internal {
         bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
-        _callContract(destinationChain, payload, gasValue, msg.sender);
+        _callContract(destinationChain, payload, gasValue);
         emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
@@ -793,7 +792,7 @@ contract InterchainTokenService is
             mintAmount,
             operator
         );
-        _callContract(destinationChain, payload, gasValue, msg.sender);
+        _callContract(destinationChain, payload, gasValue);
         emit RemoteStandardizedTokenAndManagerDeploymentInitialized(
             tokenId,
             name,
