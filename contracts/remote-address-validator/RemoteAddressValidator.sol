@@ -80,7 +80,7 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
 
         for (uint256 i; i < length; i++) {
             uint8 b = uint8(bytes(s)[i]);
-            if ((b >= 65) && (b <= 70)) bytes(s)[i] = bytes1(b + uint8(32));
+            if ((b >= 65) && (b <= 90)) bytes(s)[i] = bytes1(b + uint8(32));
         }
 
         return s;
