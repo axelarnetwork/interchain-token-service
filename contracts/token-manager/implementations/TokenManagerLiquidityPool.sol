@@ -101,6 +101,10 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage {
 
         SafeTokenTransferFrom.safeTransferFrom(token, liquidityPool(), to, amount);
 
-        return IERC20(token).balanceOf(to) - balance;
+        uint256 diff = IERC20(token).balanceOf(to) - balance;
+        if (diff < amount) {
+            amount = diff;
+        }
+        return amount;
     }
 }
