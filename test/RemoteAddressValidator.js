@@ -15,24 +15,36 @@ describe('RemoteAddressValidator', () => {
 
     const otherRemoteAddress = 'any string as an address';
     const otherChain = 'Chain Name';
+    const chainName = 'Chain Name';
     before(async () => {
         const wallets = await ethers.getSigners();
         ownerWallet = wallets[0];
         otherWallet = wallets[1];
         interchainTokenServiceAddress = wallets[2].address;
-        remoteAddressValidator = await deployRemoteAddressValidator(ownerWallet, interchainTokenServiceAddress);
+        remoteAddressValidator = await deployRemoteAddressValidator(ownerWallet, interchainTokenServiceAddress, chainName);
     });
 
     it('Should revert on RemoteAddressValidator deployment with invalid interchain token service address', async () => {
         const remoteAddressValidatorFactory = await ethers.getContractFactory('RemoteAddressValidator');
-        await expect(remoteAddressValidatorFactory.deploy(AddressZero)).to.be.revertedWithCustomError(
+        await expect(remoteAddressValidatorFactory.deploy(AddressZero, chainName)).to.be.revertedWithCustomError(
             remoteAddressValidator,
             'ZeroAddress',
         );
     });
 
+    it('Should revert on RemoteAddressValidator deployment with invalid chain name', async () => {
+        const remoteAddressValidatorFactory = await ethers.getContractFactory('RemoteAddressValidator');
+        await expect(remoteAddressValidatorFactory.deploy(interchainTokenServiceAddress, '')).to.be.revertedWithCustomError(
+            remoteAddressValidator,
+            'ZeroStringLength',
+        );
+    });
+
     it('Should revert on RemoteAddressValidator deployment with length mismatch between chains and trusted addresses arrays', async () => {
-        const remoteAddressValidatorImpl = await deployContract(ownerWallet, 'RemoteAddressValidator', [interchainTokenServiceAddress]);
+        const remoteAddressValidatorImpl = await deployContract(ownerWallet, 'RemoteAddressValidator', [
+            interchainTokenServiceAddress,
+            chainName,
+        ]);
         const remoteAddressValidatorProxyFactory = await ethers.getContractFactory('RemoteAddressValidatorProxy');
         const params = defaultAbiCoder.encode(['string[]', 'string[]'], [['Chain A'], []]);
         await expect(
