@@ -84,7 +84,9 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const remoteAddressValidator = await deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
-    const tokenManagerGetter = await deployContract(wallet, 'TokenManagerGetter', [tokenManagerImplementations.map((impl) => impl.address)]);
+    const tokenManagerGetter = await deployContract(wallet, 'TokenManagerGetter', [
+        tokenManagerImplementations.map((impl) => impl.address),
+    ]);
     const service = await deployInterchainTokenService(
         wallet,
         create3Deployer.address,

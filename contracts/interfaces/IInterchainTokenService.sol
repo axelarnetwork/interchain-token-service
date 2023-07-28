@@ -94,7 +94,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @return tokenManagerGetterAddress The address of the token manager getter  contract.
      */
     function tokenManagerGetter() external view returns (address tokenManagerGetterAddress);
-    
+
     /**
      * @notice Returns the address of the token manager associated with the given tokenId.
      * @param tokenId The tokenId of the token manager.

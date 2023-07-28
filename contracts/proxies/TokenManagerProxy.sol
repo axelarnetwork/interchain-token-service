@@ -48,10 +48,7 @@ contract TokenManagerProxy is ITokenManagerProxy {
      * @param implementationType_ The token manager type
      * @return impl The address of the implementation
      */
-    function _getImplementation(
-        ITokenManagerGetter tokenManagerGetter_,
-        uint256 implementationType_
-    ) internal view returns (address impl) {
+    function _getImplementation(ITokenManagerGetter tokenManagerGetter_, uint256 implementationType_) internal view returns (address impl) {
         impl = tokenManagerGetter_.getImplementation(implementationType_);
     }
 

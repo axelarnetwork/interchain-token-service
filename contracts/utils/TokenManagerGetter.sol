@@ -25,7 +25,6 @@ contract TokenManagerGetter is ITokenManagerGetter {
             TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER
         );
         implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
-        
     }
 
     function _sanitizeTokenManagerImplementation(

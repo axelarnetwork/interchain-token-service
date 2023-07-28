@@ -95,7 +95,7 @@ contract InterchainTokenService is
         tokenManagerDeployer = tokenManagerDeployer_;
         standardizedTokenDeployer = standardizedTokenDeployer_;
         tokenManagerGetter = tokenManagerGetter_;
-        
+
         string memory chainName_ = remoteAddressValidator.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }

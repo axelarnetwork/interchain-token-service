@@ -28,7 +28,7 @@ interface ITokenManagerGetter is ITokenManagerType {
      * @return params The parameters for the mint/burn operation.
      */
     function getParamsMintBurn(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
-    
+
     /**
      * @notice Returns the parameters for the lock/unlock operation.
      * @param operator The operator address.
