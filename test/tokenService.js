@@ -594,7 +594,12 @@ describe('Interchain Token Service', () => {
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'FeeOnTransferTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+            const token = await deployContract(wallet, 'FeeOnTransferTokenTest', [
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                tokenManagerAddress,
+            ]);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
             const tx = service.deployCustomTokenManager(salt, LOCK_UNLOCK_FEE_ON_TRANSFER, params);
@@ -605,7 +610,6 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.operator()).to.equal(wallet.address);
         });
-
 
         it('Should deploy a liquidity pool token manager', async () => {
             const tokenName = 'Token Name';
@@ -972,7 +976,7 @@ describe('Interchain Token Service', () => {
                     [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destAddress, sendAmount, sourceAddress, data],
                 );
                 const payloadHash = keccak256(payload);
-                
+
                 let transferToAddress = AddressZero;
 
                 if (type === 'lockUnlock' || type === 'lockUnlockFee') {
@@ -1079,7 +1083,6 @@ describe('Interchain Token Service', () => {
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
-
 
         it('Should be able to receive liquidity pool token', async () => {
             const [token, , tokenId] = await deployFunctions.liquidityPool(`Test Token Liquidity Pool`, 'TTLP', 12, amount);
@@ -1303,7 +1306,6 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, destAddress, amount, commandId, wallet.address);
         });
 
-
         it('Should be able to receive liquidity pool token', async () => {
             const [token, , tokenId] = await deployFunctions.liquidityPool(`Test Token Liquidity Pool`, 'TTLP', 12, amount * 2);
             await (await token.transfer(liquidityPool.address, amount)).wait();
@@ -1407,7 +1409,6 @@ describe('Interchain Token Service', () => {
             expect(await executable.lastMessage()).to.equal(msg);
         });
 
-
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(`Test Token Lock Unlock`, 'TT', 12, amount * 2 + 10);
             await (await token.transfer(tokenManager.address, amount + 10)).wait();
@@ -1422,15 +1423,7 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(
-                service.expressReceiveTokenWithData(
-                    tokenId,
-                    sourceChain,
-                    sourceAddressForService,
-                    destAddress,
-                    amount,
-                    data,
-                    commandId,
-                )
+                service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, commandId),
             ).to.be.reverted;
         });
 

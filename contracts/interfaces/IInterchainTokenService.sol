@@ -89,7 +89,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @return standardizedTokenDeployerAddress The address of the standardized token deployer contract.
      */
     function standardizedTokenDeployer() external view returns (address standardizedTokenDeployerAddress);
-    
+
     /**
      * @notice Returns the address of the token manager associated with the given tokenId.
      * @param tokenId The tokenId of the token manager.

@@ -435,6 +435,7 @@ contract InterchainTokenService is
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
      * sendToken that matches the parameters passed here.
+     * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller.
      * @param tokenId the tokenId of the TokenManager used.
      * @param destinationAddress the destinationAddress for the sendToken.
      * @param amount the amount of token to give.
@@ -455,6 +456,7 @@ contract InterchainTokenService is
     /**
      * @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have
      * detected an outgoing sendToken that matches the parameters passed here.
+     * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller and it will pass an incorrect amount to the contract.
      * @param tokenId the tokenId of the TokenManager used.
      * @param sourceChain the name of the chain where the call came from.
      * @param sourceAddress the caller of callContractWithInterchainToken.
