@@ -3,11 +3,11 @@
 pragma solidity ^0.8.0;
 
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
@@ -16,7 +16,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable {
+contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
     address internal tokenManager_;
@@ -30,6 +30,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
         if (msg.sender != tokenManager_) {
             if (msg.sender != distributor()) revert NotDistributor();
         }
+        
         _;
     }
 
@@ -62,16 +63,19 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
                 params,
                 (address, address, string, string, uint8)
             );
-            _setDistributor(distributor_);
+
             tokenManager_ = tokenManagerAddress;
-            _setDomainTypeSignatureHash(tokenName);
             name = tokenName;
+
+            _setDistributor(distributor_);
+            _setDomainTypeSignatureHash(tokenName);
         }
         {
             uint256 mintAmount;
             address mintTo;
             (, , , , , mintAmount, mintTo) = abi.decode(params, (address, address, string, string, uint8, uint256, address));
-            if (mintAmount > 0) {
+
+            if (mintAmount > 0 && mintTo != address(0)) {
                 _mint(mintTo, mintAmount);
             }
         }

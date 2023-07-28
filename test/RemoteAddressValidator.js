@@ -3,8 +3,10 @@
 require('dotenv').config();
 const chai = require('chai');
 const { ethers } = require('hardhat');
-const { AddressZero } = ethers.constants;
-const { defaultAbiCoder } = ethers.utils;
+const {
+    constants: { AddressZero },
+    utils: { defaultAbiCoder, keccak256, toUtf8Bytes },
+} = ethers;
 const { expect } = chai;
 const { deployRemoteAddressValidator, deployContract } = require('../scripts/deploy');
 
@@ -41,6 +43,14 @@ describe('RemoteAddressValidator', () => {
     it('Should get the correct remote address for unregistered chains', async () => {
         const remoteAddress = await remoteAddressValidator.getRemoteAddress(otherChain);
         expect(remoteAddress).to.equal(interchainTokenServiceAddress.toLowerCase());
+    });
+
+    it('Should get the correct interchain token service address', async () => {
+        const itsAddress = await remoteAddressValidator.interchainTokenServiceAddress();
+        expect(itsAddress).to.equal(interchainTokenServiceAddress);
+
+        const itsAddressHash = await remoteAddressValidator.interchainTokenServiceAddressHash();
+        expect(itsAddressHash).to.equal(keccak256(toUtf8Bytes(interchainTokenServiceAddress.toLowerCase())));
     });
 
     it('Should be able to validate remote addresses properly', async () => {

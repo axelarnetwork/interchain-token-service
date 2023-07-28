@@ -15,3 +15,11 @@ npm run build
 
 npm run test
 ```
+
+## Test Coverage Report
+
+For the most recent test coverage report of the `main` branch, please visit the following [page](https://axelarnetwork.github.io/interchain-token-service/).
+
+## Deployment Guide
+
+To learn more about the deployment process, please refer to [this repo](https://github.com/axelarnetwork/axelar-contract-deployments).
