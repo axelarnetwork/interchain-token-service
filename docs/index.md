@@ -1779,10 +1779,10 @@ If any of the calls fail, the function will revert with the failure message._
 error NotOperator()
 ```
 
-### OperatorChanged
+### OperatorshipTransferred
 
 ```solidity
-event OperatorChanged(address operator)
+event OperatorshipTransferred(address operator)
 ```
 
 ### operator
@@ -1799,10 +1799,10 @@ Get the address of the operator
 | ---- | ---- | ----------- |
 | operator_ | address | of the operator |
 
-### setOperator
+### transferOperatorship
 
 ```solidity
-function setOperator(address operator_) external
+function transferOperatorship(address operator_) external
 ```
 
 Change the operator of the contract
@@ -2851,10 +2851,10 @@ _Internal function that stores the new operator address in the operator storage 
 | ---- | ---- | ----------- |
 | operator_ | address | The address of the new operator |
 
-### setOperator
+### transferOperatorship
 
 ```solidity
-function setOperator(address operator_) external
+function transferOperatorship(address operator_) external
 ```
 
 Change the operator of the contract
@@ -3091,10 +3091,10 @@ A different implementation could have `metadata` that tells this function which 
 error NotDistributor()
 ```
 
-### DistributorChanged
+### DistributorshipTransferred
 
 ```solidity
-event DistributorChanged(address distributor)
+event DistributorshipTransferred(address distributor)
 ```
 
 ### distributor
@@ -3111,10 +3111,10 @@ Get the address of the distributor
 | ---- | ---- | ----------- |
 | distributor | address | of the distributor |
 
-### setDistributor
+### transferDistributorship
 
 ```solidity
-function setDistributor(address distributor) external
+function transferDistributorship(address distributor) external
 ```
 
 Change the distributor of the contract
@@ -4697,7 +4697,7 @@ _Throws a NotDistributor custom eror if called by any account other than the dis
 ### distributor
 
 ```solidity
-function distributor() public view returns (address distr)
+function distributor() public view returns (address distributor_)
 ```
 
 Get the address of the distributor
@@ -4706,7 +4706,7 @@ Get the address of the distributor
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| distr | address | of the distributor |
+| distributor_ | address | of the distributor |
 
 ### _setDistributor
 
@@ -4722,10 +4722,10 @@ _Internal function that stores the new distributor address in the correct storag
 | ---- | ---- | ----------- |
 | distributor_ | address | The address of the new distributor |
 
-### setDistributor
+### transferDistributorship
 
 ```solidity
-function setDistributor(address distr) external
+function transferDistributorship(address distributor_) external
 ```
 
 Change the distributor of the contract
@@ -4736,7 +4736,7 @@ _Can only be called by the current distributor_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| distr | address | The address of the new distributor |
+| distributor_ | address | The address of the new distributor |
 
 ## FlowLimit
 

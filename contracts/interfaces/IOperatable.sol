@@ -6,7 +6,7 @@ interface IOperatable {
     error NotOperator();
     error NotProposedOperator();
 
-    event OperatorChanged(address indexed operator);
+    event OperatorshipTransferred(address indexed operator);
     event OperatorChangeProposed(address indexed operator);
 
     /**
@@ -20,18 +20,18 @@ interface IOperatable {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function setOperator(address operator_) external;
+    function transferOperatorship(address operator_) external;
 
     /**
      * @notice Proposed a change of the operator of the contract
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function proposeOperatorChange(address operator_) external;
+    function proposeOperatorship(address operator_) external;
 
     /**
      * @notice Accept a proposed change of operatorship
      * @dev Can only be called by the proposed operator
      */
-    function acceptOperatorChange() external;
+    function acceptOperatorship() external;
 }

@@ -16,20 +16,9 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwitten.
-     * @return tokenManager the TokenManager called to facilitate cross chain transfers.
+     * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
      */
-    function getTokenManager() public view virtual returns (ITokenManager tokenManager);
-
-    /**
-     * @notice Getter function specifiying if the tokenManager requires approval to facilitate cross-chain transfers.
-     * Usually, only mint/burn tokenManagers do not need approval.
-     * @dev The return value depends on the implementation of ERC20.
-     * In case of lock/unlock and liquidity pool TokenManagers it is possible to implement transferFrom to allow the
-     * TokenManager specifically to do it permissionlesly.
-     * On the other hand you can implement burn in a way that requires approval for a mint/burn TokenManager
-     * @return tokenManager the TokenManager called to facilitate cross chain transfers.
-     */
-    function tokenManagerRequiresApproval() public view virtual returns (bool);
+    function tokenManager() public view virtual returns (ITokenManager tokenManager_);
 
     /**
      * @notice Implementation of the interchainTransfer method
@@ -47,23 +36,11 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
         bytes calldata metadata
     ) external payable {
         address sender = msg.sender;
-        ITokenManager tokenManager = getTokenManager();
-        /**
-         * @dev if you know the value of `tokenManagerRequiresApproval()` you can just skip the if statement and just do nothing or _approve.
-         */
-        if (tokenManagerRequiresApproval()) {
-            uint256 allowance_ = allowance[sender][address(tokenManager)];
-            if (allowance_ != type(uint256).max) {
-                if (allowance_ > type(uint256).max - amount) {
-                    allowance_ = type(uint256).max - amount;
-                }
 
-                _approve(sender, address(tokenManager), allowance_ + amount);
-            }
-        }
+        _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
-        // Metadata semantics are defined by the token service and thus should be passed as-is.
-        tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
+        ITokenManager tokenManager_ = tokenManager();
+        tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
 
     /**
@@ -89,18 +66,25 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
             _approve(sender, msg.sender, _allowance - amount);
         }
 
-        ITokenManager tokenManager = getTokenManager();
-        if (tokenManagerRequiresApproval()) {
-            uint256 allowance_ = allowance[sender][address(tokenManager)];
-            if (allowance_ != type(uint256).max) {
-                if (allowance_ > type(uint256).max - amount) {
-                    allowance_ = type(uint256).max - amount;
-                }
+        _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
-                _approve(sender, address(tokenManager), allowance_ + amount);
-            }
-        }
-
-        tokenManager.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
+        ITokenManager tokenManager_ = tokenManager();
+        tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
+
+    /**
+     * @notice A method to be overwritten that will be called before an interchain transfer. You can approve the tokenManager here if you need and want to, to allow users for a 1-call transfer in case of a lock-unlock token manager.
+     * @param from the sender of the tokens. They need to have approved `msg.sender` before this is called.
+     * @param destinationChain the string representation of the destination chain.
+     * @param destinationAddress the bytes representation of the address of the recipient.
+     * @param amount the amount of token to be transfered.
+     * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
+     */
+    function _beforeInterchainTransfer(
+        address from,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata
+    ) internal virtual {}
 }

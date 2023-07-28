@@ -27,11 +27,11 @@ contract Distributable is IDistributable {
 
     /**
      * @notice Get the address of the distributor
-     * @return distr of the distributor
+     * @return distributor_ of the distributor
      */
-    function distributor() public view returns (address distr) {
+    function distributor() public view returns (address distributor_) {
         assembly {
-            distr := sload(DISTRIBUTOR_SLOT)
+            distributor_ := sload(DISTRIBUTOR_SLOT)
         }
     }
 
@@ -43,16 +43,16 @@ contract Distributable is IDistributable {
         assembly {
             sstore(DISTRIBUTOR_SLOT, distributor_)
         }
-        emit DistributorChanged(distributor_);
+        emit DistributorshipTransferred(distributor_);
     }
 
     /**
      * @notice Change the distributor of the contract
      * @dev Can only be called by the current distributor
-     * @param distr The address of the new distributor
+     * @param distributor_ The address of the new distributor
      */
-    function setDistributor(address distr) external onlyDistributor {
-        _setDistributor(distr);
+    function transferDistributorship(address distributor_) external onlyDistributor {
+        _setDistributor(distributor_);
     }
 
     /**
@@ -60,18 +60,18 @@ contract Distributable is IDistributable {
      * @dev Can only be called by the current distributor
      * @param distributor_ The address of the new distributor
      */
-    function proposeDistributorChange(address distributor_) external onlyDistributor {
+    function proposeDistributorship(address distributor_) external onlyDistributor {
         assembly {
             sstore(PROPOSED_DISTRIBUTOR_SLOT, distributor_)
         }
-        emit DistributorChangeProposed(distributor_);
+        emit DistributorshipTransferStarted(distributor_);
     }
 
     /**
      * @notice Accept a change of the distributor of the contract
      * @dev Can only be called by the proposed distributor
      */
-    function acceptDistributorChange() external {
+    function acceptDistributorship() external {
         address proposedDistributor;
         assembly {
             proposedDistributor := sload(PROPOSED_DISTRIBUTOR_SLOT)

@@ -3,11 +3,11 @@
 pragma solidity ^0.8.0;
 
 import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
@@ -16,15 +16,23 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable {
+contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
-    address public tokenManager;
+    address internal tokenManager_;
     string public name;
     string public symbol;
     uint8 public decimals;
 
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
+
+    modifier onlyDistributorOrTokenManager() {
+        if (msg.sender != tokenManager_) {
+            if (msg.sender != distributor()) revert NotDistributor();
+        }
+
+        _;
+    }
 
     /**
      * @notice Getter for the contract id.
@@ -37,8 +45,8 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract
      */
-    function getTokenManager() public view override returns (ITokenManager) {
-        return ITokenManager(tokenManager);
+    function tokenManager() public view override returns (ITokenManager) {
+        return ITokenManager(tokenManager_);
     }
 
     /**
@@ -49,19 +57,25 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
     function setup(bytes calldata params) external override onlyProxy {
         {
             address distributor_;
-            address tokenManager_;
+            address tokenManagerAddress;
             string memory tokenName;
-            (tokenManager_, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
-            _setDistributor(distributor_);
-            tokenManager = tokenManager_;
-            _setDomainTypeSignatureHash(tokenName);
+            (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(
+                params,
+                (address, address, string, string, uint8)
+            );
+
+            tokenManager_ = tokenManagerAddress;
             name = tokenName;
+
+            _setDistributor(distributor_);
+            _setDomainTypeSignatureHash(tokenName);
         }
         {
             uint256 mintAmount;
             address mintTo;
             (, , , , , mintAmount, mintTo) = abi.decode(params, (address, address, string, string, uint8, uint256, address));
-            if (mintAmount > 0) {
+
+            if (mintAmount > 0 && mintTo != address(0)) {
                 _mint(mintTo, mintAmount);
             }
         }
@@ -73,7 +87,7 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
      * @param account The address that will receive the minted tokens
      * @param amount The amount of tokens to mint
      */
-    function mint(address account, uint256 amount) external onlyDistributor {
+    function mint(address account, uint256 amount) external onlyDistributorOrTokenManager {
         _mint(account, amount);
     }
 
@@ -83,7 +97,7 @@ abstract contract StandardizedToken is InterchainToken, ERC20Permit, Implementat
      * @param account The address that will have its tokens burnt
      * @param amount The amount of tokens to burn
      */
-    function burn(address account, uint256 amount) external onlyDistributor {
+    function burn(address account, uint256 amount) external onlyDistributorOrTokenManager {
         _burn(account, amount);
     }
 }

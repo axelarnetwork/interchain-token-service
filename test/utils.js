@@ -39,9 +39,9 @@ describe('Operatable', () => {
 
     it('Should be able to change the operator only as the operator', async () => {
         expect(await test.operator()).to.equal(ownerWallet.address);
-        await expect(test.setOperator(otherWallet.address)).to.emit(test, 'OperatorChanged').withArgs(otherWallet.address);
+        await expect(test.transferOperatorship(otherWallet.address)).to.emit(test, 'OperatorshipTransferred').withArgs(otherWallet.address);
         expect(await test.operator()).to.equal(otherWallet.address);
-        await expect(test.setOperator(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotOperator');
+        await expect(test.transferOperatorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotOperator');
     });
 });
 
@@ -62,9 +62,11 @@ describe('Distributable', () => {
 
     it('Should be able to change the distributor only as the distributor', async () => {
         expect(await test.distributor()).to.equal(ownerWallet.address);
-        await expect(test.setDistributor(otherWallet.address)).to.emit(test, 'DistributorChanged').withArgs(otherWallet.address);
+        await expect(test.transferDistributorship(otherWallet.address))
+            .to.emit(test, 'DistributorshipTransferred')
+            .withArgs(otherWallet.address);
         expect(await test.distributor()).to.equal(otherWallet.address);
-        await expect(test.setDistributor(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotDistributor');
+        await expect(test.transferDistributorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotDistributor');
     });
 });
 
@@ -342,9 +344,8 @@ describe('Pausable', () => {
 });
 
 describe('StandardizedTokenDeployer', () => {
-    let create3Deployer, standardizedTokenLockUnlock, standardizedTokenDeployer, standardizedTokenMintBurn;
+    let create3Deployer, standardizedToken, standardizedTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
-    const distributor = new Wallet(getRandomBytes32()).address;
     const mintTo = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -353,41 +354,11 @@ describe('StandardizedTokenDeployer', () => {
 
     before(async () => {
         create3Deployer = await deployContract(ownerWallet, 'Create3Deployer');
-        standardizedTokenLockUnlock = await deployContract(ownerWallet, 'StandardizedTokenLockUnlock');
-        standardizedTokenMintBurn = await deployContract(ownerWallet, 'StandardizedTokenMintBurn');
+        standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');
         standardizedTokenDeployer = await deployContract(ownerWallet, 'StandardizedTokenDeployer', [
             create3Deployer.address,
-            standardizedTokenLockUnlock.address,
-            standardizedTokenMintBurn.address,
+            standardizedToken.address,
         ]);
-    });
-
-    it('Should deploy a lock unlock token only once', async () => {
-        const salt = getRandomBytes32();
-
-        const tokenAddress = await create3Deployer.deployedAddress(standardizedTokenDeployer.address, salt);
-
-        const token = new Contract(tokenAddress, StandardizedToken.abi, ownerWallet);
-        const tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, ownerWallet);
-
-        await expect(
-            standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo),
-        )
-            .to.emit(token, 'Transfer')
-            .withArgs(AddressZero, mintTo, mintAmount)
-            .and.to.emit(token, 'DistributorChanged')
-            .withArgs(distributor);
-
-        expect(await tokenProxy.implementation()).to.equal(standardizedTokenLockUnlock.address);
-        expect(await token.name()).to.equal(name);
-        expect(await token.symbol()).to.equal(symbol);
-        expect(await token.decimals()).to.equal(decimals);
-        expect(await token.balanceOf(mintTo)).to.equal(mintAmount);
-        expect(await token.distributor()).to.equal(distributor);
-        expect(await token.tokenManager()).to.equal(tokenManager);
-        await expect(
-            standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo),
-        ).to.be.revertedWithCustomError(create3Deployer, 'AlreadyDeployed');
     });
 
     it('Should deploy a mint burn token only once', async () => {
@@ -403,10 +374,10 @@ describe('StandardizedTokenDeployer', () => {
         )
             .to.emit(token, 'Transfer')
             .withArgs(AddressZero, mintTo, mintAmount)
-            .and.to.emit(token, 'DistributorChanged')
+            .and.to.emit(token, 'DistributorshipTransferred')
             .withArgs(tokenManager);
 
-        expect(await tokenProxy.implementation()).to.equal(standardizedTokenMintBurn.address);
+        expect(await tokenProxy.implementation()).to.equal(standardizedToken.address);
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);

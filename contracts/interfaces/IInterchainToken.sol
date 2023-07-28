@@ -2,12 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
-interface IInterchainToken is IERC20 {
+interface IInterchainToken {
     /**
      * @notice Implementation of the interchainTransfer method
      * @dev We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.

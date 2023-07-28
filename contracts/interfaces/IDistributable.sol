@@ -6,8 +6,8 @@ interface IDistributable {
     error NotDistributor();
     error NotProposedDistributor();
 
-    event DistributorChanged(address indexed distributor);
-    event DistributorChangeProposed(address indexed distributor);
+    event DistributorshipTransferred(address indexed distributor);
+    event DistributorshipTransferStarted(address indexed distributor);
 
     /**
      * @notice Get the address of the distributor
@@ -20,18 +20,18 @@ interface IDistributable {
      * @dev Can only be called by the current distributor
      * @param distributor The address of the new distributor
      */
-    function setDistributor(address distributor) external;
+    function transferDistributorship(address distributor) external;
 
     /**
      * @notice Proposed a change of the distributor of the contract
      * @dev Can only be called by the current distributor
      * @param distributor_ The address of the new distributor
      */
-    function proposeDistributorChange(address distributor_) external;
+    function proposeDistributorship(address distributor_) external;
 
     /**
      * @notice Accept a change of the distributor of the contract
      * @dev Can only be called by the proposed distributor
      */
-    function acceptDistributorChange() external;
+    function acceptDistributorship() external;
 }

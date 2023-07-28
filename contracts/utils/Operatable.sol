@@ -42,7 +42,7 @@ contract Operatable is IOperatable {
         assembly {
             sstore(OPERATOR_SLOT, operator_)
         }
-        emit OperatorChanged(operator_);
+        emit OperatorshipTransferred(operator_);
     }
 
     /**
@@ -50,7 +50,7 @@ contract Operatable is IOperatable {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function setOperator(address operator_) external onlyOperator {
+    function transferOperatorship(address operator_) external onlyOperator {
         _setOperator(operator_);
     }
 
@@ -59,7 +59,7 @@ contract Operatable is IOperatable {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function proposeOperatorChange(address operator_) external onlyOperator {
+    function proposeOperatorship(address operator_) external onlyOperator {
         assembly {
             sstore(PROPOSED_OPERATOR_SLOT, operator_)
         }
@@ -70,7 +70,7 @@ contract Operatable is IOperatable {
      * @notice Accept a proposed change of operatorship
      * @dev Can only be called by the proposed operator
      */
-    function acceptOperatorChange() external {
+    function acceptOperatorship() external {
         address proposedOperator;
         assembly {
             proposedOperator := sload(PROPOSED_OPERATOR_SLOT)
