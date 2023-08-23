@@ -7,8 +7,7 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
 /**
  * @title TokenManagerProxy
- * @dev This contract is a proxy for token manager contracts. It implements ITokenManagerProxy and
- * inherits from FixedProxy from the gmp sdk repo
+ * @dev This contract is a proxy for token manager contracts. It implements ITokenManagerProxy.
  */
 contract TokenManagerProxy is ITokenManagerProxy {
     IInterchainTokenService public immutable interchainTokenService;

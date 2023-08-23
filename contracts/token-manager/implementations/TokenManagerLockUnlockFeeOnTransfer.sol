@@ -24,7 +24,7 @@ contract TokenManagerLockUnlockFee is TokenManagerAddressStorage, NoReEntrancy, 
     constructor(address interchainTokenService_) TokenManagerAddressStorage(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        return 2;
+        return uint256(TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER);
     }
 
     /**
@@ -68,7 +68,11 @@ contract TokenManagerLockUnlockFee is TokenManagerAddressStorage, NoReEntrancy, 
 
         SafeTokenTransfer.safeTransfer(token, to, amount);
 
-        return IERC20(token).balanceOf(to) - balance;
+        uint256 diff = token.balanceOf(to) - balance;
+        if (diff < amount) {
+            amount = diff;
+        }
+        return amount;
     }
 
     /**

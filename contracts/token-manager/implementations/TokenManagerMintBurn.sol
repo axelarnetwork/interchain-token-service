@@ -24,7 +24,7 @@ contract TokenManagerMintBurn is TokenManagerAddressStorage, ITokenManagerMintBu
     constructor(address interchainTokenService_) TokenManagerAddressStorage(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        return 1;
+        return uint256(TokenManagerType.MINT_BURN);
     }
 
     /**

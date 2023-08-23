@@ -167,8 +167,8 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
      */
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
-        amount = _giveToken(destinationAddress, amount);
         _addFlowIn(amount);
+        amount = _giveToken(destinationAddress, amount);
         return amount;
     }
 
