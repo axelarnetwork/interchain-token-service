@@ -101,7 +101,7 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage, NoReEntrancy, 
         uint256 balance = IERC20(token).balanceOf(to);
 
         SafeTokenTransferFrom.safeTransferFrom(token, liquidityPool(), to, amount);
-                
+
         uint256 diff = token.balanceOf(to) - balance;
         if (diff < amount) {
             amount = diff;

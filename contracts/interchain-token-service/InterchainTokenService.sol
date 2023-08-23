@@ -443,9 +443,8 @@ contract InterchainTokenService is
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
 
         _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, caller);
-    
-        _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
 
+        _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
     }
 
     /*********************\
