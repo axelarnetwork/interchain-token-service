@@ -173,6 +173,18 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
+     * @notice This function gives token to a specified address. Can only be called by the service.
+     * @param sourceAddress the address to give tokens to.
+     * @param amount the amount of token to give.
+     * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+     */
+    function takeToken(address sourceAddress, uint256 amount) external onlyService returns (uint256) {
+        _addFlowOut(amount);
+        amount = _takeToken(sourceAddress, amount);
+        return amount;
+    }
+
+    /**
      * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.
      * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
