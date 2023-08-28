@@ -95,17 +95,15 @@ describe('ExpressCallHandler', () => {
         expect(await handler.getExpressReceiveToken(payload, commandId)).to.equal(expressCaller);
 
         const newExpressCaller = new Wallet(getRandomBytes32()).address;
-        await expect(
-            handler.setExpressReceiveToken(payload, commandId, newExpressCaller),
-        ).to.be.revertedWithCustomError(handler, 'AlreadyExpressCalled');
+        await expect(handler.setExpressReceiveToken(payload, commandId, newExpressCaller)).to.be.revertedWithCustomError(
+            handler,
+            'AlreadyExpressCalled',
+        );
     });
 
     it('Should properly pop an express receive token', async () => {
         const commandId = getRandomBytes32();
-        await expect(handler.popExpressReceiveToken(payload, commandId)).to.not.emit(
-            handler,
-            'ExpressExecutionFulfilled',
-        );
+        await expect(handler.popExpressReceiveToken(payload, commandId)).to.not.emit(handler, 'ExpressExecutionFulfilled');
         expect(await handler.lastPoppedExpressCaller()).to.equal(AddressZero);
 
         await (await handler.setExpressReceiveToken(payload, commandId, expressCaller)).wait();

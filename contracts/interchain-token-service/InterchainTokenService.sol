@@ -416,10 +416,16 @@ contract InterchainTokenService is
 
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
 
-        if(selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
+        if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
             (, , , , bytes memory sourceAddress, bytes memory data) = abi.decode(payload, (uint256, bytes32, bytes, uint256, bytes, bytes));
-            IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
-        } else if(selector != SELECTOR_SEND_TOKEN) {
+            IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(
+                sourceChain,
+                sourceAddress,
+                data,
+                tokenId,
+                amount
+            );
+        } else if (selector != SELECTOR_SEND_TOKEN) {
             revert InvalidExpressSelector();
         }
     }
@@ -804,7 +810,7 @@ contract InterchainTokenService is
         assembly {
             version := shr(224, mload(data))
         }
-        if(data.length == 0) return (version, data);
+        if (data.length == 0) return (version, data);
         uint256 n = (data.length - 1) / 32;
         for (uint256 i = 0; i <= n; ++i) {
             assembly {
