@@ -865,7 +865,7 @@ describe('Interchain Token Service', () => {
                     transferToAddress = liquidityPool.address;
                 }
 
-                await expect(tokenManager.sendToken(destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -1452,11 +1452,10 @@ describe('Interchain Token Service', () => {
         // These tests will fail every once in a while since the two transactions will happen in different epochs.
         // LMK of any fixes to this that do not involve writing a new contract to facilitate a multicall.
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
-            await (await tokenManager.sendToken(destinationChain, destinationAddress, sendAmount, '0x')).wait();
-            await expect(tokenManager.sendToken(destinationChain, destinationAddress, sendAmount, '0x')).to.be.revertedWithCustomError(
-                tokenManager,
-                'FlowLimitExceeded',
-            );
+            await (await tokenManager.interchainTransfer(destinationChain, destinationAddress, sendAmount, '0x')).wait();
+            await expect(
+                tokenManager.interchainTransfer(destinationChain, destinationAddress, sendAmount, '0x'),
+            ).to.be.revertedWithCustomError(tokenManager, 'FlowLimitExceeded');
         });
 
         it('Should be able to receive token only if it does not trigger the mint limit', async () => {

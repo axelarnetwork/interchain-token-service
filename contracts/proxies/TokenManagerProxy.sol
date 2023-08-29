@@ -80,9 +80,4 @@ contract TokenManagerProxy is ITokenManagerProxy {
             }
         }
     }
-
-    /**
-     * @dev Receive function which allows this contract to receive ether.
-     */
-    receive() external payable virtual {}
 }

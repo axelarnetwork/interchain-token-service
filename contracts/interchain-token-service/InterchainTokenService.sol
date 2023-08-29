@@ -394,7 +394,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
-     * sendToken that matches the parameters passed here.
+     * interchainTransfer that matches the parameters passed here.
      * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller.
      * @param payload the payload of the receive token
      * @param commandId the sendHash detected at the sourceChain.
@@ -464,7 +464,7 @@ contract InterchainTokenService is
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
      * @param destinationChain the name of the chain to send tokens to.
-     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param destinationAddress the destinationAddress for the interchainTransfer.
      * @param amount the amount of token to give.
      * @param metadata the data to be passed to the destiantion.
      */
@@ -841,7 +841,7 @@ contract InterchainTokenService is
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
      * @param destinationChain the name of the chain to send tokens to.
-     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param destinationAddress the destinationAddress for the interchainTransfer.
      * @param amount the amount of token to give.
      * @param metadata the data to be passed to the destiantion.
      */

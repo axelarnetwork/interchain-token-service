@@ -296,7 +296,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     function setPaused(bool paused) external;
 
     /**
-     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
+     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing interchainTransfer that matches the parameters passed here.
      * @param payload the payload of the receive token
      * @param commandId the commandId calculated from the event at the sourceChain.
      */
