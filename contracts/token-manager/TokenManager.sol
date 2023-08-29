@@ -83,10 +83,11 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user.
+     * @notice Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
+     * @param metadata any additional data to be sent with the transfer.
      */
     function sendToken(
         string calldata destinationChain,
@@ -108,7 +109,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @notice Calls the service to initiate the a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
+     * @notice Calls the service to initiate a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
@@ -135,11 +136,12 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
+     * @notice Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
      * @param sender the address of the user paying for the cross chain transfer.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
+     * @param metadata any additional data to be sent with the transfer
      */
     function transmitInterchainTransfer(
         address sender,
@@ -164,7 +166,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @notice This function gives token to a specified address. Can only be called by the service.
      * @param destinationAddress the address to give tokens to.
      * @param amount the amount of token to give.
-     * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+     * @return the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
         amount = _giveToken(destinationAddress, amount);
@@ -192,11 +194,11 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     /**
      * @notice Transfers tokens from this contract to a specific address.
      * Must be overridden in the inheriting contract.
-     * @param from The address to which the tokens will be sent
+     * @param receiver The address to which the tokens will be sent
      * @param amount The amount of tokens to send
      * @return uint amount of tokens sent
      */
-    function _giveToken(address from, uint256 amount) internal virtual returns (uint256);
+    function _giveToken(address receiver, uint256 amount) internal virtual returns (uint256);
 
     /**
      * @dev Additional setup logic to perform
