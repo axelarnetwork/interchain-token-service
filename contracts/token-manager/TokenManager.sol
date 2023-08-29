@@ -88,7 +88,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
      */
-    function sendToken(
+    function interchainTransfer(
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
