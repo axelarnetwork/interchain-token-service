@@ -34,6 +34,7 @@ contract ERC20 is IERC20 {
     mapping(address => mapping(address => uint256)) public override allowance;
 
     uint256 public override totalSupply;
+    uint256 internal constant UINT256_MAX = 2 ** 256 - 1;
 
     /**
      * @dev See {IERC20-transfer}.
@@ -79,7 +80,7 @@ contract ERC20 is IERC20 {
     function transferFrom(address sender, address recipient, uint256 amount) external virtual override returns (bool) {
         uint256 _allowance = allowance[sender][msg.sender];
 
-        if (_allowance != type(uint256).max) {
+        if (_allowance != UINT256_MAX) {
             _approve(sender, msg.sender, _allowance - amount);
         }
 

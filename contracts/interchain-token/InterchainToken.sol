@@ -61,7 +61,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
     ) external payable {
         uint256 _allowance = allowance[sender][msg.sender];
 
-        if (_allowance != type(uint256).max) {
+        if (_allowance != UINT256_MAX) {
             _approve(sender, msg.sender, _allowance - amount);
         }
 

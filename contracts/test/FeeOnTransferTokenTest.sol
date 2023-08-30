@@ -10,6 +10,7 @@ import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol
 contract FeeOnTransferTokenTest is InterchainToken, Distributable, IERC20BurnableMintable {
     ITokenManager public tokenManager_;
     bool internal tokenManagerRequiresApproval_ = true;
+
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -36,9 +37,9 @@ contract FeeOnTransferTokenTest is InterchainToken, Distributable, IERC20Burnabl
         if (!tokenManagerRequiresApproval_) return;
         address tokenManagerAddress = address(tokenManager_);
         uint256 allowance_ = allowance[sender][tokenManagerAddress];
-        if (allowance_ != type(uint256).max) {
-            if (allowance_ > type(uint256).max - amount) {
-                allowance_ = type(uint256).max - amount;
+        if (allowance_ != UINT256_MAX) {
+            if (allowance_ > UINT256_MAX - amount) {
+                allowance_ = UINT256_MAX - amount;
             }
 
             _approve(sender, tokenManagerAddress, allowance_ + amount);
