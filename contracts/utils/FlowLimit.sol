@@ -82,6 +82,7 @@ contract FlowLimit is IFlowLimit {
 
     /**
      * @dev Adds a flow amount while ensuring it does not exceed the flow limit
+     * @param flowLimit The current flow limit value
      * @param slotToAdd The slot to add the flow to
      * @param slotToCompare The slot to compare the flow against
      * @param flowAmount The flow amount to add
