@@ -8,7 +8,6 @@ const { importNetworks, readJSON } = require('@axelar-network/axelar-contract-de
 const chains = require(`@axelar-network/axelar-contract-deployments/info/${env}.json`);
 const keys = readJSON(`${__dirname}/info/keys.json`);
 const { networks, etherscan } = importNetworks(chains, keys);
-
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */

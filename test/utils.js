@@ -344,7 +344,7 @@ describe('Pausable', () => {
 });
 
 describe('StandardizedTokenDeployer', () => {
-    let create3Deployer, standardizedToken, standardizedTokenDeployer;
+    let standardizedToken, standardizedTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
     const mintTo = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
@@ -353,18 +353,14 @@ describe('StandardizedTokenDeployer', () => {
     const mintAmount = 123;
 
     before(async () => {
-        create3Deployer = await deployContract(ownerWallet, 'Create3Deployer');
         standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');
-        standardizedTokenDeployer = await deployContract(ownerWallet, 'StandardizedTokenDeployer', [
-            create3Deployer.address,
-            standardizedToken.address,
-        ]);
+        standardizedTokenDeployer = await deployContract(ownerWallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
     });
 
     it('Should deploy a mint burn token only once', async () => {
         const salt = getRandomBytes32();
 
-        const tokenAddress = await create3Deployer.deployedAddress(standardizedTokenDeployer.address, salt);
+        const tokenAddress = await standardizedTokenDeployer.deployedAddress(salt);
 
         const token = new Contract(tokenAddress, StandardizedToken.abi, ownerWallet);
         const tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, ownerWallet);
@@ -386,6 +382,6 @@ describe('StandardizedTokenDeployer', () => {
         expect(await token.tokenManager()).to.equal(tokenManager);
         await expect(
             standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, tokenManager, name, symbol, decimals, mintAmount, mintTo),
-        ).to.be.revertedWithCustomError(create3Deployer, 'AlreadyDeployed');
+        ).to.be.revertedWithCustomError(standardizedTokenDeployer, 'AlreadyDeployed');
     });
 });
