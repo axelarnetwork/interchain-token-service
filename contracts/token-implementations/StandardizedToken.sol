@@ -19,10 +19,10 @@ import { Distributable } from '../utils/Distributable.sol';
 contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
-    address internal tokenManager_;
     string public name;
     string public symbol;
     uint8 public decimals;
+    address internal tokenManager_;
 
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
