@@ -21,7 +21,7 @@ import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
-import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol';
+import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 
 import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
@@ -50,12 +50,12 @@ contract InterchainTokenService is
 
     address internal immutable implementationLockUnlock;
     address internal immutable implementationMintBurn;
+    address internal immutable implementationLockUnlockFee;
     address internal immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
     IRemoteAddressValidator public immutable remoteAddressValidator;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
-    Create3Deployer internal immutable deployer;
     bytes32 internal immutable chainNameHash;
     bytes32 internal immutable chainName;
 
@@ -71,7 +71,7 @@ contract InterchainTokenService is
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
 
     /**
-     * @dev All of the varaibles passed here are stored as immutable variables.
+     * @dev All of the variables passed here are stored as immutable variables.
      * @param tokenManagerDeployer_ the address of the TokenManagerDeployer.
      * @param standardizedTokenDeployer_ the address of the StandardizedTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
@@ -99,12 +99,15 @@ contract InterchainTokenService is
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         standardizedTokenDeployer = standardizedTokenDeployer_;
-        deployer = ITokenManagerDeployer(tokenManagerDeployer_).deployer();
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
+        implementationLockUnlockFee = _sanitizeTokenManagerImplementation(
+            tokenManagerImplementations,
+            TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER
+        );
         implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
 
         chainName = chainName_.toBytes32();
@@ -146,21 +149,13 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Getter for the chain name.
-     * @return name the name of the chain
-     */
-    function getChainName() public view returns (string memory name) {
-        name = chainName.toTrimmedString();
-    }
-
-    /**
      * @notice Calculates the address of a TokenManager from a specific tokenId. The TokenManager does not need to exist already.
      * @param tokenId the tokenId.
-     * @return tokenManagerAddress deployement address of the TokenManager.
+     * @return tokenManagerAddress deployment address of the TokenManager.
      */
     // TODO: Maybe copy the code of the create3Deployer to save gas, but would introduce duplicate code problems.
     function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
-        tokenManagerAddress = deployer.deployedAddress(address(this), tokenId);
+        tokenManagerAddress = Create3.deployedAddress(address(this), tokenId);
     }
 
     /**
@@ -191,7 +186,7 @@ contract InterchainTokenService is
      */
     function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
         tokenId = _getStandardizedTokenSalt(tokenId);
-        tokenAddress = deployer.deployedAddress(address(this), tokenId);
+        tokenAddress = Create3.deployedAddress(address(this), tokenId);
     }
 
     /**
@@ -227,6 +222,8 @@ contract InterchainTokenService is
             return implementationLockUnlock;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
             return implementationMintBurn;
+        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER) {
+            return implementationLockUnlockFee;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) {
             return implementationLiquidityPool;
         }
@@ -373,7 +370,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to deploy a standardized token alongside a TokenManager. If the `distributor` is the address of the TokenManager (which
-     * can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
+     * can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwise a lock/unlock TokenManager is used.
      * @param salt the salt to be used.
      * @param name the name of the token to be deployed.
      * @param symbol the symbol of the token to be deployed.
@@ -397,12 +394,15 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to deploy a standardized token alongside a TokenManager in another chain. If the `distributor` is empty
-     * bytes then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
+     * bytes then a mint/burn TokenManager is used. Otherwise a lock/unlock TokenManager is used.
      * @param salt the salt to be used.
      * @param name the name of the token to be deployed.
      * @param symbol the symbol of the token to be deployed.
      * @param decimals the decimals of the token to be deployed.
      * @param distributor the address that will be able to mint and burn the deployed token.
+     * @param mintTo The address where the minted tokens will be sent upon deployment
+     * @param mintAmount The amount of tokens to be minted upon deployment
+     * @param operator The operator data for standardized tokens
      * @param destinationChain the name of the destination chain to deploy to.
      * @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount
      * specified needs to be passed to the call
@@ -438,6 +438,7 @@ contract InterchainTokenService is
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
      * sendToken that matches the parameters passed here.
+     * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller.
      * @param tokenId the tokenId of the TokenManager used.
      * @param destinationAddress the destinationAddress for the sendToken.
      * @param amount the amount of token to give.
@@ -458,6 +459,7 @@ contract InterchainTokenService is
     /**
      * @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have
      * detected an outgoing sendToken that matches the parameters passed here.
+     * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller and it will pass an incorrect amount to the contract.
      * @param tokenId the tokenId of the TokenManager used.
      * @param sourceChain the name of the chain where the call came from.
      * @param sourceAddress the caller of callContractWithInterchainToken.
@@ -495,11 +497,11 @@ contract InterchainTokenService is
     /**
      * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
-     * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
+     * @param sourceAddress the address where the token is coming from, which will also be used for reimbursement of gas.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the destinationAddress for the sendToken.
      * @param amount the amount of token to give.
-     * @param metadata the data to be passed to the destiantion.
+     * @param metadata the data to be passed to the destination.
      */
     function transmitSendToken(
         bytes32 tokenId,
@@ -512,7 +514,7 @@ contract InterchainTokenService is
         bytes memory payload;
         if (metadata.length < 4) {
             payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount);
-            _callContract(destinationChain, payload, msg.value, sourceAddress);
+            _callContract(destinationChain, payload, msg.value);
             emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
             return;
         }
@@ -520,7 +522,7 @@ contract InterchainTokenService is
         (version, metadata) = _decodeMetadata(metadata);
         if (version > 0) revert InvalidMetadataVersion(version);
         payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
-        _callContract(destinationChain, payload, msg.value, sourceAddress);
+        _callContract(destinationChain, payload, msg.value);
         emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
     }
 
@@ -559,10 +561,10 @@ contract InterchainTokenService is
     }
 
     function _sanitizeTokenManagerImplementation(
-        address[] memory implementaions,
+        address[] memory implementations,
         TokenManagerType tokenManagerType
     ) internal pure returns (address implementation) {
-        implementation = implementaions[uint256(tokenManagerType)];
+        implementation = implementations[uint256(tokenManagerType)];
         if (implementation == address(0)) revert ZeroAddress();
         if (ITokenManager(implementation).implementationType() != uint256(tokenManagerType)) revert InvalidTokenManagerImplementation();
     }
@@ -718,17 +720,16 @@ contract InterchainTokenService is
      * @param destinationChain The target chain where the contract will be called
      * @param payload The data payload for the transaction
      * @param gasValue The amount of gas to be paid for the transaction
-     * @param refundTo The address where the unused gas amount should be refunded to
      */
-    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue, address refundTo) internal {
+    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
         string memory destinationAddress = remoteAddressValidator.getRemoteAddress(destinationChain);
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
                 address(this),
                 destinationChain,
                 destinationAddress,
-                payload,
-                refundTo
+                payload, // solhint-disable-next-line avoid-tx-origin
+                tx.origin
             );
         }
         gateway.callContract(destinationChain, destinationAddress, payload);
@@ -757,7 +758,7 @@ contract InterchainTokenService is
         bytes memory params
     ) internal {
         bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
-        _callContract(destinationChain, payload, gasValue, msg.sender);
+        _callContract(destinationChain, payload, gasValue);
         emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
@@ -768,6 +769,9 @@ contract InterchainTokenService is
      * @param symbol The symbol of the token
      * @param decimals The number of decimals of the token
      * @param distributor The distributor address for the token
+     * @param mintTo The address where the minted tokens will be sent upon deployment
+     * @param mintAmount The amount of tokens to be minted upon deployment
+     * @param operator The operator data for standardized tokens
      * @param destinationChain The destination chain where the token will be deployed
      * @param gasValue The amount of gas to be paid for the transaction
      */
@@ -794,7 +798,7 @@ contract InterchainTokenService is
             mintAmount,
             operator
         );
-        _callContract(destinationChain, payload, gasValue, msg.sender);
+        _callContract(destinationChain, payload, gasValue);
         emit RemoteStandardizedTokenAndManagerDeploymentInitialized(
             tokenId,
             name,

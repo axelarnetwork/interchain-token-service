@@ -18,7 +18,7 @@ contract Distributable is IDistributable {
     uint256 internal constant PROPOSED_DISTRIBUTOR_SLOT = 0xbb1aa7d30971a97896e14e460c5ace030e39b624cf8f7c1ce200eeb378d7dcf1;
 
     /**
-     * @dev Throws a NotDistributor custom eror if called by any account other than the distributor.
+     * @dev Throws a NotDistributor custom error if called by any account other than the distributor.
      */
     modifier onlyDistributor() {
         if (distributor() != msg.sender) revert NotDistributor();

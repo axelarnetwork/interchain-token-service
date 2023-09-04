@@ -8,13 +8,11 @@ const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
 
-const IStandardizedTokenDeployer = require('../artifacts/contracts/interfaces/IStandardizedTokenDeployer.sol/IStandardizedTokenDeployer.json');
 const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
-const Create3Deployer = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
 const { getRandomBytes32 } = require('../scripts/utils');
-const { deployAll } = require('../scripts/deploy');
+const { deployAll, deployContract } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
 // const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
@@ -40,40 +38,18 @@ describe('Interchain Token Service', () => {
 
     describe('Full canonical token registration, remote deployment and token send', async () => {
         let token;
-        const salt = getRandomBytes32();
         const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
         const tokenCap = BigInt(1e18);
 
         before(async () => {
             // The below is used to deploy a token, but any ERC20 can be used instead.
-            const tokenDeployerAddress = await service.standardizedTokenDeployer();
-            const tokenDeployer = new Contract(tokenDeployerAddress, IStandardizedTokenDeployer.abi, wallet);
-            const create3DeployerAddress = await tokenDeployer.deployer();
-            const create3Deployer = new Contract(create3DeployerAddress, Create3Deployer.abi, wallet);
-            const tokenAddress = await create3Deployer.deployedAddress(tokenDeployer.address, salt);
-            token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
-
-            tokenId = await service.getCanonicalTokenId(tokenAddress);
+            token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
+            tokenId = await service.getCanonicalTokenId(token.address);
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            await (await token.mint(wallet.address, tokenCap)).wait();
+            await (await token.setTokenManager(tokenManagerAddress)).wait();
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
-
-            await expect(
-                tokenDeployer.deployStandardizedToken(
-                    salt,
-                    tokenManagerAddress,
-                    wallet.address,
-                    name,
-                    symbol,
-                    decimals,
-                    tokenCap,
-                    wallet.address,
-                ),
-            )
-                .to.emit(token, 'DistributorshipTransferred')
-                .withArgs(wallet.address)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, wallet.address, tokenCap);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {

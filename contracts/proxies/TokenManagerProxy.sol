@@ -7,8 +7,8 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
 /**
  * @title TokenManagerProxy
- * @dev This contract is a proxy for token manager contracts. It implements ITokenManagerProxy and
- * inherits from FixedProxy from the gmp sdk repo
+ * @notice This contract is a proxy for token manager contracts.
+ * @dev It implements ITokenManagerProxy.
  */
 contract TokenManagerProxy is ITokenManagerProxy {
     IInterchainTokenService public immutable interchainTokenServiceAddress;
@@ -64,12 +64,12 @@ contract TokenManagerProxy is ITokenManagerProxy {
      */
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable virtual {
-        address implementaion_ = implementation();
+        address implementation_ = implementation();
 
         assembly {
             calldatacopy(0, 0, calldatasize())
 
-            let result := delegatecall(gas(), implementaion_, 0, calldatasize(), 0, 0)
+            let result := delegatecall(gas(), implementation_, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
 
             switch result

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol';
+import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 
 import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
 
@@ -13,18 +13,14 @@ import { StandardizedTokenProxy } from '../proxies/StandardizedTokenProxy.sol';
  * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
  */
 contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
-    Create3Deployer public immutable deployer;
     address public immutable implementationAddress;
 
     /**
      * @notice Constructor for the StandardizedTokenDeployer contract
-     * @param deployer_ Address of the Create3Deployer contract
      * @param implementationAddress_ Address of the StandardizedToken contract
      */
-    constructor(address deployer_, address implementationAddress_) {
-        if (deployer_ == address(0) || implementationAddress_ == address(0)) revert AddressZero();
-
-        deployer = Create3Deployer(deployer_);
+    constructor(address implementationAddress_) {
+        if (implementationAddress_ == address(0)) revert AddressZero();
         implementationAddress = implementationAddress_;
     }
 
@@ -52,8 +48,12 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
         bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
         bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
 
-        address tokenAddress = deployer.deploy(bytecode, salt);
+        address tokenAddress = Create3.deploy(salt, bytecode);
 
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
+    }
+
+    function deployedAddress(bytes32 salt) external view returns (address tokenAddress) {
+        return Create3.deployedAddress(address(this), salt);
     }
 }

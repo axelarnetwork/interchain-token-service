@@ -21,8 +21,10 @@ contract Multicall is IMulticall {
      */
     function multicall(bytes[] calldata data) public payable returns (bytes[] memory results) {
         results = new bytes[](data.length);
+        bool success;
+        bytes memory result;
         for (uint256 i = 0; i < data.length; ++i) {
-            (bool success, bytes memory result) = address(this).delegatecall(data[i]);
+            (success, result) = address(this).delegatecall(data[i]);
 
             if (!success) {
                 revert(string(result));
