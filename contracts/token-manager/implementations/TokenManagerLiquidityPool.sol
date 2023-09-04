@@ -98,7 +98,7 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage, NoReEntrancy, 
      */
     function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
-        uint256 balance = IERC20(token).balanceOf(to);
+        uint256 balance = token.balanceOf(to);
 
         SafeTokenTransferFrom.safeTransferFrom(token, liquidityPool(), to, amount);
 
