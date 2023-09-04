@@ -50,6 +50,7 @@ contract InterchainTokenService is
 
     address internal immutable implementationLockUnlock;
     address internal immutable implementationMintBurn;
+    address internal immutable implementationLockUnlockFee;
     address internal immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
     IRemoteAddressValidator public immutable remoteAddressValidator;
@@ -103,6 +104,10 @@ contract InterchainTokenService is
 
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
+        implementationLockUnlockFee = _sanitizeTokenManagerImplementation(
+            tokenManagerImplementations,
+            TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER
+        );
         implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
 
         chainName = chainName_.toBytes32();
@@ -141,14 +146,6 @@ contract InterchainTokenService is
      */
     function contractId() external pure returns (bytes32) {
         return CONTRACT_ID;
-    }
-
-    /**
-     * @notice Getter for the chain name.
-     * @return name the name of the chain
-     */
-    function getChainName() public view returns (string memory name) {
-        name = chainName.toTrimmedString();
     }
 
     /**
@@ -225,6 +222,8 @@ contract InterchainTokenService is
             return implementationLockUnlock;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
             return implementationMintBurn;
+        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER) {
+            return implementationLockUnlockFee;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) {
             return implementationLiquidityPool;
         }
@@ -439,6 +438,7 @@ contract InterchainTokenService is
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
      * sendToken that matches the parameters passed here.
+     * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller.
      * @param tokenId the tokenId of the TokenManager used.
      * @param destinationAddress the destinationAddress for the sendToken.
      * @param amount the amount of token to give.
@@ -459,6 +459,7 @@ contract InterchainTokenService is
     /**
      * @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have
      * detected an outgoing sendToken that matches the parameters passed here.
+     * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller and it will pass an incorrect amount to the contract.
      * @param tokenId the tokenId of the TokenManager used.
      * @param sourceChain the name of the chain where the call came from.
      * @param sourceAddress the caller of callContractWithInterchainToken.
@@ -513,7 +514,7 @@ contract InterchainTokenService is
         bytes memory payload;
         if (metadata.length < 4) {
             payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount);
-            _callContract(destinationChain, payload, msg.value, sourceAddress);
+            _callContract(destinationChain, payload, msg.value);
             emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
             return;
         }
@@ -521,7 +522,7 @@ contract InterchainTokenService is
         (version, metadata) = _decodeMetadata(metadata);
         if (version > 0) revert InvalidMetadataVersion(version);
         payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
-        _callContract(destinationChain, payload, msg.value, sourceAddress);
+        _callContract(destinationChain, payload, msg.value);
         emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
     }
 
@@ -719,17 +720,16 @@ contract InterchainTokenService is
      * @param destinationChain The target chain where the contract will be called
      * @param payload The data payload for the transaction
      * @param gasValue The amount of gas to be paid for the transaction
-     * @param refundTo The address where the unused gas amount should be refunded to
      */
-    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue, address refundTo) internal {
+    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
         string memory destinationAddress = remoteAddressValidator.getRemoteAddress(destinationChain);
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
                 address(this),
                 destinationChain,
                 destinationAddress,
-                payload,
-                refundTo
+                payload, // solhint-disable-next-line avoid-tx-origin
+                tx.origin
             );
         }
         gateway.callContract(destinationChain, destinationAddress, payload);
@@ -758,7 +758,7 @@ contract InterchainTokenService is
         bytes memory params
     ) internal {
         bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
-        _callContract(destinationChain, payload, gasValue, msg.sender);
+        _callContract(destinationChain, payload, gasValue);
         emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
@@ -798,7 +798,7 @@ contract InterchainTokenService is
             mintAmount,
             operator
         );
-        _callContract(destinationChain, payload, gasValue, msg.sender);
+        _callContract(destinationChain, payload, gasValue);
         emit RemoteStandardizedTokenAndManagerDeploymentInitialized(
             tokenId,
             name,

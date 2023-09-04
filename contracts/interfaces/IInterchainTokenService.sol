@@ -91,12 +91,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     function standardizedTokenDeployer() external view returns (address standardizedTokenDeployerAddress);
 
     /**
-     * @notice Returns the name of the current chain.
-     * @return name The name of the current chain.
-     */
-    function getChainName() external view returns (string memory name);
-
-    /**
      * @notice Returns the address of the token manager associated with the given tokenId.
      * @param tokenId The tokenId of the token manager.
      * @return tokenManagerAddress The address of the token manager.

@@ -77,10 +77,10 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
      */
     function _lowerCase(string memory s) internal pure returns (string memory) {
         uint256 length = bytes(s).length;
-
-        for (uint256 i; i < length; i++) {
-            uint8 b = uint8(bytes(s)[i]);
-            if ((b >= 65) && (b <= 70)) bytes(s)[i] = bytes1(b + uint8(32));
+        uint8 b;
+        for (uint256 i; i < length; ++i) {
+            b = uint8(bytes(s)[i]);
+            if ((b >= 65) && (b <= 90)) bytes(s)[i] = bytes1(b + uint8(32));
         }
 
         return s;
@@ -152,9 +152,9 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
      */
     function addGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
         uint256 length = chainNames.length;
-
+        string calldata chainName;
         for (uint256 i; i < length; ++i) {
-            string calldata chainName = chainNames[i];
+            chainName = chainNames[i];
             supportedByGateway[chainName] = true;
 
             emit GatewaySupportedChainAdded(chainName);
@@ -167,9 +167,10 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
      */
     function removeGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
         uint256 length = chainNames.length;
+        string calldata chainName;
 
         for (uint256 i; i < length; ++i) {
-            string calldata chainName = chainNames[i];
+            chainName = chainNames[i];
             supportedByGateway[chainName] = false;
 
             emit GatewaySupportedChainRemoved(chainName);
