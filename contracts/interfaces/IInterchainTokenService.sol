@@ -30,9 +30,9 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error AlreadyExecuted(bytes32 commandId);
     error InvalidExpressSelector();
 
-    event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
+    event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event TokenSentWithData(
-        bytes32 tokenId,
+        bytes32 indexed tokenId,
         string destinationChain,
         bytes destinationAddress,
         uint256 indexed amount,
@@ -62,7 +62,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint8 tokenDecimals,
         bytes distributor,
         bytes mintTo,
-        uint256 mintAmount,
+        uint256 indexed mintAmount,
         bytes operator,
         string destinationChain,
         uint256 indexed gasValue
@@ -70,11 +70,11 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     event TokenManagerDeployed(bytes32 indexed tokenId, TokenManagerType indexed tokenManagerType, bytes params);
     event StandardizedTokenDeployed(
         bytes32 indexed tokenId,
-        address distributor,
+        address indexed distributor,
         string name,
         string symbol,
         uint8 decimals,
-        uint256 mintAmount,
+        uint256 indexed mintAmount,
         address mintTo
     );
     event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
