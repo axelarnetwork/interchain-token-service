@@ -312,6 +312,7 @@ describe('Interchain Token Service', () => {
             await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
         });
 
+        // In order to be able to receive tokens the distributorship should be changed on other chains as well.
         it('Should send some token to another chain', async () => {
             const amount = 1234;
             const destAddress = '0x1234';
