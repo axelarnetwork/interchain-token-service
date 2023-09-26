@@ -19,9 +19,12 @@ const SELECTOR_SEND_TOKEN = 1;
 // const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
-const LOCK_UNLOCK = 0;
-const MINT_BURN = 1;
-// const LIQUIDITY_POOL = 2;
+const MINT_BURN = 0;
+// const MINT_BURN_FROM = 1;
+// const MINT_BURN_FROM_ADDRESS = 2;
+const LOCK_UNLOCK = 3;
+// const LOCK_UNLOCK_FEE_ON_TRANSFER = 4;
+// const LIQUIDITY_POOL = 5;
 
 describe('Interchain Token Service', () => {
     let wallet;

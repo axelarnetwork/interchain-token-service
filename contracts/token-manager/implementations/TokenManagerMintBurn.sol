@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
-import { IERC20BurnableMintable } from '../../interfaces/IERC20BurnableMintable.sol';
-
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
+
+import { TokenManager } from '../TokenManager.sol';
+import { IERC20MintableBurnable } from '../../interfaces/IERC20MintableBurnable.sol';
 
 /**
  * @title TokenManagerMintBurn
@@ -14,16 +14,18 @@ import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerMintBurn is TokenManagerAddressStorage {
+contract TokenManagerMintBurn is TokenManager {
+    using SafeTokenCall for IERC20;
+
     /**
      * @dev Constructs an instance of TokenManagerMintBurn. Calls the constructor
      * of TokenManagerAddressStorage which calls the constructor of TokenManager.
      * @param interchainTokenService_ The address of the interchain token service contract
      */
-    constructor(address interchainTokenService_) TokenManagerAddressStorage(interchainTokenService_) {}
+    constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
-    function implementationType() external pure returns (uint256) {
-        return 1;
+    function implementationType() external pure virtual returns (uint256) {
+        return 0;
     }
 
     /**
@@ -42,10 +44,10 @@ contract TokenManagerMintBurn is TokenManagerAddressStorage {
      * @param amount Amount of tokens to burn
      * @return uint Amount of tokens burned
      */
-    function _takeToken(address from, uint256 amount) internal override returns (uint256) {
+    function _takeToken(address from, uint256 amount) internal virtual override returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
 
-        SafeTokenCall.safeCall(token, abi.encodeWithSelector(IERC20BurnableMintable.burn.selector, from, amount));
+        token.safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
 
         return amount;
     }
@@ -59,7 +61,7 @@ contract TokenManagerMintBurn is TokenManagerAddressStorage {
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
 
-        SafeTokenCall.safeCall(token, abi.encodeWithSelector(IERC20BurnableMintable.mint.selector, to, amount));
+        token.safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
 
         return amount;
     }
