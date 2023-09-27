@@ -11,8 +11,8 @@ interface IRemoteAddressValidator {
     error LengthMismatch();
     error ZeroStringLength();
 
-    event TrustedAddressAdded(string souceChain, string sourceAddress);
-    event TrustedAddressRemoved(string souceChain);
+    event TrustedAddressAdded(string sourceChain, string sourceAddress);
+    event TrustedAddressRemoved(string sourceChain);
     event GatewaySupportedChainAdded(string chain);
     event GatewaySupportedChainRemoved(string chain);
 
