@@ -25,7 +25,7 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
      */
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
-    function implementationType() external pure returns (uint256) {
+    function implementationType() external pure virtual returns (uint256) {
         return uint256(TokenManagerType.MINT_BURN);
     }
 

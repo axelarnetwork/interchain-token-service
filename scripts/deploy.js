@@ -66,7 +66,7 @@ async function deployInterchainTokenService(
 async function deployTokenManagerImplementations(wallet, interchainTokenServiceAddress) {
     const implementations = [];
 
-    for (const type of ['MintBurn', 'MintBurnFrom', 'MintBurnFromAddress', 'LockUnlock', 'LockUnlockFee', 'LiquidityPool']) {
+    for (const type of ['MintBurn', 'MintBurnFrom', 'LockUnlock', 'LockUnlockFee', 'LiquidityPool']) {
         const impl = await deployContract(wallet, `TokenManager${type}`, [interchainTokenServiceAddress]);
         implementations.push(impl);
     }

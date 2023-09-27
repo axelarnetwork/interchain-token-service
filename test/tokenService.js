@@ -21,10 +21,9 @@ const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const MINT_BURN = 0;
 const MINT_BURN_FROM = 1;
-const MINT_BURN_FROM_ADDRESS = 2;
-const LOCK_UNLOCK = 3;
-const LOCK_UNLOCK_FEE_ON_TRANSFER = 4;
-const LIQUIDITY_POOL = 5;
+const LOCK_UNLOCK = 2;
+const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
+const LIQUIDITY_POOL = 4;
 
 describe('Interchain Token Service', () => {
     let wallet, liquidityPool;
@@ -103,7 +102,6 @@ describe('Interchain Token Service', () => {
 
     deployFunctions.mintBurn = makeDeployNewMintBurn(MINT_BURN);
     deployFunctions.mintBurnFrom = makeDeployNewMintBurn(MINT_BURN_FROM);
-    deployFunctions.mintBurnFromAddress = makeDeployNewMintBurn(MINT_BURN_FROM_ADDRESS);
 
     deployFunctions.liquidityPool = async function deployNewLiquidityPool(
         tokenName,

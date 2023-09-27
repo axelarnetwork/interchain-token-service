@@ -25,7 +25,7 @@ contract TokenManagerMintBurnFrom is TokenManagerMintBurn {
     constructor(address interchainTokenService_) TokenManagerMintBurn(interchainTokenService_) {}
 
     function implementationType() external pure override returns (uint256) {
-        return 1;
+        return uint256(TokenManagerType.MINT_BURN_FROM);
     }
 
     /**

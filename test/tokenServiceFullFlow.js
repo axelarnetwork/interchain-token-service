@@ -22,12 +22,11 @@ const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const MINT_BURN = 0;
 // const MINT_BURN_FROM = 1;
-// const MINT_BURN_FROM_ADDRESS = 2;
-const LOCK_UNLOCK = 3;
-// const LOCK_UNLOCK_FEE_ON_TRANSFER = 4;
-// const LIQUIDITY_POOL = 5;
+const LOCK_UNLOCK = 2;
+// const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
+// const LIQUIDITY_POOL = 4;
 
-describe('Interchain Token Service', () => {
+describe('Interchain Token Service Flow', () => {
     let wallet;
     let service, gateway, gasService, tokenManager, tokenId;
     const name = 'tokenName';

@@ -10,7 +10,6 @@ interface ITokenManagerType {
     enum TokenManagerType {
         MINT_BURN,
         MINT_BURN_FROM,
-        MINT_BURN_FROM_ADDRESS,
         LOCK_UNLOCK,
         LOCK_UNLOCK_FEE_ON_TRANSFER,
         LIQUIDITY_POOL
