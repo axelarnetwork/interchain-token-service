@@ -10,14 +10,14 @@ import { TokenManager } from '../TokenManager.sol';
  * the token address using a predetermined storage slot
  */
 abstract contract TokenManagerAddressStorage is TokenManager {
+    // uint256(keccak256('token-address')) - 1
+    uint256 internal constant TOKEN_ADDRESS_SLOT = 0xc4e632779a6a7838736dd7e5e6a0eadf171dd37dfb6230720e265576dfcf42ba;
+
     /**
      * @dev Creates an instance of the TokenManagerAddressStorage contract.
      * @param interchainTokenService_ The address of the interchain token service contract
      */
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
-
-    // uint256(keccak256('token-address')) - 1
-    uint256 internal constant TOKEN_ADDRESS_SLOT = 0xc4e632779a6a7838736dd7e5e6a0eadf171dd37dfb6230720e265576dfcf42ba;
 
     /**
      * @dev Reads the stored token address from the predetermined storage slot
