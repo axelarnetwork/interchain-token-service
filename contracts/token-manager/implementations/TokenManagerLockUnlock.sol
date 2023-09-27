@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import { TokenManager } from '../TokenManager.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { ITokenManagerLockUnlock } from '../../interfaces/ITokenManagerLockUnlock.sol';
 
 import { SafeTokenTransfer, SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 
@@ -13,7 +14,7 @@ import { SafeTokenTransfer, SafeTokenTransferFrom } from '@axelar-network/axelar
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLockUnlock is TokenManager {
+contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
     using SafeTokenTransfer for IERC20;
     using SafeTokenTransferFrom for IERC20;
 
@@ -25,7 +26,7 @@ contract TokenManagerLockUnlock is TokenManager {
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        return 3;
+        return uint256(TokenManagerType.LOCK_UNLOCK);
     }
 
     /**
@@ -64,5 +65,15 @@ contract TokenManagerLockUnlock is TokenManager {
         token.safeTransfer(to, amount);
 
         return amount;
+    }
+
+    /**
+     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+     * @param operator the operator of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
+    function getParams(bytes memory operator, address tokenAddress) external pure returns (bytes memory params) {
+        params = abi.encode(operator, tokenAddress);
     }
 }

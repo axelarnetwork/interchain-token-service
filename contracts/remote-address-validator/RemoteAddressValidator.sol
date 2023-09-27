@@ -15,7 +15,7 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
 
     mapping(string => bytes32) public remoteAddressHashes;
     mapping(string => string) public remoteAddresses;
-    mapping(string => bool) public supportedByGateway;
+    string public chainName;
 
     address public immutable interchainTokenServiceAddress;
     bytes32 public immutable interchainTokenServiceAddressHash;
@@ -32,7 +32,7 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
      * @dev Constructs the RemoteAddressValidator contract, both array parameters must be equal in length
      * @param _interchainTokenServiceAddress Address of the interchain token service
      */
-    constructor(address _interchainTokenServiceAddress) {
+    constructor(address _interchainTokenServiceAddress, string memory chainName_) {
         if (_interchainTokenServiceAddress == address(0)) revert ZeroAddress();
 
         interchainTokenServiceAddress = _interchainTokenServiceAddress;
@@ -50,6 +50,9 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
 
         interchainTokenServiceAddress1 = p1;
         interchainTokenServiceAddress2 = p2;
+
+        if (bytes(chainName_).length == 0) revert ZeroStringLength();
+        chainName = chainName_;
     }
 
     /**
@@ -147,43 +150,12 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     }
 
     /**
-     * @dev Adds chains that are supported by the Axelar gateway
-     * @param chainNames List of chain names to be added as supported
-     */
-    function addGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
-        uint256 length = chainNames.length;
-        string calldata chainName;
-        for (uint256 i; i < length; ++i) {
-            chainName = chainNames[i];
-            supportedByGateway[chainName] = true;
-
-            emit GatewaySupportedChainAdded(chainName);
-        }
-    }
-
-    /**
-     * @dev Removes chains that are no longer supported by the Axelar gateway
-     * @param chainNames List of chain names to be removed as supported
-     */
-    function removeGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
-        uint256 length = chainNames.length;
-        string calldata chainName;
-
-        for (uint256 i; i < length; ++i) {
-            chainName = chainNames[i];
-            supportedByGateway[chainName] = false;
-
-            emit GatewaySupportedChainRemoved(chainName);
-        }
-    }
-
-    /**
      * @dev Fetches the interchain token service address for the specified chain
-     * @param chainName Name of the chain
+     * @param chainName_ Name of the chain
      * @return remoteAddress Interchain token service address for the specified chain
      */
-    function getRemoteAddress(string calldata chainName) external view returns (string memory remoteAddress) {
-        remoteAddress = remoteAddresses[chainName];
+    function getRemoteAddress(string calldata chainName_) external view returns (string memory remoteAddress) {
+        remoteAddress = remoteAddresses[chainName_];
 
         if (bytes(remoteAddress).length == 0) {
             remoteAddress = _interchainTokenServiceAddressString();

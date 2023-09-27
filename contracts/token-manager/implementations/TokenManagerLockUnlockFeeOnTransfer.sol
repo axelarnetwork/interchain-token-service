@@ -26,7 +26,7 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy {
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        return 4;
+        return uint256(TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER);
     }
 
     /**
@@ -70,6 +70,20 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy {
 
         token.safeTransfer(to, amount);
 
-        return IERC20(token).balanceOf(to) - balance;
+        uint256 diff = token.balanceOf(to) - balance;
+        if (diff < amount) {
+            amount = diff;
+        }
+        return amount;
+    }
+
+    /**
+     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+     * @param operator the operator of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
+    function getParams(bytes memory operator, address tokenAddress) external pure returns (bytes memory params) {
+        params = abi.encode(operator, tokenAddress);
     }
 }

@@ -10,7 +10,6 @@ import { ERC20 } from '../token-implementations/ERC20.sol';
  * @title An example implementation of the IInterchainToken.
  * @notice The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
  * that can be used to create approvals, and that `allowance` is a mapping.
- * @dev You can skip the `tokenManagerRequiresApproval()` function altogether if you know what it should return for your token.
  */
 abstract contract InterchainToken is IInterchainToken, ERC20 {
     /**
@@ -66,7 +65,7 @@ abstract contract InterchainToken is IInterchainToken, ERC20 {
             _approve(sender, msg.sender, _allowance - amount);
         }
 
-        _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
+        _beforeInterchainTransfer(sender, destinationChain, recipient, amount, metadata);
 
         ITokenManager tokenManager_ = tokenManager();
         tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);

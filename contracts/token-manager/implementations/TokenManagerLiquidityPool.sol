@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { TokenManager } from '../TokenManager.sol';
 import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { ITokenManagerLiquidityPool } from '../../interfaces/ITokenManagerLiquidityPool.sol';
 
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 
@@ -29,7 +30,7 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy {
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        return 5;
+        return uint256(TokenManagerType.LIQUIDITY_POOL);
     }
 
     /**
@@ -84,8 +85,11 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy {
 
         token.safeTransferFrom(from, liquidityPool_, amount);
 
-        // Note: This allows support for fee-on-transfer tokens
-        return IERC20(token).balanceOf(liquidityPool_) - balance;
+        uint256 diff = token.balanceOf(liquidityPool_) - balance;
+        if (diff < amount) {
+            amount = diff;
+        }
+        return amount;
     }
 
     /**
@@ -100,6 +104,25 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy {
 
         token.safeTransferFrom(liquidityPool(), to, amount);
 
-        return IERC20(token).balanceOf(to) - balance;
+        uint256 diff = token.balanceOf(to) - balance;
+        if (diff < amount) {
+            amount = diff;
+        }
+        return amount;
+    }
+
+    /**
+     * @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
+     * @param operator the operator of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
+    function getParams(
+        bytes memory operator,
+        address tokenAddress,
+        address liquidityPoolAddress
+    ) external pure returns (bytes memory params) {
+        params = abi.encode(operator, tokenAddress, liquidityPoolAddress);
     }
 }

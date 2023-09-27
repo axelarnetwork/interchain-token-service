@@ -7,6 +7,7 @@ import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts
 
 import { TokenManager } from '../TokenManager.sol';
 import { IERC20MintableBurnable } from '../../interfaces/IERC20MintableBurnable.sol';
+import { ITokenManagerMintBurn } from '../../interfaces/ITokenManagerMintBurn.sol';
 
 /**
  * @title TokenManagerMintBurn
@@ -14,7 +15,7 @@ import { IERC20MintableBurnable } from '../../interfaces/IERC20MintableBurnable.
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerMintBurn is TokenManager {
+contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
     using SafeTokenCall for IERC20;
 
     /**
@@ -24,8 +25,8 @@ contract TokenManagerMintBurn is TokenManager {
      */
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
-    function implementationType() external pure virtual returns (uint256) {
-        return 0;
+    function implementationType() external pure returns (uint256) {
+        return uint256(TokenManagerType.MINT_BURN);
     }
 
     /**
@@ -64,5 +65,15 @@ contract TokenManagerMintBurn is TokenManager {
         token.safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
 
         return amount;
+    }
+
+    /**
+     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+     * @param operator the operator of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
+    function getParams(bytes memory operator, address tokenAddress) external pure returns (bytes memory params) {
+        params = abi.encode(operator, tokenAddress);
     }
 }

@@ -104,7 +104,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(token, 'Approval')
                 .withArgs(wallet.address, tokenManager.address, amount);
 
-            await expect(tokenManager.sendToken(destChain, destAddress, amount, '0x', { value: gasValue }))
+            await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, tokenManager.address, amount)
                 .and.to.emit(gateway, 'ContractCall')
@@ -213,7 +213,7 @@ describe('Interchain Token Service', () => {
             );
             const payloadHash = keccak256(payload);
 
-            await expect(tokenManager.sendToken(destChain, destAddress, amount, '0x', { value: gasValue }))
+            await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, AddressZero, amount)
                 .and.to.emit(gateway, 'ContractCall')
