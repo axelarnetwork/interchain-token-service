@@ -8,7 +8,7 @@ pragma solidity ^0.8.0;
  * if a pause condition is activated.
  */
 interface IPausable {
-    event PausedSet(bool paused);
+    event PausedSet(bool indexed paused);
 
     error Paused();
 
