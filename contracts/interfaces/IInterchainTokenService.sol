@@ -203,6 +203,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @param symbol The symbol of the standardized tokens.
      * @param decimals The number of decimals for the standardized tokens.
      * @param distributor The distributor data for mint/burn operations.
+     * @param mintTo The address where the minted tokens will be sent upon deployment.
+     * @param mintAmount The amount of tokens to be minted upon deployment.
      * @param operator The operator data for standardized tokens.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The gas value for deployment.
