@@ -35,10 +35,13 @@ contract ExpressCallHandler is IExpressCallHandler {
         assembly {
             prevExpressCaller := sload(slot)
         }
+
         if (prevExpressCaller != address(0)) revert AlreadyExpressCalled();
+
         assembly {
             sstore(slot, expressCaller)
         }
+
         emit ExpressReceive(payload, commandId, expressCaller);
     }
 
@@ -66,10 +69,12 @@ contract ExpressCallHandler is IExpressCallHandler {
         assembly {
             expressCaller := sload(slot)
         }
+
         if (expressCaller != address(0)) {
             assembly {
                 sstore(slot, 0)
             }
+
             emit ExpressExecutionFulfilled(payload, commandId, expressCaller);
         }
     }
