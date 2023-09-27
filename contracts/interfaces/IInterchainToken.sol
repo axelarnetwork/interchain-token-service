@@ -12,7 +12,7 @@ interface IInterchainToken {
      * A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well.
      * @param destinationChain The destination chain identifier.
      * @param recipient The bytes representation of the address of the recipient.
-     * @param amount The amount of token to be transfered.
+     * @param amount The amount of token to be transferred.
      * @param metadata Either empty, to just facilitate an interchain transfer, or the data can be passed for an interchain contract call with transfer as per semantics defined by the token service.
      */
     function interchainTransfer(
@@ -29,7 +29,7 @@ interface IInterchainToken {
      * @param sender the sender of the tokens. They need to have approved `msg.sender` before this is called.
      * @param destinationChain the string representation of the destination chain.
      * @param recipient the bytes representation of the address of the recipient.
-     * @param amount the amount of token to be transfered.
+     * @param amount the amount of token to be transferred.
      * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
      */
     function interchainTransferFrom(

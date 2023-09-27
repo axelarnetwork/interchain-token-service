@@ -88,10 +88,13 @@ contract ExpressCallHandler is IExpressCallHandler {
         assembly {
             prevExpressCaller := sload(slot)
         }
+
         if (prevExpressCaller != address(0)) revert AlreadyExpressCalled();
+
         assembly {
             sstore(slot, expressCaller)
         }
+
         emit ExpressReceive(tokenId, destinationAddress, amount, commandId, expressCaller);
     }
 
@@ -130,10 +133,13 @@ contract ExpressCallHandler is IExpressCallHandler {
         assembly {
             prevExpressCaller := sload(slot)
         }
+
         if (prevExpressCaller != address(0)) revert AlreadyExpressCalled();
+
         assembly {
             sstore(slot, expressCaller)
         }
+
         emit ExpressReceiveWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, expressCaller);
     }
 
@@ -209,10 +215,12 @@ contract ExpressCallHandler is IExpressCallHandler {
         assembly {
             expressCaller := sload(slot)
         }
+
         if (expressCaller != address(0)) {
             assembly {
                 sstore(slot, 0)
             }
+
             emit ExpressExecutionFulfilled(tokenId, destinationAddress, amount, commandId, expressCaller);
         }
     }
@@ -249,10 +257,12 @@ contract ExpressCallHandler is IExpressCallHandler {
         assembly {
             expressCaller := sload(slot)
         }
+
         if (expressCaller != address(0)) {
             assembly {
                 sstore(slot, 0)
             }
+
             emit ExpressExecutionWithDataFulfilled(
                 tokenId,
                 sourceChain,
