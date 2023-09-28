@@ -43,6 +43,20 @@ describe('Operatable', () => {
         expect(await test.operator()).to.equal(otherWallet.address);
         await expect(test.transferOperatorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotOperator');
     });
+
+    it('Should be able to propose operator only as the operator', async () => {
+        expect(await test.operator()).to.equal(otherWallet.address);
+        await expect(test.proposeOperatorship(ownerWallet.address)).to.be.revertedWithCustomError(test, 'NotOperator');
+        await expect(test.connect(otherWallet).proposeOperatorship(ownerWallet.address))
+            .to.emit(test, 'OperatorChangeProposed')
+            .withArgs(ownerWallet.address);
+    });
+
+    it('Should be able to accept operatorship only as proposed operator', async () => {
+        expect(await test.operator()).to.equal(otherWallet.address);
+        await expect(test.connect(otherWallet).acceptOperatorship()).to.be.revertedWithCustomError(test, 'NotProposedOperator');
+        await expect(test.acceptOperatorship()).to.emit(test, 'OperatorshipTransferred').withArgs(ownerWallet.address);
+    });
 });
 
 describe('Distributable', () => {
@@ -67,6 +81,25 @@ describe('Distributable', () => {
             .withArgs(otherWallet.address);
         expect(await test.distributor()).to.equal(otherWallet.address);
         await expect(test.transferDistributorship(otherWallet.address)).to.be.revertedWithCustomError(test, 'NotDistributor');
+    });
+
+    it('Should be able to propose a new distributor only as distributor', async () => {
+        expect(await test.distributor()).to.equal(otherWallet.address);
+        await expect(test.connect(ownerWallet).proposeDistributorship(ownerWallet.address)).to.be.revertedWithCustomError(
+            test,
+            'NotDistributor',
+        );
+        await expect(test.connect(otherWallet).proposeDistributorship(ownerWallet.address))
+            .to.emit(test, 'DistributorshipTransferStarted')
+            .withArgs(ownerWallet.address);
+    });
+
+    it('Should be able to accept distributorship only as the proposed distributor', async () => {
+        expect(await test.distributor()).to.equal(otherWallet.address);
+        await expect(test.connect(otherWallet).acceptDistributorship()).to.be.revertedWithCustomError(test, 'NotProposedDistributor');
+        await expect(test.connect(ownerWallet).acceptDistributorship())
+            .to.emit(test, 'DistributorshipTransferred')
+            .withArgs(ownerWallet.address);
     });
 });
 
@@ -190,11 +223,13 @@ describe('Mutlicall', () => {
     let test;
     let function1Data;
     let function2Data;
+    let function3Data;
 
     before(async () => {
         test = await deployContract(ownerWallet, 'MulticallTest');
         function1Data = (await test.populateTransaction.function1()).data;
         function2Data = (await test.populateTransaction.function2()).data;
+        function3Data = (await test.populateTransaction.function3()).data;
     });
 
     it('Shoult test the multicall', async () => {
@@ -227,6 +262,15 @@ describe('Mutlicall', () => {
             const val = Number(defaultAbiCoder.decode(['uint256'], lastReturns[i]));
             expect(val).to.equal(nonce + i);
         }
+    });
+
+    it('Shoult revert if any of the calls fail', async () => {
+        const nonce = Number(await test.nonce());
+        await expect(test.multicall([function1Data, function2Data, function3Data, function1Data]))
+            .to.emit(test, 'Function1Called')
+            .withArgs(nonce + 0)
+            .and.to.emit(test, 'Function2Called')
+            .withArgs(nonce + 1).to.be.reverted;
     });
 });
 
@@ -264,6 +308,13 @@ describe('StandardizedTokenDeployer', () => {
     before(async () => {
         standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');
         standardizedTokenDeployer = await deployContract(ownerWallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
+    });
+
+    it('Should revert on deployment with invalid implementation address', async () => {
+        await expect(deployContract(ownerWallet, 'StandardizedTokenDeployer', [AddressZero])).to.be.revertedWithCustomError(
+            standardizedTokenDeployer,
+            'AddressZero',
+        );
     });
 
     it('Should deploy a mint burn token only once', async () => {

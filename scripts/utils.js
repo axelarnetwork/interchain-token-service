@@ -1,7 +1,8 @@
-const { ethers } = require('hardhat');
+const { ethers, network } = require('hardhat');
 const { deployContract } = require('./deploy');
 const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256 } = ethers.utils;
+const { expect } = require('chai');
 
 function getRandomBytes32() {
     return keccak256(defaultAbiCoder.encode(['uint256'], [Math.floor(new Date().getTime() * Math.random())]));
@@ -42,8 +43,22 @@ async function deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals
     await (await gateway.deployToken(params, commandId)).wait();
 }
 
+const getGasOptions = () => {
+    return network.config.blockGasLimit ? { gasLimit: network.config.blockGasLimit.toString() } : { gasLimit: 5e6 }; // defaults to 5M gas for revert tests to work correctly
+};
+
+const expectRevert = async (txFunc, contract, error) => {
+    if (network.config.skipRevertTests) {
+        await expect(txFunc(getGasOptions())).to.be.reverted;
+    } else {
+        await expect(txFunc(null)).to.be.revertedWithCustomError(contract, error);
+    }
+};
+
 module.exports = {
+    getChainId: async () => await network.provider.send('eth_chainId'),
     getRandomBytes32,
     approveContractCall,
     deployGatewayToken,
+    expectRevert,
 };
