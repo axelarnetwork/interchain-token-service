@@ -134,35 +134,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     function getCustomTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId);
 
     /**
-     * @notice Returns the parameters for the lock/unlock operation.
-     * @param operator The operator address.
-     * @param tokenAddress The address of the token.
-     * @return params The parameters for the lock/unlock operation.
-     */
-    function getParamsLockUnlock(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
-
-    /**
-     * @notice Returns the parameters for the mint/burn operation.
-     * @param operator The operator address.
-     * @param tokenAddress The address of the token.
-     * @return params The parameters for the mint/burn operation.
-     */
-    function getParamsMintBurn(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
-
-    /**
-     * @notice Returns the parameters for the liquidity pool operation.
-     * @param operator The operator address.
-     * @param tokenAddress The address of the token.
-     * @param liquidityPoolAddress The address of the liquidity pool.
-     * @return params The parameters for the liquidity pool operation.
-     */
-    function getParamsLiquidityPool(
-        bytes memory operator,
-        address tokenAddress,
-        address liquidityPoolAddress
-    ) external pure returns (bytes memory params);
-
-    /**
      * @notice Registers a canonical token and returns its associated tokenId.
      * @param tokenAddress The address of the canonical token.
      * @return tokenId The tokenId associated with the registered canonical token.

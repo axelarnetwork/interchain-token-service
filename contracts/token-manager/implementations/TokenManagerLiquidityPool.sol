@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
 import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { ITokenManagerLiquidityPool } from '../../interfaces/ITokenManagerLiquidityPool.sol';
 
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 
@@ -99,5 +100,20 @@ contract TokenManagerLiquidityPool is TokenManagerAddressStorage, NoReEntrancy {
         SafeTokenTransferFrom.safeTransferFrom(token, liquidityPool(), to, amount);
 
         return IERC20(token).balanceOf(to) - balance;
+    }
+
+    /**
+     * @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
+     * @param operator the operator of the TokenManager.
+     * @param tokenAddress the token to be managed.
+     * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
+     * @return params the resulting params to be passed to custom TokenManager deployments.
+     */
+    function getParams(
+        bytes memory operator,
+        address tokenAddress,
+        address liquidityPoolAddress
+    ) external pure returns (bytes memory params) {
+        params = abi.encode(operator, tokenAddress, liquidityPoolAddress);
     }
 }

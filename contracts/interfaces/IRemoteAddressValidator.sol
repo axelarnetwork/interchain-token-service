@@ -19,6 +19,11 @@ interface IRemoteAddressValidator {
     /**
      * @notice Returns the interchain token address
      */
+    function chainName() external view returns (string memory);
+
+    /**
+     * @notice Returns the interchain token address
+     */
     function interchainTokenServiceAddress() external view returns (address);
 
     /**

@@ -11,7 +11,7 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
  * @dev It implements ITokenManagerProxy.
  */
 contract TokenManagerProxy is ITokenManagerProxy {
-    IInterchainTokenService public immutable interchainTokenServiceAddress;
+    IInterchainTokenService public immutable interchainTokenService;
     uint256 public immutable implementationType;
     bytes32 public immutable tokenId;
 
@@ -23,7 +23,7 @@ contract TokenManagerProxy is ITokenManagerProxy {
      * @param params The initialization parameters for the token manager contract
      */
     constructor(address interchainTokenServiceAddress_, uint256 implementationType_, bytes32 tokenId_, bytes memory params) {
-        interchainTokenServiceAddress = IInterchainTokenService(interchainTokenServiceAddress_);
+        interchainTokenService = IInterchainTokenService(interchainTokenServiceAddress_);
         implementationType = implementationType_;
         tokenId = tokenId_;
         address impl = _getImplementation(IInterchainTokenService(interchainTokenServiceAddress_), implementationType_);
@@ -37,7 +37,7 @@ contract TokenManagerProxy is ITokenManagerProxy {
      * @return impl The address of the current implementation
      */
     function implementation() public view returns (address impl) {
-        impl = _getImplementation(interchainTokenServiceAddress, implementationType);
+        impl = _getImplementation(interchainTokenService, implementationType);
     }
 
     /**

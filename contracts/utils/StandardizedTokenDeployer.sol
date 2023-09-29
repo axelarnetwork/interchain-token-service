@@ -49,7 +49,6 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
         bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
 
         address tokenAddress = Create3.deploy(salt, bytecode);
-
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
     }
 

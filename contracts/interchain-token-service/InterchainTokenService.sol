@@ -56,8 +56,7 @@ contract InterchainTokenService is
     IRemoteAddressValidator public immutable remoteAddressValidator;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
-    bytes32 internal immutable chainNameHash;
-    bytes32 internal immutable chainName;
+    bytes32 public immutable chainNameHash;
 
     bytes32 internal constant PREFIX_CUSTOM_TOKEN_ID = keccak256('its-custom-token-id');
     bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_ID = keccak256('its-standardized-token-id');
@@ -78,7 +77,6 @@ contract InterchainTokenService is
      * @param gasService_ the address of the AxelarGasService.
      * @param remoteAddressValidator_ the address of the RemoteAddressValidator.
      * @param tokenManagerImplementations this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool.
-     * @param chainName_ the name of the current chain.
      */
     constructor(
         address tokenManagerDeployer_,
@@ -86,8 +84,7 @@ contract InterchainTokenService is
         address gateway_,
         address gasService_,
         address remoteAddressValidator_,
-        address[] memory tokenManagerImplementations,
-        string memory chainName_
+        address[] memory tokenManagerImplementations
     ) AxelarExecutable(gateway_) {
         if (
             remoteAddressValidator_ == address(0) ||
@@ -109,8 +106,7 @@ contract InterchainTokenService is
             TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER
         );
         implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
-
-        chainName = chainName_.toBytes32();
+        string memory chainName_ = remoteAddressValidator.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
@@ -227,41 +223,6 @@ contract InterchainTokenService is
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) {
             return implementationLiquidityPool;
         }
-    }
-
-    /**
-     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
-     */
-    function getParamsLockUnlock(bytes memory operator, address tokenAddress) public pure returns (bytes memory params) {
-        params = abi.encode(operator, tokenAddress);
-    }
-
-    /**
-     * @notice Getter function for the parameters of a mint/burn TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
-     */
-    function getParamsMintBurn(bytes memory operator, address tokenAddress) public pure returns (bytes memory params) {
-        params = abi.encode(operator, tokenAddress);
-    }
-
-    /**
-     * @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
-     * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
-     */
-    function getParamsLiquidityPool(
-        bytes memory operator,
-        address tokenAddress,
-        address liquidityPoolAddress
-    ) public pure returns (bytes memory params) {
-        params = abi.encode(operator, tokenAddress, liquidityPoolAddress);
     }
 
     /**
