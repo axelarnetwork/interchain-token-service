@@ -807,7 +807,6 @@ contract InterchainTokenService is
     function _decodeMetadata(bytes memory metadata) internal pure returns (uint32 version, bytes memory data) {
         data = new bytes(metadata.length - 4);
         assembly {
-            //version := shr(224, mload(data))
             version := shr(224, mload(add(metadata, 32)))
         }
         if (data.length == 0) return (version, data);
