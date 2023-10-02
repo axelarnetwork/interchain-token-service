@@ -23,8 +23,8 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
         chainNameHash = keccak256(bytes(chainName_));
     }
 
-    function getCanonicalTokenSalt(address tokenAddress) public pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, tokenAddress));
+    function getCanonicalTokenSalt(address tokenAddress) public view returns (bytes32 salt) {
+        salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash, tokenAddress));
     }
 
     function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {

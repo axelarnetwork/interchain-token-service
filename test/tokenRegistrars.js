@@ -4,23 +4,18 @@ const chai = require('chai');
 const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
-const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256 } = ethers.utils;
-const { Contract, Wallet } = ethers;
+const { Contract } = ethers;
 
-const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 
-const { getRandomBytes32 } = require('../scripts/utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
-const SELECTOR_SEND_TOKEN = 1;
 // const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
 // const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const LOCK_UNLOCK = 0;
-const MINT_BURN = 1;
 // const LIQUIDITY_POOL = 2;
 
 describe.only('Token Registrsrs', () => {
@@ -36,7 +31,6 @@ describe.only('Token Registrsrs', () => {
         wallet = wallets[0];
         [service, gateway, gasService] = await deployAll(wallet, 'Test', [destinationChain]);
         canonicalTokenRegistrar = await deployContract(wallet, 'CanonicalTokenRegistrar', [service.address, 'chain name']);
-
     });
 
     describe('Canonical Token Registrar', async () => {
@@ -52,7 +46,6 @@ describe.only('Token Registrsrs', () => {
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
         }
 
-
         it('Should register a token', async () => {
             await deployToken();
 
@@ -60,8 +53,7 @@ describe.only('Token Registrsrs', () => {
 
             await expect(canonicalTokenRegistrar.registerCanonicalToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params)
-
+                .withArgs(tokenId, LOCK_UNLOCK, params);
         });
 
         it('Should initiate a remote standardized token deployment', async () => {
@@ -78,9 +70,11 @@ describe.only('Token Registrsrs', () => {
 
             await expect(canonicalTokenRegistrar.registerCanonicalToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params)
+                .withArgs(tokenId, LOCK_UNLOCK, params);
 
-            await expect(canonicalTokenRegistrar.deployAndRegisterRemoteCanonicalToken(salt, destinationChain, gasValue, { value: gasValue }))
+            await expect(
+                canonicalTokenRegistrar.deployAndRegisterRemoteCanonicalToken(salt, destinationChain, gasValue, { value: gasValue }),
+            )
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', destinationChain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -89,5 +83,4 @@ describe.only('Token Registrsrs', () => {
                 .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), payload);
         });
     });
-
 });
