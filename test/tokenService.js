@@ -1721,8 +1721,29 @@ describe('Interchain Token Service', () => {
         let sourceAddress;
         const amount = 1234;
         const destAddress = new Wallet(getRandomBytes32()).address;
+
         before(async () => {
             sourceAddress = service.address.toLowerCase();
+        });
+
+        it('Should revert if command is already executed by gateway', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, 2 * amount);
+            await (await token.transfer(tokenManager.address, amount)).wait();
+            await (await token.approve(service.address, amount)).wait();
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+            );
+
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            await gateway.setCommandExecuted(commandId, true).then((tx) => tx.wait());
+
+            await expectRevert(
+                (gasOptions) => service.expressReceiveToken(payload, commandId, sourceChain, gasOptions),
+                service,
+                'AlreadyExecuted',
+            );
         });
 
         it('Should revert with invalid selector', async () => {
