@@ -90,7 +90,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param amount the amount of tokens to take from msg.sender.
      * @param metadata any additional data to be sent with the transfer.
      */
-    function sendToken(
+    function interchainTransfer(
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
@@ -174,6 +174,18 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
         _addFlowIn(amount);
         amount = _giveToken(destinationAddress, amount);
+        return amount;
+    }
+
+    /**
+     * @notice This function gives token to a specified address. Can only be called by the service.
+     * @param sourceAddress the address to give tokens to.
+     * @param amount the amount of token to give.
+     * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+     */
+    function takeToken(address sourceAddress, uint256 amount) external onlyService returns (uint256) {
+        _addFlowOut(amount);
+        amount = _takeToken(sourceAddress, amount);
         return amount;
     }
 

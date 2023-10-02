@@ -566,14 +566,14 @@ function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint25
 ```
 
 Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
-sendToken that matches the parameters passed here.
+interchainTransfer that matches the parameters passed here.
 
 #### Parameters
 
 | Name               | Type    | Description                               |
 | ------------------ | ------- | ----------------------------------------- |
 | tokenId            | bytes32 | the tokenId of the TokenManager used.     |
-| destinationAddress | address | the destinationAddress for the sendToken. |
+| destinationAddress | address | the destinationAddress for the interchainTransfer. |
 | amount             | uint256 | the amount of token to give.              |
 | commandId          | bytes32 | the sendHash detected at the sourceChain. |
 
@@ -584,7 +584,7 @@ function expressReceiveTokenWithData(bytes32 tokenId, string sourceChain, bytes 
 ```
 
 Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have
-detected an outgoing sendToken that matches the parameters passed here.
+detected an outgoing interchainTransfer that matches the parameters passed here.
 
 #### Parameters
 
@@ -593,7 +593,7 @@ detected an outgoing sendToken that matches the parameters passed here.
 | tokenId            | bytes32 | the tokenId of the TokenManager used.                                               |
 | sourceChain        | string  | the name of the chain where the call came from.                                     |
 | sourceAddress      | bytes   | the caller of callContractWithInterchainToken.                                      |
-| destinationAddress | address | the destinationAddress for the sendToken.                                           |
+| destinationAddress | address | the destinationAddress for the interchainTransfer.                                           |
 | amount             | uint256 | the amount of token to give.                                                        |
 | data               | bytes   | the data to be passed to destinationAddress after giving them the tokens specified. |
 | commandId          | bytes32 | the sendHash detected at the sourceChain.                                           |
@@ -613,7 +613,7 @@ Transmit a sendTokenWithData for the given tokenId. Only callable by a token man
 | tokenId            | bytes32 | the tokenId of the TokenManager (which must be the msg.sender).                               |
 | sourceAddress      | address | the address where the token is coming from, which will also be used for reimbursement of gas. |
 | destinationChain   | string  | the name of the chain to send tokens to.                                                      |
-| destinationAddress | bytes   | the destinationAddress for the sendToken.                                                     |
+| destinationAddress | bytes   | the destinationAddress for the interchainTransfer.                                                     |
 | amount             | uint256 | the amount of token to give.                                                                  |
 | metadata           | bytes   | the data to be passed to the destination.                                                     |
 
@@ -1712,14 +1712,14 @@ Sets the paused state of the contract.
 function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external
 ```
 
-Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
+Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing interchainTransfer that matches the parameters passed here.
 
 #### Parameters
 
 | Name               | Type    | Description                                                 |
 | ------------------ | ------- | ----------------------------------------------------------- |
 | tokenId            | bytes32 | the tokenId of the TokenManager used.                       |
-| destinationAddress | address | the destinationAddress for the sendToken.                   |
+| destinationAddress | address | the destinationAddress for the interchainTransfer.                   |
 | amount             | uint256 | the amount of token to give.                                |
 | commandId          | bytes32 | the commandId calculated from the event at the sourceChain. |
 
@@ -1729,7 +1729,7 @@ Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if 
 function expressReceiveTokenWithData(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount, bytes data, bytes32 commandId) external
 ```
 
-Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
+Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing interchainTransfer that matches the parameters passed here.
 
 #### Parameters
 
@@ -1738,7 +1738,7 @@ Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of 
 | tokenId            | bytes32 | the tokenId of the TokenManager used.                                               |
 | sourceChain        | string  | the name of the chain where the call came from.                                     |
 | sourceAddress      | bytes   | the caller of callContractWithInterchainToken.                                      |
-| destinationAddress | address | the destinationAddress for the sendToken.                                           |
+| destinationAddress | address | the destinationAddress for the interchainTransfer.                                           |
 | amount             | uint256 | the amount of token to give.                                                        |
 | data               | bytes   | the data to be passed to destinationAddress after giving them the tokens specified. |
 | commandId          | bytes32 | the commandId calculated from the event at the sourceChain.                         |
@@ -2106,10 +2106,10 @@ function implementationType() external pure returns (uint256)
 
 A function that should return the implementation type of the token manager.
 
-### sendToken
+### interchainTransfer
 
 ```solidity
-function sendToken(string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
+function interchainTransfer(string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
 ```
 
 Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.
@@ -4154,10 +4154,10 @@ _This function should only be called by the proxy, and only once from the proxy 
 | ------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | params | bytes | the parameters to be used to initialize the TokenManager. The exact format depends on the type of TokenManager used but the first 32 bytes are reserved for the address of the operator, stored as bytes (to be compatible with non-EVM chains) |
 
-### sendToken
+### interchainTransfer
 
 ```solidity
-function sendToken(string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable virtual
+function interchainTransfer(string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable virtual
 ```
 
 Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.

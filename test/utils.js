@@ -72,13 +72,8 @@ describe('Distributable', () => {
 
 describe('ExpressCallHandler', () => {
     let handler;
-    const tokenId = getRandomBytes32();
-    const destinationAddress = new Wallet(getRandomBytes32()).address;
-    const amount = 123;
     const expressCaller = new Wallet(getRandomBytes32()).address;
-    const sourceChain = 'sourceChain';
-    const sourceAddress = '0x1234';
-    const data = '0x5678';
+    const payload = '0x5678';
 
     before(async () => {
         handler = await deployContract(ownerWallet, 'ExpressCallHandlerTest');
@@ -86,122 +81,36 @@ describe('ExpressCallHandler', () => {
 
     it('Should be able to set an express receive token', async () => {
         const commandId = getRandomBytes32();
-        await expect(handler.setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, expressCaller))
+        await expect(handler.setExpressReceiveToken(payload, commandId, expressCaller))
             .to.emit(handler, 'ExpressReceive')
-            .withArgs(tokenId, destinationAddress, amount, commandId, expressCaller);
-        expect(await handler.getExpressReceiveToken(tokenId, destinationAddress, amount, commandId)).to.equal(expressCaller);
+            .withArgs(payload, commandId, expressCaller);
+        expect(await handler.getExpressReceiveToken(payload, commandId)).to.equal(expressCaller);
     });
 
     it('Should not be able to set an express receive token if it is already set', async () => {
         const commandId = getRandomBytes32();
-        await expect(handler.setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, expressCaller))
+        await expect(handler.setExpressReceiveToken(payload, commandId, expressCaller))
             .to.emit(handler, 'ExpressReceive')
-            .withArgs(tokenId, destinationAddress, amount, commandId, expressCaller);
-        expect(await handler.getExpressReceiveToken(tokenId, destinationAddress, amount, commandId)).to.equal(expressCaller);
+            .withArgs(payload, commandId, expressCaller);
+        expect(await handler.getExpressReceiveToken(payload, commandId)).to.equal(expressCaller);
 
         const newExpressCaller = new Wallet(getRandomBytes32()).address;
-        await expect(
-            handler.setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, newExpressCaller),
-        ).to.be.revertedWithCustomError(handler, 'AlreadyExpressCalled');
-    });
-
-    it('Should be able to set an express receive token', async () => {
-        const commandId = getRandomBytes32();
-        await expect(
-            handler.setExpressReceiveTokenWithData(
-                tokenId,
-                sourceChain,
-                sourceAddress,
-                destinationAddress,
-                amount,
-                data,
-                commandId,
-                expressCaller,
-            ),
-        )
-            .to.emit(handler, 'ExpressReceiveWithData')
-            .withArgs(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, expressCaller);
-        expect(
-            await handler.getExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId),
-        ).to.equal(expressCaller);
-    });
-
-    it('Should be able to set an express receive token', async () => {
-        const commandId = getRandomBytes32();
-        await expect(
-            handler.setExpressReceiveTokenWithData(
-                tokenId,
-                sourceChain,
-                sourceAddress,
-                destinationAddress,
-                amount,
-                data,
-                commandId,
-                expressCaller,
-            ),
-        )
-            .to.emit(handler, 'ExpressReceiveWithData')
-            .withArgs(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, expressCaller);
-        expect(
-            await handler.getExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId),
-        ).to.equal(expressCaller);
-
-        const newExpressCaller = new Wallet(getRandomBytes32()).address;
-        await expect(
-            handler.setExpressReceiveTokenWithData(
-                tokenId,
-                sourceChain,
-                sourceAddress,
-                destinationAddress,
-                amount,
-                data,
-                commandId,
-                newExpressCaller,
-            ),
-        ).to.be.revertedWithCustomError(handler, 'AlreadyExpressCalled');
+        await expect(handler.setExpressReceiveToken(payload, commandId, newExpressCaller)).to.be.revertedWithCustomError(
+            handler,
+            'AlreadyExpressCalled',
+        );
     });
 
     it('Should properly pop an express receive token', async () => {
         const commandId = getRandomBytes32();
-        await expect(handler.popExpressReceiveToken(tokenId, destinationAddress, amount, commandId)).to.not.emit(
-            handler,
-            'ExpressExecutionFulfilled',
-        );
+        await expect(handler.popExpressReceiveToken(payload, commandId)).to.not.emit(handler, 'ExpressExecutionFulfilled');
         expect(await handler.lastPoppedExpressCaller()).to.equal(AddressZero);
 
-        await (await handler.setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, expressCaller)).wait();
+        await (await handler.setExpressReceiveToken(payload, commandId, expressCaller)).wait();
 
-        await expect(handler.popExpressReceiveToken(tokenId, destinationAddress, amount, commandId))
+        await expect(handler.popExpressReceiveToken(payload, commandId))
             .to.emit(handler, 'ExpressExecutionFulfilled')
-            .withArgs(tokenId, destinationAddress, amount, commandId, expressCaller);
-        expect(await handler.lastPoppedExpressCaller()).to.equal(expressCaller);
-    });
-
-    it('Should properly pop an express receive token with data', async () => {
-        const commandId = getRandomBytes32();
-        await expect(
-            handler.popExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId),
-        ).to.not.emit(handler, 'ExpressExecutionWithDataFulfilled');
-        expect(await handler.lastPoppedExpressCaller()).to.equal(AddressZero);
-
-        await (
-            await handler.setExpressReceiveTokenWithData(
-                tokenId,
-                sourceChain,
-                sourceAddress,
-                destinationAddress,
-                amount,
-                data,
-                commandId,
-                expressCaller,
-            )
-        ).wait();
-
-        await expect(
-            handler.popExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId),
-        )
-            .to.emit(handler, 'ExpressExecutionWithDataFulfilled')
-            .withArgs(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, expressCaller);
+            .withArgs(payload, commandId, expressCaller);
         expect(await handler.lastPoppedExpressCaller()).to.equal(expressCaller);
     });
 });
