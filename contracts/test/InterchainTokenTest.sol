@@ -36,9 +36,9 @@ contract InterchainTokenTest is InterchainToken, Distributable, IERC20BurnableMi
         if (!tokenManagerRequiresApproval_) return;
         address tokenManagerAddress = address(tokenManager_);
         uint256 allowance_ = allowance[sender][tokenManagerAddress];
-        if (allowance_ != type(uint256).max) {
-            if (allowance_ > type(uint256).max - amount) {
-                allowance_ = type(uint256).max - amount;
+        if (allowance_ != UINT256_MAX) {
+            if (allowance_ > UINT256_MAX - amount) {
+                allowance_ = UINT256_MAX - amount;
             }
 
             _approve(sender, tokenManagerAddress, allowance_ + amount);
