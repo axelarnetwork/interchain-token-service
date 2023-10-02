@@ -9,6 +9,7 @@ const {
 } = ethers;
 const { expect } = chai;
 const { deployRemoteAddressValidator, deployContract } = require('../scripts/deploy');
+const { expectRevert } = require('../scripts/utils');
 
 describe('RemoteAddressValidator', () => {
     let ownerWallet, otherWallet, remoteAddressValidator, interchainTokenServiceAddress;
@@ -16,6 +17,7 @@ describe('RemoteAddressValidator', () => {
     const otherRemoteAddress = 'any string as an address';
     const otherChain = 'Chain Name';
     const chainName = 'Chain Name';
+
     before(async () => {
         const wallets = await ethers.getSigners();
         ownerWallet = wallets[0];
@@ -26,7 +28,8 @@ describe('RemoteAddressValidator', () => {
 
     it('Should revert on RemoteAddressValidator deployment with invalid interchain token service address', async () => {
         const remoteAddressValidatorFactory = await ethers.getContractFactory('RemoteAddressValidator');
-        await expect(remoteAddressValidatorFactory.deploy(AddressZero, chainName)).to.be.revertedWithCustomError(
+        await expectRevert(
+            (gasOptions) => remoteAddressValidatorFactory.deploy(AddressZero, chainName, gasOptions),
             remoteAddressValidator,
             'ZeroAddress',
         );
@@ -34,7 +37,8 @@ describe('RemoteAddressValidator', () => {
 
     it('Should revert on RemoteAddressValidator deployment with invalid chain name', async () => {
         const remoteAddressValidatorFactory = await ethers.getContractFactory('RemoteAddressValidator');
-        await expect(remoteAddressValidatorFactory.deploy(interchainTokenServiceAddress, '')).to.be.revertedWithCustomError(
+        await expectRevert(
+            (gasOptions) => remoteAddressValidatorFactory.deploy(interchainTokenServiceAddress, '', gasOptions),
             remoteAddressValidator,
             'ZeroStringLength',
         );
@@ -47,9 +51,28 @@ describe('RemoteAddressValidator', () => {
         ]);
         const remoteAddressValidatorProxyFactory = await ethers.getContractFactory('RemoteAddressValidatorProxy');
         const params = defaultAbiCoder.encode(['string[]', 'string[]'], [['Chain A'], []]);
-        await expect(
-            remoteAddressValidatorProxyFactory.deploy(remoteAddressValidatorImpl.address, ownerWallet.address, params),
-        ).to.be.revertedWithCustomError(remoteAddressValidator, 'SetupFailed');
+        await expectRevert(
+            (gasOptions) =>
+                remoteAddressValidatorProxyFactory.deploy(remoteAddressValidatorImpl.address, ownerWallet.address, params, gasOptions),
+            remoteAddressValidator,
+            'SetupFailed',
+        );
+    });
+
+    it('Should deploy RemoteAddressValidator and add trusted addresses', async () => {
+        const otherRemoteAddressValidator = await deployRemoteAddressValidator(
+            ownerWallet,
+            interchainTokenServiceAddress,
+            chainName,
+            [otherChain],
+            [otherRemoteAddress],
+        );
+
+        const remoteAddress = await otherRemoteAddressValidator.remoteAddresses(otherChain);
+        const remoteAddressHash = await otherRemoteAddressValidator.remoteAddressHashes(otherChain);
+
+        expect(remoteAddress).to.eq(otherRemoteAddress);
+        expect(remoteAddressHash).to.eq(keccak256(toUtf8Bytes(otherRemoteAddress.toLowerCase())));
     });
 
     it('Should get the correct remote address for unregistered chains', async () => {
@@ -71,9 +94,11 @@ describe('RemoteAddressValidator', () => {
     });
 
     it('Should not be able to add a custom remote address as not the owner', async () => {
-        await expect(
-            remoteAddressValidator.connect(otherWallet).addTrustedAddress(otherChain, otherRemoteAddress),
-        ).to.be.revertedWithCustomError(remoteAddressValidator, 'NotOwner');
+        await expectRevert(
+            (gasOptions) => remoteAddressValidator.connect(otherWallet).addTrustedAddress(otherChain, otherRemoteAddress, gasOptions),
+            remoteAddressValidator,
+            'NotOwner',
+        );
     });
 
     it('Should be able to add a custom remote address as the owner', async () => {
@@ -84,14 +109,16 @@ describe('RemoteAddressValidator', () => {
     });
 
     it('Should revert on adding a custom remote address with an empty chain name', async () => {
-        await expect(remoteAddressValidator.addTrustedAddress('', otherRemoteAddress)).to.be.revertedWithCustomError(
+        await expectRevert(
+            (gasOptions) => remoteAddressValidator.addTrustedAddress('', otherRemoteAddress, gasOptions),
             remoteAddressValidator,
             'ZeroStringLength',
         );
     });
 
     it('Should revert on adding a custom remote address with an invalid remote address', async () => {
-        await expect(remoteAddressValidator.addTrustedAddress(otherChain, '')).to.be.revertedWithCustomError(
+        await expectRevert(
+            (gasOptions) => remoteAddressValidator.addTrustedAddress(otherChain, '', gasOptions),
             remoteAddressValidator,
             'ZeroStringLength',
         );
@@ -102,7 +129,8 @@ describe('RemoteAddressValidator', () => {
     });
 
     it('Should not be able to remove a custom remote address as not the owner', async () => {
-        await expect(remoteAddressValidator.connect(otherWallet).removeTrustedAddress(otherChain)).to.be.revertedWithCustomError(
+        await expectRevert(
+            (gasOptions) => remoteAddressValidator.connect(otherWallet).removeTrustedAddress(otherChain, gasOptions),
             remoteAddressValidator,
             'NotOwner',
         );
@@ -116,7 +144,8 @@ describe('RemoteAddressValidator', () => {
     });
 
     it('Should revert on removing a custom remote address with an empty chain name', async () => {
-        await expect(remoteAddressValidator.removeTrustedAddress('')).to.be.revertedWithCustomError(
+        await expectRevert(
+            (gasOptions) => remoteAddressValidator.removeTrustedAddress('', gasOptions),
             remoteAddressValidator,
             'ZeroStringLength',
         );

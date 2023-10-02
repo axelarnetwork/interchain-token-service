@@ -12,19 +12,17 @@ const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardi
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
 
-const { getRandomBytes32 } = require('../scripts/utils');
+const { getRandomBytes32, expectRevert } = require('../scripts/utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
-// const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
 const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const LOCK_UNLOCK = 0;
 const MINT_BURN = 1;
-// const LIQUIDITY_POOL = 2;
 
-describe('Interchain Token Service', () => {
+describe('Interchain Token Service Full Flow', () => {
     let wallet;
     let service, gateway, gasService, tokenManager, tokenId;
     const name = 'tokenName';
@@ -123,8 +121,8 @@ describe('Interchain Token Service', () => {
 
             await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
 
-            await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
-            await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
         });
     });
 
@@ -232,8 +230,8 @@ describe('Interchain Token Service', () => {
 
             await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
 
-            await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
-            await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
         });
     });
 
@@ -308,8 +306,8 @@ describe('Interchain Token Service', () => {
                 .to.emit(token, 'DistributorshipTransferred')
                 .withArgs(tokenManager.address);
 
-            await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
-            await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
         });
 
         // In order to be able to receive tokens the distributorship should be changed on other chains as well.

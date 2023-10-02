@@ -6,14 +6,14 @@ const { deployCreate3Contract, getCreate3Address } = require('@axelar-network/ax
 
 async function deployContract(wallet, contractName, args = []) {
     const factory = await ethers.getContractFactory(contractName, wallet);
-    const contract = await factory.deploy(...args);
+    const contract = await factory.deploy(...args).then((d) => d.deployed());
 
     return contract;
 }
 
-async function deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName) {
+async function deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName, trustedChains = [], trustedAddresses = []) {
     const remoteAddressValidatorImpl = await deployContract(wallet, 'RemoteAddressValidator', [interchainTokenServiceAddress, chainName]);
-    const params = defaultAbiCoder.encode(['string[]', 'string[]'], [[], []]);
+    const params = defaultAbiCoder.encode(['string[]', 'string[]'], [trustedChains, trustedAddresses]);
 
     const remoteAddressValidatorProxy = await deployContract(wallet, 'RemoteAddressValidatorProxy', [
         remoteAddressValidatorImpl.address,
@@ -103,6 +103,7 @@ module.exports = {
     deployContract,
     deployRemoteAddressValidator,
     deployMockGateway,
+    deployTokenManagerImplementations,
     deployGasService,
     deployInterchainTokenService,
     deployAll,
