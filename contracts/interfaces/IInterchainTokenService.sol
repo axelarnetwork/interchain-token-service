@@ -28,6 +28,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error SelectorUnknown();
     error InvalidMetadataVersion(uint32 version);
     error AlreadyExecuted(bytes32 commandId);
+    error ExecuteWithTokenNotSupported();
 
     event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event TokenSentWithData(

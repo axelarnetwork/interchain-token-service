@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
-import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
@@ -34,15 +33,7 @@ import { Multicall } from '../utils/Multicall.sol';
  * It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
  * @dev The only storage used here is for ExpressCalls
  */
-contract InterchainTokenService is
-    IInterchainTokenService,
-    AxelarExecutable,
-    Upgradable,
-    Operatable,
-    ExpressCallHandler,
-    Pausable,
-    Multicall
-{
+contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatable, ExpressCallHandler, Pausable, Multicall {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using AddressBytesUtils for bytes;
@@ -52,6 +43,7 @@ contract InterchainTokenService is
     address internal immutable implementationMintBurn;
     address internal immutable implementationLockUnlockFee;
     address internal immutable implementationLiquidityPool;
+    IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
     IRemoteAddressValidator public immutable remoteAddressValidator;
     address public immutable tokenManagerDeployer;
@@ -85,13 +77,16 @@ contract InterchainTokenService is
         address gasService_,
         address remoteAddressValidator_,
         address[] memory tokenManagerImplementations
-    ) AxelarExecutable(gateway_) {
+    ) {
         if (
             remoteAddressValidator_ == address(0) ||
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
-            standardizedTokenDeployer_ == address(0)
+            standardizedTokenDeployer_ == address(0) ||
+            gateway_ == address(0)
         ) revert ZeroAddress();
+
+        gateway = IAxelarGateway(gateway_);
         remoteAddressValidator = IRemoteAddressValidator(remoteAddressValidator_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
@@ -536,16 +531,21 @@ contract InterchainTokenService is
      * @param sourceAddress The address where the transaction originates from
      * @param payload The encoded data payload for the transaction
      */
-    function _execute(
+    function execute(
+        bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) internal override onlyRemoteService(sourceChain, sourceAddress) notPaused {
+    ) external onlyRemoteService(sourceChain, sourceAddress) notPaused {
+        bytes32 payloadHash = keccak256(payload);
+
+        if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
+
         uint256 selector = abi.decode(payload, (uint256));
         if (selector == SELECTOR_SEND_TOKEN) {
-            _processSendTokenPayload(sourceChain, payload);
+            _processSendTokenPayload(commandId, sourceChain, payload);
         } else if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
-            _processSendTokenWithDataPayload(sourceChain, payload);
+            _processSendTokenWithDataPayload(commandId, sourceChain, payload);
         } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
         } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
@@ -555,18 +555,25 @@ contract InterchainTokenService is
         }
     }
 
+    function executeWithToken(
+        bytes32 /*commandId*/,
+        string calldata /*sourceChain*/,
+        string calldata /*sourceAddress*/,
+        bytes calldata /*payload*/,
+        string calldata /*tokenSymbol*/,
+        uint256 /*amount*/
+    ) external pure {
+        revert ExecuteWithTokenNotSupported();
+    }
+
     /**
      * @notice Processes the payload data for a send token call
      * @param sourceChain The chain where the transaction originates from
      * @param payload The encoded data payload to be processed
      */
-    function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
+    function _processSendTokenPayload(bytes32 commandId, string calldata sourceChain, bytes calldata payload) internal {
         (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
-        bytes32 commandId;
 
-        assembly {
-            commandId := calldataload(4)
-        }
         address destinationAddress = destinationAddressBytes.toAddress();
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         address expressCaller = _popExpressReceiveToken(tokenId, destinationAddress, amount, commandId);
@@ -582,21 +589,16 @@ contract InterchainTokenService is
      * @notice Processes a send token with data payload.
      * @param sourceChain The chain where the transaction originates from
      * @param payload The encoded data payload to be processed
+     * @param commandId The command id of the contract call to be used for express call purposes
      */
-    function _processSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
+    function _processSendTokenWithDataPayload(bytes32 commandId, string memory sourceChain, bytes memory payload) internal {
         bytes32 tokenId;
         uint256 amount;
         bytes memory sourceAddress;
-        bytes memory data;
         address destinationAddress;
-        bytes32 commandId;
-
-        assembly {
-            commandId := calldataload(4)
-        }
         {
             bytes memory destinationAddressBytes;
-            (, tokenId, destinationAddressBytes, amount, sourceAddress, data) = abi.decode(
+            (, tokenId, destinationAddressBytes, amount, sourceAddress, payload) = abi.decode(
                 payload,
                 (uint256, bytes32, bytes, uint256, bytes, bytes)
             );
@@ -610,7 +612,7 @@ contract InterchainTokenService is
                 sourceAddress,
                 destinationAddress,
                 amount,
-                data,
+                payload,
                 commandId
             );
             if (expressCaller != address(0)) {
@@ -619,8 +621,14 @@ contract InterchainTokenService is
             }
         }
         amount = tokenManager.giveToken(destinationAddress, amount);
-        IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
-        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
+        IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(
+            sourceChain,
+            sourceAddress,
+            payload,
+            tokenId,
+            amount
+        );
+        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, payload);
     }
 
     /**
