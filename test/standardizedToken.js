@@ -8,13 +8,13 @@ const {
     constants: { MaxUint256, AddressZero },
 } = ethers;
 const { expect } = chai;
-const { getRandomBytes32, getChainId, expectRevert } = require('../scripts/utils');
+const { getRandomBytes32, getChainId, expectRevert, getGasOptions } = require('../scripts/utils');
 const { deployContract } = require('../scripts/deploy');
 
 const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
 const StandardizedTokenProxy = require('../artifacts/contracts/proxies/StandardizedTokenProxy.sol/StandardizedTokenProxy.json');
 
-describe('StandardizedToken', () => {
+describe.only('StandardizedToken', () => {
     let standardizedToken, standardizedTokenDeployer;
 
     const name = 'tokenName';
@@ -73,6 +73,7 @@ describe('StandardizedToken', () => {
                     decimals,
                     mintAmount,
                     owner.address,
+                    getGasOptions(),
                 ),
             ).to.be.reverted;
         });

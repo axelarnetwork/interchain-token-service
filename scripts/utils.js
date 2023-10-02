@@ -43,8 +43,12 @@ async function deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals
     await (await gateway.deployToken(params, commandId)).wait();
 }
 
+// const getGasOptions = () => {
+//     return network.config.blockGasLimit ? { gasLimit: network.config.blockGasLimit.toString() } : { gasLimit: 5e6 }; // defaults to 5M gas for revert tests to work correctly
+// };
+
 const getGasOptions = () => {
-    return network.config.blockGasLimit ? { gasLimit: network.config.blockGasLimit.toString() } : { gasLimit: 5e6 }; // defaults to 5M gas for revert tests to work correctly
+    return { gasLimit: 5000000 };
 };
 
 const expectRevert = async (txFunc, contract, error) => {
@@ -60,5 +64,6 @@ module.exports = {
     getRandomBytes32,
     approveContractCall,
     deployGatewayToken,
+    getGasOptions,
     expectRevert,
 };
