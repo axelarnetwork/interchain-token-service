@@ -14,7 +14,7 @@ const { deployContract } = require('../scripts/deploy');
 const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
 const StandardizedTokenProxy = require('../artifacts/contracts/proxies/StandardizedTokenProxy.sol/StandardizedTokenProxy.json');
 
-describe.only('StandardizedToken', () => {
+describe('StandardizedToken', () => {
     let standardizedToken, standardizedTokenDeployer;
 
     const name = 'tokenName';
