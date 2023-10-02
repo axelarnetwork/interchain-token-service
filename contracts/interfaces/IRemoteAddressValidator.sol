@@ -13,8 +13,6 @@ interface IRemoteAddressValidator {
 
     event TrustedAddressAdded(string sourceChain, string sourceAddress);
     event TrustedAddressRemoved(string sourceChain);
-    event GatewaySupportedChainAdded(string chain);
-    event GatewaySupportedChainRemoved(string chain);
 
     /**
      * @notice Returns the interchain token address
@@ -58,22 +56,4 @@ interface IRemoteAddressValidator {
      * @return remoteAddress Interchain token service address for the specified chain
      */
     function getRemoteAddress(string calldata chainName) external view returns (string memory remoteAddress);
-
-    /**
-     * @notice Returns true if the gateway delivers token to this chain.
-     * @param chainName Name of the chain
-     */
-    function supportedByGateway(string calldata chainName) external view returns (bool);
-
-    /**
-     * @dev Adds chains that are supported by the Axelar gateway
-     * @param chainNames List of chain names to be added as supported
-     */
-    function addGatewaySupportedChains(string[] calldata chainNames) external;
-
-    /**
-     * @dev Removes chains that are no longer supported by the Axelar gateway
-     * @param chainNames List of chain names to be removed as supported
-     */
-    function removeGatewaySupportedChains(string[] calldata chainNames) external;
 }

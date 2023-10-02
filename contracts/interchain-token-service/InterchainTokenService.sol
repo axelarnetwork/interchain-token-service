@@ -330,8 +330,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Used to deploy a standardized token alongside a TokenManager. If the `distributor` is the address of the TokenManager (which
-     * can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwise a lock/unlock TokenManager is used.
+     * @notice Used to deploy a standardized token alongside a TokenManager.
      * @param salt the salt to be used.
      * @param name the name of the token to be deployed.
      * @param symbol the symbol of the token to be deployed.
@@ -446,9 +445,9 @@ contract InterchainTokenService is
 
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
 
-        _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
-
         _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, caller);
+
+        _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
     }
 
     /*********************\

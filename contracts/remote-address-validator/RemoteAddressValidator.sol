@@ -15,7 +15,6 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
 
     mapping(string => bytes32) public remoteAddressHashes;
     mapping(string => string) public remoteAddresses;
-    mapping(string => bool) public supportedByGateway;
     string public chainName;
 
     address public immutable interchainTokenServiceAddress;
@@ -148,37 +147,6 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
         remoteAddresses[sourceChain] = '';
 
         emit TrustedAddressRemoved(sourceChain);
-    }
-
-    /**
-     * @dev Adds chains that are supported by the Axelar gateway
-     * @param chainNames List of chain names to be added as supported
-     */
-    function addGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
-        uint256 length = chainNames.length;
-        string calldata chainName_;
-        for (uint256 i; i < length; ++i) {
-            chainName_ = chainNames[i];
-            supportedByGateway[chainName_] = true;
-
-            emit GatewaySupportedChainAdded(chainName_);
-        }
-    }
-
-    /**
-     * @dev Removes chains that are no longer supported by the Axelar gateway
-     * @param chainNames List of chain names to be removed as supported
-     */
-    function removeGatewaySupportedChains(string[] calldata chainNames) external onlyOwner {
-        uint256 length = chainNames.length;
-        string calldata chainName_;
-
-        for (uint256 i; i < length; ++i) {
-            chainName_ = chainNames[i];
-            supportedByGateway[chainName_] = false;
-
-            emit GatewaySupportedChainRemoved(chainName_);
-        }
     }
 
     /**

@@ -12,7 +12,7 @@ import { IOperatable } from '../interfaces/IOperatable.sol';
  */
 contract Operatable is IOperatable {
     // uint256(keccak256('operator')) - 1
-    uint256 internal constant OPERATOR_SLOT = 0xf23ec0bb4210edd5cba85afd05127efcd2fc6a781bfed49188da1081670b22d7;
+    uint256 internal constant OPERATOR_SLOT = 0x46a52cf33029de9f84853745a87af28464c80bf0346df1b32e205fc73319f621;
     // uint256(keccak256('proposed-operator')) - 1
     uint256 internal constant PROPOSED_OPERATOR_SLOT = 0x18dd7104fe20f6107b1523000995e8f87ac02b734a65cf0a45fafa7635a2c526;
 
@@ -74,6 +74,7 @@ contract Operatable is IOperatable {
         address proposedOperator;
         assembly {
             proposedOperator := sload(PROPOSED_OPERATOR_SLOT)
+            sstore(PROPOSED_OPERATOR_SLOT, 0)
         }
         if (msg.sender != proposedOperator) revert NotProposedOperator();
         _setOperator(proposedOperator);
