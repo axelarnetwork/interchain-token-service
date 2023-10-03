@@ -42,7 +42,7 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
      * @param amount the amount of tokens to take from msg.sender.
      * @param metadata any additional data to be sent with the transfer.
      */
-    function sendToken(
+    function interchainTransfer(
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
@@ -86,6 +86,14 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
      * @return the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
+
+    /**
+     * @notice This function takes token to from a specified address. Can only be called by the service.
+     * @param sourceAddress the address to take tokens from.
+     * @param amount the amount of token to take.
+     * @return the amount of token actually taken, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+     */
+    function takeToken(address sourceAddress, uint256 amount) external returns (uint256);
 
     /**
      * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.

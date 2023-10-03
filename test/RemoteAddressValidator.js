@@ -126,36 +126,4 @@ describe('RemoteAddressValidator', () => {
         expect(await remoteAddressValidator.validateSender(otherChain, otherRemoteAddress)).to.equal(false);
         expect(await remoteAddressValidator.validateSender(otherChain, interchainTokenServiceAddress)).to.equal(true);
     });
-
-    it('Should have chains as not gateway supported by default', async () => {
-        expect(await remoteAddressValidator.supportedByGateway(otherChain)).to.equal(false);
-    });
-
-    it('Should not be able to add a chain as gateway supported as not the onwer', async () => {
-        await expect(remoteAddressValidator.connect(otherWallet).addGatewaySupportedChains([otherChain])).to.be.revertedWithCustomError(
-            remoteAddressValidator,
-            'NotOwner',
-        );
-    });
-
-    it('Should be able to add a chain as gateway supported as the onwer', async () => {
-        await expect(remoteAddressValidator.addGatewaySupportedChains([otherChain]))
-            .to.emit(remoteAddressValidator, 'GatewaySupportedChainAdded')
-            .withArgs(otherChain);
-        expect(await remoteAddressValidator.supportedByGateway(otherChain)).to.equal(true);
-    });
-
-    it('Should not be able to remove a chain as gateway supported as not the onwer', async () => {
-        await expect(remoteAddressValidator.connect(otherWallet).removeGatewaySupportedChains([otherChain])).to.be.revertedWithCustomError(
-            remoteAddressValidator,
-            'NotOwner',
-        );
-    });
-
-    it('Should be able to remove a chain as gateway supported as the onwer', async () => {
-        await expect(remoteAddressValidator.removeGatewaySupportedChains([otherChain]))
-            .to.emit(remoteAddressValidator, 'GatewaySupportedChainRemoved')
-            .withArgs(otherChain);
-        expect(await remoteAddressValidator.supportedByGateway(otherChain)).to.equal(false);
-    });
 });

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
@@ -16,13 +16,13 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Permit, Implementation, Distributable {
+contract StandardizedToken is IERC20MintableBurnable, InterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
-    address internal tokenManager_;
     string public name;
     string public symbol;
     uint8 public decimals;
+    address internal tokenManager_;
 
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
@@ -68,7 +68,7 @@ contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Perm
             name = tokenName;
 
             _setDistributor(distributor_);
-            _setDomainTypeSignatureHash(tokenName);
+            _setNameHash(tokenName);
         }
         {
             uint256 mintAmount;
