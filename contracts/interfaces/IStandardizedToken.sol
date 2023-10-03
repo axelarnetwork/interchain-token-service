@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import { IInterchainToken } from './IInterchainToken.sol';
 import { IDistributable } from './IDistributable.sol';
-import { IERC20BurnableMintable } from './IERC20BurnableMintable.sol';
+import { IERC20MintableBurnable } from './IERC20MintableBurnable.sol';
 import { ITokenManager } from './ITokenManager.sol';
 import { IERC20Named } from './IERC20Named.sol';
 

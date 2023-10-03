@@ -143,8 +143,8 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     function removeTrustedAddress(string calldata sourceChain) external onlyOwner {
         if (bytes(sourceChain).length == 0) revert ZeroStringLength();
 
-        remoteAddressHashes[sourceChain] = bytes32(0);
-        remoteAddresses[sourceChain] = '';
+        delete remoteAddressHashes[sourceChain];
+        delete remoteAddresses[sourceChain];
 
         emit TrustedAddressRemoved(sourceChain);
     }
