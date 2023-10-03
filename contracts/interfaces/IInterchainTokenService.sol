@@ -2,11 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarExecutable.sol';
 
 import { IExpressCallHandler } from './IExpressCallHandler.sol';
-import { ITokenManagerDeployer } from './ITokenManagerDeployer.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
 import { IMulticall } from './IMulticall.sol';
@@ -28,10 +26,11 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error SelectorUnknown();
     error InvalidMetadataVersion(uint32 version);
     error AlreadyExecuted(bytes32 commandId);
+    error InvalidExpressSelector();
 
-    event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
+    event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event TokenSentWithData(
-        bytes32 tokenId,
+        bytes32 indexed tokenId,
         string destinationChain,
         bytes destinationAddress,
         uint256 indexed amount,
@@ -61,7 +60,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         uint8 tokenDecimals,
         bytes distributor,
         bytes mintTo,
-        uint256 mintAmount,
+        uint256 indexed mintAmount,
         bytes operator,
         string destinationChain,
         uint256 indexed gasValue
@@ -69,11 +68,11 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     event TokenManagerDeployed(bytes32 indexed tokenId, TokenManagerType indexed tokenManagerType, bytes params);
     event StandardizedTokenDeployed(
         bytes32 indexed tokenId,
-        address distributor,
+        address indexed distributor,
         string name,
         string symbol,
         uint8 decimals,
-        uint256 mintAmount,
+        uint256 indexed mintAmount,
         address mintTo
     );
     event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
@@ -228,6 +227,22 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      */
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
 
+    function interchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata
+    ) external;
+
+    function sendTokenWithData(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external;
+
     /**
      * @notice Initiates an interchain token transfer. Only callable by TokenManagers
      * @param tokenId The tokenId of the token to be transmitted.
@@ -281,31 +296,9 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     function setPaused(bool paused) external;
 
     /**
-     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
-     * @param tokenId the tokenId of the TokenManager used.
-     * @param destinationAddress the destinationAddress for the sendToken.
-     * @param amount the amount of token to give.
+     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing interchainTransfer that matches the parameters passed here.
+     * @param payload the payload of the receive token
      * @param commandId the commandId calculated from the event at the sourceChain.
      */
-    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external;
-
-    /**
-     * @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have detected an outgoing sendToken that matches the parameters passed here.
-     * @param tokenId the tokenId of the TokenManager used.
-     * @param sourceChain the name of the chain where the call came from.
-     * @param sourceAddress the caller of callContractWithInterchainToken.
-     * @param destinationAddress the destinationAddress for the sendToken.
-     * @param amount the amount of token to give.
-     * @param data the data to be passed to destinationAddress after giving them the tokens specified.
-     * @param commandId the commandId calculated from the event at the sourceChain.
-     */
-    function expressReceiveTokenWithData(
-        bytes32 tokenId,
-        string memory sourceChain,
-        bytes memory sourceAddress,
-        address destinationAddress,
-        uint256 amount,
-        bytes calldata data,
-        bytes32 commandId
-    ) external;
+    function expressReceiveToken(bytes calldata payload, bytes32 commandId, string calldata sourceChain) external;
 }

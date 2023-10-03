@@ -19,10 +19,11 @@ const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
 const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
-const LOCK_UNLOCK = 0;
-const MINT_BURN = 1;
-const LOCK_UNLOCK_FEE_ON_TRANSFER = 2;
-const LIQUIDITY_POOL = 3;
+const MINT_BURN = 0;
+const MINT_BURN_FROM = 1;
+const LOCK_UNLOCK = 2;
+const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
+const LIQUIDITY_POOL = 4;
 
 describe('Interchain Token Service', () => {
     let wallet, liquidityPool;
@@ -80,25 +81,29 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
-    deployFunctions.mintBurn = async function deployNewMintBurn(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
-        const salt = getRandomBytes32();
-        const tokenId = await service.getCustomTokenId(wallet.address, salt);
-        const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-        const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+    const makeDeployNewMintBurn = (type) =>
+        async function deployNewMintBurn(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
+            const salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
 
-        const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
+            const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
 
-        if (mintAmount > 0) {
-            await (await token.mint(wallet.address, mintAmount)).wait();
-        }
+            if (mintAmount > 0) {
+                await (await token.mint(wallet.address, mintAmount)).wait();
+            }
 
-        await (await token.transferDistributorship(tokenManagerAddress)).wait();
+            await (await token.transferDistributorship(tokenManagerAddress)).wait();
 
-        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-        await (await service.deployCustomTokenManager(salt, MINT_BURN, params)).wait();
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            await (await service.deployCustomTokenManager(salt, type, params)).wait();
 
-        return [token, tokenManager, tokenId];
-    };
+            return [token, tokenManager, tokenId];
+        };
+
+    deployFunctions.mintBurn = makeDeployNewMintBurn(MINT_BURN);
+    deployFunctions.mintBurnFrom = makeDeployNewMintBurn(MINT_BURN_FROM);
 
     deployFunctions.liquidityPool = async function deployNewLiquidityPool(
         tokenName,
@@ -854,7 +859,7 @@ describe('Interchain Token Service', () => {
                     transferToAddress = liquidityPool.address;
                 }
 
-                await expect(tokenManager.sendToken(destinationChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -1198,19 +1203,25 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should express execute', async () => {
-            await expect(service.expressReceiveToken(tokenId, destinationAddress, amount, commandId))
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256'],
+                [SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount],
+            );
+            await expect(service.expressReceiveToken(payload, commandId, sourceChain))
                 .to.emit(service, 'ExpressReceive')
-                .withArgs(tokenId, destinationAddress, amount, commandId, wallet.address)
+                .withArgs(payload, commandId, wallet.address)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, destinationAddress, amount);
         });
 
         it('Should express execute with token', async () => {
-            await expect(
-                service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, executable.address, amount, data, commandId),
-            )
-                .to.emit(service, 'ExpressReceiveWithData')
-                .withArgs(tokenId, sourceChain, sourceAddress, executable.address, amount, data, commandId, wallet.address)
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256', 'bytes', ' bytes'],
+                [SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, executable.address, amount, sourceAddress, data],
+            );
+            await expect(service.expressReceiveToken(payload, commandId, sourceChain))
+                .to.emit(service, 'ExpressReceive')
+                .withArgs(payload, commandId, wallet.address)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, executable.address, amount)
                 .and.to.emit(token, 'Transfer')
@@ -1239,13 +1250,13 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await (await service.expressReceiveToken(tokenId, destAddress, amount, commandId)).wait();
+            await (await service.expressReceiveToken(payload, commandId, sourceChain)).wait();
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(tokenId, destAddress, amount, commandId, wallet.address);
+                .withArgs(payload, commandId, wallet.address);
         });
 
         it('Should be able to receive mint/burn token', async () => {
@@ -1259,13 +1270,13 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await (await service.expressReceiveToken(tokenId, destAddress, amount, commandId)).wait();
+            await (await service.expressReceiveToken(payload, commandId, sourceChain)).wait();
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(tokenId, destAddress, amount, commandId, wallet.address);
+                .withArgs(payload, commandId, wallet.address);
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
@@ -1279,13 +1290,13 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await (await service.expressReceiveToken(tokenId, destAddress, amount, commandId)).wait();
+            await (await service.expressReceiveToken(payload, commandId, sourceChain)).wait();
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(tokenId, destAddress, amount, commandId, wallet.address);
+                .withArgs(payload, commandId, wallet.address);
         });
 
         it('Should be able to receive liquidity pool token', async () => {
@@ -1299,13 +1310,13 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await (await service.expressReceiveToken(tokenId, destAddress, amount, commandId)).wait();
+            await (await service.expressReceiveToken(payload, commandId, sourceChain)).wait();
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(liquidityPool.address, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(tokenId, destAddress, amount, commandId, wallet.address);
+                .withArgs(payload, commandId, wallet.address);
         });
     });
 
@@ -1335,23 +1346,14 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await (
-                await service.expressReceiveTokenWithData(
-                    tokenId,
-                    sourceChain,
-                    sourceAddressForService,
-                    destAddress,
-                    amount,
-                    data,
-                    commandId,
-                )
-            ).wait();
+            await (await service.expressReceiveToken(payload, commandId, sourceChain)).wait();
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            const tx = service.execute(commandId, sourceChain, sourceAddress, payload);
+            await expect(tx)
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
-                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
-                .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, commandId, wallet.address);
+                .and.to.emit(service, 'ExpressExecutionFulfilled')
+                .withArgs(payload, commandId, wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1369,23 +1371,13 @@ describe('Interchain Token Service', () => {
 
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await (
-                await service.expressReceiveTokenWithData(
-                    tokenId,
-                    sourceChain,
-                    sourceAddressForService,
-                    destAddress,
-                    amount,
-                    data,
-                    commandId,
-                )
-            ).wait();
+            await (await service.expressReceiveToken(payload, commandId, sourceChain)).wait();
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, amount)
-                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
-                .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, commandId, wallet.address);
+                .and.to.emit(service, 'ExpressExecutionFulfilled')
+                .withArgs(payload, commandId, wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1403,9 +1395,7 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await expect(
-                service.expressReceiveTokenWithData(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, commandId),
-            ).to.be.reverted;
+            await expect(service.expressReceiveToken(payload, commandId, sourceChain)).to.be.reverted;
         });
 
         it('Should be able to receive liquidity pool token', async () => {
@@ -1421,23 +1411,13 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            await (
-                await service.expressReceiveTokenWithData(
-                    tokenId,
-                    sourceChain,
-                    sourceAddressForService,
-                    destAddress,
-                    amount,
-                    data,
-                    commandId,
-                )
-            ).wait();
+            await (await service.expressReceiveToken(payload, commandId, sourceChain)).wait();
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(liquidityPool.address, wallet.address, amount)
-                .and.to.emit(service, 'ExpressExecutionWithDataFulfilled')
-                .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount, data, commandId, wallet.address);
+                .and.to.emit(service, 'ExpressExecutionFulfilled')
+                .withArgs(payload, commandId, wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1457,11 +1437,10 @@ describe('Interchain Token Service', () => {
         // These tests will fail every once in a while since the two transactions will happen in different epochs.
         // LMK of any fixes to this that do not involve writing a new contract to facilitate a multicall.
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
-            await (await tokenManager.sendToken(destinationChain, destinationAddress, sendAmount, '0x')).wait();
-            await expect(tokenManager.sendToken(destinationChain, destinationAddress, sendAmount, '0x')).to.be.revertedWithCustomError(
-                tokenManager,
-                'FlowLimitExceeded',
-            );
+            await (await tokenManager.interchainTransfer(destinationChain, destinationAddress, sendAmount, '0x')).wait();
+            await expect(
+                tokenManager.interchainTransfer(destinationChain, destinationAddress, sendAmount, '0x'),
+            ).to.be.revertedWithCustomError(tokenManager, 'FlowLimitExceeded');
         });
 
         it('Should be able to receive token only if it does not trigger the mint limit', async () => {

@@ -5,9 +5,9 @@ pragma solidity ^0.8.0;
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { Distributable } from '../utils/Distributable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
-contract InterchainTokenTest is InterchainToken, Distributable, IERC20BurnableMintable {
+contract InterchainTokenTest is InterchainToken, Distributable, IERC20MintableBurnable {
     ITokenManager public tokenManager_;
     bool internal tokenManagerRequiresApproval_ = true;
     string public name;
@@ -36,9 +36,9 @@ contract InterchainTokenTest is InterchainToken, Distributable, IERC20BurnableMi
         if (!tokenManagerRequiresApproval_) return;
         address tokenManagerAddress = address(tokenManager_);
         uint256 allowance_ = allowance[sender][tokenManagerAddress];
-        if (allowance_ != type(uint256).max) {
-            if (allowance_ > type(uint256).max - amount) {
-                allowance_ = type(uint256).max - amount;
+        if (allowance_ != UINT256_MAX) {
+            if (allowance_ > UINT256_MAX - amount) {
+                allowance_ = UINT256_MAX - amount;
             }
 
             _approve(sender, tokenManagerAddress, allowance_ + amount);

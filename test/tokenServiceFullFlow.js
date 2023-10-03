@@ -10,18 +10,21 @@ const { Contract, Wallet } = ethers;
 
 const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
+const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
 
 const { getRandomBytes32 } = require('../scripts/utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
 // const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
-// const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
+const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
-const LOCK_UNLOCK = 0;
-const MINT_BURN = 1;
-// const LIQUIDITY_POOL = 2;
+const MINT_BURN = 0;
+// const MINT_BURN_FROM = 1;
+const LOCK_UNLOCK = 2;
+// const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
+// const LIQUIDITY_POOL = 4;
 
 describe('Interchain Token Service Full Flow', () => {
     let wallet;
@@ -101,7 +104,7 @@ describe('Interchain Token Service Full Flow', () => {
                 .to.emit(token, 'Approval')
                 .withArgs(wallet.address, tokenManager.address, amount);
 
-            await expect(tokenManager.sendToken(destChain, destAddress, amount, '0x', { value: gasValue }))
+            await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, tokenManager.address, amount)
                 .and.to.emit(gateway, 'ContractCall')
@@ -209,7 +212,7 @@ describe('Interchain Token Service Full Flow', () => {
             );
             const payloadHash = keccak256(payload);
 
-            await expect(tokenManager.sendToken(destChain, destAddress, amount, '0x', { value: gasValue }))
+            await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, AddressZero, amount)
                 .and.to.emit(gateway, 'ContractCall')
@@ -232,6 +235,106 @@ describe('Interchain Token Service Full Flow', () => {
 
             await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
             await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+        });
+    });
+
+    describe('Full pre-existing token registration and token send', async () => {
+        let token;
+        const otherChains = ['chain 1', 'chain 2'];
+        const gasValues = [1234, 5678];
+        const tokenCap = BigInt(1e18);
+        const salt = keccak256('0x697858');
+
+        before(async () => {
+            // The below is used to deploy a token, but any ERC20 that has a mint capability can be used instead.
+            token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
+
+            tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            await (await token.mint(wallet.address, tokenCap)).wait();
+            await (await token.setTokenManager(tokenManagerAddress)).wait();
+            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+        });
+
+        it('Should register the token and initiate its deployment on other chains', async () => {
+            const implAddress = await service.getImplementation(MINT_BURN);
+            const impl = new Contract(implAddress, ITokenManagerMintBurn.abi, wallet);
+            const params = await impl.getParams(wallet.address, token.address);
+            const tx1 = await service.populateTransaction.deployCustomTokenManager(salt, MINT_BURN, params);
+            const data = [tx1.data];
+            let value = 0;
+
+            for (const i in otherChains) {
+                const tx = await service.populateTransaction.deployRemoteCustomTokenManager(
+                    salt,
+                    otherChains[i],
+                    MINT_BURN,
+                    params,
+                    gasValues[i],
+                );
+                data.push(tx.data);
+                value += gasValues[i];
+            }
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
+            );
+            await expect(service.multicall(data, { value }))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, MINT_BURN, params)
+                .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
+                .withArgs(tokenId, otherChains[0], gasValues[0], MINT_BURN, params)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
+                .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
+                .withArgs(tokenId, otherChains[1], gasValues[1], MINT_BURN, params)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
+        });
+
+        // For this test the token must be a standardized token (or a distributable token in general)
+        it('Should be able to change the token distributor', async () => {
+            const newAddress = new Wallet(getRandomBytes32()).address;
+            const amount = 1234;
+
+            await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
+            await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
+
+            await expect(token.transferDistributorship(tokenManager.address))
+                .to.emit(token, 'DistributorshipTransferred')
+                .withArgs(tokenManager.address);
+
+            await expect(token.mint(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+            await expect(token.burn(newAddress, amount)).to.be.revertedWithCustomError(token, 'NotDistributor');
+        });
+
+        // In order to be able to receive tokens the distributorship should be changed on other chains as well.
+        it('Should send some token to another chain', async () => {
+            const amount = 1234;
+            const destAddress = '0x1234';
+            const destChain = otherChains[0];
+            const gasValue = 6789;
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+            );
+            const payloadHash = keccak256(payload);
+
+            await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, AddressZero, amount)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
+                .to.emit(service, 'TokenSent')
+                .withArgs(tokenId, destChain, destAddress, amount);
         });
     });
 });

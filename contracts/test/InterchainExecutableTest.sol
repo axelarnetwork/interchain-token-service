@@ -23,7 +23,7 @@ contract InterchainExecutableTest is InterchainTokenExpressExecutable {
         (address receiver, string memory message) = abi.decode(data, (address, string));
         lastMessage = message;
         address tokenAddress = IInterchainTokenService(msg.sender).getTokenAddress(tokenId);
-        IERC20(tokenAddress).transfer(receiver, amount);
         emit MessageReceived(sourceChain, sourceAddress, receiver, message, tokenId, amount);
+        IERC20(tokenAddress).transfer(receiver, amount);
     }
 }

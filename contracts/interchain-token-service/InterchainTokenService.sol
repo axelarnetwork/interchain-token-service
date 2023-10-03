@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarExecutable.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
@@ -330,8 +329,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Used to deploy a standardized token alongside a TokenManager. If the `distributor` is the address of the TokenManager (which
-     * can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwise a lock/unlock TokenManager is used.
+     * @notice Used to deploy a standardized token alongside a TokenManager.
      * @param salt the salt to be used.
      * @param name the name of the token to be deployed.
      * @param symbol the symbol of the token to be deployed.
@@ -398,57 +396,65 @@ contract InterchainTokenService is
 
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
-     * sendToken that matches the parameters passed here.
+     * interchainTransfer that matches the parameters passed here.
      * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller.
-     * @param tokenId the tokenId of the TokenManager used.
-     * @param destinationAddress the destinationAddress for the sendToken.
-     * @param amount the amount of token to give.
+     * @param payload the payload of the receive token
      * @param commandId the sendHash detected at the sourceChain.
      */
-    function expressReceiveToken(bytes32 tokenId, address destinationAddress, uint256 amount, bytes32 commandId) external {
+    function expressReceiveToken(bytes calldata payload, bytes32 commandId, string calldata sourceChain) external {
         if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
 
         address caller = msg.sender;
+        _setExpressReceiveToken(payload, commandId, caller);
+
+        (uint256 selector, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
+            payload,
+            (uint256, bytes32, bytes, uint256)
+        );
+        address destinationAddress = destinationAddressBytes.toAddress();
+
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
 
         SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
 
-        _setExpressReceiveToken(tokenId, destinationAddress, amount, commandId, caller);
+        if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
+            (, , , , bytes memory sourceAddress, bytes memory data) = abi.decode(payload, (uint256, bytes32, bytes, uint256, bytes, bytes));
+            IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(
+                sourceChain,
+                sourceAddress,
+                data,
+                tokenId,
+                amount
+            );
+        } else if (selector != SELECTOR_SEND_TOKEN) {
+            revert InvalidExpressSelector();
+        }
     }
 
-    /**
-     * @notice Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of time. Use this only if you have
-     * detected an outgoing sendToken that matches the parameters passed here.
-     * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller and it will pass an incorrect amount to the contract.
-     * @param tokenId the tokenId of the TokenManager used.
-     * @param sourceChain the name of the chain where the call came from.
-     * @param sourceAddress the caller of callContractWithInterchainToken.
-     * @param destinationAddress the destinationAddress for the sendToken.
-     * @param amount the amount of token to give.
-     * @param data the data to be passed to destinationAddress after giving them the tokens specified.
-     * @param commandId the sendHash detected at the sourceChain.
-     */
-    function expressReceiveTokenWithData(
+    function interchainTransfer(
         bytes32 tokenId,
-        string memory sourceChain,
-        bytes memory sourceAddress,
-        address destinationAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata data,
-        bytes32 commandId
+        bytes calldata metadata
     ) external {
-        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
+        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        amount = tokenManager.takeToken(msg.sender, amount);
+        _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
+    }
 
-        address caller = msg.sender;
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        IERC20 token = IERC20(tokenManager.tokenAddress());
-
-        SafeTokenTransferFrom.safeTransferFrom(token, caller, destinationAddress, amount);
-
-        _expressExecuteWithInterchainTokenToken(tokenId, destinationAddress, sourceChain, sourceAddress, data, amount);
-
-        _setExpressReceiveTokenWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount, data, commandId, caller);
+    function sendTokenWithData(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external {
+        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        amount = tokenManager.takeToken(msg.sender, amount);
+        uint32 prefix = 0;
+        _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
     }
 
     /*********************\
@@ -460,7 +466,7 @@ contract InterchainTokenService is
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimbursement of gas.
      * @param destinationChain the name of the chain to send tokens to.
-     * @param destinationAddress the destinationAddress for the sendToken.
+     * @param destinationAddress the destinationAddress for the interchainTransfer.
      * @param amount the amount of token to give.
      * @param metadata the data to be passed to the destination.
      */
@@ -472,19 +478,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable onlyTokenManager(tokenId) notPaused {
-        bytes memory payload;
-        if (metadata.length < 4) {
-            payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount);
-            _callContract(destinationChain, payload, msg.value);
-            emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
-            return;
-        }
-        uint32 version;
-        (version, metadata) = _decodeMetadata(metadata);
-        if (version > 0) revert InvalidMetadataVersion(version);
-        payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
-        _callContract(destinationChain, payload, msg.value);
-        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
+        _transmitSendToken(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadata);
     }
 
     /*************\
@@ -542,10 +536,8 @@ contract InterchainTokenService is
         bytes calldata payload
     ) internal override onlyRemoteService(sourceChain, sourceAddress) notPaused {
         uint256 selector = abi.decode(payload, (uint256));
-        if (selector == SELECTOR_SEND_TOKEN) {
-            _processSendTokenPayload(sourceChain, payload);
-        } else if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
-            _processSendTokenWithDataPayload(sourceChain, payload);
+        if (selector == SELECTOR_SEND_TOKEN || selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
+            _processSendTokenPayload(sourceChain, payload, selector);
         } else if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
         } else if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
@@ -560,67 +552,45 @@ contract InterchainTokenService is
      * @param sourceChain The chain where the transaction originates from
      * @param payload The encoded data payload to be processed
      */
-    function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload) internal {
-        (, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
-        bytes32 commandId;
-
-        assembly {
-            commandId := calldataload(4)
-        }
-        address destinationAddress = destinationAddressBytes.toAddress();
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        address expressCaller = _popExpressReceiveToken(tokenId, destinationAddress, amount, commandId);
-        if (expressCaller == address(0)) {
-            amount = tokenManager.giveToken(destinationAddress, amount);
-            emit TokenReceived(tokenId, sourceChain, destinationAddress, amount);
-        } else {
-            amount = tokenManager.giveToken(expressCaller, amount);
-        }
-    }
-
-    /**
-     * @notice Processes a send token with data payload.
-     * @param sourceChain The chain where the transaction originates from
-     * @param payload The encoded data payload to be processed
-     */
-    function _processSendTokenWithDataPayload(string calldata sourceChain, bytes calldata payload) internal {
+    function _processSendTokenPayload(string calldata sourceChain, bytes calldata payload, uint256 selector) internal {
         bytes32 tokenId;
-        uint256 amount;
-        bytes memory sourceAddress;
-        bytes memory data;
         address destinationAddress;
-        bytes32 commandId;
-
-        assembly {
-            commandId := calldataload(4)
-        }
+        uint256 amount;
         {
             bytes memory destinationAddressBytes;
-            (, tokenId, destinationAddressBytes, amount, sourceAddress, data) = abi.decode(
-                payload,
-                (uint256, bytes32, bytes, uint256, bytes, bytes)
-            );
+            (, tokenId, destinationAddressBytes, amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
             destinationAddress = destinationAddressBytes.toAddress();
         }
-        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        bytes32 commandId;
+
+        assembly {
+            commandId := calldataload(4)
+        }
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         {
-            address expressCaller = _popExpressReceiveTokenWithData(
-                tokenId,
-                sourceChain,
-                sourceAddress,
-                destinationAddress,
-                amount,
-                data,
-                commandId
-            );
+            address expressCaller = _popExpressReceiveToken(payload, commandId);
             if (expressCaller != address(0)) {
                 amount = tokenManager.giveToken(expressCaller, amount);
                 return;
             }
         }
         amount = tokenManager.giveToken(destinationAddress, amount);
-        IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
-        emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
+        if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
+            bytes memory sourceAddress;
+            bytes memory data;
+            (, , , , sourceAddress, data) = abi.decode(payload, (uint256, bytes32, bytes, uint256, bytes, bytes));
+
+            IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(
+                sourceChain,
+                sourceAddress,
+                data,
+                tokenId,
+                amount
+            );
+            emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
+        } else {
+            emit TokenReceived(tokenId, sourceChain, destinationAddress, amount);
+        }
     }
 
     /**
@@ -840,11 +810,17 @@ contract InterchainTokenService is
         emit StandardizedTokenDeployed(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
     }
 
-    function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes calldata data) {
+    function _decodeMetadata(bytes memory metadata) internal pure returns (uint32 version, bytes memory data) {
+        data = new bytes(metadata.length - 4);
         assembly {
-            data.length := sub(metadata.length, 4)
-            data.offset := add(metadata.offset, 4)
-            version := calldataload(sub(metadata.offset, 28))
+            version := shr(224, mload(data))
+        }
+        if (data.length == 0) return (version, data);
+        uint256 n = (data.length - 1) / 32;
+        for (uint256 i = 0; i <= n; ++i) {
+            assembly {
+                mstore(add(data, add(32, mul(32, i))), mload(add(metadata, add(36, mul(32, i)))))
+            }
         }
     }
 
@@ -863,5 +839,37 @@ contract InterchainTokenService is
             tokenId,
             amount
         );
+    }
+
+    /**
+     * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
+     * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
+     * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
+     * @param destinationChain the name of the chain to send tokens to.
+     * @param destinationAddress the destinationAddress for the interchainTransfer.
+     * @param amount the amount of token to give.
+     * @param metadata the data to be passed to the destiantion.
+     */
+    function _transmitSendToken(
+        bytes32 tokenId,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes memory destinationAddress,
+        uint256 amount,
+        bytes memory metadata
+    ) internal {
+        bytes memory payload;
+        if (metadata.length < 4) {
+            payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount);
+            _callContract(destinationChain, payload, msg.value);
+            emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
+            return;
+        }
+        uint32 version;
+        (version, metadata) = _decodeMetadata(metadata);
+        if (version > 0) revert InvalidMetadataVersion(version);
+        payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
+        _callContract(destinationChain, payload, msg.value);
+        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
     }
 }
