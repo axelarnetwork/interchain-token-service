@@ -68,7 +68,7 @@ contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Perm
             name = tokenName;
 
             _setDistributor(distributor_);
-            _setDomainTypeSignatureHash(tokenName);
+            _setNameHash(tokenName);
         }
         {
             uint256 mintAmount;
