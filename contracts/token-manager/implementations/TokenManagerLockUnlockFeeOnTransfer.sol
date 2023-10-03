@@ -9,7 +9,6 @@ import { ITokenManagerLockUnlock } from '../../interfaces/ITokenManagerLockUnloc
 import { TokenManager } from '../TokenManager.sol';
 import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
 
-
 /**
  * @title TokenManagerLockUnlock
  * @notice This contract is an implementation of TokenManager that locks and unlocks a specific token on behalf of the interchain token service.

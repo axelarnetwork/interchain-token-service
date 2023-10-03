@@ -16,6 +16,7 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 interface IStandardizedToken is IImplementation, IInterchainToken, IDistributable, IERC20MintableBurnable, IERC20 {
     error TokenManagerAddressZero();
     error TokenNameEmpty();
+
     /**
      * @notice Returns the contract id, which a proxy can check to ensure no false implementation was used.
      */

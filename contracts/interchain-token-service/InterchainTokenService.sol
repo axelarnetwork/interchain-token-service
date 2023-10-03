@@ -892,6 +892,5 @@ contract InterchainTokenService is
 
         payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
         _callContract(destinationChain, payload, msg.value);
-
     }
 }
