@@ -47,15 +47,11 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy {
      */
     function _takeToken(address from, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
-        uint256 balance = token.balanceOf(address(this));
+        uint256 balanceBefore = token.balanceOf(address(this));
 
         token.safeTransferFrom(from, address(this), amount);
 
-        uint256 diff = token.balanceOf(address(this)) - balance;
-        if (diff < amount) {
-            amount = diff;
-        }
-        return amount;
+        return token.balanceOf(address(this)) - balanceBefore;
     }
 
     /**
@@ -66,15 +62,11 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy {
      */
     function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
-        uint256 balance = token.balanceOf(to);
+        uint256 balanceBefore = token.balanceOf(to);
 
         token.safeTransfer(to, amount);
 
-        uint256 diff = token.balanceOf(to) - balance;
-        if (diff < amount) {
-            amount = diff;
-        }
-        return amount;
+        return token.balanceOf(to) - balanceBefore;
     }
 
     /**
