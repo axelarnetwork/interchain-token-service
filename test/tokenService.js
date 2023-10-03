@@ -859,7 +859,7 @@ describe('Interchain Token Service', () => {
                     transferToAddress = liquidityPool.address;
                 }
 
-                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(tokenManager.interchainTransfer(destinationChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
