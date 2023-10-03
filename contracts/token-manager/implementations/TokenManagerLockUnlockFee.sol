@@ -2,10 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import { TokenManagerAddressStorage } from './TokenManagerAddressStorage.sol';
+import { TokenManager } from '../TokenManager.sol';
 import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-import { ITokenManagerLockUnlockFee } from '../../interfaces/ITokenManagerLockUnlockFee.sol';
 
 import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 
@@ -15,13 +14,16 @@ import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLockUnlockFee is TokenManagerAddressStorage, NoReEntrancy, ITokenManagerLockUnlockFee {
+contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy {
+    using SafeTokenTransfer for IERC20;
+    using SafeTokenTransferFrom for IERC20;
+
     /**
      * @dev Constructs an instance of TokenManagerLockUnlock. Calls the constructor
      * of TokenManagerAddressStorage which calls the constructor of TokenManager.
      * @param interchainTokenService_ The address of the interchain token service contract
      */
-    constructor(address interchainTokenService_) TokenManagerAddressStorage(interchainTokenService_) {}
+    constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
         return uint256(TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER);
@@ -45,15 +47,11 @@ contract TokenManagerLockUnlockFee is TokenManagerAddressStorage, NoReEntrancy, 
      */
     function _takeToken(address from, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
-        uint256 balance = token.balanceOf(address(this));
+        uint256 balanceBefore = token.balanceOf(address(this));
 
-        SafeTokenTransferFrom.safeTransferFrom(token, from, address(this), amount);
+        token.safeTransferFrom(from, address(this), amount);
 
-        uint256 diff = token.balanceOf(address(this)) - balance;
-        if (diff < amount) {
-            amount = diff;
-        }
-        return amount;
+        return token.balanceOf(address(this)) - balanceBefore;
     }
 
     /**
@@ -64,15 +62,11 @@ contract TokenManagerLockUnlockFee is TokenManagerAddressStorage, NoReEntrancy, 
      */
     function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
-        uint256 balance = token.balanceOf(to);
+        uint256 balanceBefore = token.balanceOf(to);
 
-        SafeTokenTransfer.safeTransfer(token, to, amount);
+        token.safeTransfer(to, amount);
 
-        uint256 diff = token.balanceOf(to) - balance;
-        if (diff < amount) {
-            amount = diff;
-        }
-        return amount;
+        return token.balanceOf(to) - balanceBefore;
     }
 
     /**

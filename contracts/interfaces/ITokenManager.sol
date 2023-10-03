@@ -36,10 +36,11 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     function implementationType() external pure returns (uint256);
 
     /**
-     * @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user.
+     * @notice Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
+     * @param metadata any additional data to be sent with the transfer.
      */
     function interchainTransfer(
         string calldata destinationChain,
@@ -49,7 +50,7 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     ) external payable;
 
     /**
-     * @notice Calls the service to initiate the a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
+     * @notice Calls the service to initiate a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
@@ -63,11 +64,12 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     ) external payable;
 
     /**
-     * @notice Calls the service to initiate the a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
+     * @notice Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
      * @param sender the address of the user paying for the cross chain transfer.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
+     * @param metadata any additional data to be sent with the transfer.
      */
     function transmitInterchainTransfer(
         address sender,
@@ -81,7 +83,7 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
      * @notice This function gives token to a specified address. Can only be called by the service.
      * @param destinationAddress the address to give tokens to.
      * @param amount the amount of token to give.
-     * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+     * @return the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
     function giveToken(address destinationAddress, uint256 amount) external returns (uint256);
 

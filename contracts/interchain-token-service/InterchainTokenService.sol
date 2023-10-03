@@ -69,7 +69,7 @@ contract InterchainTokenService is
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
 
     /**
-     * @dev All of the varaibles passed here are stored as immutable variables.
+     * @dev All of the variables passed here are stored as immutable variables.
      * @param tokenManagerDeployer_ the address of the TokenManagerDeployer.
      * @param standardizedTokenDeployer_ the address of the StandardizedTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
@@ -146,7 +146,7 @@ contract InterchainTokenService is
     /**
      * @notice Calculates the address of a TokenManager from a specific tokenId. The TokenManager does not need to exist already.
      * @param tokenId the tokenId.
-     * @return tokenManagerAddress deployement address of the TokenManager.
+     * @return tokenManagerAddress deployment address of the TokenManager.
      */
     // TODO: Maybe copy the code of the create3Deployer to save gas, but would introduce duplicate code problems.
     function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
@@ -353,12 +353,15 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to deploy a standardized token alongside a TokenManager in another chain. If the `distributor` is empty
-     * bytes then a mint/burn TokenManager is used. Otherwise a lock/unlcok TokenManager is used.
+     * bytes then a mint/burn TokenManager is used. Otherwise a lock/unlock TokenManager is used.
      * @param salt the salt to be used.
      * @param name the name of the token to be deployed.
      * @param symbol the symbol of the token to be deployed.
      * @param decimals the decimals of the token to be deployed.
      * @param distributor the address that will be able to mint and burn the deployed token.
+     * @param mintTo The address where the minted tokens will be sent upon deployment
+     * @param mintAmount The amount of tokens to be minted upon deployment
+     * @param operator The operator data for standardized tokens
      * @param destinationChain the name of the destination chain to deploy to.
      * @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount
      * specified needs to be passed to the call
@@ -461,11 +464,11 @@ contract InterchainTokenService is
     /**
      * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
-     * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
+     * @param sourceAddress the address where the token is coming from, which will also be used for reimbursement of gas.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the destinationAddress for the interchainTransfer.
      * @param amount the amount of token to give.
-     * @param metadata the data to be passed to the destiantion.
+     * @param metadata the data to be passed to the destination.
      */
     function transmitSendToken(
         bytes32 tokenId,
@@ -697,6 +700,9 @@ contract InterchainTokenService is
      * @param symbol The symbol of the token
      * @param decimals The number of decimals of the token
      * @param distributor The distributor address for the token
+     * @param mintTo The address where the minted tokens will be sent upon deployment
+     * @param mintAmount The amount of tokens to be minted upon deployment
+     * @param operator The operator data for standardized tokens
      * @param destinationChain The destination chain where the token will be deployed
      * @param gasValue The amount of gas to be paid for the transaction
      */

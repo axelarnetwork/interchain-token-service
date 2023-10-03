@@ -28,10 +28,11 @@ const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 const INVALID_SELECTOR = 5;
 
-const LOCK_UNLOCK = 0;
-const MINT_BURN = 1;
-const LOCK_UNLOCK_FEE_ON_TRANSFER = 2;
-const LIQUIDITY_POOL = 3;
+const MINT_BURN = 0;
+const MINT_BURN_FROM = 1;
+const LOCK_UNLOCK = 2;
+const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
+const LIQUIDITY_POOL = 4;
 
 describe('Interchain Token Service', () => {
     let wallet, liquidityPool, otherWallet;
@@ -87,25 +88,53 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
-    deployFunctions.mintBurn = async function deployNewMintBurn(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
+    deployFunctions.lockUnlockFee = async function deployNewLockUnlock(
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
         const salt = getRandomBytes32();
         const tokenId = await service.getCustomTokenId(wallet.address, salt);
-        const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-        const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
-
         const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
+
+        const token = await deployContract(wallet, 'FeeOnTransferTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+        await (await service.deployCustomTokenManager(salt, LOCK_UNLOCK_FEE_ON_TRANSFER, params)).wait();
 
         if (mintAmount > 0) {
             await (await token.mint(wallet.address, mintAmount)).wait();
+            if (!skipApprove) await (await token.approve(tokenManager.address, mintAmount)).wait();
         }
-
-        await (await token.transferDistributorship(tokenManagerAddress)).wait();
-
-        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-        await (await service.deployCustomTokenManager(salt, MINT_BURN, params)).wait();
 
         return [token, tokenManager, tokenId];
     };
+
+    const makeDeployNewMintBurn = (type) =>
+        async function deployNewMintBurn(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
+            const salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+
+            const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
+
+            if (mintAmount > 0) {
+                await (await token.mint(wallet.address, mintAmount)).wait();
+            }
+
+            await (await token.transferDistributorship(tokenManagerAddress)).wait();
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            await (await service.deployCustomTokenManager(salt, type, params)).wait();
+
+            return [token, tokenManager, tokenId];
+        };
+
+    deployFunctions.mintBurn = makeDeployNewMintBurn(MINT_BURN);
+    deployFunctions.mintBurnFrom = makeDeployNewMintBurn(MINT_BURN_FROM);
 
     deployFunctions.liquidityPool = async function deployNewLiquidityPool(
         tokenName,
