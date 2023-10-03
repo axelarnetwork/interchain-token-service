@@ -60,9 +60,10 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
 
     /**
      * @notice A function that returns the token id.
-     * @dev This will only work when called by a proxy, which hides this and returns the correct value.
+     * @dev This will only work when implementation is called by a proxy, which stores the tokenId as an immutable.
      */
     function tokenId() public view returns (bytes32) {
+        // slither-disable-next-line var-read-using-this
         return this.tokenId();
     }
 
@@ -108,7 +109,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         _addFlowOut(amount);
 
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            this.tokenId(),
+            tokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -135,7 +136,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         _addFlowOut(amount);
         uint32 version = 0;
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            this.tokenId(),
+            tokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -162,7 +163,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            this.tokenId(),
+            tokenId(),
             sender,
             destinationChain,
             destinationAddress,

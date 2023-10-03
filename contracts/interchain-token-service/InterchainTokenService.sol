@@ -282,7 +282,9 @@ contract InterchainTokenService is
     function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable notPaused {
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
+
         if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalTokenManager();
+
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
         _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', '', 0, '', destinationChain, gasValue);
     }
@@ -300,8 +302,10 @@ contract InterchainTokenService is
     ) public payable notPaused returns (bytes32 tokenId) {
         address deployer_ = msg.sender;
         tokenId = getCustomTokenId(deployer_, salt);
-        _deployTokenManager(tokenId, tokenManagerType, params);
+
         emit CustomTokenIdClaimed(tokenId, deployer_, salt);
+
+        _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
     /**
@@ -324,8 +328,10 @@ contract InterchainTokenService is
     ) external payable notPaused returns (bytes32 tokenId) {
         address deployer_ = msg.sender;
         tokenId = getCustomTokenId(deployer_, salt);
-        _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
+
         emit CustomTokenIdClaimed(tokenId, deployer_, salt);
+
+        _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
     /**
@@ -361,7 +367,7 @@ contract InterchainTokenService is
      * @param distributor the address that will be able to mint and burn the deployed token.
      * @param mintTo The address where the minted tokens will be sent upon deployment
      * @param mintAmount The amount of tokens to be minted upon deployment
-     * @param operator The operator data for standardized tokens
+     * @param operator_ The operator data for standardized tokens
      * @param destinationChain the name of the destination chain to deploy to.
      * @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment. At least the amount
      * specified needs to be passed to the call
@@ -375,7 +381,7 @@ contract InterchainTokenService is
         bytes memory distributor,
         bytes memory mintTo,
         uint256 mintAmount,
-        bytes memory operator,
+        bytes memory operator_,
         string calldata destinationChain,
         uint256 gasValue
     ) external payable notPaused {
@@ -388,7 +394,7 @@ contract InterchainTokenService is
             distributor,
             mintTo,
             mintAmount,
-            operator,
+            operator_,
             destinationChain,
             gasValue
         );
@@ -490,11 +496,12 @@ contract InterchainTokenService is
      * @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
      * @param flowLimits the flowLimits to set
      */
-    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOperator {
+    function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOperator {
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
             ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
+            // slither-disable-next-line calls-loop
             tokenManager.setFlowLimit(flowLimits[i]);
         }
     }
@@ -580,6 +587,9 @@ contract InterchainTokenService is
             bytes memory data;
             (, , , , sourceAddress, data) = abi.decode(payload, (uint256, bytes32, bytes, uint256, bytes, bytes));
 
+            // slither-disable-next-line reentrancy-events
+            emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
+
             IInterchainTokenExpressExecutable(destinationAddress).executeWithInterchainToken(
                 sourceChain,
                 sourceAddress,
@@ -587,8 +597,8 @@ contract InterchainTokenService is
                 tokenId,
                 amount
             );
-            emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
         } else {
+            // slither-disable-next-line reentrancy-events
             emit TokenReceived(tokenId, sourceChain, destinationAddress, amount);
         }
     }
@@ -688,9 +698,10 @@ contract InterchainTokenService is
         TokenManagerType tokenManagerType,
         bytes memory params
     ) internal {
+        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
+
         bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
         _callContract(destinationChain, payload, gasValue);
-        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
     }
 
     /**
@@ -702,7 +713,7 @@ contract InterchainTokenService is
      * @param distributor The distributor address for the token
      * @param mintTo The address where the minted tokens will be sent upon deployment
      * @param mintAmount The amount of tokens to be minted upon deployment
-     * @param operator The operator data for standardized tokens
+     * @param operator_ The operator data for standardized tokens
      * @param destinationChain The destination chain where the token will be deployed
      * @param gasValue The amount of gas to be paid for the transaction
      */
@@ -714,10 +725,24 @@ contract InterchainTokenService is
         bytes memory distributor,
         bytes memory mintTo,
         uint256 mintAmount,
-        bytes memory operator,
+        bytes memory operator_,
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
+        // slither-disable-next-line reentrancy-events
+        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(
+            tokenId,
+            name,
+            symbol,
+            decimals,
+            distributor,
+            mintTo,
+            mintAmount,
+            operator_,
+            destinationChain,
+            gasValue
+        );
+
         bytes memory payload = abi.encode(
             SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
             tokenId,
@@ -727,21 +752,9 @@ contract InterchainTokenService is
             distributor,
             mintTo,
             mintAmount,
-            operator
+            operator_
         );
         _callContract(destinationChain, payload, gasValue);
-        emit RemoteStandardizedTokenAndManagerDeploymentInitialized(
-            tokenId,
-            name,
-            symbol,
-            decimals,
-            distributor,
-            mintTo,
-            mintAmount,
-            operator,
-            destinationChain,
-            gasValue
-        );
     }
 
     /**
@@ -751,13 +764,14 @@ contract InterchainTokenService is
      * @param params Additional parameters for the token manager deployment
      */
     function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
+        // slither-disable-next-line reentrancy-events
+        emit TokenManagerDeployed(tokenId, tokenManagerType, params);
+
+        // slither-disable-next-line controlled-delegatecall
         (bool success, ) = tokenManagerDeployer.delegatecall(
             abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
         );
-        if (!success) {
-            revert TokenManagerDeploymentFailed();
-        }
-        emit TokenManagerDeployed(tokenId, tokenManagerType, params);
+        if (!success) revert TokenManagerDeploymentFailed();
     }
 
     /**
@@ -788,9 +802,12 @@ contract InterchainTokenService is
         uint256 mintAmount,
         address mintTo
     ) internal {
+        emit StandardizedTokenDeployed(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
+
         bytes32 salt = _getStandardizedTokenSalt(tokenId);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
 
+        // slither-disable-next-line controlled-delegatecall
         (bool success, ) = standardizedTokenDeployer.delegatecall(
             abi.encodeWithSelector(
                 IStandardizedTokenDeployer.deployStandardizedToken.selector,
@@ -807,7 +824,6 @@ contract InterchainTokenService is
         if (!success) {
             revert StandardizedTokenDeploymentFailed();
         }
-        emit StandardizedTokenDeployed(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
     }
 
     function _decodeMetadata(bytes memory metadata) internal pure returns (uint32 version, bytes memory data) {
@@ -860,16 +876,21 @@ contract InterchainTokenService is
     ) internal {
         bytes memory payload;
         if (metadata.length < 4) {
+            // slither-disable-next-line reentrancy-events
+            emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
+
             payload = abi.encode(SELECTOR_SEND_TOKEN, tokenId, destinationAddress, amount);
             _callContract(destinationChain, payload, msg.value);
-            emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
             return;
         }
         uint32 version;
         (version, metadata) = _decodeMetadata(metadata);
         if (version > 0) revert InvalidMetadataVersion(version);
+
+        // slither-disable-next-line reentrancy-events
+        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
+
         payload = abi.encode(SELECTOR_SEND_TOKEN_WITH_DATA, tokenId, destinationAddress, amount, sourceAddress.toBytes(), metadata);
         _callContract(destinationChain, payload, msg.value);
-        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
     }
 }

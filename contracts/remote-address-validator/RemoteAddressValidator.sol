@@ -23,7 +23,9 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     /**
      * @dev Store the interchain token service address as string across two immutable variables to avoid recomputation and save gas
      */
+    // slither-disable-next-line similar-names
     uint256 private immutable interchainTokenServiceAddress1;
+    // slither-disable-next-line similar-names
     uint256 private immutable interchainTokenServiceAddress2;
 
     bytes32 private constant CONTRACT_ID = keccak256('remote-address-validator');
