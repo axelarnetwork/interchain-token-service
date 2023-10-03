@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
@@ -11,7 +11,7 @@ import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
-contract InvalidStandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Permit, Implementation, Distributable {
+contract InvalidStandardizedToken is IERC20MintableBurnable, InterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytesUtils for bytes;
 
     string public name;
