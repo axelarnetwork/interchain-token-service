@@ -45,6 +45,10 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         tokenId = service.getCustomTokenId(address(this), getStandardizedTokenSalt(deployer, salt));
     }
 
+    function getStandardizedTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
+        tokenAddress = service.getStandardizedTokenAddress(getStandardizedTokenId(deployer, salt));
+    }
+
     function deployStandardizedToken(
         bytes32 salt,
         string calldata name,
