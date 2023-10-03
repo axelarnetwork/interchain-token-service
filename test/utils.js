@@ -6,7 +6,7 @@ const { ethers } = require('hardhat');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { Wallet, Contract } = ethers;
 const { AddressZero } = ethers.constants;
-const { defaultAbiCoder } = ethers.utils;
+const { defaultAbiCoder, arrayify, toUtf8Bytes, hexlify } = ethers.utils;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert } = require('../scripts/utils');
 const { deployContract } = require('../scripts/deploy');
@@ -363,5 +363,45 @@ describe('StandardizedTokenDeployer', () => {
             standardizedTokenDeployer,
             'AlreadyDeployed',
         );
+    });
+
+    describe('AddressBytesUtils', () => {
+        let addressBytesUtils;
+
+        before(async () => {
+            addressBytesUtils = await deployContract(ownerWallet, 'AddressBytesUtilsTest');
+        });
+
+        it('Should convert bytes address to address', async () => {
+            const bytesAddress = arrayify(ownerWallet.address);
+            const convertedAddress = await addressBytesUtils.toAddress(bytesAddress);
+            expect(convertedAddress).to.eq(ownerWallet.address);
+        });
+
+        it('Should revert on invalid bytes length', async () => {
+            const bytesAddress = defaultAbiCoder.encode(['bytes'], [toUtf8Bytes(ownerWallet.address)]);
+            await expectRevert(
+                (gasOptions) => addressBytesUtils.toAddress(bytesAddress, gasOptions),
+                addressBytesUtils,
+                'InvalidBytesLength',
+            );
+        });
+
+        it('Should convert address to bytes address', async () => {
+            const convertedAddress = await addressBytesUtils.toBytes(ownerWallet.address);
+            expect(convertedAddress).to.eq(hexlify(ownerWallet.address));
+        });
+    });
+
+    describe('NoReEntrancy', () => {
+        let noReEntrancy;
+
+        before(async () => {
+            noReEntrancy = await deployContract(ownerWallet, 'NoReEntrancyTest');
+        });
+
+        it('Should revert on reentrancy', async function () {
+            await expect(noReEntrancy.testFunction()).to.be.revertedWithCustomError(noReEntrancy, 'ReEntrancy');
+        });
     });
 });

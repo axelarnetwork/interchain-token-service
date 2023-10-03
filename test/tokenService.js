@@ -8,6 +8,7 @@ const { AddressZero, MaxUint256 } = ethers.constants;
 const { defaultAbiCoder, solidityPack, keccak256, arrayify } = ethers.utils;
 const { Contract, Wallet } = ethers;
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
+const TokenManagerLiquidityPool = require('../artifacts/contracts/token-manager/implementations/TokenManagerLiquidityPool.sol/TokenManagerLiquidityPool.json');
 const Token = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall, getRandomBytes32, expectRevert } = require('../scripts/utils');
@@ -33,7 +34,7 @@ const LOCK_UNLOCK_FEE_ON_TRANSFER = 2;
 const LIQUIDITY_POOL = 3;
 
 describe('Interchain Token Service', () => {
-    let wallet, liquidityPool;
+    let wallet, liquidityPool, otherWallet;
     let service, gateway, gasService;
 
     const deployFunctions = {};
@@ -135,6 +136,7 @@ describe('Interchain Token Service', () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
         liquidityPool = wallets[1];
+        otherWallet = wallets[2];
         [service, gateway, gasService] = await deployAll(wallet, 'Test');
     });
 
@@ -328,6 +330,26 @@ describe('Interchain Token Service', () => {
                     ),
                 service,
                 'InvalidTokenManagerImplementation',
+            );
+        });
+
+        it('[TokenManagerProxy] Should revert if setup fails on the implementation', async () => {
+            const salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const validParams = defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]);
+            const tokenManagerProxy = await deployContract(wallet, `TokenManagerProxy`, [
+                service.address,
+                LOCK_UNLOCK,
+                tokenId,
+                validParams,
+            ]);
+            const invalidParams = '0x1234';
+
+            await expectRevert(
+                (gasOptions) =>
+                    deployContract(wallet, `TokenManagerProxy`, [service.address, LOCK_UNLOCK, tokenId, invalidParams, gasOptions]),
+                tokenManagerProxy,
+                'SetupFailed',
             );
         });
     });
@@ -923,6 +945,34 @@ describe('Interchain Token Service', () => {
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
             expect(await tokenManager.operator()).to.equal(wallet.address);
+        });
+
+        it('Should allow operator to change the liquidity pool address', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address', 'address'], [wallet.address, token.address, liquidityPool.address]);
+
+            const tx = service.deployCustomTokenManager(salt, LIQUIDITY_POOL, params);
+            await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, LIQUIDITY_POOL, params);
+
+            expect(tokenManagerAddress).to.not.equal(AddressZero);
+            const tokenManagerLiquidityPool = new Contract(tokenManagerAddress, TokenManagerLiquidityPool.abi, wallet);
+
+            expectRevert(
+                (gasOptions) => tokenManagerLiquidityPool.connect(otherWallet).setLiquidityPool(otherWallet.address, gasOptions),
+                tokenManagerLiquidityPool,
+                'NotOperator',
+            );
+
+            await tokenManagerLiquidityPool.setLiquidityPool(otherWallet.address).then((tx) => tx.wait());
+
+            const newLiquidityPool = await tokenManagerLiquidityPool.liquidityPool();
+            expect(newLiquidityPool).to.eq(otherWallet.address);
         });
 
         it('Should revert when deploying a custom token manager twice', async () => {
@@ -1617,7 +1667,73 @@ describe('Interchain Token Service', () => {
                     .to.emit(service, 'TokenSent')
                     .withArgs(tokenId, destChain, destAddress, sendAmount);
             });
+
+            it(`Should be able to initiate an interchain token transfer using interchainTransferFrom [${type}]`, async () => {
+                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, true);
+                const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'uint256'],
+                    [SELECTOR_SEND_TOKEN, tokenId, destAddress, sendAmount],
+                );
+                const payloadHash = keccak256(payload);
+
+                let transferToAddress = AddressZero;
+
+                if (type === 'lockUnlock' || type === 'lockUnlockFee') {
+                    transferToAddress = tokenManager.address;
+                } else if (type === 'liquidityPool') {
+                    transferToAddress = liquidityPool.address;
+                }
+
+                const sender = wallet;
+                const spender = otherWallet;
+                await token.approve(spender.address, amount).then((tx) => tx.wait());
+
+                await expect(
+                    token
+                        .connect(spender)
+                        .interchainTransferFrom(sender.address, destChain, destAddress, amount, metadata, { value: gasValue }),
+                )
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, transferToAddress, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, spender.address)
+                    .to.emit(service, 'TokenSent')
+                    .withArgs(tokenId, destChain, destAddress, sendAmount);
+            });
         }
+
+        it(`Should be able to initiate an interchain token transfer using interchainTransferFrom with max possible allowance`, async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token LockUnlock`, 'TT', 12, amount, true);
+            const sendAmount = amount;
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256'],
+                [SELECTOR_SEND_TOKEN, tokenId, destAddress, sendAmount],
+            );
+            const payloadHash = keccak256(payload);
+
+            const transferToAddress = tokenManager.address;
+
+            const sender = wallet;
+            const spender = otherWallet;
+            await token.approve(spender.address, MaxUint256).then((tx) => tx.wait());
+
+            await expect(
+                token
+                    .connect(spender)
+                    .interchainTransferFrom(sender.address, destChain, destAddress, amount, metadata, { value: gasValue }),
+            )
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, spender.address)
+                .to.emit(service, 'TokenSent')
+                .withArgs(tokenId, destChain, destAddress, sendAmount);
+        });
     });
 
     describe('Send Interchain Token With Data', () => {
@@ -1962,8 +2078,6 @@ describe('Interchain Token Service', () => {
             await (await tokenManager.setFlowLimit(flowLimit)).wait();
         });
 
-        // These tests will fail every once in a while since the two transactions will happen in different epochs.
-        // LMK of any fixes to this that do not involve writing a new contract to facilitate a multicall.
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
             await (await tokenManager.interchainTransfer(destinationChain, destinationAddress, sendAmount, '0x')).wait();
             await expectRevert(
