@@ -20,6 +20,9 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
 
     IInterchainTokenService public immutable interchainTokenService;
 
+    // uint256(keccak256('token-address')) - 1
+    uint256 internal constant TOKEN_ADDRESS_SLOT = 0xc4e632779a6a7838736dd7e5e6a0eadf171dd37dfb6230720e265576dfcf42ba;
+
     /**
      * @notice Constructs the TokenManager contract.
      * @param interchainTokenService_ The address of the interchain token service
@@ -46,11 +49,14 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @notice A function that should return the address of the token.
-     * Must be overridden in the inheriting contract.
-     * @return address address of the token.
+     * @dev Reads the stored token address from the predetermined storage slot
+     * @return tokenAddress_ The address of the token
      */
-    function tokenAddress() public view virtual returns (address);
+    function tokenAddress() public view virtual returns (address tokenAddress_) {
+        assembly {
+            tokenAddress_ := sload(TOKEN_ADDRESS_SLOT)
+        }
+    }
 
     /**
      * @notice A function that returns the token id.
@@ -195,6 +201,16 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      */
     function setFlowLimit(uint256 flowLimit) external onlyOperator {
         _setFlowLimit(flowLimit);
+    }
+
+    /**
+     * @dev Stores the token address in the predetermined storage slot
+     * @param tokenAddress_ The address of the token to store
+     */
+    function _setTokenAddress(address tokenAddress_) internal {
+        assembly {
+            sstore(TOKEN_ADDRESS_SLOT, tokenAddress_)
+        }
     }
 
     /**
