@@ -25,8 +25,13 @@ before(async () => {
 
 describe('Operatable', () => {
     let test;
+
     before(async () => {
         test = await deployContract(ownerWallet, 'OperatorableTest', [ownerWallet.address]);
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestOperatable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to run the onlyOperatorable function as the operator', async () => {
@@ -62,8 +67,13 @@ describe('Operatable', () => {
 
 describe('Distributable', () => {
     let test;
+
     before(async () => {
         test = await deployContract(ownerWallet, 'DistributableTest', [ownerWallet.address]);
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestDistributable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to run the onlyDistributor function as the distributor', async () => {
@@ -166,6 +176,10 @@ describe('FlowLimit', async () => {
 
         await time.increaseTo(next);
     }
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestFlowLimit`, [])).to.not.be.reverted;
+    });
 
     it('Should be able to set the flow limit', async () => {
         await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(flowLimit);
@@ -281,8 +295,13 @@ describe('Mutlicall', () => {
 
 describe('Pausable', () => {
     let test;
+
     before(async () => {
         test = await deployContract(ownerWallet, 'PausableTest');
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestPausable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to set paused to true or false', async () => {
@@ -364,44 +383,44 @@ describe('StandardizedTokenDeployer', () => {
             'AlreadyDeployed',
         );
     });
+});
 
-    describe('AddressBytesUtils', () => {
-        let addressBytesUtils;
+describe('AddressBytesUtils', () => {
+    let addressBytesUtils;
 
-        before(async () => {
-            addressBytesUtils = await deployContract(ownerWallet, 'AddressBytesUtilsTest');
-        });
-
-        it('Should convert bytes address to address', async () => {
-            const bytesAddress = arrayify(ownerWallet.address);
-            const convertedAddress = await addressBytesUtils.toAddress(bytesAddress);
-            expect(convertedAddress).to.eq(ownerWallet.address);
-        });
-
-        it('Should revert on invalid bytes length', async () => {
-            const bytesAddress = defaultAbiCoder.encode(['bytes'], [toUtf8Bytes(ownerWallet.address)]);
-            await expectRevert(
-                (gasOptions) => addressBytesUtils.toAddress(bytesAddress, gasOptions),
-                addressBytesUtils,
-                'InvalidBytesLength',
-            );
-        });
-
-        it('Should convert address to bytes address', async () => {
-            const convertedAddress = await addressBytesUtils.toBytes(ownerWallet.address);
-            expect(convertedAddress).to.eq(hexlify(ownerWallet.address));
-        });
+    before(async () => {
+        addressBytesUtils = await deployContract(ownerWallet, 'AddressBytesUtilsTest');
     });
 
-    describe('NoReEntrancy', () => {
-        let noReEntrancy;
+    it('Should convert bytes address to address', async () => {
+        const bytesAddress = arrayify(ownerWallet.address);
+        const convertedAddress = await addressBytesUtils.toAddress(bytesAddress);
+        expect(convertedAddress).to.eq(ownerWallet.address);
+    });
 
-        before(async () => {
-            noReEntrancy = await deployContract(ownerWallet, 'NoReEntrancyTest');
-        });
+    it('Should revert on invalid bytes length', async () => {
+        const bytesAddress = defaultAbiCoder.encode(['bytes'], [toUtf8Bytes(ownerWallet.address)]);
+        await expectRevert((gasOptions) => addressBytesUtils.toAddress(bytesAddress, gasOptions), addressBytesUtils, 'InvalidBytesLength');
+    });
 
-        it('Should revert on reentrancy', async function () {
-            await expect(noReEntrancy.testFunction()).to.be.revertedWithCustomError(noReEntrancy, 'ReEntrancy');
-        });
+    it('Should convert address to bytes address', async () => {
+        const convertedAddress = await addressBytesUtils.toBytes(ownerWallet.address);
+        expect(convertedAddress).to.eq(hexlify(ownerWallet.address));
+    });
+});
+
+describe('NoReEntrancy', () => {
+    let noReEntrancy;
+
+    before(async () => {
+        noReEntrancy = await deployContract(ownerWallet, 'NoReEntrancyTest');
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestNoReEntrancy`, [])).to.not.be.reverted;
+    });
+
+    it('Should revert on reentrancy', async function () {
+        await expect(noReEntrancy.testFunction()).to.be.revertedWithCustomError(noReEntrancy, 'ReEntrancy');
     });
 });
