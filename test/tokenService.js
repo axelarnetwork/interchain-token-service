@@ -275,6 +275,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert on invalid token manager implementation length', async () => {
             tokenManagerImplementations.push(wallet);
+
             await expectRevert(
                 (gasOptions) =>
                     deployInterchainTokenService(
@@ -292,6 +293,7 @@ describe('Interchain Token Service', () => {
                 service,
                 'LengthMismatch',
             );
+
             tokenManagerImplementations.pop();
         });
 
@@ -308,18 +310,20 @@ describe('Interchain Token Service', () => {
                 deploymentKey,
             );
 
+            const length = tokenManagerImplementations.length;
             let implementation;
 
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < length; i++) {
                 implementation = await service.getImplementation(i);
                 expect(implementation).to.eq(tokenManagerImplementations[i].address);
             }
 
-            await expectRevert((gasOptions) => service.getImplementation(4, gasOptions), service, 'InvalidImplementation');
+            await expectRevert((gasOptions) => service.getImplementation(length, gasOptions), service, 'InvalidImplementation');
         });
 
         it('Should revert on invalid token manager implementation', async () => {
-            tokenManagerImplementations.pop();
+            const toRemove = tokenManagerImplementations.pop();
+
             await expectRevert(
                 (gasOptions) =>
                     deployInterchainTokenService(
@@ -337,10 +341,14 @@ describe('Interchain Token Service', () => {
                 service,
                 'ZeroAddress',
             );
+
+            tokenManagerImplementations.push(toRemove);
         });
 
         it('Should revert on duplicate token manager type', async () => {
-            tokenManagerImplementations[3] = tokenManagerImplementations[2];
+            const length = tokenManagerImplementations.length;
+            tokenManagerImplementations[length - 1] = tokenManagerImplementations[length - 2];
+
             await expectRevert(
                 (gasOptions) =>
                     deployInterchainTokenService(

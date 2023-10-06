@@ -49,6 +49,7 @@ contract InterchainTokenService is
 
     address internal immutable implementationLockUnlock;
     address internal immutable implementationMintBurn;
+    address internal immutable implementationMintBurnFrom;
     address internal immutable implementationLockUnlockFee;
     address internal immutable implementationLiquidityPool;
     IAxelarGasService public immutable gasService;
@@ -98,8 +99,9 @@ contract InterchainTokenService is
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
-        implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
+        implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
+        implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(
             tokenManagerImplementations,
             TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER
@@ -213,10 +215,12 @@ contract InterchainTokenService is
      */
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress) {
         if (tokenManagerType > uint256(type(TokenManagerType).max)) revert InvalidImplementation();
-        if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK) {
-            return implementationLockUnlock;
-        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
+        if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) {
             return implementationMintBurn;
+        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN_FROM) {
+            return implementationMintBurnFrom;
+        } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK) {
+            return implementationLockUnlock;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER) {
             return implementationLockUnlockFee;
         } else if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) {
