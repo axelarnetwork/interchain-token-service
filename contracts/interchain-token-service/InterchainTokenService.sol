@@ -4,13 +4,13 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
+import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
 import { IRemoteAddressValidator } from '../interfaces/IRemoteAddressValidator.sol';
@@ -544,7 +544,7 @@ contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatab
 
         uint256 selector = abi.decode(payload, (uint256));
         if (selector == SELECTOR_RECEIVE_TOKEN || selector == SELECTOR_RECEIVE_TOKEN_WITH_DATA)
-            return _processReceiveTokenPayload(sourceChain, payload, selector);
+            return _processReceiveTokenPayload(commandId, sourceChain, payload, selector);
         if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) return _processDeployTokenManagerPayload(payload);
         if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) return _processDeployStandardizedTokenAndManagerPayload(payload);
 
@@ -567,7 +567,12 @@ contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatab
      * @param sourceChain The chain where the transaction originates from
      * @param payload The encoded data payload to be processed
      */
-    function _processReceiveTokenPayload(string calldata sourceChain, bytes calldata payload, uint256 selector) internal {
+    function _processReceiveTokenPayload(
+        bytes32 commandId,
+        string calldata sourceChain,
+        bytes calldata payload,
+        uint256 selector
+    ) internal {
         bytes32 tokenId;
         address destinationAddress;
         uint256 amount;
@@ -576,11 +581,7 @@ contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatab
             (, tokenId, destinationAddressBytes, amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
             destinationAddress = destinationAddressBytes.toAddress();
         }
-        bytes32 commandId;
 
-        assembly {
-            commandId := calldataload(4)
-        }
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         {
             address expressCaller = _popExpressReceiveToken(payload, commandId);
@@ -590,6 +591,7 @@ contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatab
             }
         }
         amount = tokenManager.giveToken(destinationAddress, amount);
+
         if (selector == SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
             bytes memory sourceAddress;
             bytes memory data;
@@ -621,6 +623,7 @@ contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatab
             payload,
             (uint256, bytes32, TokenManagerType, bytes)
         );
+
         _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
