@@ -11,9 +11,9 @@ async function deployContract(wallet, contractName, args = []) {
     return contract;
 }
 
-async function deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName) {
-    const remoteAddressValidatorImpl = await deployContract(wallet, 'RemoteAddressValidator', [interchainTokenServiceAddress, chainName]);
-    const params = defaultAbiCoder.encode(['string[]', 'string[]'], [[], []]);
+async function deployRemoteAddressValidator(wallet, chainName, interchainTokenServiceAddress = '', evmChains = []) {
+    const remoteAddressValidatorImpl = await deployContract(wallet, 'RemoteAddressValidator', [chainName]);
+    const params = defaultAbiCoder.encode(['string[]', 'string[]'], [evmChains, evmChains.map(() => interchainTokenServiceAddress)]);
 
     const remoteAddressValidatorProxy = await deployContract(wallet, 'RemoteAddressValidatorProxy', [
         remoteAddressValidatorImpl.address,
@@ -74,7 +74,7 @@ async function deployTokenManagerImplementations(wallet, interchainTokenServiceA
     return implementations;
 }
 
-async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenService') {
+async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'interchainTokenService') {
     const create3Deployer = await deployContract(wallet, 'Create3Deployer');
     const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
@@ -82,7 +82,7 @@ async function deployAll(wallet, chainName, deploymentKey = 'interchainTokenServ
     const standardizedToken = await deployContract(wallet, 'StandardizedToken');
     const standardizedTokenDeployer = await deployContract(wallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-    const remoteAddressValidator = await deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName);
+    const remoteAddressValidator = await deployRemoteAddressValidator(wallet, chainName, interchainTokenServiceAddress, evmChains);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
 
     const service = await deployInterchainTokenService(
