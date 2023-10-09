@@ -21,7 +21,6 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
     /**
      * @dev Represents hash of the EIP-712 Domain Separator.
      */
-    // solhint-disable-next-line var-name-mixedcase
     bytes32 public nameHash;
 
     string private constant EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA = '\x19\x01';
@@ -46,14 +45,16 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
     }
 
     /**
-     * @notice Calculates the DOMAIN_SEPARATOR.
+     * @notice Calculates the domain separator.
      * @dev This is not cached because chainid can change on chain forks.
      */
+    // solhint-disable func-name-mixedcase
     // slither-disable-next-line naming-convention
-    function DOMAIN_SEPARATOR() public view returns (bytes32 domainSeparator) {
-        // solhint-disable-line func-name-mixedcase
-        domainSeparator = keccak256(abi.encode(DOMAIN_TYPE_SIGNATURE_HASH, nameHash, keccak256(bytes('1')), block.chainid, address(this)));
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_TYPE_SIGNATURE_HASH, nameHash, keccak256(bytes('1')), block.chainid, address(this)));
     }
+
+    // solhint-enable func-name-mixedcase
 
     /**
      * @notice Permit the designated spender to spend the holder's tokens

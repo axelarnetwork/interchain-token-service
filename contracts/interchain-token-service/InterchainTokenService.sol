@@ -518,10 +518,10 @@ contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatab
     }
 
     function _sanitizeTokenManagerImplementation(
-        address[] memory implementations,
+        address[] memory tokenManagerImplementations,
         TokenManagerType tokenManagerType
     ) internal pure returns (address implementation_) {
-        implementation_ = implementations[uint256(tokenManagerType)];
+        implementation_ = tokenManagerImplementations[uint256(tokenManagerType)];
         if (implementation_ == address(0)) revert ZeroAddress();
         if (ITokenManager(implementation_).implementationType() != uint256(tokenManagerType)) revert InvalidTokenManagerImplementation();
     }
