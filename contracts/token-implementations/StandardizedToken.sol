@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import { IImplementation } from '../interfaces/IImplementation.sol';
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
@@ -46,7 +47,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract
      */
-    function tokenManager() public view override(InterchainToken, IInterchainToken) returns (ITokenManager) {
+    function tokenManager() public view override(InterchainToken, IStandardizedToken) returns (ITokenManager) {
         return ITokenManager(tokenManager_);
     }
 
@@ -55,7 +56,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @param params The setup parameters in bytes
      * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo
      */
-    function setup(bytes calldata params) external override onlyProxy {
+    function setup(bytes calldata params) external override(IImplementation, IStandardizedToken) onlyProxy {
         {
             address distributor_;
             address tokenManagerAddress;
