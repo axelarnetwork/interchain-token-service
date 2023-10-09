@@ -27,7 +27,7 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        return uint256(TokenManagerType.LOCK_UNLOCK_FEE_ON_TRANSFER);
+        return uint256(TokenManagerType.LOCK_UNLOCK_FEE);
     }
 
     /**
