@@ -3,8 +3,10 @@
 pragma solidity ^0.8.0;
 
 import { FixedProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/FixedProxy.sol';
+
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 import { IStandardizedTokenProxy } from '../interfaces/IStandardizedTokenProxy.sol';
+import { IImplementation } from '../interfaces/IImplementation.sol';
 
 /**
  * @title StandardizedTokenProxy
@@ -21,14 +23,14 @@ contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
     constructor(address implementationAddress, bytes memory params) FixedProxy(implementationAddress) {
         if (IStandardizedToken(implementationAddress).contractId() != CONTRACT_ID) revert InvalidImplementation();
 
-        (bool success, ) = implementationAddress.delegatecall(abi.encodeWithSelector(IStandardizedToken.setup.selector, params));
+        (bool success, ) = implementationAddress.delegatecall(abi.encodeWithSelector(IImplementation.setup.selector, params));
         if (!success) revert SetupFailed();
     }
 
     /**
      * @notice Getter for the contract id.
      */
-    function contractId() external pure returns (bytes32) {
+    function contractId() internal pure override returns (bytes32) {
         return CONTRACT_ID;
     }
 }

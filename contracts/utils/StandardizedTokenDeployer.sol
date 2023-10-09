@@ -12,7 +12,7 @@ import { StandardizedTokenProxy } from '../proxies/StandardizedTokenProxy.sol';
  * @title StandardizedTokenDeployer
  * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
  */
-contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
+contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
     address public immutable implementationAddress;
 
     /**
@@ -35,6 +35,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
      * @param mintAmount Amount of tokens to mint initially
      * @param mintTo Address to mint initial tokens to
      */
+    // slither-disable-next-line locked-ether
     function deployStandardizedToken(
         bytes32 salt,
         address tokenManager,
@@ -46,13 +47,14 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
         address mintTo
     ) external payable {
         bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
+        // slither-disable-next-line too-many-digits
         bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
 
-        address tokenAddress = Create3.deploy(salt, bytecode);
+        address tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
     }
 
     function deployedAddress(bytes32 salt) external view returns (address tokenAddress) {
-        return Create3.deployedAddress(address(this), salt);
+        return _create3Address(salt);
     }
 }

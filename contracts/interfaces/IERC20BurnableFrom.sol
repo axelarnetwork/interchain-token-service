@@ -7,14 +7,6 @@ pragma solidity ^0.8.0;
  */
 interface IERC20BurnableFrom {
     /**
-     * @notice Function to burn tokens from a burn deposit address
-     * @notice It is needed to support legacy Axelar Gateway tokens
-     * @dev Can only be called after token is transferred to a deposit address.
-     * @param salt The address that will have its tokens burnt
-     */
-    function burn(bytes32 salt) external;
-
-    /**
      * @notice Function to burn tokens
      * @notice Requires the caller to have allowance for `amount` on `from`
      * @dev Can only be called by the distributor address.

@@ -27,12 +27,4 @@ abstract contract Implementation is IImplementation {
         if (implementationAddress == address(this)) revert NotProxy();
         _;
     }
-
-    /**
-     * @notice Initializes contract parameters.
-     * This function is intended to be overridden by derived contracts.
-     * The overriding function must have the onlyProxy modifier.
-     * @param params The parameters to be used for initialization
-     */
-    function setup(bytes calldata params) external virtual;
 }
