@@ -35,6 +35,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
      * @param mintAmount Amount of tokens to mint initially
      * @param mintTo Address to mint initial tokens to
      */
+    // slither-disable-next-line locked-ether
     function deployStandardizedToken(
         bytes32 salt,
         address tokenManager,
@@ -46,6 +47,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer {
         address mintTo
     ) external payable {
         bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
+        // slither-disable-next-line too-many-digits
         bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
 
         address tokenAddress = Create3.deploy(salt, bytecode);

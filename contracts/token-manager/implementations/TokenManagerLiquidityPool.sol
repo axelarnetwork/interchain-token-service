@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.0;
 
+import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
+
+import { ITokenManagerLiquidityPool } from '../../interfaces/ITokenManagerLiquidityPool.sol';
 import { TokenManager } from '../TokenManager.sol';
 import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
-import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-import { ITokenManagerLiquidityPool } from '../../interfaces/ITokenManagerLiquidityPool.sol';
-
-import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
 
 /**
  * @title TokenManagerLiquidityPool
@@ -16,7 +16,7 @@ import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/c
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy {
+contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy, ITokenManagerLiquidityPool {
     using SafeTokenTransferFrom for IERC20;
 
     // uint256(keccak256('liquidity-pool-slot')) - 1
@@ -102,6 +102,7 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy {
         IERC20 token = IERC20(tokenAddress());
         uint256 balance = token.balanceOf(to);
 
+        // slither-disable-next-line arbitrary-send-erc20
         token.safeTransferFrom(liquidityPool(), to, amount);
 
         uint256 diff = token.balanceOf(to) - balance;
@@ -113,16 +114,16 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy {
 
     /**
      * @notice Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
+     * @param operator_ the operator of the TokenManager.
+     * @param tokenAddress_ the token to be managed.
      * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
      * @return params the resulting params to be passed to custom TokenManager deployments.
      */
     function getParams(
-        bytes memory operator,
-        address tokenAddress,
+        bytes memory operator_,
+        address tokenAddress_,
         address liquidityPoolAddress
     ) external pure returns (bytes memory params) {
-        params = abi.encode(operator, tokenAddress, liquidityPoolAddress);
+        params = abi.encode(operator_, tokenAddress_, liquidityPoolAddress);
     }
 }
