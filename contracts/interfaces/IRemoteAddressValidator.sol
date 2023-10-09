@@ -10,6 +10,7 @@ interface IRemoteAddressValidator {
     error ZeroAddress();
     error LengthMismatch();
     error ZeroStringLength();
+    error UntrustedChain();
 
     event TrustedAddressAdded(string sourceChain, string sourceAddress);
     event TrustedAddressRemoved(string sourceChain);
@@ -18,16 +19,6 @@ interface IRemoteAddressValidator {
      * @notice Returns the interchain token address
      */
     function chainName() external view returns (string memory);
-
-    /**
-     * @notice Returns the interchain token address
-     */
-    function interchainTokenServiceAddress() external view returns (address);
-
-    /**
-     * @notice Returns the interchain token address to string to lower case hash, which is used to compare with incoming calls.
-     */
-    function interchainTokenServiceAddressHash() external view returns (bytes32);
 
     /**
      * @dev Validates that the sender is a valid interchain token service address
