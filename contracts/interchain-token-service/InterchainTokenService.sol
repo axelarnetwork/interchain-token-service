@@ -6,9 +6,9 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
-import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
-import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
-import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Bytes32String.sol';
+import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
+import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
@@ -32,7 +32,15 @@ import { Multicall } from '../utils/Multicall.sol';
  * It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
  * @dev The only storage used here is for ExpressCalls
  */
-contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatable, ExpressCallHandler, Pausable, Multicall {
+contract InterchainTokenService is
+    IInterchainTokenService,
+    Upgradable,
+    Operatable,
+    ExpressCallHandler,
+    Pausable,
+    Multicall,
+    Create3Address
+{
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
     using AddressBytesUtils for bytes;
@@ -143,9 +151,8 @@ contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatab
      * @param tokenId the tokenId.
      * @return tokenManagerAddress deployment address of the TokenManager.
      */
-    // TODO: Maybe copy the code of the create3Deployer to save gas, but would introduce duplicate code problems.
     function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
-        tokenManagerAddress = Create3.deployedAddress(address(this), tokenId);
+        tokenManagerAddress = _create3Address(tokenId);
     }
 
     /**
@@ -176,7 +183,7 @@ contract InterchainTokenService is IInterchainTokenService, Upgradable, Operatab
      */
     function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
         tokenId = _getStandardizedTokenSalt(tokenId);
-        tokenAddress = Create3.deployedAddress(address(this), tokenId);
+        tokenAddress = _create3Address(tokenId);
     }
 
     /**
