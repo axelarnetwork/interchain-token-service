@@ -49,8 +49,9 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
      * @notice Calculates the DOMAIN_SEPARATOR.
      * @dev This is not cached because chainid can change on chain forks.
      */
-    // solhint-disable-next-line func-name-mixedcase
+    // slither-disable-next-line naming-convention
     function DOMAIN_SEPARATOR() public view returns (bytes32 domainSeparator) {
+        // solhint-disable-line func-name-mixedcase
         domainSeparator = keccak256(abi.encode(DOMAIN_TYPE_SIGNATURE_HASH, nameHash, keccak256(bytes('1')), block.chainid, address(this)));
     }
 

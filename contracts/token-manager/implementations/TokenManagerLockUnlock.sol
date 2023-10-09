@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import { TokenManager } from '../TokenManager.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-import { ITokenManagerLockUnlock } from '../../interfaces/ITokenManagerLockUnlock.sol';
-
 import { SafeTokenTransfer, SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/SafeTransfer.sol';
+
+import { ITokenManagerLockUnlock } from '../../interfaces/ITokenManagerLockUnlock.sol';
+import { TokenManager } from '../TokenManager.sol';
 
 /**
  * @title TokenManagerLockUnlock
@@ -35,8 +35,8 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
      */
     function _setup(bytes calldata params) internal override {
         // The first argument is reserved for the operator.
-        (, address tokenAddress) = abi.decode(params, (bytes, address));
-        _setTokenAddress(tokenAddress);
+        (, address tokenAddress_) = abi.decode(params, (bytes, address));
+        _setTokenAddress(tokenAddress_);
     }
 
     /**
@@ -69,11 +69,11 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
 
     /**
      * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
+     * @param operator_ the operator of the TokenManager.
+     * @param tokenAddress_ the token to be managed.
      * @return params the resulting params to be passed to custom TokenManager deployments.
      */
-    function getParams(bytes memory operator, address tokenAddress) external pure returns (bytes memory params) {
-        params = abi.encode(operator, tokenAddress);
+    function getParams(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params) {
+        params = abi.encode(operator_, tokenAddress_);
     }
 }

@@ -43,8 +43,8 @@ interface IRemoteAddressValidator {
 
     /**
      * @dev Fetches the interchain token service address for the specified chain
-     * @param chainName Name of the chain
+     * @param chainName_ Name of the chain
      * @return remoteAddress Interchain token service address for the specified chain
      */
-    function getRemoteAddress(string calldata chainName) external view returns (string memory remoteAddress);
+    function getRemoteAddress(string calldata chainName_) external view returns (string memory remoteAddress);
 }

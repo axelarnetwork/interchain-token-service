@@ -11,16 +11,16 @@ interface IDistributable {
 
     /**
      * @notice Get the address of the distributor
-     * @return distributor of the distributor
+     * @return distributor_ of the distributor
      */
-    function distributor() external view returns (address distributor);
+    function distributor() external view returns (address distributor_);
 
     /**
      * @notice Change the distributor of the contract
      * @dev Can only be called by the current distributor
-     * @param distributor The address of the new distributor
+     * @param distributor_ The address of the new distributor
      */
-    function transferDistributorship(address distributor) external;
+    function transferDistributorship(address distributor_) external;
 
     /**
      * @notice Proposed a change of the distributor of the contract

@@ -24,6 +24,7 @@ contract Multicall is IMulticall {
         bool success;
         bytes memory result;
         for (uint256 i = 0; i < data.length; ++i) {
+            // slither-disable-next-line calls-loop,delegatecall-loop
             (success, result) = address(this).delegatecall(data[i]);
 
             if (!success) {
