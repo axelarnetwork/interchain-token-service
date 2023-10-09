@@ -37,6 +37,7 @@
     "eslint-config-richardpringle": "^2.0.0",
     "fs-extra": "^11.1.1",
     "hardhat": "^2.13.0",
+    "hardhat-contract-sizer": "^2.10.0",
     "mocha": "^10.2.0",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
