@@ -1,0 +1,39 @@
+name: Ensure no warning when compiling 
+
+on:
+  - pull_request
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        node-version:
+          - 18.x
+        os:
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build project and capture output
+        run: npm run build > build.log 2>&1
+
+      - name: Check for build errors
+        run: |
+          if grep -q "error" build.log || grep -q "Error" build.log || grep -q "warning" build.log || grep -q "Warning" build.log; then
+            echo "Build contains following errors or warnings..."
+
+            cat build.log
+
+            exit 1
+          else
+            exit 0;
+          fi
