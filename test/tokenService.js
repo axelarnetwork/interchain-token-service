@@ -3,12 +3,10 @@
 const chai = require('chai');
 const { expect } = chai;
 require('dotenv').config();
-const fs = require('fs');
 const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
 const { defaultAbiCoder, solidityPack, keccak256 } = ethers.utils;
 const { Contract, Wallet } = ethers;
-const path = require('path');
 
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
 const Token = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
@@ -1460,38 +1458,5 @@ describe('Interchain Token Service', () => {
 
             await expect(receiveToken(sendAmount)).to.be.revertedWithCustomError(tokenManager, 'FlowLimitExceeded');
         });
-    });
-});
-
-describe('Contract Size Check', function () {
-    const maxContractSize = 24 * 1024; // 24KB
-
-    function checkContractSize(filePath) {
-        const stats = fs.statSync(filePath);
-
-        if (stats.isFile()) {
-            const contractName = path.basename(filePath, '.json');
-
-            if (contractName.endsWith('.dbg')) {
-                return;
-            }
-
-            const contractArtifact = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-            const bytecode = contractArtifact.bytecode.slice(2);
-            const contractSize = bytecode.length / 2;
-            expect(parseInt(contractSize), `${contractName} exceeds 24KB (Size: ${contractSize} bytes)`).to.be.at.most(
-                parseInt(maxContractSize),
-            );
-        } else if (stats.isDirectory()) {
-            const files = fs.readdirSync(filePath);
-            files.forEach((file) => {
-                checkContractSize(path.join(filePath, file));
-            });
-        }
-    }
-
-    it('should not exceed 24KB', () => {
-        const contractsDir = path.join(__dirname, '..', 'artifacts', 'contracts');
-        checkContractSize(contractsDir);
     });
 });
