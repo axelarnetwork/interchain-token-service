@@ -13,8 +13,9 @@ abstract contract InterchainTokenExpressExecutable is IInterchainTokenExpressExe
         bytes calldata sourceAddress,
         bytes calldata data,
         bytes32 tokenId,
+        address token,
         uint256 amount
     ) external onlyService {
-        _executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
+        _executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, token, amount);
     }
 }

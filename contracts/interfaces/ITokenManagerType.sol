@@ -11,7 +11,7 @@ interface ITokenManagerType {
         MINT_BURN,
         MINT_BURN_FROM,
         LOCK_UNLOCK,
-        LOCK_UNLOCK_FEE_ON_TRANSFER,
+        LOCK_UNLOCK_FEE,
         LIQUIDITY_POOL
     }
 }
