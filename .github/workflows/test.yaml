@@ -23,5 +23,20 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Build project and capture output
+        run: npm run build > build.log 2>&1
+
+      - name: Check for build errors
+        run: |
+          if grep -q "error" build.log || grep -q "Error" build.log || grep -q "warning" build.log || grep -q "Warning" build.log; then
+            echo "Build contains following errors or warnings..."
+
+            cat build.log
+
+            exit 1
+          else
+            exit 0;
+          fi
+
       - name: Test
         run: npm run test
