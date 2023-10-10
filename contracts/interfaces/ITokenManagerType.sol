@@ -8,9 +8,10 @@ pragma solidity ^0.8.0;
  */
 interface ITokenManagerType {
     enum TokenManagerType {
-        LOCK_UNLOCK,
         MINT_BURN,
-        LOCK_UNLOCK_FEE_ON_TRANSFER,
+        MINT_BURN_FROM,
+        LOCK_UNLOCK,
+        LOCK_UNLOCK_FEE,
         LIQUIDITY_POOL
     }
 }

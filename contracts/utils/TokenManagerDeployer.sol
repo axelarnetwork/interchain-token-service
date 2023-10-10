@@ -19,8 +19,10 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
      * @param implementationType Token manager implementation type
      * @param params Additional parameters used in the setup of the token manager
      */
+    // slither-disable-next-line locked-ether
     function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes calldata params) external payable {
         bytes memory args = abi.encode(address(this), implementationType, tokenId, params);
+        // slither-disable-next-line too-many-digits
         bytes memory bytecode = abi.encodePacked(type(TokenManagerProxy).creationCode, args);
         address tokenManagerAddress = Create3.deploy(tokenId, bytecode);
         if (tokenManagerAddress.code.length == 0) revert TokenManagerDeploymentFailed();

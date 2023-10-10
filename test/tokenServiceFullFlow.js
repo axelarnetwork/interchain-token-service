@@ -12,32 +12,35 @@ const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardi
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
 
-const { getRandomBytes32, expectRevert } = require('../scripts/utils');
+const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;
 const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
-const LOCK_UNLOCK = 0;
-const MINT_BURN = 1;
+const MINT_BURN = 0;
+// const MINT_BURN_FROM = 1;
+const LOCK_UNLOCK = 2;
+// const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
+// const LIQUIDITY_POOL = 4;
 
 describe('Interchain Token Service Full Flow', () => {
     let wallet;
     let service, gateway, gasService, tokenManager, tokenId;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
+    const otherChains = ['chain 1', 'chain 2'];
     const decimals = 18;
 
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
-        [service, gateway, gasService] = await deployAll(wallet, 'Test');
+        [service, gateway, gasService] = await deployAll(wallet, 'Test', otherChains);
     });
 
     describe('Full canonical token registration, remote deployment and token send', async () => {
         let token;
-        const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
         const tokenCap = BigInt(1e18);
 
@@ -130,7 +133,6 @@ describe('Interchain Token Service Full Flow', () => {
         let token;
         let tokenId;
         const salt = getRandomBytes32();
-        const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
         const tokenCap = BigInt(1e18);
 

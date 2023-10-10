@@ -23,9 +23,10 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
         bytes calldata sourceAddress,
         bytes calldata data,
         bytes32 tokenId,
+        address token,
         uint256 amount
     ) external onlyService {
-        _executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, amount);
+        _executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, token, amount);
     }
 
     function _executeWithInterchainToken(
@@ -33,6 +34,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
         bytes calldata sourceAddress,
         bytes calldata data,
         bytes32 tokenId,
+        address token,
         uint256 amount
     ) internal virtual;
 }

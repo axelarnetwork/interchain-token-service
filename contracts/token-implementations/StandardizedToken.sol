@@ -2,8 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import { IERC20BurnableMintable } from '../interfaces/IERC20BurnableMintable.sol';
+import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
@@ -16,7 +17,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Permit, Implementation, Distributable {
+contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable, IStandardizedToken {
     using AddressBytesUtils for bytes;
 
     string public name;
@@ -45,7 +46,7 @@ contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Perm
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract
      */
-    function tokenManager() public view override returns (ITokenManager) {
+    function tokenManager() public view override(InterchainToken, IInterchainToken) returns (ITokenManager) {
         return ITokenManager(tokenManager_);
     }
 
@@ -63,6 +64,9 @@ contract StandardizedToken is IERC20BurnableMintable, InterchainToken, ERC20Perm
                 params,
                 (address, address, string, string, uint8)
             );
+
+            if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
+            if (bytes(tokenName).length == 0) revert TokenNameEmpty();
 
             tokenManager_ = tokenManagerAddress;
             name = tokenName;

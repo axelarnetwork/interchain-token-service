@@ -26,6 +26,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error SelectorUnknown();
     error InvalidMetadataVersion(uint32 version);
     error AlreadyExecuted(bytes32 commandId);
+    error ExecuteWithTokenNotSupported();
     error InvalidExpressSelector();
 
     event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
@@ -201,6 +202,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @param symbol The symbol of the standardized tokens.
      * @param decimals The number of decimals for the standardized tokens.
      * @param distributor The distributor data for mint/burn operations.
+     * @param mintTo The address where the minted tokens will be sent upon deployment.
+     * @param mintAmount The amount of tokens to be minted upon deployment.
      * @param operator The operator data for standardized tokens.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The gas value for deployment.
@@ -264,7 +267,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @param tokenIds An array of tokenIds.
      * @param flowLimits An array of flow limits corresponding to the tokenIds.
      */
-    function setFlowLimit(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
+    function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
 
     /**
      * @notice Returns the flow limit for a specific token.
