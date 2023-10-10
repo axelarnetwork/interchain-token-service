@@ -12,7 +12,7 @@ const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardi
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
 
-const { getRandomBytes32, expectRevert } = require('../scripts/utils');
+const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
 const SELECTOR_SEND_TOKEN = 1;

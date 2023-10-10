@@ -10,7 +10,8 @@ const { Contract, Wallet } = ethers;
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
 const Token = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
-const { approveContractCall, getRandomBytes32, expectRevert } = require('../scripts/utils');
+const { approveContractCall } = require('../scripts/utils');
+const { getRandomBytes32, expectRevert } = require('./utils');
 const {
     deployAll,
     deployContract,
@@ -496,7 +497,7 @@ describe('Interchain Token Service', () => {
 
             const gasValue = 1e6;
             await expectRevert(
-                (gasOptions) => service.deployRemoteCanonicalToken(tokenId, chain, gasValue, { ...gasOptions, value: gasValue }),
+                (gasOptions) => service.deployRemoteCanonicalToken(tokenId, destinationChain, gasValue, { ...gasOptions, value: gasValue }),
                 service,
                 'NotCanonicalTokenManager',
             );
@@ -511,7 +512,7 @@ describe('Interchain Token Service', () => {
             const gasValue = 1e6;
 
             await expectRevert(
-                (gasOptions) => service.deployRemoteCanonicalToken(tokenId, chain, gasValue, { ...gasOptions, value: gasValue }),
+                (gasOptions) => service.deployRemoteCanonicalToken(tokenId, destinationChain, gasValue, { ...gasOptions, value: gasValue }),
                 service,
                 'Paused',
             );
@@ -1038,7 +1039,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.deployRemoteCustomTokenManager(salt, destinationChain, type, params, gasValue, { ...gasOptions, value: gasValue }),
+                    service.deployRemoteCustomTokenManager(salt, destinationChain, type, params, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'Paused',
             );
@@ -1086,7 +1090,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.deployRemoteCustomTokenManager(salt, destinationChain, type, params, gasValue, { ...gasOptions, value: gasValue }),
+                    service.deployRemoteCustomTokenManager(salt, destinationChain, type, params, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'Paused',
             );
@@ -1214,7 +1221,8 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
 
             await expectRevert(
-                (gasOptions) => tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { ...gasOptions, value: gasValue }),
+                (gasOptions) =>
+                    tokenManager.interchainTransfer(destinationChain, destAddress, amount, '0x', { ...gasOptions, value: gasValue }),
                 service,
                 'Paused',
             );
@@ -1228,7 +1236,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.transmitSendToken(tokenId, tokenManager.address, destChain, destAddress, amount, '0x', {
+                    service.transmitSendToken(tokenId, tokenManager.address, destinationChain, destAddress, amount, '0x', {
                         ...gasOptions,
                         value: gasValue,
                     }),
@@ -1444,13 +1452,13 @@ describe('Interchain Token Service', () => {
                     transferToAddress = liquidityPool.address;
                 }
 
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, metadata))
+                await expect(service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                    .withArgs(service.address, destinationChain, service.address.toLowerCase(), payloadHash, payload)
                     .to.emit(service, 'TokenSentWithData')
-                    .withArgs(tokenId, destChain, destAddress, sendAmount, sourceAddress, '0x');
+                    .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, '0x');
             });
         }
 
@@ -1472,13 +1480,13 @@ describe('Interchain Token Service', () => {
                     transferToAddress = liquidityPool.address;
                 }
 
-                await expect(service.sendTokenWithData(tokenId, destChain, destAddress, amount, data))
+                await expect(service.sendTokenWithData(tokenId, destinationChain, destAddress, amount, data))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                    .withArgs(service.address, destinationChain, service.address.toLowerCase(), payloadHash, payload)
                     .to.emit(service, 'TokenSentWithData')
-                    .withArgs(tokenId, destChain, destAddress, sendAmount, sourceAddress, data);
+                    .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, data);
             });
         }
 
@@ -1488,7 +1496,7 @@ describe('Interchain Token Service', () => {
             const metadata = '0x00000001';
 
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destChain, destAddress, amount, metadata, gasOptions),
+                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasOptions),
                 service,
                 'InvalidMetadataVersion',
             );
@@ -2035,12 +2043,12 @@ describe('Interchain Token Service', () => {
             }
 
             await expectRevert(
-                (gasOptions) => service.connect(liquidityPool).setFlowLimit(tokenIds, flowLimits, gasOptions),
+                (gasOptions) => service.connect(liquidityPool).setFlowLimits(tokenIds, flowLimits, gasOptions),
                 service,
                 'NotOperator',
             );
 
-            await expect(service.setFlowLimit(tokenIds, flowLimits))
+            await expect(service.setFlowLimits(tokenIds, flowLimits))
                 .to.emit(tokenManagers[0], 'FlowLimitSet')
                 .withArgs(flowLimit)
                 .to.emit(tokenManagers[1], 'FlowLimitSet')
@@ -2052,7 +2060,7 @@ describe('Interchain Token Service', () => {
 
             flowLimits.pop();
 
-            await expectRevert((gasOptions) => service.setFlowLimit(tokenIds, flowLimits, gasOptions), service, 'LengthMismatch');
+            await expectRevert((gasOptions) => service.setFlowLimits(tokenIds, flowLimits, gasOptions), service, 'LengthMismatch');
         });
     });
 });
