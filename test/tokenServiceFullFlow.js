@@ -30,17 +30,17 @@ describe('Interchain Token Service Full Flow', () => {
     let service, gateway, gasService, tokenManager, tokenId;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
+    const otherChains = ['chain 1', 'chain 2'];
     const decimals = 18;
 
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
-        [service, gateway, gasService] = await deployAll(wallet, 'Test');
+        [service, gateway, gasService] = await deployAll(wallet, 'Test', otherChains);
     });
 
     describe('Full canonical token registration, remote deployment and token send', async () => {
         let token;
-        const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
         const tokenCap = BigInt(1e18);
 
@@ -133,7 +133,6 @@ describe('Interchain Token Service Full Flow', () => {
         let token;
         let tokenId;
         const salt = getRandomBytes32();
-        const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
         const tokenCap = BigInt(1e18);
 

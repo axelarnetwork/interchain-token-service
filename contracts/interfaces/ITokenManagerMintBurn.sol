@@ -11,9 +11,9 @@ import { ITokenManager } from './ITokenManager.sol';
 interface ITokenManagerMintBurn is ITokenManager {
     /**
      * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-     * @param operator the operator of the TokenManager.
-     * @param tokenAddress the token to be managed.
+     * @param operator_ the operator of the TokenManager.
+     * @param tokenAddress_ the token to be managed.
      * @return params the resulting params to be passed to custom TokenManager deployments.
      */
-    function getParams(bytes memory operator, address tokenAddress) external pure returns (bytes memory params);
+    function getParams(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params);
 }
