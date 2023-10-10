@@ -46,22 +46,6 @@ describe('RemoteAddressValidator', () => {
         );
     });
 
-    // it.only('Should deploy RemoteAddressValidator and add trusted addresses', async () => {
-    //     const otherRemoteAddressValidator = await deployRemoteAddressValidator(
-    //         ownerWallet,
-    //         interchainTokenServiceAddress,
-    //         chainName,
-    //         [otherChain],
-    //         [otherRemoteAddress],
-    //     );
-
-    //     const remoteAddress = await otherRemoteAddressValidator.remoteAddresses(otherChain);
-    //     const remoteAddressHash = await otherRemoteAddressValidator.remoteAddressHashes(otherChain);
-
-    //     expect(remoteAddress).to.eq(otherRemoteAddress);
-    //     expect(remoteAddressHash).to.eq(keccak256(toUtf8Bytes(otherRemoteAddress.toLowerCase())));
-    // });
-
     it('Should revert when querrying the remote address for unregistered chains', async () => {
         await expect(remoteAddressValidator.getRemoteAddress(otherChain)).to.be.revertedWithCustomError(
             remoteAddressValidator,
