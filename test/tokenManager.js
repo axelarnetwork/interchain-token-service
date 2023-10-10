@@ -7,7 +7,7 @@ const {
     constants: { AddressZero },
 } = ethers;
 const { expect } = chai;
-const { expectRevert } = require('../scripts/utils');
+const { expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 describe('Token Manager', () => {

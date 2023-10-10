@@ -1722,16 +1722,16 @@ describe('Interchain Token Service', () => {
                 await expect(
                     token
                         .connect(spender)
-                        .interchainTransferFrom(sender.address, destChain, destAddress, amount, metadata, { value: gasValue }),
+                        .interchainTransferFrom(sender.address, destinationChain, destAddress, amount, metadata, { value: gasValue }),
                 )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                    .withArgs(service.address, destinationChain, service.address.toLowerCase(), payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, spender.address)
+                    .withArgs(service.address, destinationChain, service.address.toLowerCase(), payloadHash, gasValue, spender.address)
                     .to.emit(service, 'TokenSent')
-                    .withArgs(tokenId, destChain, destAddress, sendAmount);
+                    .withArgs(tokenId, destinationChain, destAddress, sendAmount);
             });
         }
 
@@ -1753,16 +1753,16 @@ describe('Interchain Token Service', () => {
             await expect(
                 token
                     .connect(spender)
-                    .interchainTransferFrom(sender.address, destChain, destAddress, amount, metadata, { value: gasValue }),
+                    .interchainTransferFrom(sender.address, destinationChain, destAddress, amount, metadata, { value: gasValue }),
             )
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, transferToAddress, amount)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                .withArgs(service.address, destinationChain, service.address.toLowerCase(), payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, spender.address)
+                .withArgs(service.address, destinationChain, service.address.toLowerCase(), payloadHash, gasValue, spender.address)
                 .to.emit(service, 'TokenSent')
-                .withArgs(tokenId, destChain, destAddress, sendAmount);
+                .withArgs(tokenId, destinationChain, destAddress, sendAmount);
         });
     });
 
