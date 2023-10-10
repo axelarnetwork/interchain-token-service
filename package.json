@@ -8,6 +8,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
+    "test-without-compile": "npx hardhat test --no-compile",
     "build": "npx hardhat clean && npx hardhat compile && rm -rf dist && mkdir dist && cp -r artifacts/contracts/** dist",
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/*.js'",
     "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",

@@ -39,4 +39,5 @@ jobs:
           fi
 
       - name: Test
-        run: npm run test
+        # Running test-without-compile as artifacts already generated in build command
+        run: npm run test-without-compile
