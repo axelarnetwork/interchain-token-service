@@ -278,6 +278,26 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should revert on invalid gateway', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    deployInterchainTokenService(
+                        wallet,
+                        create3Deployer.address,
+                        tokenManagerDeployer.address,
+                        standardizedTokenDeployer.address,
+                        AddressZero,
+                        gasService.address,
+                        remoteAddressValidator.address,
+                        tokenManagerImplementations.map((impl) => impl.address),
+                        deploymentKey,
+                        gasOptions,
+                    ),
+                service,
+                'ZeroAddress',
+            );
+        });
+
         it('Should revert on invalid token manager implementation length', async () => {
             tokenManagerImplementations.push(wallet);
 
@@ -743,6 +763,35 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
+        it('Should revert on receiving a remote standardized token depoloyment if not approved by the gateway', async () => {
+            const tokenId = getRandomBytes32();
+            const distributor = wallet.address;
+            const operator = wallet.address;
+            const mintTo = '0x';
+            const mintAmount = 1234;
+            const commandId = getRandomBytes32();
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [
+                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    tokenId,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    distributor,
+                    mintTo,
+                    mintAmount,
+                    operator,
+                ],
+            );
+
+            await expectRevert(
+                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                service,
+                'NotApprovedByGateway',
+            );
+        });
+
         it('Should be able to receive a remote standardized token depoloyment with a lock/unlock token manager', async () => {
             const tokenId = getRandomBytes32();
             const distributor = wallet.address;
@@ -891,6 +940,19 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.operator()).to.equal(service.address);
         });
+
+        it('Should revert on execute with token', async () => {
+            const commandId = getRandomBytes32();
+            const sourceAddress = 'Source Address';
+            const payload = '0x';
+            const amount = 123;
+
+            await expectRevert(
+                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                service,
+                'ExecuteWithTokenNotSupported',
+            );
+        });
     });
 
     describe('Custom Token Manager Deployment', () => {
@@ -918,6 +980,9 @@ describe('Interchain Token Service', () => {
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
             expect(await tokenManager.operator()).to.equal(wallet.address);
+
+            const tokenAddress = await service.getTokenAddress(tokenId);
+            expect(tokenAddress).to.eq(token.address);
         });
 
         it('Should deploy a mint/burn token manager', async () => {
@@ -937,6 +1002,31 @@ describe('Interchain Token Service', () => {
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
             expect(await tokenManager.operator()).to.equal(wallet.address);
+
+            const tokenAddress = await service.getTokenAddress(tokenId);
+            expect(tokenAddress).to.eq(token.address);
+        });
+
+        it('Should deploy a mint/burn_from token manager', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const salt = getRandomBytes32();
+            const tokenId = await service.getCustomTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+            const tx = service.deployCustomTokenManager(salt, MINT_BURN_FROM, params);
+            await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, MINT_BURN_FROM, params);
+
+            expect(tokenManagerAddress).to.not.equal(AddressZero);
+            const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
+
+            expect(await tokenManager.operator()).to.equal(wallet.address);
+
+            const tokenAddress = await service.getTokenAddress(tokenId);
+            expect(tokenAddress).to.eq(token.address);
         });
 
         it('Should deploy a lock/unlock with fee on transfer token manager', async () => {
@@ -961,6 +1051,9 @@ describe('Interchain Token Service', () => {
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
             expect(await tokenManager.operator()).to.equal(wallet.address);
+
+            const tokenAddress = await service.getTokenAddress(tokenId);
+            expect(tokenAddress).to.eq(token.address);
         });
 
         it('Should deploy a liquidity pool token manager', async () => {
@@ -980,6 +1073,9 @@ describe('Interchain Token Service', () => {
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
             expect(await tokenManager.operator()).to.equal(wallet.address);
+
+            const tokenAddress = await service.getTokenAddress(tokenId);
+            expect(tokenAddress).to.eq(token.address);
         });
 
         it('Should allow operator to change the liquidity pool address', async () => {
