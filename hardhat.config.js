@@ -46,7 +46,7 @@ module.exports = {
         enabled: process.env.REPORT_GAS !== undefined,
     },
     contractSizer: {
-        runOnCompile: true,
+        runOnCompile: process.env.CONTRACT_SIZER_ENABLED,
         strict: process.env.FAIL_COMPILE_IF_SIZE_EXCEEDS,
     },
 };
