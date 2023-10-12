@@ -10,6 +10,7 @@ pragma solidity ^0.8.0;
 interface ITokenManagerProxy {
     error ImplementationLookupFailed();
     error SetupFailed();
+    error NativeTokenNotAccepted();
 
     /**
      * @notice Returns implementation type of this token manager
