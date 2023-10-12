@@ -2,6 +2,7 @@ require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
 require('solidity-coverage');
 require('solidity-docgen');
+require('hardhat-contract-sizer');
 
 const env = process.env.ENV || 'testnet';
 const { importNetworks, readJSON } = require('@axelar-network/axelar-chains-config');
@@ -44,5 +45,9 @@ module.exports = {
     },
     gasReporter: {
         enabled: process.env.REPORT_GAS !== undefined,
+    },
+    contractSizer: {
+        runOnCompile: process.env.CHECK_CONTRACT_SIZE,
+        strict: process.env.CHECK_CONTRACT_SIZE,
     },
 };
