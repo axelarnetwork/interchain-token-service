@@ -895,13 +895,7 @@ Getter for the decimals of the token
 ### AlreadyExpressCalled
 
 ```solidity
-error AlreadyExpressCalled()
-```
-
-### SameDestinationAsCaller
-
-```solidity
-error SameDestinationAsCaller()
+error AlreadyExpressCalled(address prevExpressCaller)
 ```
 
 ### ExpressReceive
@@ -982,7 +976,7 @@ Gets the address of the express caller for a specific token transfer with data
 ### FlowLimitExceeded
 
 ```solidity
-error FlowLimitExceeded()
+error FlowLimitExceeded(uint256 limit, uint256 flowAmount)
 ```
 
 ### FlowLimitSet
@@ -1103,10 +1097,10 @@ error ZeroAddress()
 error LengthMismatch()
 ```
 
-### InvalidTokenManagerImplementation
+### InvalidTokenManagerImplementationType
 
 ```solidity
-error InvalidTokenManagerImplementation()
+error InvalidTokenManagerImplementationType(address implementation)
 ```
 
 ### NotRemoteService
@@ -1124,7 +1118,7 @@ error TokenManagerDoesNotExist(bytes32 tokenId)
 ### NotTokenManager
 
 ```solidity
-error NotTokenManager()
+error NotTokenManager(address caller, address tokenManager);
 ```
 
 ### ExecuteWithInterchainTokenFailed
@@ -1133,10 +1127,10 @@ error NotTokenManager()
 error ExecuteWithInterchainTokenFailed(address contractAddress)
 ```
 
-### NotCanonicalTokenManager
+### InvalidCanonicalTokenId
 
 ```solidity
-error NotCanonicalTokenManager()
+error InvalidCanonicalTokenId(canonicalTokenId);
 ```
 
 ### GatewayToken
@@ -1148,25 +1142,19 @@ error GatewayToken()
 ### TokenManagerDeploymentFailed
 
 ```solidity
-error TokenManagerDeploymentFailed()
+error TokenManagerDeploymentFailed(bytes returnData)
 ```
 
 ### StandardizedTokenDeploymentFailed
 
 ```solidity
-error StandardizedTokenDeploymentFailed()
-```
-
-### DoesNotAcceptExpressExecute
-
-```solidity
-error DoesNotAcceptExpressExecute(address contractAddress)
+error StandardizedTokenDeploymentFailed(bytes returnData)
 ```
 
 ### SelectorUnknown
 
 ```solidity
-error SelectorUnknown()
+error SelectorUnknown(uint256 selector)
 ```
 
 ### InvalidMetadataVersion
@@ -1776,7 +1764,7 @@ If any of the calls fail, the function will revert with the failure message._
 ### NotOperator
 
 ```solidity
-error NotOperator()
+error NotOperator(address caller)
 ```
 
 ### OperatorshipTransferred
@@ -2080,7 +2068,7 @@ error GiveTokenFailed()
 ### NotToken
 
 ```solidity
-error NotToken()
+error NotToken(address caller)
 ```
 
 ### tokenAddress
@@ -2247,7 +2235,7 @@ error ImplementationLookupFailed()
 ### SetupFailed
 
 ```solidity
-error SetupFailed()
+error SetupFailed(bytes returnData)
 ```
 
 ### implementationType
@@ -2924,7 +2912,7 @@ or from derived contracts._
 ### NotService
 
 ```solidity
-error NotService()
+error NotService(address caller)
 ```
 
 ### interchainTokenService
@@ -3088,13 +3076,13 @@ A different implementation could have `metadata` that tells this function which 
 ### NotDistributor
 
 ```solidity
-error NotDistributor()
+error NotDistributor(address caller)
 ```
 
 ### DistributorshipTransferred
 
 ```solidity
-event DistributorshipTransferred(address distributor)
+event DistributorshipTransferred(address previousDistributor, address distributor)
 ```
 
 ### distributor
