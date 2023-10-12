@@ -38,7 +38,7 @@ jobs:
             exit 0;
           fi
       - name: Set environment variable
-        run: export FAIL_COMPILE_IF_SIZE_EXCEEDS=true
+        run: export CHECK_CONTRACT_SIZE=true
 
       - name: Test
         run: npm run test
