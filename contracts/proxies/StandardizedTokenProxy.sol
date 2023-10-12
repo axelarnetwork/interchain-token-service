@@ -30,7 +30,7 @@ contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
     /**
      * @notice Getter for the contract id.
      */
-    function contractId() external pure returns (bytes32) {
+    function contractId() internal pure override returns (bytes32) {
         return CONTRACT_ID;
     }
 }
