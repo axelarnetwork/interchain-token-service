@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import { SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { IStandardizedTokenRegistrar } from '../interfaces/IStandardizedTokenRegistrar.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
@@ -15,6 +17,7 @@ import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManagerType, Multicall {
     using AddressBytesUtils for bytes;
     using AddressBytesUtils for address;
+    using SafeTokenTransfer for IStandardizedToken;
 
     IInterchainTokenService public immutable service;
     string public chainName;
@@ -66,7 +69,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         tokenManager.transferOperatorship(sender);
 
         IStandardizedToken token = IStandardizedToken(service.getStandardizedTokenAddress(tokenId));
-        token.transfer(sender, mintAmount);
+        token.safeTransfer(sender, mintAmount);
     }
 
     function deployRemoteStandarizedToken(
@@ -78,7 +81,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         string memory tokenName;
         string memory tokenSymbol;
         uint8 tokenDecimals;
-        bytes memory distributor;
+        bytes memory distributor = '';
         bytes memory operator;
 
         {
@@ -118,6 +121,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         string memory destinationChain,
         uint256 gasValue
     ) internal {
+        // slither-disable-next-line arbitrary-send-eth
         service.deployAndRegisterRemoteStandardizedToken{ value: gasValue }(
             salt,
             tokenName,

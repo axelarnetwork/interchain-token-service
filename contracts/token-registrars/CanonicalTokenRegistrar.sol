@@ -31,10 +31,10 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
         tokenId = service.getCustomTokenId(address(this), getCanonicalTokenSalt(tokenAddress));
     }
 
-    function registerCanonicalToken(address tokenAddress) external payable {
+    function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
         bytes32 salt = getCanonicalTokenSalt(tokenAddress);
-        service.deployCustomTokenManager(salt, TokenManagerType.LOCK_UNLOCK, params);
+        tokenId = service.deployCustomTokenManager(salt, TokenManagerType.LOCK_UNLOCK, params);
     }
 
     function deployAndRegisterRemoteCanonicalToken(bytes32 salt, string calldata destinationChain, uint256 gasValue) external payable {
@@ -45,6 +45,8 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
         string memory tokenName = token.name();
         string memory tokenSymbol = token.symbol();
         uint8 tokenDecimals = token.decimals();
+
+        // slither-disable-next-line arbitrary-send-eth
         service.deployAndRegisterRemoteStandardizedToken{ value: gasValue }(
             salt,
             tokenName,
