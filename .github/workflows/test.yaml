@@ -28,7 +28,7 @@ jobs:
 
       - name: Check for build errors
         run: |
-          if grep -q "error" build.log || grep -q "Error" build.log || grep -q "warning" build.log || grep -q "Warning" build.log; then
+          if grep -q -i "error" build.log || grep -q -i "warning" build.log; then
             echo "Build contains following errors or warnings..."
 
             cat build.log
@@ -37,6 +37,7 @@ jobs:
           else
             exit 0;
           fi
+
       - name: Set environment variable
         run: export CHECK_CONTRACT_SIZE=true
 
