@@ -7,10 +7,12 @@
   },
   "main": "index.js",
   "scripts": {
+    "build": "npx hardhat clean && npx hardhat compile && npm run copy:interfaces",
     "test": "npx hardhat test",
-    "build": "npx hardhat clean && npx hardhat compile && rm -rf dist && mkdir dist && cp -r artifacts/contracts/** dist",
-    "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/*.js'",
-    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",
+    "copy:interfaces": "rm -rf interfaces && mkdir interfaces && cp artifacts/contracts/interfaces/*/*.json interfaces/ && rm interfaces/*.dbg.json",
+    "clean:artifacts": "rm -rf artifacts/build-info artifacts/*/test artifacts/contracts/*/*/*.dbg.json",
+    "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/**/*.js'",
+    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/**/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",
     "flatten": "sh scripts/flatten-contracts.sh",
     "coverage": "cross-env COVERAGE=true hardhat coverage"
   },
@@ -24,31 +26,30 @@
     "node": ">=16"
   },
   "dependencies": {
-    "@axelar-network/axelar-cgp-solidity": "5.0.0",
-    "@axelar-network/axelar-gmp-sdk-solidity": "4.0.2"
+    "@axelar-network/axelar-cgp-solidity": "6.1.2",
+    "@axelar-network/axelar-gmp-sdk-solidity": "5.4.0"
   },
   "devDependencies": {
-    "@axelar-network/axelar-contract-deployments": "git://github.com/axelarnetwork/axelar-contract-deployments.git#f2d55c39967c8a55c7f9ac775a250cb8be6d74d9",
+    "@axelar-network/axelar-chains-config": "~0.1.2",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "chai": "^4.3.7",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.1",
     "eslint": "^8.43.0",
     "eslint-config-richardpringle": "^2.0.0",
-    "fs-extra": "^11.1.1",
-    "hardhat": "^2.13.0",
+    "hardhat": "~2.18.0",
     "hardhat-contract-sizer": "^2.10.0",
     "mocha": "^10.2.0",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
     "solhint": "^3.4.1",
-    "solidity-docgen": "^0.6.0-beta.35"
+    "solidity-docgen": "^0.6.0-beta.36"
   },
   "description": "Interchain token service for EVM chains to faciliate cross-chain token transfers and contract calls",
   "files": [
     "artifacts",
     "contracts",
-    "dist",
+    "interfaces",
     "docs",
     "scripts",
     "DESIGN.md",

@@ -77,6 +77,10 @@ contract MockAxelarGateway is IMockAxelarGateway {
         _addressStorage[_getTokenAddressKey(symbol)] = tokenAddress;
     }
 
+    function setCommandExecuted(bytes32 commandId, bool executed) external {
+        _setCommandExecuted(commandId, executed);
+    }
+
     /********************\
     |* Pure Key Getters *|
     \********************/
