@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Set environment variable
-        run: export FAIL_COMPILE_IF_SIZE_EXCEEDS=true CONTRACT_SIZER_ENABLED=true
+        run: export CHECK_CONTRACT_SIZE=true
 
       - name: Test
         run: npm run test
