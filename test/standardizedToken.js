@@ -67,6 +67,15 @@ describe('StandardizedToken', () => {
             ).to.be.reverted;
         });
 
+        it('should revert if standardized token setup fails', async () => {
+            const params = '0x1234';
+            await expectRevert(
+                (gasOptions) => deployContract(owner, 'StandardizedTokenProxy', [standardizedToken.address, params, gasOptions]),
+                tokenProxy,
+                'SetupFailed',
+            );
+        });
+
         it('should return the correct contract ID', async () => {
             const contractID = await token.contractId();
             const hash = keccak256(toUtf8Bytes('standardized-token'));
