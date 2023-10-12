@@ -29,7 +29,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
 
     modifier onlyDistributorOrTokenManager() {
         if (msg.sender != tokenManager_) {
-            if (msg.sender != distributor()) revert NotDistributor();
+            if (msg.sender != distributor()) revert NotDistributor(msg.sender);
         }
 
         _;

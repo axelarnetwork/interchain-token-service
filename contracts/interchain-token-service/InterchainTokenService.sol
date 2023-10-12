@@ -131,7 +131,8 @@ contract InterchainTokenService is
      * @param tokenId the `tokenId` of the TokenManager trying to perform the call.
      */
     modifier onlyTokenManager(bytes32 tokenId) {
-        if (msg.sender != getTokenManagerAddress(tokenId)) revert NotTokenManager();
+        address tokenManager = getTokenManagerAddress(tokenId);
+        if (msg.sender != tokenManager) revert NotTokenManager(msg.sender, tokenManager);
         _;
     }
 
@@ -281,10 +282,13 @@ contract InterchainTokenService is
      * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
      */
     function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable notPaused {
-        address tokenAddress = getValidTokenManagerAddress(tokenId);
-        tokenAddress = ITokenManager(tokenAddress).tokenAddress();
-
-        if (getCanonicalTokenId(tokenAddress) != tokenId) revert NotCanonicalTokenManager();
+        address tokenAddress;
+        {
+            tokenAddress = getValidTokenManagerAddress(tokenId);
+            tokenAddress = ITokenManager(tokenAddress).tokenAddress();
+            bytes32 canonicalTokenId = getCanonicalTokenId(tokenAddress);
+            if (canonicalTokenId != tokenId) revert InvalidCanonicalTokenId(canonicalTokenId);
+        }
 
         (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
         _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', '', 0, '', destinationChain, gasValue);
@@ -436,7 +440,7 @@ contract InterchainTokenService is
                 amount
             );
         } else if (selector != SELECTOR_RECEIVE_TOKEN) {
-            revert InvalidExpressSelector();
+            revert InvalidExpressSelector(selector);
         }
     }
 
@@ -530,7 +534,8 @@ contract InterchainTokenService is
     ) internal pure returns (address implementation_) {
         implementation_ = tokenManagerImplementations[uint256(tokenManagerType)];
         if (implementation_ == address(0)) revert ZeroAddress();
-        if (ITokenManager(implementation_).implementationType() != uint256(tokenManagerType)) revert InvalidTokenManagerImplementation();
+        if (ITokenManager(implementation_).implementationType() != uint256(tokenManagerType))
+            revert InvalidTokenManagerImplementationType(implementation_);
     }
 
     /**
@@ -555,7 +560,7 @@ contract InterchainTokenService is
         if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) return _processDeployTokenManagerPayload(payload);
         if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) return _processDeployStandardizedTokenAndManagerPayload(payload);
 
-        revert SelectorUnknown();
+        revert SelectorUnknown(selector);
     }
 
     function executeWithToken(
@@ -787,10 +792,10 @@ contract InterchainTokenService is
         emit TokenManagerDeployed(tokenId, tokenManagerType, params);
 
         // slither-disable-next-line controlled-delegatecall
-        (bool success, ) = tokenManagerDeployer.delegatecall(
+        (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
             abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
         );
-        if (!success) revert TokenManagerDeploymentFailed();
+        if (!success) revert TokenManagerDeploymentFailed(returnData);
     }
 
     /**
@@ -827,7 +832,7 @@ contract InterchainTokenService is
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
 
         // slither-disable-next-line controlled-delegatecall
-        (bool success, ) = standardizedTokenDeployer.delegatecall(
+        (bool success, bytes memory returnData) = standardizedTokenDeployer.delegatecall(
             abi.encodeWithSelector(
                 IStandardizedTokenDeployer.deployStandardizedToken.selector,
                 salt,
@@ -841,7 +846,7 @@ contract InterchainTokenService is
             )
         );
         if (!success) {
-            revert StandardizedTokenDeploymentFailed();
+            revert StandardizedTokenDeploymentFailed(returnData);
         }
     }
 

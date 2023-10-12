@@ -20,7 +20,7 @@ contract Operatable is IOperatable {
      * @dev Throws a NotOperator custom error if called by any account other than the operator.
      */
     modifier onlyOperator() {
-        if (operator() != msg.sender) revert NotOperator();
+        if (operator() != msg.sender) revert NotOperator(msg.sender);
         _;
     }
 
@@ -76,7 +76,7 @@ contract Operatable is IOperatable {
             proposedOperator := sload(PROPOSED_OPERATOR_SLOT)
             sstore(PROPOSED_OPERATOR_SLOT, 0)
         }
-        if (msg.sender != proposedOperator) revert NotProposedOperator();
+        if (msg.sender != proposedOperator) revert NotProposedOperator(msg.sender, proposedOperator);
         _setOperator(proposedOperator);
     }
 }

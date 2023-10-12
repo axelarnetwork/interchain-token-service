@@ -36,7 +36,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @dev A modifier that allows only the interchain token service to execute the function.
      */
     modifier onlyService() {
-        if (msg.sender != address(interchainTokenService)) revert NotService();
+        if (msg.sender != address(interchainTokenService)) revert NotService(msg.sender);
         _;
     }
 
@@ -44,7 +44,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @dev A modifier that allows only the token to execute the function.
      */
     modifier onlyToken() {
-        if (msg.sender != tokenAddress()) revert NotToken();
+        if (msg.sender != tokenAddress()) revert NotToken(msg.sender);
         _;
     }
 

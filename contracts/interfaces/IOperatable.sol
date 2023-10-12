@@ -3,8 +3,8 @@
 pragma solidity ^0.8.0;
 
 interface IOperatable {
-    error NotOperator();
-    error NotProposedOperator();
+    error NotOperator(address caller);
+    error NotProposedOperator(address caller, address proposedOperator);
 
     event OperatorshipTransferred(address indexed operator);
     event OperatorChangeProposed(address indexed operator);

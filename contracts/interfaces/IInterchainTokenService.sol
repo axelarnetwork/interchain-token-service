@@ -13,21 +13,20 @@ import { IMulticall } from './IMulticall.sol';
 interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAxelarExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
     error LengthMismatch();
-    error InvalidTokenManagerImplementation();
+    error InvalidTokenManagerImplementationType(address implementation);
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
-    error NotTokenManager();
+    error NotTokenManager(address caller, address tokenManager);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
-    error NotCanonicalTokenManager();
+    error InvalidCanonicalTokenId(bytes32 canonicalTokenId);
     error GatewayToken();
-    error TokenManagerDeploymentFailed();
-    error StandardizedTokenDeploymentFailed();
-    error DoesNotAcceptExpressExecute(address contractAddress);
-    error SelectorUnknown();
+    error TokenManagerDeploymentFailed(bytes returnData);
+    error StandardizedTokenDeploymentFailed(bytes returnData);
+    error SelectorUnknown(uint256 selector);
     error InvalidMetadataVersion(uint32 version);
     error AlreadyExecuted(bytes32 commandId);
     error ExecuteWithTokenNotSupported();
-    error InvalidExpressSelector();
+    error InvalidExpressSelector(uint256 selector);
 
     event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event TokenSentWithData(

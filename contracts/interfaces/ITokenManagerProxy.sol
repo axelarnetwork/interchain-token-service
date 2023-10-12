@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
  */
 interface ITokenManagerProxy {
     error ImplementationLookupFailed();
-    error SetupFailed();
+    error SetupFailed(bytes returnData);
 
     /**
      * @notice Returns implementation type of this token manager

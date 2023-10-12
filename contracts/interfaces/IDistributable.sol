@@ -3,10 +3,10 @@
 pragma solidity ^0.8.0;
 
 interface IDistributable {
-    error NotDistributor();
-    error NotProposedDistributor();
+    error NotDistributor(address caller);
+    error NotProposedDistributor(address caller, address proposedDistributor);
 
-    event DistributorshipTransferred(address indexed distributor);
+    event DistributorshipTransferred(address indexed previousDistributor, address indexed distributor);
     event DistributorshipTransferStarted(address indexed distributor);
 
     /**

@@ -23,7 +23,7 @@ contract InvalidStandardizedToken is IERC20MintableBurnable, InterchainToken, ER
 
     modifier onlyDistributorOrTokenManager() {
         if (msg.sender != tokenManager_) {
-            if (msg.sender != distributor()) revert NotDistributor();
+            if (msg.sender != distributor()) revert NotDistributor(msg.sender);
         }
 
         _;

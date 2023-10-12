@@ -21,7 +21,7 @@ contract Distributable is IDistributable {
      * @dev Throws a NotDistributor custom error if called by any account other than the distributor.
      */
     modifier onlyDistributor() {
-        if (distributor() != msg.sender) revert NotDistributor();
+        if (distributor() != msg.sender) revert NotDistributor(msg.sender);
         _;
     }
 
@@ -40,10 +40,12 @@ contract Distributable is IDistributable {
      * @param distributor_ The address of the new distributor
      */
     function _setDistributor(address distributor_) internal {
+        address previousDistributor;
         assembly {
+            previousDistributor := sload(DISTRIBUTOR_SLOT)
             sstore(DISTRIBUTOR_SLOT, distributor_)
         }
-        emit DistributorshipTransferred(distributor_);
+        emit DistributorshipTransferred(previousDistributor, distributor_);
     }
 
     /**
@@ -77,7 +79,7 @@ contract Distributable is IDistributable {
             proposedDistributor := sload(PROPOSED_DISTRIBUTOR_SLOT)
             sstore(PROPOSED_DISTRIBUTOR_SLOT, 0)
         }
-        if (msg.sender != proposedDistributor) revert NotProposedDistributor();
+        if (msg.sender != proposedDistributor) revert NotProposedDistributor(msg.sender, proposedDistributor);
         _setDistributor(proposedDistributor);
     }
 }
