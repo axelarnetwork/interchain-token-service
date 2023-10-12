@@ -115,6 +115,33 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
+    deployFunctions.lockUnlockFee = async function deployNewLockUnlock(
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
+        const salt = getRandomBytes32();
+        const tokenId = await service.getCustomTokenId(wallet.address, salt);
+        const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), TokenManager.abi, wallet);
+
+        const token = await deployContract(wallet, 'FeeOnTransferTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+        await (await service.deployCustomTokenManager(salt, LOCK_UNLOCK_FEE_ON_TRANSFER, params)).wait();
+
+        if (mintAmount > 0) {
+            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait());
+
+            if (!skipApprove) {
+                await token.approve(tokenManager.address, mintAmount).then((tx) => tx.wait());
+            }
+        }
+
+        return [token, tokenManager, tokenId];
+    };
+
     const makeDeployNewMintBurn = (type) =>
         async function deployNewMintBurn(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
             const salt = getRandomBytes32();
@@ -393,7 +420,7 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('[TokenManagerProxy] Should revert if setup fails on the implementation', async () => {
+        it('Should revert if setup fails on TokenManager implementation deployment', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
             const validParams = defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]);

@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IRemoteAddressValidator } from '../interfaces/IRemoteAddressValidator.sol';
-import { AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/AddressString.sol';
+import { AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressString.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
 /**

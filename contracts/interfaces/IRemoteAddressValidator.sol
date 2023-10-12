@@ -2,11 +2,13 @@
 
 pragma solidity ^0.8.0;
 
+import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
+
 /**
  * @title IRemoteAddressValidator
  * @dev Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract
  */
-interface IRemoteAddressValidator {
+interface IRemoteAddressValidator is IContractIdentifier {
     error ZeroAddress();
     error LengthMismatch();
     error ZeroStringLength();
