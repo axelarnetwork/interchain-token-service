@@ -98,7 +98,7 @@ describe('Interchain Token Service', () => {
         await (await service.deployCustomTokenManager(salt, LOCK_UNLOCK_FEE_ON_TRANSFER, params)).wait();
 
         if (mintAmount > 0) {
-            await (await token.mint(wallet.address, mintAmount)).wait();
+            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait());
             if (!skipApprove) await (await token.approve(tokenManager.address, mintAmount)).wait();
         }
 
