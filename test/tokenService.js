@@ -396,7 +396,7 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('[TokenManagerProxy] Should revert if setup fails on the implementation', async () => {
+        it('Should revert if setup fails on TokenManager implementation deployment', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.getCustomTokenId(wallet.address, salt);
             const validParams = defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]);
