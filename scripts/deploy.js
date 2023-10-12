@@ -6,7 +6,7 @@ const { create3DeployContract, getCreate3Address } = require('@axelar-network/ax
 
 async function deployContract(wallet, contractName, args = []) {
     const factory = await ethers.getContractFactory(contractName, wallet);
-    const contract = await factory.deploy(...args);
+    const contract = await factory.deploy(...args).then((d) => d.deployed());
 
     return contract;
 }
@@ -103,6 +103,7 @@ module.exports = {
     deployContract,
     deployRemoteAddressValidator,
     deployMockGateway,
+    deployTokenManagerImplementations,
     deployGasService,
     deployInterchainTokenService,
     deployAll,
