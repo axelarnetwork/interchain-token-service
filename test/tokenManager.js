@@ -55,6 +55,7 @@ describe('Token Manager', () => {
                 ),
             tokenManagerLockUnlock,
             'NotToken',
+            [sender],
         );
     });
 
@@ -66,6 +67,7 @@ describe('Token Manager', () => {
             (gasOptions) => tokenManagerLockUnlock.giveToken(destinationAddress, amount, gasOptions),
             tokenManagerLockUnlock,
             'NotService',
+            [owner.address],
         );
     });
 
@@ -77,6 +79,7 @@ describe('Token Manager', () => {
             (gasOptions) => tokenManagerLockUnlock.takeToken(sourceAddress, amount, gasOptions),
             tokenManagerLockUnlock,
             'NotService',
+            [owner.address],
         );
     });
 
@@ -87,6 +90,7 @@ describe('Token Manager', () => {
             (gasOptions) => tokenManagerLockUnlock.setFlowLimit(flowLimit, gasOptions),
             tokenManagerLockUnlock,
             'NotOperator',
+            [owner.address],
         );
     });
 

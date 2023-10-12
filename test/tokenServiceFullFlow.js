@@ -122,10 +122,12 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress))
+                .to.emit(token, 'DistributorshipTransferred')
+                .withArgs(wallet.address, newAddress);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor', [wallet.address]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor', [wallet.address]);
         });
     });
 
@@ -223,6 +225,7 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         // For this test the token must be a standardized token (or a distributable token in general)
+        // TODO no token is deployed so how will mint and burn work?
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
@@ -230,10 +233,12 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress))
+                .to.emit(token, 'DistributorshipTransferred')
+                .withArgs(wallet.address, newAddress);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor', [wallet.address]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor', [wallet.address]);
         });
     });
 
@@ -306,10 +311,10 @@ describe('Interchain Token Service Full Flow', () => {
 
             await expect(token.transferDistributorship(tokenManager.address))
                 .to.emit(token, 'DistributorshipTransferred')
-                .withArgs(tokenManager.address);
+                .withArgs(wallet.address, tokenManager.address);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor', [wallet.address]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor', [wallet.address]);
         });
 
         // In order to be able to receive tokens the distributorship should be changed on other chains as well.

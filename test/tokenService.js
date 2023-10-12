@@ -5,7 +5,7 @@ const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
-const { defaultAbiCoder, solidityPack, keccak256, arrayify } = ethers.utils;
+const { defaultAbiCoder, solidityPack, keccak256, arrayify, toUtf8Bytes } = ethers.utils;
 const { Contract, Wallet } = ethers;
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
 const TokenManagerLiquidityPool = require('../artifacts/contracts/token-manager/implementations/TokenManagerLiquidityPool.sol/TokenManagerLiquidityPool.json');
@@ -392,7 +392,8 @@ describe('Interchain Token Service', () => {
                         gasOptions,
                     ),
                 service,
-                'InvalidTokenManagerImplementation',
+                'InvalidTokenManagerImplementationType',
+                [tokenManagerImplementations[length - 1].address],
             );
         });
 
@@ -408,11 +409,13 @@ describe('Interchain Token Service', () => {
             ]);
             const invalidParams = '0x1234';
 
+            const revertData = '0x';
             await expectRevert(
                 (gasOptions) =>
                     deployContract(wallet, `TokenManagerProxy`, [service.address, LOCK_UNLOCK, tokenId, invalidParams, gasOptions]),
                 tokenManagerProxy,
                 'SetupFailed',
+                [revertData],
             );
         });
     });
@@ -464,10 +467,12 @@ describe('Interchain Token Service', () => {
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, LOCK_UNLOCK, params);
 
+            const revertData = keccak256(toUtf8Bytes('AlreadyDeployed()')).substring(0, 10);
             await expectRevert(
                 (gasOptions) => service.registerCanonicalToken(token.address, gasOptions),
                 service,
                 'TokenManagerDeploymentFailed',
+                [revertData],
             );
         });
 
@@ -541,10 +546,12 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
 
             const gasValue = 1e6;
+            const expectedCanonicalTokenId = await service.getCanonicalTokenId(tokenAddress);
             await expectRevert(
                 (gasOptions) => service.deployRemoteCanonicalToken(tokenId, destinationChain, gasValue, { ...gasOptions, value: gasValue }),
                 service,
-                'NotCanonicalTokenManager',
+                'InvalidCanonicalTokenId',
+                [expectedCanonicalTokenId],
             );
         });
 
@@ -638,6 +645,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.operator()).to.equal(wallet.address);
 
             // Register the same token again
+            const revertData = keccak256(toUtf8Bytes('AlreadyDeployed()')).substring(0, 10);
             await expectRevert(
                 (gasOptions) =>
                     service.deployAndRegisterStandardizedToken(
@@ -651,6 +659,7 @@ describe('Interchain Token Service', () => {
                     ),
                 service,
                 'StandardizedTokenDeploymentFailed',
+                [revertData],
             );
         });
     });
@@ -1101,6 +1110,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => tokenManagerLiquidityPool.connect(otherWallet).setLiquidityPool(otherWallet.address, gasOptions),
                 tokenManagerLiquidityPool,
                 'NotOperator',
+                [wallet.address],
             );
 
             await tokenManagerLiquidityPool.setLiquidityPool(otherWallet.address).then((tx) => tx.wait());
@@ -1122,10 +1132,12 @@ describe('Interchain Token Service', () => {
             const tx = service.deployCustomTokenManager(salt, LOCK_UNLOCK, params);
             await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, LOCK_UNLOCK, params);
 
+            const revertData = keccak256(toUtf8Bytes('AlreadyDeployed()')).substring(0, 10);
             await expectRevert(
                 (gasOptions) => service.deployCustomTokenManager(salt, LOCK_UNLOCK, params, gasOptions),
                 service,
                 'TokenManagerDeploymentFailed',
+                [revertData],
             );
         });
 
@@ -1391,6 +1403,7 @@ describe('Interchain Token Service', () => {
                     }),
                 service,
                 'NotTokenManager',
+                [wallet.address, tokenManager.address],
             );
         });
     });
@@ -1460,6 +1473,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
                 service,
                 'SelectorUnknown',
+                [INVALID_SELECTOR],
             );
         });
     });
@@ -2003,6 +2017,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.expressReceiveToken(payload, commandId, sourceChain, gasOptions),
                 service,
                 'InvalidExpressSelector',
+                [SELECTOR_DEPLOY_TOKEN_MANAGER],
             );
         });
 
@@ -2208,6 +2223,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => tokenManager.interchainTransfer(destinationChain, destinationAddress, sendAmount, '0x', gasOptions),
                 tokenManager,
                 'FlowLimitExceeded',
+                [flowLimit, 2 * sendAmount],
             );
         });
 
@@ -2239,7 +2255,10 @@ describe('Interchain Token Service', () => {
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(0);
 
-            await expectRevert((gasOptions) => receiveToken(sendAmount, gasOptions), tokenManager, 'FlowLimitExceeded');
+            await expectRevert((gasOptions) => receiveToken(sendAmount, gasOptions), tokenManager, 'FlowLimitExceeded', [
+                flowLimit,
+                2 * sendAmount,
+            ]);
         });
 
         it('Should be able to set flow limits for each token manager', async () => {
@@ -2259,6 +2278,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.connect(liquidityPool).setFlowLimits(tokenIds, flowLimits, gasOptions),
                 service,
                 'NotOperator',
+                [liquidityPool.address],
             );
 
             await expect(service.setFlowLimits(tokenIds, flowLimits))

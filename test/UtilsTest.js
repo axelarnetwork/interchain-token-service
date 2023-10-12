@@ -37,7 +37,9 @@ describe('Operatable', () => {
     });
 
     it('Should not be able to run the onlyOperatorable function as not the operator', async () => {
-        await expectRevert((gasOptions) => test.connect(otherWallet).testOperatorable(gasOptions), test, 'NotOperator');
+        await expectRevert((gasOptions) => test.connect(otherWallet).testOperatorable(gasOptions), test, 'NotOperator', [
+            otherWallet.address,
+        ]);
     });
 
     it('Should be able to change the operator only as the operator', async () => {
@@ -47,13 +49,17 @@ describe('Operatable', () => {
 
         expect(await test.operator()).to.equal(otherWallet.address);
 
-        await expectRevert((gasOptions) => test.transferOperatorship(otherWallet.address, gasOptions), test, 'NotOperator');
+        await expectRevert((gasOptions) => test.transferOperatorship(otherWallet.address, gasOptions), test, 'NotOperator', [
+            ownerWallet.address,
+        ]);
     });
 
     it('Should be able to propose operator only as the operator', async () => {
         expect(await test.operator()).to.equal(otherWallet.address);
 
-        await expectRevert((gasOptions) => test.proposeOperatorship(ownerWallet.address, gasOptions), test, 'NotOperator');
+        await expectRevert((gasOptions) => test.proposeOperatorship(ownerWallet.address, gasOptions), test, 'NotOperator', [
+            ownerWallet.address,
+        ]);
         await expect(test.connect(otherWallet).proposeOperatorship(ownerWallet.address))
             .to.emit(test, 'OperatorChangeProposed')
             .withArgs(ownerWallet.address);
@@ -62,7 +68,10 @@ describe('Operatable', () => {
     it('Should be able to accept operatorship only as proposed operator', async () => {
         expect(await test.operator()).to.equal(otherWallet.address);
 
-        await expectRevert((gasOptions) => test.connect(otherWallet).acceptOperatorship(gasOptions), test, 'NotProposedOperator');
+        await expectRevert((gasOptions) => test.connect(otherWallet).acceptOperatorship(gasOptions), test, 'NotProposedOperator', [
+            otherWallet.address,
+            ownerWallet.address,
+        ]);
         await expect(test.acceptOperatorship()).to.emit(test, 'OperatorshipTransferred').withArgs(ownerWallet.address);
     });
 });
@@ -80,7 +89,9 @@ describe('Distributable', () => {
     });
 
     it('Should not be able to run the onlyDistributor function as not the distributor', async () => {
-        await expectRevert((gasOptions) => test.connect(otherWallet).testDistributable(gasOptions), test, 'NotDistributor');
+        await expectRevert((gasOptions) => test.connect(otherWallet).testDistributable(gasOptions), test, 'NotDistributor', [
+            otherWallet.address,
+        ]);
     });
 
     it('Should be able to change the distributor only as the distributor', async () => {
@@ -88,11 +99,13 @@ describe('Distributable', () => {
 
         await expect(test.transferDistributorship(otherWallet.address))
             .to.emit(test, 'DistributorshipTransferred')
-            .withArgs(otherWallet.address);
+            .withArgs(ownerWallet.address, otherWallet.address);
 
         expect(await test.distributor()).to.equal(otherWallet.address);
 
-        await expectRevert((gasOptions) => test.transferDistributorship(otherWallet.address, gasOptions), test, 'NotDistributor');
+        await expectRevert((gasOptions) => test.transferDistributorship(otherWallet.address, gasOptions), test, 'NotDistributor', [
+            ownerWallet.address,
+        ]);
     });
 
     it('Should be able to propose a new distributor only as distributor', async () => {
@@ -102,6 +115,7 @@ describe('Distributable', () => {
             (gasOptions) => test.connect(ownerWallet).proposeDistributorship(ownerWallet.address, gasOptions),
             test,
             'NotDistributor',
+            [ownerWallet.address],
         );
         await expect(test.connect(otherWallet).proposeDistributorship(ownerWallet.address))
             .to.emit(test, 'DistributorshipTransferStarted')
@@ -111,10 +125,13 @@ describe('Distributable', () => {
     it('Should be able to accept distributorship only as the proposed distributor', async () => {
         expect(await test.distributor()).to.equal(otherWallet.address);
 
-        await expectRevert((gasOptions) => test.connect(otherWallet).acceptDistributorship(gasOptions), test, 'NotProposedDistributor');
+        await expectRevert((gasOptions) => test.connect(otherWallet).acceptDistributorship(gasOptions), test, 'NotProposedDistributor', [
+            otherWallet.address,
+            ownerWallet.address,
+        ]);
         await expect(test.connect(ownerWallet).acceptDistributorship())
             .to.emit(test, 'DistributorshipTransferred')
-            .withArgs(ownerWallet.address);
+            .withArgs(otherWallet.address, ownerWallet.address);
     });
 });
 
@@ -149,6 +166,7 @@ describe('ExpressCallHandler', () => {
             (gasOptions) => handler.setExpressReceiveToken(payload, commandId, newExpressCaller, gasOptions),
             handler,
             'AlreadyExpressCalled',
+            [expressCaller],
         );
     });
 
@@ -198,7 +216,7 @@ describe('FlowLimit', async () => {
             expect(await test.getFlowInAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded');
+        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
@@ -215,7 +233,7 @@ describe('FlowLimit', async () => {
             expect(await test.getFlowOutAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded');
+        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
@@ -366,7 +384,7 @@ describe('StandardizedTokenDeployer', () => {
             .to.emit(token, 'Transfer')
             .withArgs(AddressZero, mintTo, mintAmount)
             .and.to.emit(token, 'DistributorshipTransferred')
-            .withArgs(tokenManager);
+            .withArgs(AddressZero, tokenManager);
 
         expect(await tokenProxy.implementation()).to.equal(standardizedToken.address);
         expect(await token.name()).to.equal(name);
