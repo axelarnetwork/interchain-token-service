@@ -99,6 +99,7 @@ describe('Interchain Token Service', () => {
 
         if (mintAmount > 0) {
             await token.mint(wallet.address, mintAmount).then((tx) => tx.wait());
+
             if (!skipApprove) {
                 await token.approve(tokenManager.address, mintAmount).then((tx) => tx.wait());
             }
