@@ -12,7 +12,7 @@ import { TokenManagerProxy } from '../proxies/TokenManagerProxy.sol';
  * @title TokenManagerDeployer
  * @notice This contract is used to deploy new instances of the TokenManagerProxy contract.
  */
-contract TokenManagerDeployer is ITokenManagerDeployer {
+contract TokenManagerDeployer is ITokenManagerDeployer, Create3 {
     /**
      * @notice Deploys a new instance of the TokenManagerProxy contract
      * @param tokenId The unique identifier for the token
@@ -24,7 +24,9 @@ contract TokenManagerDeployer is ITokenManagerDeployer {
         bytes memory args = abi.encode(address(this), implementationType, tokenId, params);
         // slither-disable-next-line too-many-digits
         bytes memory bytecode = abi.encodePacked(type(TokenManagerProxy).creationCode, args);
-        address tokenManagerAddress = Create3.deploy(tokenId, bytecode);
+
+        address tokenManagerAddress = _create3(bytecode, tokenId);
+
         if (tokenManagerAddress.code.length == 0) revert TokenManagerDeploymentFailed();
     }
 }
