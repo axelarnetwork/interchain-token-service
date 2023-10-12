@@ -77,7 +77,7 @@ contract InterchainTokenService is
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
      * @param remoteAddressValidator_ the address of the RemoteAddressValidator.
-     * @param tokenManagerImplementations this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool.
+     * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, Lock-unlock with fee, and liquidity pool.
      */
     constructor(
         address tokenManagerDeployer_,
