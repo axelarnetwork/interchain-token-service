@@ -60,6 +60,13 @@ contract TokenManagerProxy is ITokenManagerProxy {
     function setup(bytes calldata setupParams) external {}
 
     /**
+     * @dev Reverts if native token is sent.
+     */
+    receive() external payable virtual {
+        revert NativeTokenNotAccepted();
+    }
+
+    /**
      * @dev Fallback function. Delegates the call to the token manager contract.
      */
     // solhint-disable-next-line no-complex-fallback

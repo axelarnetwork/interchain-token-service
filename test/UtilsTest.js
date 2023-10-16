@@ -7,7 +7,6 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { Wallet, Contract } = ethers;
 const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, arrayify, toUtf8Bytes, hexlify } = ethers.utils;
-
 const { expect } = chai;
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
@@ -28,6 +27,10 @@ describe('Operatable', () => {
     let test;
     before(async () => {
         test = await deployContract(ownerWallet, 'OperatorableTest', [ownerWallet.address]);
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestOperatable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to run the onlyOperatorable function as the operator', async () => {
@@ -80,6 +83,10 @@ describe('Distributable', () => {
     let test;
     before(async () => {
         test = await deployContract(ownerWallet, 'DistributableTest', [ownerWallet.address]);
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestDistributable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to run the onlyDistributor function as the distributor', async () => {
@@ -201,6 +208,10 @@ describe('FlowLimit', async () => {
 
         await time.increaseTo(next);
     }
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestFlowLimit`, [])).to.not.be.reverted;
+    });
 
     it('Should be able to set the flow limit', async () => {
         await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(flowLimit);
@@ -329,6 +340,10 @@ describe('Pausable', () => {
         test = await deployContract(ownerWallet, 'PausableTest');
     });
 
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestPausable`, [])).to.not.be.reverted;
+    });
+
     it('Should be able to set paused to true or false', async () => {
         await expect(test.setPaused(true)).to.emit(test, 'PausedSet').withArgs(true);
 
@@ -445,6 +460,10 @@ describe('StandardizedTokenDeployer', () => {
 
         before(async () => {
             noReEntrancy = await deployContract(ownerWallet, 'NoReEntrancyTest');
+        });
+
+        it('Should calculate hardcoded constants correctly', async () => {
+            await expect(deployContract(ownerWallet, `TestNoReEntrancy`, [])).to.not.be.reverted;
         });
 
         it('Should revert on reentrancy', async function () {
