@@ -18,10 +18,10 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager(address caller, address tokenManager);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
-    error InvalidCanonicalTokenId(bytes32 canonicalTokenId);
+    error InvalidCanonicalTokenId(bytes32 expectedCanonicalTokenId);
     error GatewayToken();
-    error TokenManagerDeploymentFailed(bytes returnData);
-    error StandardizedTokenDeploymentFailed(bytes returnData);
+    error TokenManagerDeploymentFailed(bytes error);
+    error StandardizedTokenDeploymentFailed(bytes error);
     error SelectorUnknown(uint256 selector);
     error InvalidMetadataVersion(uint32 version);
     error AlreadyExecuted(bytes32 commandId);

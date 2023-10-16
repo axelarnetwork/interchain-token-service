@@ -1130,7 +1130,7 @@ error ExecuteWithInterchainTokenFailed(address contractAddress)
 ### InvalidCanonicalTokenId
 
 ```solidity
-error InvalidCanonicalTokenId(canonicalTokenId);
+error InvalidCanonicalTokenId(bytes32 expectedCanonicalTokenId);
 ```
 
 ### GatewayToken
@@ -1142,13 +1142,13 @@ error GatewayToken()
 ### TokenManagerDeploymentFailed
 
 ```solidity
-error TokenManagerDeploymentFailed(bytes returnData)
+error TokenManagerDeploymentFailed(bytes error)
 ```
 
 ### StandardizedTokenDeploymentFailed
 
 ```solidity
-error StandardizedTokenDeploymentFailed(bytes returnData)
+error StandardizedTokenDeploymentFailed(bytes error)
 ```
 
 ### SelectorUnknown
@@ -2235,7 +2235,7 @@ error ImplementationLookupFailed()
 ### SetupFailed
 
 ```solidity
-error SetupFailed(bytes returnData)
+error SetupFailed(bytes error)
 ```
 
 ### implementationType

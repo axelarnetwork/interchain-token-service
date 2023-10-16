@@ -792,10 +792,10 @@ contract InterchainTokenService is
         emit TokenManagerDeployed(tokenId, tokenManagerType, params);
 
         // slither-disable-next-line controlled-delegatecall
-        (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
+        (bool success, bytes memory error) = tokenManagerDeployer.delegatecall(
             abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
         );
-        if (!success) revert TokenManagerDeploymentFailed(returnData);
+        if (!success) revert TokenManagerDeploymentFailed(error);
     }
 
     /**
@@ -832,7 +832,7 @@ contract InterchainTokenService is
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
 
         // slither-disable-next-line controlled-delegatecall
-        (bool success, bytes memory returnData) = standardizedTokenDeployer.delegatecall(
+        (bool success, bytes memory error) = standardizedTokenDeployer.delegatecall(
             abi.encodeWithSelector(
                 IStandardizedTokenDeployer.deployStandardizedToken.selector,
                 salt,
@@ -846,7 +846,7 @@ contract InterchainTokenService is
             )
         );
         if (!success) {
-            revert StandardizedTokenDeploymentFailed(returnData);
+            revert StandardizedTokenDeploymentFailed(error);
         }
     }
 
