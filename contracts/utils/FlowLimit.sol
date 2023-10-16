@@ -36,7 +36,7 @@ contract FlowLimit is IFlowLimit {
             sstore(FLOW_LIMIT_SLOT, flowLimit)
         }
 
-        emit FlowLimitSet(flowLimit);
+        emit FlowLimitSet(msg.sender, flowLimit);
     }
 
     /**

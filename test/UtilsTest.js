@@ -214,7 +214,7 @@ describe('FlowLimit', async () => {
     });
 
     it('Should be able to set the flow limit', async () => {
-        await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(flowLimit);
+        await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(ownerWallet.address, flowLimit);
 
         expect(await test.getFlowLimit()).to.equal(flowLimit);
     });

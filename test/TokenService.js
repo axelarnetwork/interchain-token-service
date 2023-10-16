@@ -2259,13 +2259,13 @@ describe('Interchain Token Service', () => {
 
             await expect(service.setFlowLimits(tokenIds, flowLimits))
                 .to.emit(tokenManagers[0], 'FlowLimitSet')
-                .withArgs(flowLimit)
+                .withArgs(service.address, flowLimit)
                 .to.emit(tokenManagers[1], 'FlowLimitSet')
-                .withArgs(flowLimit)
+                .withArgs(service.address, flowLimit)
                 .to.emit(tokenManagers[2], 'FlowLimitSet')
-                .withArgs(flowLimit)
+                .withArgs(service.address, flowLimit)
                 .to.emit(tokenManagers[3], 'FlowLimitSet')
-                .withArgs(flowLimit);
+                .withArgs(service.address, flowLimit);
 
             flowLimits.pop();
 

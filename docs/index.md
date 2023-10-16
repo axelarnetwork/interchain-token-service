@@ -982,7 +982,7 @@ error FlowLimitExceeded(uint256 limit, uint256 flowAmount)
 ### FlowLimitSet
 
 ```solidity
-event FlowLimitSet(uint256 flowLimit)
+event FlowLimitSet(address operator, uint256 flowLimit)
 ```
 
 ### getFlowLimit
@@ -2050,7 +2050,7 @@ error TokenLinkerZeroAddress()
 ### NotService
 
 ```solidity
-error NotService()
+error NotService(address caller)
 ```
 
 ### TakeTokenFailed
