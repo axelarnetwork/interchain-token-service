@@ -8,10 +8,10 @@ contract OperatorableTest is Operatable {
     uint256 public nonce;
 
     constructor(address operator) {
-        _setOperator(operator);
+        _addOperator(operator);
     }
 
-    function testOperatorable() external onlyOperator {
+    function testOperatorable() external onlyRole(OPERATOR) {
         nonce++;
     }
 }

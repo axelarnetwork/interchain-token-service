@@ -68,7 +68,7 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy, ITokenManagerL
      * @dev Updates the address of the liquidity pool. Can only be called by the operator.
      * @param newLiquidityPool The new address of the liquidity pool
      */
-    function setLiquidityPool(address newLiquidityPool) external onlyOperator {
+    function setLiquidityPool(address newLiquidityPool) external onlyRole(OPERATOR) {
         _setLiquidityPool(newLiquidityPool);
     }
 

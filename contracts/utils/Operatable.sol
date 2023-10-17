@@ -4,45 +4,25 @@ pragma solidity ^0.8.0;
 
 import { IOperatable } from '../interfaces/IOperatable.sol';
 
+import { RolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/RolesBase.sol';
+import { RolesConstants } from './RolesConstants.sol';
+
 /**
  * @title Operatable Contract
  * @dev A contract module which provides a basic access control mechanism, where
- * there is an account (an operator) that can be granted exclusive access to
+ * there is an account (a operator) that can be granted exclusive access to
  * specific functions. This module is used through inheritance.
  */
-contract Operatable is IOperatable {
-    // uint256(keccak256('operator')) - 1
-    uint256 internal constant OPERATOR_SLOT = 0x46a52cf33029de9f84853745a87af28464c80bf0346df1b32e205fc73319f621;
-    // uint256(keccak256('proposed-operator')) - 1
-    uint256 internal constant PROPOSED_OPERATOR_SLOT = 0x18dd7104fe20f6107b1523000995e8f87ac02b734a65cf0a45fafa7635a2c526;
+contract Operatable is IOperatable, RolesBase, RolesConstants {
 
     /**
-     * @dev Throws a NotOperator custom error if called by any account other than the operator.
-     */
-    modifier onlyOperator() {
-        if (operator() != msg.sender) revert NotOperator();
-        _;
-    }
-
-    /**
-     * @notice Get the address of the operator
-     * @return operator_ of the operator
-     */
-    function operator() public view returns (address operator_) {
-        assembly {
-            operator_ := sload(OPERATOR_SLOT)
-        }
-    }
-
-    /**
-     * @dev Internal function that stores the new operator address in the operator storage slot
+     * @dev Internal function that stores the new operator address in the correct storage slot
      * @param operator_ The address of the new operator
      */
-    function _setOperator(address operator_) internal {
-        assembly {
-            sstore(OPERATOR_SLOT, operator_)
-        }
-        emit OperatorshipTransferred(operator_);
+    function _addOperator(address operator_) internal {
+        uint8[] memory roles = new uint8[](1);
+        roles[0] = OPERATOR;
+        _addRoles(operator_, roles);
     }
 
     /**
@@ -50,8 +30,10 @@ contract Operatable is IOperatable {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function transferOperatorship(address operator_) external onlyOperator {
-        _setOperator(operator_);
+    function transferOperatorship(address operator_) external onlyRole(OPERATOR) {
+        uint8[] memory roles = new uint8[](1);
+        roles[0] = OPERATOR;
+        _transferRoles(msg.sender, operator_, roles);
     }
 
     /**
@@ -59,24 +41,19 @@ contract Operatable is IOperatable {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function proposeOperatorship(address operator_) external onlyOperator {
-        assembly {
-            sstore(PROPOSED_OPERATOR_SLOT, operator_)
-        }
-        emit OperatorChangeProposed(operator_);
+    function proposeOperatorship(address operator_) external onlyRole(OPERATOR) {
+        uint8[] memory roles = new uint8[](1);
+        roles[0] = OPERATOR;
+        _proposeRoles(operator_, roles);
     }
 
     /**
-     * @notice Accept a proposed change of operatorship
+     * @notice Accept a change of the operator of the contract
      * @dev Can only be called by the proposed operator
      */
-    function acceptOperatorship() external {
-        address proposedOperator;
-        assembly {
-            proposedOperator := sload(PROPOSED_OPERATOR_SLOT)
-            sstore(PROPOSED_OPERATOR_SLOT, 0)
-        }
-        if (msg.sender != proposedOperator) revert NotProposedOperator();
-        _setOperator(proposedOperator);
+    function acceptOperatorship(address fromOperator) external {
+        uint8[] memory roles = new uint8[](1);
+        roles[0] = OPERATOR;
+        _acceptRoles(fromOperator, roles);
     }
 }
