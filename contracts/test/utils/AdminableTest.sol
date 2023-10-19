@@ -14,4 +14,8 @@ contract OperatorableTest is Operatable {
     function testOperatorable() external onlyRole(OPERATOR) {
         nonce++;
     }
+
+    function getOperatorRole() external pure returns (uint8) {
+        return OPERATOR;
+    }
 }

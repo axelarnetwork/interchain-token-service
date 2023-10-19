@@ -14,7 +14,6 @@ import { RolesConstants } from './RolesConstants.sol';
  * specific functions. This module is used through inheritance.
  */
 contract Operatable is IOperatable, RolesBase, RolesConstants {
-
     /**
      * @dev Internal function that stores the new operator address in the correct storage slot
      * @param operator_ The address of the new operator
@@ -44,7 +43,7 @@ contract Operatable is IOperatable, RolesBase, RolesConstants {
     function proposeOperatorship(address operator_) external onlyRole(OPERATOR) {
         uint8[] memory roles = new uint8[](1);
         roles[0] = OPERATOR;
-        _proposeRoles(operator_, roles);
+        _proposeRoles(msg.sender, operator_, roles);
     }
 
     /**
@@ -54,6 +53,6 @@ contract Operatable is IOperatable, RolesBase, RolesConstants {
     function acceptOperatorship(address fromOperator) external {
         uint8[] memory roles = new uint8[](1);
         roles[0] = OPERATOR;
-        _acceptRoles(fromOperator, roles);
+        _acceptRoles(fromOperator, msg.sender, roles);
     }
 }

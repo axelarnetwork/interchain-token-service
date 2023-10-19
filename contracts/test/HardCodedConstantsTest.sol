@@ -21,8 +21,7 @@ contract TestTokenManager is TokenManagerLiquidityPool {
 contract TestDistributable is Distributable {
     string public constant NAME = 'TestDistributable';
 
-    constructor() {
-    }
+    constructor() {}
 }
 
 contract TestFlowLimit is FlowLimit {
@@ -44,8 +43,7 @@ contract TestNoReEntrancy is NoReEntrancy {
 contract TestOperatable is Operatable {
     string public constant NAME = 'TestOperatable';
 
-    constructor() {
-    }
+    constructor() {}
 }
 
 contract TestPausable is Pausable {

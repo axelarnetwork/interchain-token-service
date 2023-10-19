@@ -204,7 +204,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param flowLimiter the address of the new flow limiter.
      */
     function addFlowLimiter(address flowLimiter) external onlyRole(OPERATOR) {
-        if(flowLimiter == address(0)) revert ZeroAddress();
+        if (flowLimiter == address(0)) revert ZeroAddress();
         uint8[] memory roles = new uint8[](1);
         roles[0] = FLOW_LIMITER;
         _addRoles(flowLimiter, roles);
@@ -215,8 +215,8 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param flowLimiter the address of the new flow limiter.
      */
     function removeFlowLimiter(address flowLimiter) external onlyRole(OPERATOR) {
-        if(flowLimiter == address(0)) revert ZeroAddress();
-        if(!hasRole(flowLimiter, FLOW_LIMITER)) revert NotFlowLimiter();
+        if (flowLimiter == address(0)) revert ZeroAddress();
+        if (!hasRole(flowLimiter, FLOW_LIMITER)) revert NotFlowLimiter();
         uint8[] memory roles = new uint8[](1);
         roles[0] = FLOW_LIMITER;
         _removeRoles(flowLimiter, roles);

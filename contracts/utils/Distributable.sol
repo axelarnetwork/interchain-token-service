@@ -14,7 +14,6 @@ import { RolesConstants } from './RolesConstants.sol';
  * specific functions. This module is used through inheritance.
  */
 contract Distributable is IDistributable, RolesBase, RolesConstants {
-
     /**
      * @dev Internal function that stores the new distributor address in the correct storage slot
      * @param distributor_ The address of the new distributor
@@ -44,7 +43,7 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
     function proposeDistributorship(address distributor_) external onlyRole(DISTRIBUTOR) {
         uint8[] memory roles = new uint8[](1);
         roles[0] = DISTRIBUTOR;
-        _proposeRoles(distributor_, roles);
+        _proposeRoles(msg.sender, distributor_, roles);
     }
 
     /**
@@ -54,6 +53,6 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
     function acceptDistributorship(address fromDistributor) external {
         uint8[] memory roles = new uint8[](1);
         roles[0] = DISTRIBUTOR;
-        _acceptRoles(fromDistributor, roles);
+        _acceptRoles(fromDistributor, msg.sender, roles);
     }
 }

@@ -35,6 +35,8 @@ const LOCK_UNLOCK = 2;
 const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
 const LIQUIDITY_POOL = 4;
 
+const OPERATOR_ROLE = 1;
+
 describe('Interchain Token Service', () => {
     let wallet, liquidityPool, otherWallet;
     let service, gateway, gasService;
@@ -431,7 +433,7 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-            expect(await tokenManager.operator()).to.equal(service.address);
+            expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should revert if canonical token has already been registered', async () => {
@@ -569,7 +571,7 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should revert when registering a standardized token when service is paused', async () => {
@@ -611,7 +613,7 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
             // Register the same token again
             await expectRevert(
@@ -806,7 +808,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager', async () => {
@@ -841,7 +843,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
-            expect(await tokenManager.operator()).to.equal(operator);
+            expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager with empty distributor and operator', async () => {
@@ -879,7 +881,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
-            expect(await tokenManager.operator()).to.equal(service.address);
+            expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager with non-empty mintTo bytes', async () => {
@@ -917,7 +919,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
-            expect(await tokenManager.operator()).to.equal(service.address);
+            expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should revert on execute with token', async () => {
@@ -958,7 +960,7 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
             const tokenAddress = await service.getTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
@@ -980,7 +982,7 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
             const tokenAddress = await service.getTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
@@ -1002,7 +1004,7 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
             const tokenAddress = await service.getTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
@@ -1029,7 +1031,7 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
             const tokenAddress = await service.getTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
@@ -1051,7 +1053,7 @@ describe('Interchain Token Service', () => {
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
 
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
             const tokenAddress = await service.getTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
@@ -1254,7 +1256,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, LOCK_UNLOCK, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should be able to receive a remote mint/burn token manager depoloyment', async () => {
@@ -1277,7 +1279,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should be able to receive a remote liquidity pool token manager depoloyment', async () => {
@@ -1300,7 +1302,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, LIQUIDITY_POOL, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
-            expect(await tokenManager.operator()).to.equal(wallet.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });
     });
 
@@ -2234,7 +2236,7 @@ describe('Interchain Token Service', () => {
             await expectRevert(
                 (gasOptions) => service.connect(liquidityPool).setFlowLimits(tokenIds, flowLimits, gasOptions),
                 service,
-                'NotOperator',
+                'MissingRole',
             );
 
             await expect(service.setFlowLimits(tokenIds, flowLimits))
