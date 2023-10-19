@@ -51,7 +51,6 @@ contract InterchainTokenService is
     address internal immutable implementationMintBurn;
     address internal immutable implementationMintBurnFrom;
     address internal immutable implementationLockUnlockFee;
-    address internal immutable implementationLiquidityPool;
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
     IRemoteAddressValidator public immutable remoteAddressValidator;
@@ -77,7 +76,7 @@ contract InterchainTokenService is
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
      * @param remoteAddressValidator_ the address of the RemoteAddressValidator.
-     * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, Lock-unlock with fee, and liquidity pool.
+     * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, and Lock-unlock with fee.
      */
     constructor(
         address tokenManagerDeployer_,
@@ -107,7 +106,6 @@ contract InterchainTokenService is
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
-        implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
         string memory chainName_ = remoteAddressValidator.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -220,7 +218,6 @@ contract InterchainTokenService is
         if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN_FROM) return implementationMintBurnFrom;
         if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK) return implementationLockUnlock;
         if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK_FEE) return implementationLockUnlockFee;
-        if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) return implementationLiquidityPool;
 
         revert InvalidImplementation();
     }
