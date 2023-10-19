@@ -11,11 +11,11 @@ contract OperatorableTest is Operatable {
         _addOperator(operator);
     }
 
-    function testOperatorable() external onlyRole(OPERATOR) {
+    function testOperatorable() external onlyRole(uint8(Roles.OPERATOR)) {
         nonce++;
     }
 
     function getOperatorRole() external pure returns (uint8) {
-        return OPERATOR;
+        return uint8(Roles.OPERATOR);
     }
 }

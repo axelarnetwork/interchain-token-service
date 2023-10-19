@@ -2067,59 +2067,55 @@ describe('Interchain Token Service', () => {
             [, tokenManager] = await deployFunctions.mintBurn(`Test Token Lock Unlock`, 'TT', 12, mintAmount);
         });
 
-        it('Should have only the owner be a flow limiter', async() => {
+        it('Should have only the owner be a flow limiter', async () => {
             expect(await tokenManager.hasRole(wallet.address, FLOW_LIMITER_ROLE)).to.equal(true);
             expect(await tokenManager.hasRole(otherWallet.address, FLOW_LIMITER_ROLE)).to.equal(false);
         });
 
-        it('Should be able to add a flow limiter', async() => {
+        it('Should be able to add a flow limiter', async () => {
             await expect(tokenManager.addFlowLimiter(otherWallet.address))
                 .to.emit(tokenManager, 'RolesAdded')
                 .withArgs(otherWallet.address, [FLOW_LIMITER_ROLE]);
-            
 
             expect(await tokenManager.hasRole(wallet.address, FLOW_LIMITER_ROLE)).to.equal(true);
             expect(await tokenManager.hasRole(otherWallet.address, FLOW_LIMITER_ROLE)).to.equal(true);
         });
 
-        it('Should be able to remove a flow limiter', async() => {
+        it('Should be able to remove a flow limiter', async () => {
             await expect(tokenManager.removeFlowLimiter(wallet.address))
                 .to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(wallet.address, [FLOW_LIMITER_ROLE]);
-            
 
             expect(await tokenManager.hasRole(wallet.address, FLOW_LIMITER_ROLE)).to.equal(false);
             expect(await tokenManager.hasRole(otherWallet.address, FLOW_LIMITER_ROLE)).to.equal(false);
         });
 
-        it('Should revert if trying to add a flow limiter as not the operator', async() => {
+        it('Should revert if trying to add a flow limiter as not the operator', async () => {
             await expectRevert(
                 (gasOptions) => tokenManager.connect(otherWallet).addFlowLimiter(otherWallet.address, gasOptions),
-                tokenManager, 
-                'MissingRole');
+                tokenManager,
+                'MissingRole',
+            );
         });
 
-        it('Should revert if trying to add a flow limiter as not the operator', async() => {
+        it('Should revert if trying to add a flow limiter as not the operator', async () => {
             await expectRevert(
                 (gasOptions) => tokenManager.connect(otherWallet).removeFlowLimiter(wallet.address, gasOptions),
-                tokenManager, 
-                'MissingRole');
+                tokenManager,
+                'MissingRole',
+            );
         });
 
-        it('Should revert if trying to add an existing flow limiter', async() => {
-            await expectRevert(
-                (gasOptions) => tokenManager.addFlowLimiter(wallet.address, gasOptions),
-                tokenManager, 
-                'AlreadyFlowLimiter');
+        it('Should revert if trying to add an existing flow limiter', async () => {
+            await expectRevert((gasOptions) => tokenManager.addFlowLimiter(wallet.address, gasOptions), tokenManager, 'AlreadyFlowLimiter');
         });
 
-        it('Should revert if trying to add a flow limiter as not the operator', async() => {
+        it('Should revert if trying to add a flow limiter as not the operator', async () => {
             await expectRevert(
                 (gasOptions) => tokenManager.removeFlowLimiter(otherWallet.address, gasOptions),
-                tokenManager, 
-                'NotFlowLimiter');
+                tokenManager,
+                'NotFlowLimiter',
+            );
         });
-
-
-    })
+    });
 });

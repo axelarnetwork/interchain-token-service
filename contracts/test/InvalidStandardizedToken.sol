@@ -75,7 +75,7 @@ contract InvalidStandardizedToken is IERC20MintableBurnable, InterchainToken, ER
      * @param account The address that will receive the minted tokens
      * @param amount The amount of tokens to mint
      */
-    function mint(address account, uint256 amount) external onlyRole(DISTRIBUTOR) {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _mint(account, amount);
     }
 
@@ -85,7 +85,7 @@ contract InvalidStandardizedToken is IERC20MintableBurnable, InterchainToken, ER
      * @param account The address that will have its tokens burnt
      * @param amount The amount of tokens to burn
      */
-    function burn(address account, uint256 amount) external onlyRole(DISTRIBUTOR) {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _burn(account, amount);
     }
 }

@@ -49,11 +49,11 @@ contract InterchainTokenTest is InterchainToken, Distributable, IERC20MintableBu
         tokenManagerRequiresApproval_ = requiresApproval;
     }
 
-    function mint(address account, uint256 amount) external onlyRole(DISTRIBUTOR) {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _mint(account, amount);
     }
 
-    function burn(address account, uint256 amount) external onlyRole(DISTRIBUTOR) {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _burn(account, amount);
     }
 

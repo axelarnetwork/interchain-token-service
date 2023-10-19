@@ -20,7 +20,7 @@ contract Operatable is IOperatable, RolesBase, RolesConstants {
      */
     function _addOperator(address operator_) internal {
         uint8[] memory roles = new uint8[](1);
-        roles[0] = OPERATOR;
+        roles[0] = uint8(Roles.OPERATOR);
         _addRoles(operator_, roles);
     }
 
@@ -29,9 +29,9 @@ contract Operatable is IOperatable, RolesBase, RolesConstants {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function transferOperatorship(address operator_) external onlyRole(OPERATOR) {
+    function transferOperatorship(address operator_) external onlyRole(uint8(Roles.OPERATOR)) {
         uint8[] memory roles = new uint8[](1);
-        roles[0] = OPERATOR;
+        roles[0] = uint8(Roles.OPERATOR);
         _transferRoles(msg.sender, operator_, roles);
     }
 
@@ -40,9 +40,9 @@ contract Operatable is IOperatable, RolesBase, RolesConstants {
      * @dev Can only be called by the current operator
      * @param operator_ The address of the new operator
      */
-    function proposeOperatorship(address operator_) external onlyRole(OPERATOR) {
+    function proposeOperatorship(address operator_) external onlyRole(uint8(Roles.OPERATOR)) {
         uint8[] memory roles = new uint8[](1);
-        roles[0] = OPERATOR;
+        roles[0] = uint8(Roles.OPERATOR);
         _proposeRoles(msg.sender, operator_, roles);
     }
 
@@ -52,7 +52,7 @@ contract Operatable is IOperatable, RolesBase, RolesConstants {
      */
     function acceptOperatorship(address fromOperator) external {
         uint8[] memory roles = new uint8[](1);
-        roles[0] = OPERATOR;
+        roles[0] = uint8(Roles.OPERATOR);
         _acceptRoles(fromOperator, msg.sender, roles);
     }
 }

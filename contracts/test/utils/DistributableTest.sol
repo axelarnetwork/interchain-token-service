@@ -11,11 +11,11 @@ contract DistributableTest is Distributable {
         _addDistributor(distributor);
     }
 
-    function testDistributable() external onlyRole(DISTRIBUTOR) {
+    function testDistributable() external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         nonce++;
     }
 
     function getDistributorRole() external pure returns (uint8) {
-        return DISTRIBUTOR;
+        return uint8(Roles.DISTRIBUTOR);
     }
 }
