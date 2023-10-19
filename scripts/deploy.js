@@ -66,7 +66,7 @@ async function deployInterchainTokenService(
 async function deployTokenManagerImplementations(wallet, interchainTokenServiceAddress) {
     const implementations = [];
 
-    for (const type of ['MintBurn', 'MintBurnFrom', 'LockUnlock', 'LockUnlockFee', 'LiquidityPool']) {
+    for (const type of ['MintBurn', 'MintBurnFrom', 'LockUnlock', 'LockUnlockFee']) {
         const impl = await deployContract(wallet, `TokenManager${type}`, [interchainTokenServiceAddress]);
         implementations.push(impl);
     }
@@ -96,6 +96,7 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
         tokenManagerImplementations.map((impl) => impl.address),
         deploymentKey,
     );
+
     return [service, gateway, gasService];
 }
 
