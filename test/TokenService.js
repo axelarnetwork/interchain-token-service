@@ -33,7 +33,7 @@ const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
 const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
 
-const DISTRIBUTOR_ROLE = 1;
+// const DISTRIBUTOR_ROLE = 1;
 const OPERATOR_ROLE = 2;
 const FLOW_LIMITER_ROLE = 3;
 
@@ -2058,13 +2058,13 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Flow Limiters', () => {
-        let tokenManager, tokenId;
+        let tokenManager;
         const sendAmount = 1234;
         const flowLimit = (sendAmount * 3) / 2;
         const mintAmount = flowLimit * 3;
 
         beforeEach(async () => {
-            [, tokenManager, tokenId] = await deployFunctions.mintBurn(`Test Token Lock Unlock`, 'TT', 12, mintAmount);
+            [, tokenManager] = await deployFunctions.mintBurn(`Test Token Lock Unlock`, 'TT', 12, mintAmount);
         });
 
         it('Should have only the owner be a flow limiter', async() => {
