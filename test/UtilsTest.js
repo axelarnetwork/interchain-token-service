@@ -383,7 +383,7 @@ describe('StandardizedTokenDeployer', () => {
     const symbol = 'tokenSymbol';
     const decimals = 18;
     const mintAmount = 123;
-    const DISTRIBUTOR_ROLE = 1;
+    const DISTRIBUTOR_ROLE = 0;
 
     before(async () => {
         standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');

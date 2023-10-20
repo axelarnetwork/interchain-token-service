@@ -33,9 +33,9 @@ const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
 const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
 
-// const DISTRIBUTOR_ROLE = 1;
-const OPERATOR_ROLE = 2;
-const FLOW_LIMITER_ROLE = 3;
+// const DISTRIBUTOR_ROLE = 0;
+const OPERATOR_ROLE = 1;
+const FLOW_LIMITER_ROLE = 2;
 
 describe('Interchain Token Service', () => {
     let wallet, otherWallet;
