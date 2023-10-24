@@ -9,6 +9,8 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
 
     address public immutable interchainTokenService;
 
+    bytes32 private constant CALL_SUCCESS = keccak256('call-success');
+
     constructor(address interchainTokenService_) {
         interchainTokenService = interchainTokenService_;
     }
@@ -25,8 +27,9 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
         bytes32 tokenId,
         address token,
         uint256 amount
-    ) external onlyService {
+    ) external onlyService returns (bytes32) {
         _executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, token, amount);
+        return CALL_SUCCESS;
     }
 
     function _executeWithInterchainToken(

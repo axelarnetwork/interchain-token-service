@@ -6,6 +6,8 @@ import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainToke
 import { InterchainTokenExecutable } from './InterchainTokenExecutable.sol';
 
 abstract contract InterchainTokenExpressExecutable is IInterchainTokenExpressExecutable, InterchainTokenExecutable {
+    bytes32 private constant EXPRESS_CALL_SUCCESS = keccak256('express-call-success');
+
     constructor(address interchainTokenService_) InterchainTokenExecutable(interchainTokenService_) {}
 
     function expressExecuteWithInterchainToken(
@@ -15,7 +17,8 @@ abstract contract InterchainTokenExpressExecutable is IInterchainTokenExpressExe
         bytes32 tokenId,
         address token,
         uint256 amount
-    ) external onlyService {
+    ) external onlyService returns (bytes32) {
         _executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, token, amount);
+        return EXPRESS_CALL_SUCCESS;
     }
 }
