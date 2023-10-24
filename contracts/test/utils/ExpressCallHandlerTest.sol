@@ -7,11 +7,11 @@ import { ExpressCallHandler } from '../../utils/ExpressCallHandler.sol';
 contract ExpressCallHandlerTest is ExpressCallHandler {
     address public lastPoppedExpressCaller;
 
-    function setExpressReceiveToken(bytes calldata payload, bytes32 commandId, address expressCaller) external {
-        _setExpressReceiveToken(payload, commandId, expressCaller);
+    function setExpressReceiveToken(bytes32 commandId, bytes calldata payload, address expressCaller) external {
+        _setExpressCaller(commandId, keccak256(payload), expressCaller);
     }
 
-    function popExpressReceiveToken(bytes calldata payload, bytes32 commandId) external {
-        lastPoppedExpressCaller = _popExpressReceiveToken(payload, commandId);
+    function popExpressReceiveToken(bytes32 commandId, bytes calldata payload) external {
+        lastPoppedExpressCaller = _popExpressCaller(commandId, keccak256(payload));
     }
 }
