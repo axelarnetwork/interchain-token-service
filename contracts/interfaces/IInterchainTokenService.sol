@@ -18,6 +18,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager();
     error ExecuteWithInterchainTokenFailed(address contractAddress);
+    error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error NotCanonicalTokenManager();
     error GatewayToken();
     error TokenManagerDeploymentFailed();
@@ -301,5 +302,5 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @param payload the payload of the receive token
      * @param commandId the commandId calculated from the event at the sourceChain.
      */
-    function expressReceiveToken(bytes calldata payload, bytes32 commandId, string calldata sourceChain) external;
+    function expressExecute(bytes32 commandId, string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) external;
 }

@@ -68,6 +68,8 @@ contract InterchainTokenService is
     uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
+    bytes32 private constant CALL_SUCCESS = keccak256('call-success');
+    bytes32 private constant EXPRESS_CALL_SUCCESS = keccak256('express-call-success');
 
     /**
      * @dev All of the variables passed here are stored as immutable variables.
@@ -398,6 +400,22 @@ contract InterchainTokenService is
         );
     }
 
+    // Returns the amount of token that this call is worth. If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
+    function contractCallValue(
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) notPaused returns (address, uint256) {
+        (, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
+
+        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        return (tokenManager.tokenAddress(), amount);
+    }
+
+    function expressExecute(bytes32 commandId, string calldata sourceChain, string calldata, bytes calldata payload) external notPaused {
+        _expressReceiveToken(commandId, sourceChain, payload);
+    }
+
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
      * interchainTransfer that matches the parameters passed here.
@@ -405,11 +423,10 @@ contract InterchainTokenService is
      * @param payload the payload of the receive token
      * @param commandId the sendHash detected at the sourceChain.
      */
-    function expressReceiveToken(bytes calldata payload, bytes32 commandId, string calldata sourceChain) external {
+    function _expressReceiveToken(bytes32 commandId, string calldata sourceChain, bytes calldata payload) internal {
         if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted(commandId);
 
-        address caller = msg.sender;
-        _setExpressReceiveToken(payload, commandId, caller);
+        _setExpressReceiveToken(payload, commandId, msg.sender);
 
         (uint256 selector, bytes32 tokenId, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
             payload,
@@ -420,11 +437,12 @@ contract InterchainTokenService is
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         IERC20 token = IERC20(tokenManager.tokenAddress());
 
-        token.safeTransferFrom(caller, destinationAddress, amount);
+        token.safeTransferFrom(msg.sender, destinationAddress, amount);
 
         if (selector == SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
             (, , , , bytes memory sourceAddress, bytes memory data) = abi.decode(payload, (uint256, bytes32, bytes, uint256, bytes, bytes));
-            IInterchainTokenExpressExecutable(destinationAddress).expressExecuteWithInterchainToken(
+
+            bytes32 result = IInterchainTokenExpressExecutable(destinationAddress).expressExecuteWithInterchainToken(
                 sourceChain,
                 sourceAddress,
                 data,
@@ -432,6 +450,8 @@ contract InterchainTokenService is
                 address(token),
                 amount
             );
+
+            if (result != EXPRESS_CALL_SUCCESS) revert ExpressExecuteWithInterchainTokenFailed(destinationAddress);
         } else if (selector != SELECTOR_RECEIVE_TOKEN) {
             revert InvalidExpressSelector();
         }
@@ -443,7 +463,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external {
+    ) external notPaused {
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
@@ -455,7 +475,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external {
+    ) external notPaused {
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         uint32 prefix = 0;
@@ -555,6 +575,16 @@ contract InterchainTokenService is
         revert SelectorUnknown();
     }
 
+    function contractCallWithTokenValue(
+        string calldata /*sourceChain*/,
+        string calldata /*sourceAddress*/,
+        bytes calldata /*payload*/,
+        string calldata /*symbol*/,
+        uint256 /*amount*/
+    ) public view virtual returns (address, uint256) {
+        revert ExecuteWithTokenNotSupported();
+    }
+
     function executeWithToken(
         bytes32 /*commandId*/,
         string calldata /*sourceChain*/,
@@ -604,7 +634,7 @@ contract InterchainTokenService is
             // slither-disable-next-line reentrancy-events
             emit TokenReceivedWithData(tokenId, sourceChain, destinationAddress, amount, sourceAddress, data);
 
-            IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(
+            bytes32 result = IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(
                 sourceChain,
                 sourceAddress,
                 data,
@@ -612,6 +642,8 @@ contract InterchainTokenService is
                 tokenManager.tokenAddress(),
                 amount
             );
+
+            if (result != CALL_SUCCESS) revert ExecuteWithInterchainTokenFailed(destinationAddress);
         } else {
             // slither-disable-next-line reentrancy-events
             emit TokenReceived(tokenId, sourceChain, destinationAddress, amount);
