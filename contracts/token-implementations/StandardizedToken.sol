@@ -27,14 +27,6 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
 
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
-    modifier onlyDistributorOrTokenManager() {
-        if (msg.sender != tokenManager_) {
-            if (msg.sender != distributor()) revert NotDistributor(msg.sender);
-        }
-
-        _;
-    }
-
     /**
      * @notice Getter for the contract id.
      */
@@ -71,7 +63,8 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
             tokenManager_ = tokenManagerAddress;
             name = tokenName;
 
-            _setDistributor(distributor_);
+            _addDistributor(distributor_);
+            _addDistributor(tokenManagerAddress);
             _setNameHash(tokenName);
         }
         {
@@ -91,7 +84,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @param account The address that will receive the minted tokens
      * @param amount The amount of tokens to mint
      */
-    function mint(address account, uint256 amount) external onlyDistributorOrTokenManager {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _mint(account, amount);
     }
 
@@ -101,7 +94,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @param account The address that will have its tokens burnt
      * @param amount The amount of tokens to burn
      */
-    function burn(address account, uint256 amount) external onlyDistributorOrTokenManager {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _burn(account, amount);
     }
 }

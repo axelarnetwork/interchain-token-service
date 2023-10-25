@@ -17,6 +17,9 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     error TakeTokenFailed();
     error GiveTokenFailed();
     error NotToken(address caller);
+    error ZeroAddress();
+    error AlreadyFlowLimiter(address flowLimiter);
+    error NotFlowLimiter(address flowLimiter);
 
     /**
      * @notice A function that returns the token id.

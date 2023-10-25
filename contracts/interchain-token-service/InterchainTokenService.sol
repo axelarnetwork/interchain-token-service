@@ -51,7 +51,6 @@ contract InterchainTokenService is
     address internal immutable implementationMintBurn;
     address internal immutable implementationMintBurnFrom;
     address internal immutable implementationLockUnlockFee;
-    address internal immutable implementationLiquidityPool;
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
     IRemoteAddressValidator public immutable remoteAddressValidator;
@@ -77,7 +76,7 @@ contract InterchainTokenService is
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
      * @param remoteAddressValidator_ the address of the RemoteAddressValidator.
-     * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, Lock-unlock with fee, and liquidity pool.
+     * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, and Lock-unlock with fee.
      */
     constructor(
         address tokenManagerDeployer_,
@@ -107,7 +106,6 @@ contract InterchainTokenService is
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
-        implementationLiquidityPool = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LIQUIDITY_POOL);
         string memory chainName_ = remoteAddressValidator.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -221,7 +219,6 @@ contract InterchainTokenService is
         if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN_FROM) return implementationMintBurnFrom;
         if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK) return implementationLockUnlock;
         if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK_FEE) return implementationLockUnlockFee;
-        if (TokenManagerType(tokenManagerType) == TokenManagerType.LIQUIDITY_POOL) return implementationLiquidityPool;
 
         revert InvalidImplementation();
     }
@@ -502,7 +499,7 @@ contract InterchainTokenService is
      * @param tokenIds an array of the token Ids of the tokenManagers to set the flow limit of.
      * @param flowLimits the flowLimits to set
      */
-    function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyOperator {
+    function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyRole(uint8(Roles.OPERATOR)) {
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
@@ -525,7 +522,7 @@ contract InterchainTokenService is
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        _setOperator(params.toAddress());
+        _addOperator(params.toAddress());
     }
 
     function _sanitizeTokenManagerImplementation(

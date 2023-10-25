@@ -30,7 +30,7 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy, ITokenManagerL
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        return uint256(TokenManagerType.LIQUIDITY_POOL);
+        revert('Not supported');
     }
 
     /**
@@ -68,7 +68,7 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy, ITokenManagerL
      * @dev Updates the address of the liquidity pool. Can only be called by the operator.
      * @param newLiquidityPool The new address of the liquidity pool
      */
-    function setLiquidityPool(address newLiquidityPool) external onlyOperator {
+    function setLiquidityPool(address newLiquidityPool) external onlyRole(uint8(Roles.OPERATOR)) {
         _setLiquidityPool(newLiquidityPool);
     }
 

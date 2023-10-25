@@ -86,7 +86,10 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
             operator_ = operatorBytes.toAddress();
         }
 
-        _setOperator(operator_);
+        uint8[] memory roles = new uint8[](2);
+        roles[0] = uint8(Roles.FLOW_LIMITER);
+        roles[1] = uint8(Roles.OPERATOR);
+        _addRoles(operator_, roles);
         _setup(params);
     }
 
@@ -197,10 +200,34 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.
+     * @notice This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of the new flow limiter.
+     */
+    function addFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
+        if (flowLimiter == address(0)) revert ZeroAddress();
+        if (hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert AlreadyFlowLimiter(flowLimiter);
+        uint8[] memory roles = new uint8[](1);
+        roles[0] = uint8(Roles.FLOW_LIMITER);
+        _addRoles(flowLimiter, roles);
+    }
+
+    /**
+     * @notice This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of the new flow limiter.
+     */
+    function removeFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
+        if (flowLimiter == address(0)) revert ZeroAddress();
+        if (!hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert NotFlowLimiter(flowLimiter);
+        uint8[] memory roles = new uint8[](1);
+        roles[0] = uint8(Roles.FLOW_LIMITER);
+        _removeRoles(flowLimiter, roles);
+    }
+
+    /**
+     * @notice This function sets the flow limit for this TokenManager. Can only be called by the flow limiters.
      * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
-    function setFlowLimit(uint256 flowLimit) external onlyOperator {
+    function setFlowLimit(uint256 flowLimit) external onlyRole(uint8(Roles.FLOW_LIMITER)) {
         _setFlowLimit(flowLimit);
     }
 
