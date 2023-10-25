@@ -5,7 +5,10 @@ const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
-const { Contract } = ethers;
+const {
+    Contract,
+    constants: { AddressZero },
+} = ethers;
 
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const IERC20 = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol/IERC20.json');
@@ -18,6 +21,9 @@ const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const LOCK_UNLOCK = 2;
 const MINT_BURN = 0;
+
+// const DISTRIBUTOR_ROLE = 0;
+const OPERATOR_ROLE = 1;
 
 describe('Token Registrsrs', () => {
     let wallet;
@@ -103,8 +109,10 @@ describe('Token Registrsrs', () => {
                 .withArgs(tokenId, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
-                .and.to.emit(tokenManager, 'OperatorshipTransferred')
-                .withArgs(wallet.address);
+                .and.to.emit(tokenManager, 'RolesAdded')
+                .withArgs(wallet.address, [OPERATOR_ROLE])
+                .and.to.emit(tokenManager, 'RolesRemoved')
+                .withArgs(standardizedTokenRegistrar.address, [OPERATOR_ROLE]);
         });
 
         it('Should initiate a remote standardized token deployment with the same distributor', async () => {
@@ -123,8 +131,10 @@ describe('Token Registrsrs', () => {
                 .withArgs(tokenId, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
-                .and.to.emit(tokenManager, 'OperatorshipTransferred')
-                .withArgs(wallet.address);
+                .and.to.emit(tokenManager, 'RolesAdded')
+                .withArgs(wallet.address, [OPERATOR_ROLE])
+                .and.to.emit(tokenManager, 'RolesRemoved')
+                .withArgs(standardizedTokenRegistrar.address, [OPERATOR_ROLE]);
 
             params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
@@ -143,7 +153,9 @@ describe('Token Registrsrs', () => {
             );
 
             await expect(
-                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, true, destinationChain, gasValue, { value: gasValue }),
+                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, wallet.address, wallet.address, destinationChain, gasValue, {
+                    value: gasValue,
+                }),
             )
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(
@@ -180,8 +192,10 @@ describe('Token Registrsrs', () => {
                 .withArgs(tokenId, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
-                .and.to.emit(tokenManager, 'OperatorshipTransferred')
-                .withArgs(wallet.address);
+                .and.to.emit(tokenManager, 'RolesAdded')
+                .withArgs(wallet.address, [OPERATOR_ROLE])
+                .and.to.emit(tokenManager, 'RolesRemoved')
+                .withArgs(standardizedTokenRegistrar.address, [OPERATOR_ROLE]);
 
             params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
@@ -200,7 +214,9 @@ describe('Token Registrsrs', () => {
             );
 
             await expect(
-                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, false, destinationChain, gasValue, { value: gasValue }),
+                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, AddressZero, wallet.address, destinationChain, gasValue, {
+                    value: gasValue,
+                }),
             )
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), destinationChain, gasValue)

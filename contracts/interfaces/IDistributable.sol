@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-interface IDistributable {
+import { IRolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IRolesBase.sol';
+
+interface IDistributable is IRolesBase {
     /**
      * @notice Change the distributor of the contract
      * @dev Can only be called by the current distributor

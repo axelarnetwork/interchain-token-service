@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-interface IOperatable {
+import { IRolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IRolesBase.sol';
+
+interface IOperatable is IRolesBase {
     /**
      * @notice Change the operator of the contract
      * @dev Can only be called by the current operator
