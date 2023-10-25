@@ -75,7 +75,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
 
     function deployRemoteStandarizedToken(
         bytes32 salt,
-        bool sameDistributor,
+        address additionalDistributor,
         string memory destinationChain,
         uint256 gasValue
     ) external payable {
@@ -96,7 +96,10 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             tokenName = token.name();
             tokenSymbol = token.symbol();
             tokenDecimals = token.decimals();
-            if (sameDistributor) distributor = token.distributor().toBytes();
+            if (additionalDistributor != address(0)) {
+                if (!token.isDistributor(additionalDistributor)) revert NotDistributor();
+                distributor = additionalDistributor.toBytes();
+            }
             operator = tokenManager.operator().toBytes();
         }
 
