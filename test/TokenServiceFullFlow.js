@@ -127,8 +127,14 @@ describe('Interchain Token Service Full Flow', () => {
                 .to.emit(token, 'RolesAdded')
                 .withArgs(newAddress, [DISTRIBUTOR_ROLE]);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
         });
     });
 
@@ -240,8 +246,14 @@ describe('Interchain Token Service Full Flow', () => {
                 .to.emit(token, 'RolesAdded')
                 .withArgs(newAddress, [DISTRIBUTOR_ROLE]);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
         });
     });
 
@@ -318,8 +330,14 @@ describe('Interchain Token Service Full Flow', () => {
                 .to.emit(token, 'RolesAdded')
                 .withArgs(tokenManager.address, [DISTRIBUTOR_ROLE]);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
         });
 
         // In order to be able to receive tokens the distributorship should be changed on other chains as well.

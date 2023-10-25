@@ -11,6 +11,7 @@ const { expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 describe('Token Manager', () => {
+    const FLOW_LIMITER_ROLE = 2;
     let owner, user, token, service, liquidityPool;
     let tokenManagerLockUnlock, tokenManagerMintBurn, tokenManagerLiquidityPool, tokenManagerLockUnlockFeeOnTransfer;
 
@@ -94,6 +95,7 @@ describe('Token Manager', () => {
             (gasOptions) => tokenManagerLockUnlock.setFlowLimit(flowLimit, gasOptions),
             tokenManagerLockUnlock,
             'MissingRole',
+            [owner.address, FLOW_LIMITER_ROLE],
         );
     });
 

@@ -2059,6 +2059,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.connect(otherWallet).setFlowLimits(tokenIds, flowLimits, gasOptions),
                 service,
                 'MissingRole',
+                [otherWallet.address, OPERATOR_ROLE],
             );
 
             await expect(service.setFlowLimits(tokenIds, flowLimits))
@@ -2113,6 +2114,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => tokenManager.connect(otherWallet).addFlowLimiter(otherWallet.address, gasOptions),
                 tokenManager,
                 'MissingRole',
+                [otherWallet.address, OPERATOR_ROLE],
             );
         });
 
@@ -2121,11 +2123,17 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => tokenManager.connect(otherWallet).removeFlowLimiter(wallet.address, gasOptions),
                 tokenManager,
                 'MissingRole',
+                [otherWallet.address, OPERATOR_ROLE],
             );
         });
 
         it('Should revert if trying to add an existing flow limiter', async () => {
-            await expectRevert((gasOptions) => tokenManager.addFlowLimiter(wallet.address, gasOptions), tokenManager, 'AlreadyFlowLimiter');
+            await expectRevert(
+                (gasOptions) => tokenManager.addFlowLimiter(wallet.address, gasOptions),
+                tokenManager,
+                'AlreadyFlowLimiter',
+                [wallet.address],
+            );
         });
 
         it('Should revert if trying to add a flow limiter as not the operator', async () => {
@@ -2133,6 +2141,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => tokenManager.removeFlowLimiter(otherWallet.address, gasOptions),
                 tokenManager,
                 'NotFlowLimiter',
+                [otherWallet.address],
             );
         });
     });
