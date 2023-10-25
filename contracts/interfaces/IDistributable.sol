@@ -22,4 +22,10 @@ interface IDistributable {
      * @dev Can only be called by the proposed distributor
      */
     function acceptDistributorship(address fromDistributor) external;
+
+    /**
+     * @notice Query if an address is a distributor
+     * @param addr the address to query for
+     */
+    function isDistributor(address addr) external view returns (bool);
 }

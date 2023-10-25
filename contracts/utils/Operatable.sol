@@ -55,4 +55,12 @@ contract Operatable is IOperatable, RolesBase, RolesConstants {
         roles[0] = uint8(Roles.OPERATOR);
         _acceptRoles(fromOperator, msg.sender, roles);
     }
+
+    /**
+     * @notice Query if an address is an operator
+     * @param addr the address to query for
+     */
+    function isOperator(address addr) external view returns (bool){
+        return hasRole(addr, uint8(Roles.OPERATOR));
+    }
 }

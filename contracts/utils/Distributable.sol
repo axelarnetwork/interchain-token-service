@@ -55,4 +55,12 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
         roles[0] = uint8(Roles.DISTRIBUTOR);
         _acceptRoles(fromDistributor, msg.sender, roles);
     }
+
+    /**
+     * @notice Query if an address is a distributor
+     * @param addr the address to query for
+     */
+    function isDistributor(address addr) external view returns (bool){
+        return hasRole(addr, uint8(Roles.DISTRIBUTOR));
+    }
 }

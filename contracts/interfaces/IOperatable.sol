@@ -22,4 +22,11 @@ interface IOperatable {
      * @dev Can only be called by the proposed operator
      */
     function acceptOperatorship(address fromOperator) external;
+
+
+    /**
+     * @notice Query if an address is a operator
+     * @param addr the address to query for
+     */
+    function isOpearator(address addr) external view returns (bool);
 }
