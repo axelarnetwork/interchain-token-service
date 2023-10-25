@@ -18,5 +18,9 @@ interface ITokenManagerDeployer {
      * @param implementationType Token manager implementation type
      * @param params Additional parameters used in the setup of the token manager
      */
-    function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes calldata params) external payable;
+    function deployTokenManager(
+        bytes32 tokenId,
+        uint256 implementationType,
+        bytes calldata params
+    ) external payable returns (address tokenManagerAddress);
 }

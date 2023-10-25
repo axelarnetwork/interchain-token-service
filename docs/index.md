@@ -2208,7 +2208,7 @@ Getter for the Create3Deployer.
 ### deployTokenManager
 
 ```solidity
-function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable
+function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable returns(address tokenManagerAddress)
 ```
 
 Deploys a new instance of the TokenManagerProxy contract
@@ -2220,6 +2220,12 @@ Deploys a new instance of the TokenManagerProxy contract
 | tokenId            | bytes32 | The unique identifier for the token                          |
 | implementationType | uint256 | Token manager implementation type                            |
 | params             | bytes   | Additional parameters used in the setup of the token manager |
+
+#### Return Values
+
+| Name                | Type    | Description                              |
+| ------------------- | ------- | -----------------------------------------|
+| tokenManagerAddress | address | the address of the deployed tokenManager |
 
 ## ITokenManagerProxy
 
@@ -4969,7 +4975,7 @@ Constructor for the TokenManagerDeployer contract
 ### deployTokenManager
 
 ```solidity
-function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable
+function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable returns(address tokenManagerAddress)
 ```
 
 Deploys a new instance of the TokenManagerProxy contract
@@ -4981,6 +4987,12 @@ Deploys a new instance of the TokenManagerProxy contract
 | tokenId            | bytes32 | The unique identifier for the token                          |
 | implementationType | uint256 | Token manager implementation type                            |
 | params             | bytes   | Additional parameters used in the setup of the token manager |
+
+#### Return Values
+
+| Name                | Type    | Description                              |
+| ------------------- | ------- | -----------------------------------------|
+| tokenManagerAddress | address | the address of the deployed tokenManager |
 
 ## IStandardizedToken
 

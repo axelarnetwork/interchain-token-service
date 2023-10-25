@@ -69,9 +69,10 @@ describe('Interchain Token Service Full Flow', () => {
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
             );
+            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params)
+                .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -189,11 +190,12 @@ describe('Interchain Token Service Full Flow', () => {
             );
             const tx = service.multicall(data, { value });
 
+            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(tx)
                 .to.emit(service, 'StandardizedTokenDeployed')
                 .withArgs(tokenId, wallet.address, name, symbol, decimals, tokenCap, wallet.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params)
+                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -299,9 +301,10 @@ describe('Interchain Token Service Full Flow', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
             );
+            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params)
+                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
                 .withArgs(tokenId, otherChains[0], gasValues[0], MINT_BURN, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')

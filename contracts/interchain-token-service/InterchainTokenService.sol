@@ -785,14 +785,18 @@ contract InterchainTokenService is
      * @param params Additional parameters for the token manager deployment
      */
     function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
-        // slither-disable-next-line reentrancy-events
-        emit TokenManagerDeployed(tokenId, tokenManagerType, params);
-
         // slither-disable-next-line controlled-delegatecall
-        (bool success, bytes memory error) = tokenManagerDeployer.delegatecall(
+        (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
             abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
         );
-        if (!success) revert TokenManagerDeploymentFailed(error);
+        if (!success) revert TokenManagerDeploymentFailed(returnData);
+
+        address tokenManager;
+        assembly {
+            tokenManager := mload(add(returnData, 0x20))
+        }
+        // slither-disable-next-line reentrancy-events
+        emit TokenManagerDeployed(tokenId, tokenManager, tokenManagerType, params);
     }
 
     /**

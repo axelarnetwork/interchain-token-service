@@ -18,14 +18,19 @@ contract TokenManagerDeployer is ITokenManagerDeployer, Create3 {
      * @param tokenId The unique identifier for the token
      * @param implementationType Token manager implementation type
      * @param params Additional parameters used in the setup of the token manager
+     * @return tokenManagerAddress The address of the deployed tokenManager
      */
     // slither-disable-next-line locked-ether
-    function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes calldata params) external payable {
+    function deployTokenManager(
+        bytes32 tokenId,
+        uint256 implementationType,
+        bytes calldata params
+    ) external payable returns (address tokenManagerAddress) {
         bytes memory args = abi.encode(address(this), implementationType, tokenId, params);
         // slither-disable-next-line too-many-digits
         bytes memory bytecode = abi.encodePacked(type(TokenManagerProxy).creationCode, args);
 
-        address tokenManagerAddress = _create3(bytecode, tokenId);
+        tokenManagerAddress = _create3(bytecode, tokenId);
 
         if (tokenManagerAddress.code.length == 0) revert TokenManagerDeploymentFailed();
     }

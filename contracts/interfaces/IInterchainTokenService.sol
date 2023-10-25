@@ -65,7 +65,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         string destinationChain,
         uint256 indexed gasValue
     );
-    event TokenManagerDeployed(bytes32 indexed tokenId, TokenManagerType indexed tokenManagerType, bytes params);
+    event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
     event StandardizedTokenDeployed(
         bytes32 indexed tokenId,
         address indexed distributor,
