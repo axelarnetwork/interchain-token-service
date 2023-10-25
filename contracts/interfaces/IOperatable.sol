@@ -23,7 +23,6 @@ interface IOperatable {
      */
     function acceptOperatorship(address fromOperator) external;
 
-
     /**
      * @notice Query if an address is a operator
      * @param addr the address to query for

@@ -60,7 +60,7 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
      * @notice Query if an address is a distributor
      * @param addr the address to query for
      */
-    function isDistributor(address addr) external view returns (bool){
+    function isDistributor(address addr) external view returns (bool) {
         return hasRole(addr, uint8(Roles.DISTRIBUTOR));
     }
 }
