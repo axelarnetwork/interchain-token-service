@@ -976,13 +976,13 @@ Gets the address of the express caller for a specific token transfer with data
 ### FlowLimitExceeded
 
 ```solidity
-error FlowLimitExceeded(uint256 limit, uint256 flowAmount)
+error FlowLimitExceeded(bytes32 tokenId, uint256 limit, uint256 flowAmount)
 ```
 
 ### FlowLimitSet
 
 ```solidity
-event FlowLimitSet(address operator, uint256 flowLimit)
+event FlowLimitSet(bytes32 indexed tokenId, address operator, uint256 flowLimit)
 ```
 
 ### getFlowLimit
@@ -4773,16 +4773,17 @@ Returns the current flow limit
 ### \_setFlowLimit
 
 ```solidity
-function _setFlowLimit(uint256 flowLimit) internal
+function _setFlowLimit(uint256 flowLimit, bytes32 tokenId) internal
 ```
 
 _Internal function to set the flow limit_
 
 #### Parameters
 
-| Name      | Type    | Description                        |
-| --------- | ------- | ---------------------------------- |
-| flowLimit | uint256 | The value to set the flow limit to |
+| Name      | Type    | Description                                  |
+| --------- | ------- | ---------------------------------------------|
+| flowLimit | uint256 | The value to set the flow limit to           |
+| tokenId   | bytes32 | The id of the token whose limit is being set |
 
 ### \_getFlowOutSlot
 
@@ -4855,47 +4856,50 @@ Returns the current flow in amount
 ### \_addFlow
 
 ```solidity
-function _addFlow(uint256 flowLimit, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal
+function _addFlow(uint256 flowLimit, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount, bytes32 tokenId) internal
 ```
 
 _Adds a flow amount while ensuring it does not exceed the flow limit_
 
 #### Parameters
 
-| Name          | Type    | Description                          |
-| ------------- | ------- | ------------------------------------ |
-| flowLimit     | uint256 |                                      |
-| slotToAdd     | uint256 | The slot to add the flow to          |
-| slotToCompare | uint256 | The slot to compare the flow against |
-| flowAmount    | uint256 | The flow amount to add               |
+| Name          | Type    | Description                                 |
+| ------------- | ------- | ------------------------------------------- |
+| flowLimit     | uint256 |                                             |
+| slotToAdd     | uint256 | The slot to add the flow to                 |
+| slotToCompare | uint256 | The slot to compare the flow against        |
+| flowAmount    | uint256 | The flow amount to add                      |
+| tokenId       | bytes32 | The id of the token in which to change flow |
 
 ### \_addFlowOut
 
 ```solidity
-function _addFlowOut(uint256 flowOutAmount) internal
+function _addFlowOut(uint256 flowOutAmount, bytes32 tokenId) internal
 ```
 
 _Adds a flow out amount_
 
 #### Parameters
 
-| Name          | Type    | Description                |
-| ------------- | ------- | -------------------------- |
-| flowOutAmount | uint256 | The flow out amount to add |
+| Name          | Type    | Description                          |
+| ------------- | ------- | ------------------------------------ |
+| flowOutAmount | uint256 | The flow out amount to add           |
+| tokenId       | bytes32 | The id of token in which to add flow |
 
 ### \_addFlowIn
 
 ```solidity
-function _addFlowIn(uint256 flowInAmount) internal
+function _addFlowIn(uint256 flowInAmount, bytes32 tokenId) internal
 ```
 
 _Adds a flow in amount_
 
 #### Parameters
 
-| Name         | Type    | Description               |
-| ------------ | ------- | ------------------------- |
-| flowInAmount | uint256 | The flow in amount to add |
+| Name         | Type    | Description                             |
+| ------------ | ------- | --------------------------------------- |
+| flowInAmount | uint256 | The flow in amount to add               |
+| tokenId      | bytes32 | The id of token in which to remove flow |
 
 ## Implementation
 

@@ -226,10 +226,12 @@ describe('ExpressCallHandler', () => {
 
 describe('FlowLimit', async () => {
     let test;
+    let tokenId;
     const flowLimit = 5;
 
     before(async () => {
         test = await deployContract(ownerWallet, 'FlowLimitTest');
+        tokenId = await test.TOKEN_ID();
     });
 
     async function nextEpoch() {
@@ -245,7 +247,7 @@ describe('FlowLimit', async () => {
     });
 
     it('Should be able to set the flow limit', async () => {
-        await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(ownerWallet.address, flowLimit);
+        await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(tokenId, ownerWallet.address, flowLimit);
 
         expect(await test.getFlowLimit()).to.equal(flowLimit);
     });
@@ -258,7 +260,7 @@ describe('FlowLimit', async () => {
             expect(await test.getFlowInAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
+        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [tokenId, flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
@@ -275,7 +277,7 @@ describe('FlowLimit', async () => {
             expect(await test.getFlowOutAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
+        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [tokenId, flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
