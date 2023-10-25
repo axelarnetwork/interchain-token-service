@@ -27,5 +27,5 @@ interface IOperatable {
      * @notice Query if an address is a operator
      * @param addr the address to query for
      */
-    function isOpearator(address addr) external view returns (bool);
+    function isOperator(address addr) external view returns (bool);
 }
