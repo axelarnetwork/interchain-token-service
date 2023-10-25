@@ -9,6 +9,7 @@ import { IExpressCallHandler } from './IExpressCallHandler.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
 import { IMulticall } from './IMulticall.sol';
+import { IRemoteAddressValidator } from './IRemoteAddressValidator.sol';
 
 interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAxelarExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
@@ -77,6 +78,12 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         address mintTo
     );
     event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
+
+    /**
+     * @notice Returns the address of the token manager deployer contract.
+     * @return remoteAddressValidator The remoteAddressValidator.
+     */
+    function remoteAddressValidator() external view returns (IRemoteAddressValidator remoteAddressValidator);
 
     /**
      * @notice Returns the address of the token manager deployer contract.

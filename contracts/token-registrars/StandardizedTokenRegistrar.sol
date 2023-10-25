@@ -33,9 +33,10 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
 
     bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_SALT = keccak256('standardized-token-salt');
 
-    constructor(address interchainTokenServiceAddress, string memory chainName_) {
+    constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
         chainName = chainName_;
         chainNameHash = keccak256(bytes(chainName_));
     }

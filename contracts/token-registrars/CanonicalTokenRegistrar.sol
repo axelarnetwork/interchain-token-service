@@ -16,9 +16,10 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
 
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
 
-    constructor(address interchainTokenServiceAddress, string memory chainName_) {
+    constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
         chainName = chainName_;
         chainNameHash = keccak256(bytes(chainName_));
     }

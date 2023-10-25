@@ -31,8 +31,8 @@ describe('Token Registrsrs', () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
         [service, gateway, gasService] = await deployAll(wallet, 'Test', [destinationChain]);
-        canonicalTokenRegistrar = await deployContract(wallet, 'CanonicalTokenRegistrar', [service.address, 'chain name']);
-        standardizedTokenRegistrar = await deployContract(wallet, 'StandardizedTokenRegistrar', [service.address, 'chain name']);
+        canonicalTokenRegistrar = await deployContract(wallet, 'CanonicalTokenRegistrar', [service.address]);
+        standardizedTokenRegistrar = await deployContract(wallet, 'StandardizedTokenRegistrar', [service.address]);
     });
 
     describe('Canonical Token Registrar', async () => {
