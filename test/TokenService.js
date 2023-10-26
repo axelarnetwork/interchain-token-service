@@ -2037,7 +2037,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => tokenManager.interchainTransfer(destinationChain, destinationAddress, sendAmount, '0x', gasOptions),
                 tokenManager,
                 'FlowLimitExceeded',
-                [tokenId, flowLimit, 2 * sendAmount],
+                [flowLimit, 2 * sendAmount],
             );
         });
 
@@ -2070,7 +2070,6 @@ describe('Interchain Token Service', () => {
             expect(flowOut).to.eq(0);
 
             await expectRevert((gasOptions) => receiveToken(sendAmount, gasOptions), tokenManager, 'FlowLimitExceeded', [
-                tokenId,
                 flowLimit,
                 2 * sendAmount,
             ]);

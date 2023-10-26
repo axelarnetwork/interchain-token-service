@@ -204,7 +204,7 @@ describe('ExpressCallHandler', () => {
             (gasOptions) => handler.setExpressReceiveToken(payload, commandId, newExpressCaller, gasOptions),
             handler,
             'AlreadyExpressCalled',
-            [expressCaller],
+            [expressCaller, newExpressCaller],
         );
     });
 
@@ -260,7 +260,7 @@ describe('FlowLimit', async () => {
             expect(await test.getFlowInAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [tokenId, flowLimit, flowLimit + 1]);
+        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
@@ -277,7 +277,7 @@ describe('FlowLimit', async () => {
             expect(await test.getFlowOutAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [tokenId, flowLimit, flowLimit + 1]);
+        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 

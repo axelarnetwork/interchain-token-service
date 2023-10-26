@@ -90,7 +90,7 @@ contract FlowLimit is IFlowLimit {
      * @param slotToCompare The slot to compare the flow against
      * @param flowAmount The flow amount to add
      */
-    function _addFlow(uint256 flowLimit, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount, bytes32 tokenId) internal {
+    function _addFlow(uint256 flowLimit, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal {
         uint256 flowToAdd;
         uint256 flowToCompare;
 
@@ -100,8 +100,8 @@ contract FlowLimit is IFlowLimit {
         }
 
         if (flowToAdd + flowAmount > flowToCompare + flowLimit)
-            revert FlowLimitExceeded(tokenId, (flowToCompare + flowLimit), flowToAdd + flowAmount);
-        if (flowAmount > flowLimit) revert FlowLimitExceeded(tokenId, flowLimit, flowAmount);
+            revert FlowLimitExceeded((flowToCompare + flowLimit), flowToAdd + flowAmount);
+        if (flowAmount > flowLimit) revert FlowLimitExceeded(flowLimit, flowAmount);
 
         assembly {
             sstore(slotToAdd, add(flowToAdd, flowAmount))
@@ -112,7 +112,7 @@ contract FlowLimit is IFlowLimit {
      * @dev Adds a flow out amount
      * @param flowOutAmount The flow out amount to add
      */
-    function _addFlowOut(uint256 flowOutAmount, bytes32 tokenId) internal {
+    function _addFlowOut(uint256 flowOutAmount) internal {
         uint256 flowLimit = getFlowLimit();
         if (flowLimit == 0) return;
 
@@ -120,14 +120,14 @@ contract FlowLimit is IFlowLimit {
         uint256 slotToAdd = _getFlowOutSlot(epoch);
         uint256 slotToCompare = _getFlowInSlot(epoch);
 
-        _addFlow(flowLimit, slotToAdd, slotToCompare, flowOutAmount, tokenId);
+        _addFlow(flowLimit, slotToAdd, slotToCompare, flowOutAmount);
     }
 
     /**
      * @dev Adds a flow in amount
      * @param flowInAmount The flow in amount to add
      */
-    function _addFlowIn(uint256 flowInAmount, bytes32 tokenId) internal {
+    function _addFlowIn(uint256 flowInAmount) internal {
         uint256 flowLimit = getFlowLimit();
         if (flowLimit == 0) return;
 
@@ -135,6 +135,6 @@ contract FlowLimit is IFlowLimit {
         uint256 slotToAdd = _getFlowInSlot(epoch);
         uint256 slotToCompare = _getFlowOutSlot(epoch);
 
-        _addFlow(flowLimit, slotToAdd, slotToCompare, flowInAmount, tokenId);
+        _addFlow(flowLimit, slotToAdd, slotToCompare, flowInAmount);
     }
 }

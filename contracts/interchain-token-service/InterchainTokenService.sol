@@ -131,6 +131,7 @@ contract InterchainTokenService is
     modifier onlyTokenManager(bytes32 tokenId) {
         address tokenManager = getTokenManagerAddress(tokenId);
         if (msg.sender != tokenManager) revert NotTokenManager(msg.sender, tokenManager);
+
         _;
     }
 
@@ -284,6 +285,7 @@ contract InterchainTokenService is
             tokenAddress = getValidTokenManagerAddress(tokenId);
             tokenAddress = ITokenManager(tokenAddress).tokenAddress();
             bytes32 canonicalTokenId = getCanonicalTokenId(tokenAddress);
+
             if (canonicalTokenId != tokenId) revert InvalidCanonicalTokenId(canonicalTokenId);
         }
 
@@ -795,6 +797,7 @@ contract InterchainTokenService is
         assembly {
             tokenManager := mload(add(returnData, 0x20))
         }
+
         // slither-disable-next-line reentrancy-events
         emit TokenManagerDeployed(tokenId, tokenManager, tokenManagerType, params);
     }
@@ -847,10 +850,12 @@ contract InterchainTokenService is
         if (!success) {
             revert StandardizedTokenDeploymentFailed(returnData);
         }
+
         address tokenAddress;
         assembly {
             tokenAddress := mload(add(returnData, 0x20))
         }
+
         // slither-disable-next-line reentrancy-events
         emit StandardizedTokenDeployed(tokenId, tokenAddress, distributor, name, symbol, decimals, mintAmount, mintTo);
     }

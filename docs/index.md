@@ -895,7 +895,7 @@ Getter for the decimals of the token
 ### AlreadyExpressCalled
 
 ```solidity
-error AlreadyExpressCalled(address prevExpressCaller)
+error AlreadyExpressCalled(address prevExpressCaller, address expressCaller)
 ```
 
 ### ExpressReceive
@@ -2019,7 +2019,7 @@ Getter for the Create3Deployer.
 ### deployStandardizedToken
 
 ```solidity
-function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable
+function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable returns (address tokenAddress)
 ```
 
 Deploys a new instance of the StandardizedTokenProxy contract
@@ -2036,6 +2036,12 @@ Deploys a new instance of the StandardizedTokenProxy contract
 | decimals     | uint8   | Decimals of the token              |
 | mintAmount   | uint256 | Amount of tokens to mint initially |
 | mintTo       | address | Address to mint initial tokens to  |
+
+#### Return Values
+
+| Name         | Type    | Description                   |
+| ------------ | ------- | ----------------------------- |
+| tokenAddress | address | address of the token.         |
 
 ## ITokenManager
 
@@ -2208,7 +2214,7 @@ Getter for the Create3Deployer.
 ### deployTokenManager
 
 ```solidity
-function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable returns(address tokenManagerAddress)
+function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable returns(address tokenManager)
 ```
 
 Deploys a new instance of the TokenManagerProxy contract
@@ -2225,7 +2231,7 @@ Deploys a new instance of the TokenManagerProxy contract
 
 | Name                | Type    | Description                              |
 | ------------------- | ------- | -----------------------------------------|
-| tokenManagerAddress | address | the address of the deployed tokenManager |
+| tokenManager | address | the address of the deployed tokenManager |
 
 ## ITokenManagerProxy
 
@@ -4862,7 +4868,7 @@ Returns the current flow in amount
 ### \_addFlow
 
 ```solidity
-function _addFlow(uint256 flowLimit, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount, bytes32 tokenId) internal
+function _addFlow(uint256 flowLimit, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal
 ```
 
 _Adds a flow amount while ensuring it does not exceed the flow limit_
@@ -4875,12 +4881,11 @@ _Adds a flow amount while ensuring it does not exceed the flow limit_
 | slotToAdd     | uint256 | The slot to add the flow to                 |
 | slotToCompare | uint256 | The slot to compare the flow against        |
 | flowAmount    | uint256 | The flow amount to add                      |
-| tokenId       | bytes32 | The id of the token in which to change flow |
 
 ### \_addFlowOut
 
 ```solidity
-function _addFlowOut(uint256 flowOutAmount, bytes32 tokenId) internal
+function _addFlowOut(uint256 flowOutAmount) internal
 ```
 
 _Adds a flow out amount_
@@ -4890,12 +4895,11 @@ _Adds a flow out amount_
 | Name          | Type    | Description                          |
 | ------------- | ------- | ------------------------------------ |
 | flowOutAmount | uint256 | The flow out amount to add           |
-| tokenId       | bytes32 | The id of token in which to add flow |
 
 ### \_addFlowIn
 
 ```solidity
-function _addFlowIn(uint256 flowInAmount, bytes32 tokenId) internal
+function _addFlowIn(uint256 flowInAmount) internal
 ```
 
 _Adds a flow in amount_
@@ -4905,7 +4909,6 @@ _Adds a flow in amount_
 | Name         | Type    | Description                             |
 | ------------ | ------- | --------------------------------------- |
 | flowInAmount | uint256 | The flow in amount to add               |
-| tokenId      | bytes32 | The id of token in which to remove flow |
 
 ## Implementation
 
@@ -4975,7 +4978,7 @@ Constructor for the TokenManagerDeployer contract
 ### deployTokenManager
 
 ```solidity
-function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable returns(address tokenManagerAddress)
+function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable returns(address tokenManager)
 ```
 
 Deploys a new instance of the TokenManagerProxy contract
@@ -4992,7 +4995,7 @@ Deploys a new instance of the TokenManagerProxy contract
 
 | Name                | Type    | Description                              |
 | ------------------- | ------- | -----------------------------------------|
-| tokenManagerAddress | address | the address of the deployed tokenManager |
+| tokenManager | address | the address of the deployed tokenManager |
 
 ## IStandardizedToken
 
@@ -5111,7 +5114,7 @@ Constructor for the StandardizedTokenDeployer contract
 ### deployStandardizedToken
 
 ```solidity
-function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable
+function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable returns (address tokenAddress)
 ```
 
 Deploys a new instance of the StandardizedTokenProxy contract
@@ -5128,3 +5131,9 @@ Deploys a new instance of the StandardizedTokenProxy contract
 | decimals     | uint8   | Decimals of the token              |
 | mintAmount   | uint256 | Amount of tokens to mint initially |
 | mintTo       | address | Address to mint initial tokens to  |
+
+#### Return Values
+
+| Name         | Type    | Description                   |
+| ------------ | ------- | ----------------------------- |
+| tokenAddress | address | address of the token.         |

@@ -17,10 +17,11 @@ interface ITokenManagerDeployer {
      * @param tokenId The unique identifier for the token
      * @param implementationType Token manager implementation type
      * @param params Additional parameters used in the setup of the token manager
+     * @return tokenManager Address of the deployed tokenManager
      */
     function deployTokenManager(
         bytes32 tokenId,
         uint256 implementationType,
         bytes calldata params
-    ) external payable returns (address tokenManagerAddress);
+    ) external payable returns (address tokenManager);
 }

@@ -34,6 +34,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
      * @param decimals Decimals of the token
      * @param mintAmount Amount of tokens to mint initially
      * @param mintTo Address to mint initial tokens to
+     * @return tokenAddress Address of the deployed token
      */
     // slither-disable-next-line locked-ether
     function deployStandardizedToken(

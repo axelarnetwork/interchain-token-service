@@ -12,10 +12,10 @@ contract FlowLimitTest is FlowLimit {
     }
 
     function addFlowIn(uint256 flowInAmount) external {
-        _addFlowIn(flowInAmount, TOKEN_ID);
+        _addFlowIn(flowInAmount);
     }
 
     function addFlowOut(uint256 flowOutAmount) external {
-        _addFlowOut(flowOutAmount, TOKEN_ID);
+        _addFlowOut(flowOutAmount);
     }
 }

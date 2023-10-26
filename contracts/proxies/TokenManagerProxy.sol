@@ -28,8 +28,8 @@ contract TokenManagerProxy is ITokenManagerProxy {
         tokenId = tokenId_;
         address impl = _getImplementation(IInterchainTokenService(interchainTokenServiceAddress_), implementationType_);
 
-        (bool success, bytes memory error) = impl.delegatecall(abi.encodeWithSelector(TokenManagerProxy.setup.selector, params));
-        if (!success) revert SetupFailed(error);
+        (bool success, bytes memory returnData) = impl.delegatecall(abi.encodeWithSelector(TokenManagerProxy.setup.selector, params));
+        if (!success) revert SetupFailed(returnData);
     }
 
     /**

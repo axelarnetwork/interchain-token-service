@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 interface IFlowLimit {
-    error FlowLimitExceeded(bytes32 tokenId, uint256 limit, uint256 flowAmount);
+    error FlowLimitExceeded(uint256 limit, uint256 flowAmount);
 
     event FlowLimitSet(bytes32 indexed tokenId, address operator, uint256 flowLimit);
 

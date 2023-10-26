@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 interface IExpressCallHandler {
-    error AlreadyExpressCalled(address prevExpressCaller);
+    error AlreadyExpressCalled(address prevExpressCaller, address expressCaller);
 
     event ExpressReceive(bytes payload, bytes32 indexed sendHash, address indexed expressCaller);
     event ExpressExecutionFulfilled(bytes payload, bytes32 indexed sendHash, address indexed expressCaller);

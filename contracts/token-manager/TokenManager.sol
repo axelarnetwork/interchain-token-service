@@ -109,7 +109,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         address sender = msg.sender;
 
         amount = _takeToken(sender, amount);
-        _addFlowOut(amount, tokenId());
+        _addFlowOut(amount);
 
         interchainTokenService.transmitSendToken{ value: msg.value }(
             tokenId(),
@@ -136,7 +136,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     ) external payable virtual {
         address sender = msg.sender;
         amount = _takeToken(sender, amount);
-        _addFlowOut(amount, tokenId());
+        _addFlowOut(amount);
         uint32 version = 0;
         interchainTokenService.transmitSendToken{ value: msg.value }(
             tokenId(),
@@ -164,7 +164,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         bytes calldata metadata
     ) external payable virtual onlyToken {
         amount = _takeToken(sender, amount);
-        _addFlowOut(amount, tokenId());
+        _addFlowOut(amount);
         interchainTokenService.transmitSendToken{ value: msg.value }(
             tokenId(),
             sender,
@@ -182,7 +182,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @return the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
-        _addFlowIn(amount, tokenId());
+        _addFlowIn(amount);
         amount = _giveToken(destinationAddress, amount);
         return amount;
     }
@@ -194,7 +194,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
      */
     function takeToken(address sourceAddress, uint256 amount) external onlyService returns (uint256) {
-        _addFlowOut(amount, tokenId());
+        _addFlowOut(amount);
         amount = _takeToken(sourceAddress, amount);
         return amount;
     }

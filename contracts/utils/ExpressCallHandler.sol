@@ -36,7 +36,7 @@ contract ExpressCallHandler is IExpressCallHandler {
             prevExpressCaller := sload(slot)
         }
 
-        if (prevExpressCaller != address(0)) revert AlreadyExpressCalled(prevExpressCaller);
+        if (prevExpressCaller != address(0)) revert AlreadyExpressCalled(prevExpressCaller, expressCaller);
 
         assembly {
             sstore(slot, expressCaller)
