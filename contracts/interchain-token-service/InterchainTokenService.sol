@@ -674,6 +674,7 @@ contract InterchainTokenService is
 
         // Return token to the existing express caller
         if (expressCaller != address(0)) {
+            // slither-disable-next-line unused-return
             tokenManager.giveToken(expressCaller, amount);
             return;
         }
