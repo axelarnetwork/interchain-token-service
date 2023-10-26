@@ -5,7 +5,7 @@ const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero } = ethers.constants;
-const { defaultAbiCoder, keccak256 } = ethers.utils;
+const { defaultAbiCoder, keccak256, hexlify } = ethers.utils;
 const { Contract, Wallet } = ethers;
 
 const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
@@ -15,7 +15,7 @@ const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenM
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
-const SELECTOR_SEND_TOKEN = 1;
+const SELECTOR_RECEIVE_TOKEN = 1;
 const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
@@ -94,8 +94,8 @@ describe('Interchain Token Service Full Flow', () => {
             const gasValue = 6789;
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 
@@ -206,8 +206,8 @@ describe('Interchain Token Service Full Flow', () => {
             const gasValue = 6789;
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 
@@ -320,8 +320,8 @@ describe('Interchain Token Service Full Flow', () => {
             const gasValue = 6789;
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 
