@@ -5,9 +5,7 @@ pragma solidity ^0.8.0;
 import { TokenManagerLiquidityPool } from '../token-manager/implementations/TokenManagerLiquidityPool.sol';
 import { Distributable } from '../utils/Distributable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
-import { NoReEntrancy } from '../utils/NoReEntrancy.sol';
 import { Operatable } from '../utils/Operatable.sol';
-import { Pausable } from '../utils/Pausable.sol';
 
 contract TestTokenManager is TokenManagerLiquidityPool {
     string public constant NAME = 'TestTokenManager';
@@ -32,24 +30,8 @@ contract TestFlowLimit is FlowLimit {
     }
 }
 
-contract TestNoReEntrancy is NoReEntrancy {
-    string public constant NAME = 'TestNoReEntrancy';
-
-    constructor() {
-        require(ENTERED_SLOT == uint256(keccak256('entered')) - 1, 'invalid constant');
-    }
-}
-
 contract TestOperatable is Operatable {
     string public constant NAME = 'TestOperatable';
 
     constructor() {}
-}
-
-contract TestPausable is Pausable {
-    string public constant NAME = 'TestPausable';
-
-    constructor() {
-        require(PAUSE_SLOT == uint256(keccak256('paused')) - 1, 'invalid constant');
-    }
 }

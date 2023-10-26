@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
 import { ITokenManagerLiquidityPool } from '../../interfaces/ITokenManagerLiquidityPool.sol';
 import { TokenManager } from '../TokenManager.sol';
-import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
 
 /**
  * @title TokenManagerLiquidityPool
@@ -16,7 +16,7 @@ import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy, ITokenManagerLiquidityPool {
+contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManagerLiquidityPool {
     using SafeTokenTransferFrom for IERC20;
 
     // uint256(keccak256('liquidity-pool-slot')) - 1

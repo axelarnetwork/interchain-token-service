@@ -75,15 +75,15 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
+                .withArgs(service.address, otherChains[0], service.address, keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
+                .withArgs(service.address, otherChains[0], service.address, keccak256(payload), payload)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', otherChains[1], gasValues[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
         });
 
         it('Should send some token to another chain', async () => {
@@ -106,9 +106,9 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, tokenManager.address, amount)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                .withArgs(service.address, destChain, service.address, payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
+                .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                 .to.emit(service, 'TokenSent')
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
@@ -191,15 +191,15 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
+                .withArgs(service.address, otherChains[0], service.address, keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
+                .withArgs(service.address, otherChains[0], service.address, keccak256(payload), payload)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), otherChains[1], gasValues[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
         });
 
         it('Should send some token to another chain', async () => {
@@ -218,9 +218,9 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, AddressZero, amount)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                .withArgs(service.address, destChain, service.address, payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
+                .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                 .to.emit(service, 'TokenSent')
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
@@ -292,15 +292,15 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
                 .withArgs(tokenId, otherChains[0], gasValues[0], MINT_BURN, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), gasValues[0], wallet.address)
+                .withArgs(service.address, otherChains[0], service.address, keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[0], service.address.toLowerCase(), keccak256(payload), payload)
+                .withArgs(service.address, otherChains[0], service.address, keccak256(payload), payload)
                 .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
                 .withArgs(tokenId, otherChains[1], gasValues[1], MINT_BURN, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), gasValues[1], wallet.address)
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[1], service.address.toLowerCase(), keccak256(payload), payload);
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
         });
 
         // For this test the token must be a standardized token (or a distributable token in general)
@@ -338,9 +338,9 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, AddressZero, amount)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, payload)
+                .withArgs(service.address, destChain, service.address, payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destChain, service.address.toLowerCase(), payloadHash, gasValue, wallet.address)
+                .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                 .to.emit(service, 'TokenSent')
                 .withArgs(tokenId, destChain, destAddress, amount);
         });

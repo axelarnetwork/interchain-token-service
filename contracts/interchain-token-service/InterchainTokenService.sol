@@ -9,11 +9,13 @@ import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
+import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
+import { IInterchainRouter } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainRouter.sol';
+import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
-import { IRemoteAddressValidator } from '../interfaces/IRemoteAddressValidator.sol';
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
@@ -22,9 +24,7 @@ import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
-import { Pausable } from '../utils/Pausable.sol';
 import { Operatable } from '../utils/Operatable.sol';
-import { Multicall } from '../utils/Multicall.sol';
 
 /**
  * @title The Interchain Token Service
@@ -53,7 +53,7 @@ contract InterchainTokenService is
     address internal immutable implementationLockUnlockFee;
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
-    IRemoteAddressValidator public immutable remoteAddressValidator;
+    IInterchainRouter public immutable interchainRouter;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
     bytes32 public immutable chainNameHash;
@@ -75,7 +75,7 @@ contract InterchainTokenService is
      * @param standardizedTokenDeployer_ the address of the StandardizedTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
-     * @param remoteAddressValidator_ the address of the RemoteAddressValidator.
+     * @param interchainRouter_ the address of the InterchainRouter.
      * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, and Lock-unlock with fee.
      */
     constructor(
@@ -83,11 +83,11 @@ contract InterchainTokenService is
         address standardizedTokenDeployer_,
         address gateway_,
         address gasService_,
-        address remoteAddressValidator_,
+        address interchainRouter_,
         address[] memory tokenManagerImplementations
     ) {
         if (
-            remoteAddressValidator_ == address(0) ||
+            interchainRouter_ == address(0) ||
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             standardizedTokenDeployer_ == address(0) ||
@@ -95,7 +95,7 @@ contract InterchainTokenService is
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
-        remoteAddressValidator = IRemoteAddressValidator(remoteAddressValidator_);
+        interchainRouter = IInterchainRouter(interchainRouter_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         standardizedTokenDeployer = standardizedTokenDeployer_;
@@ -106,7 +106,7 @@ contract InterchainTokenService is
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
-        string memory chainName_ = remoteAddressValidator.chainName();
+        string memory chainName_ = interchainRouter.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
@@ -120,7 +120,7 @@ contract InterchainTokenService is
      * @param sourceAddress the address that the call came from.
      */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
-        if (!remoteAddressValidator.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
+        if (!interchainRouter.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
         _;
     }
 
@@ -261,7 +261,7 @@ contract InterchainTokenService is
      * @param tokenAddress the token to be bridged.
      * @return tokenId the tokenId that was used for this canonical token.
      */
-    function registerCanonicalToken(address tokenAddress) external payable notPaused returns (bytes32 tokenId) {
+    function registerCanonicalToken(address tokenAddress) external payable whenNotPaused returns (bytes32 tokenId) {
         (, string memory tokenSymbol, ) = _validateToken(tokenAddress);
         if (gateway.tokenAddresses(tokenSymbol) == tokenAddress) revert GatewayToken();
         tokenId = getCanonicalTokenId(tokenAddress);
@@ -277,7 +277,7 @@ contract InterchainTokenService is
      * At least the amount specified needs to be passed to the call
      * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
      */
-    function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable notPaused {
+    function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable whenNotPaused {
         address tokenAddress = getValidTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenAddress).tokenAddress();
 
@@ -297,7 +297,7 @@ contract InterchainTokenService is
         bytes32 salt,
         TokenManagerType tokenManagerType,
         bytes memory params
-    ) public payable notPaused returns (bytes32 tokenId) {
+    ) public payable whenNotPaused returns (bytes32 tokenId) {
         address deployer_ = msg.sender;
         tokenId = getCustomTokenId(deployer_, salt);
 
@@ -323,7 +323,7 @@ contract InterchainTokenService is
         TokenManagerType tokenManagerType,
         bytes calldata params,
         uint256 gasValue
-    ) external payable notPaused returns (bytes32 tokenId) {
+    ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer_ = msg.sender;
         tokenId = getCustomTokenId(deployer_, salt);
 
@@ -348,7 +348,7 @@ contract InterchainTokenService is
         uint8 decimals,
         uint256 mintAmount,
         address distributor
-    ) external payable notPaused {
+    ) external payable whenNotPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
         address tokenAddress = getStandardizedTokenAddress(tokenId);
@@ -382,7 +382,7 @@ contract InterchainTokenService is
         bytes memory operator_,
         string calldata destinationChain,
         uint256 gasValue
-    ) external payable notPaused {
+    ) external payable whenNotPaused {
         bytes32 tokenId = getCustomTokenId(msg.sender, salt);
         _deployRemoteStandardizedToken(
             tokenId,
@@ -482,7 +482,7 @@ contract InterchainTokenService is
         bytes memory destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external payable onlyTokenManager(tokenId) notPaused {
+    ) external payable onlyTokenManager(tokenId) whenNotPaused {
         _transmitSendToken(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadata);
     }
 
@@ -511,6 +511,7 @@ contract InterchainTokenService is
      */
     function setPaused(bool paused) external onlyOwner {
         _setPaused(paused);
+        emit PausedSet(paused, msg.sender);
     }
 
     /****************\
@@ -541,7 +542,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external onlyRemoteService(sourceChain, sourceAddress) notPaused {
+    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
@@ -679,7 +680,8 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction
      */
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
-        string memory destinationAddress = remoteAddressValidator.getRemoteAddress(destinationChain);
+        string memory destinationAddress = interchainRouter.getTrustedAddress(destinationChain);
+        if(bytes(destinationAddress).length == 0) revert UntrustedChain(destinationChain);
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
                 address(this),

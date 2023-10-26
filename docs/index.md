@@ -31,10 +31,10 @@ address implementationLiquidityPool
 contract IAxelarGasService gasService
 ```
 
-### remoteAddressValidator
+### interchainRouter
 
 ```solidity
-contract IRemoteAddressValidator remoteAddressValidator
+contract IRemoteAddressValidator interchainRouter
 ```
 
 ### tokenManagerDeployer
@@ -115,7 +115,7 @@ _All of the variables passed here are stored as immutable variables._
 | standardizedTokenDeployer\_ | address   | the address of the StandardizedTokenDeployer.                                                                       |
 | gateway\_                   | address   | the address of the AxelarGateway.                                                                                   |
 | gasService\_                | address   | the address of the AxelarGasService.                                                                                |
-| remoteAddressValidator\_    | address   | the address of the RemoteAddressValidator.                                                                          |
+| interchainRouter\_    | address   | the address of the InterchainRouter.                                                                          |
 | tokenManagerImplementations | address[] | this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool. |
 | chainName\_                 | string    | the name of the current chain.                                                                                      |
 
@@ -1826,10 +1826,10 @@ if a pause condition is activated.
 event PausedSet(bool paused)
 ```
 
-### Paused
+### Pause
 
 ```solidity
-error Paused()
+error Pause()
 ```
 
 ### isPaused
@@ -2344,7 +2344,7 @@ _Converts an address to bytes._
 | ------------ | ----- | --------------------------------------- |
 | bytesAddress | bytes | The bytes representation of the address |
 
-## RemoteAddressValidator
+## InterchainRouter
 
 _Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract_
 
@@ -2391,7 +2391,7 @@ Returns true if the gateway delivers token to this chain.
 constructor(address _interchainTokenServiceAddress) public
 ```
 
-_Constructs the RemoteAddressValidator contract, both array parameters must be equal in length_
+_Constructs the InterchainRouter contract, both array parameters must be equal in length_
 
 #### Parameters
 
@@ -2531,9 +2531,9 @@ _Fetches the interchain token service address for the specified chain_
 | ------------- | ------ | -------------------------------------------------------- |
 | remoteAddress | string | Interchain token service address for the specified chain |
 
-## RemoteAddressValidatorProxy
+## InterchainRouterProxy
 
-_Proxy contract for the RemoteAddressValidator contract. Inherits from the Proxy contract._
+_Proxy contract for the InterchainRouter contract. Inherits from the Proxy contract._
 
 ### constructor
 
@@ -2541,13 +2541,13 @@ _Proxy contract for the RemoteAddressValidator contract. Inherits from the Proxy
 constructor(address implementationAddress, address owner, bytes params) public
 ```
 
-_Constructs the RemoteAddressValidatorProxy contract._
+_Constructs the InterchainRouterProxy contract._
 
 #### Parameters
 
 | Name                  | Type    | Description                                                            |
 | --------------------- | ------- | ---------------------------------------------------------------------- |
-| implementationAddress | address | Address of the RemoteAddressValidator implementation                   |
+| implementationAddress | address | Address of the InterchainRouter implementation                   |
 | owner                 | address | Address of the owner of the proxy                                      |
 | params                | bytes   | The params to be passed to the \_setup function of the implementation. |
 
@@ -2878,13 +2878,13 @@ if a pause condition is activated.
 uint256 PAUSE_SLOT
 ```
 
-### notPaused
+### whenNotPaused
 
 ```solidity
-modifier notPaused()
+modifier whenNotPaused()
 ```
 
-A modifier that throws a Paused custom error if the contract is paused
+A modifier that throws a Pause custom error if the contract is paused
 
 _This modifier should be used with functions that can be paused_
 

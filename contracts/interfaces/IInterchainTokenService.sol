@@ -4,13 +4,13 @@ pragma solidity ^0.8.0;
 
 import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarExecutable.sol';
 import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
+import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
+import { IInterchainRouter } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainRouter.sol';
+import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
+
 
 import { IExpressCallHandler } from './IExpressCallHandler.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
-import { IPausable } from './IPausable.sol';
-import { IMulticall } from './IMulticall.sol';
-import { IRemoteAddressValidator } from './IRemoteAddressValidator.sol';
-
 interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAxelarExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
     error LengthMismatch();
@@ -29,6 +29,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error AlreadyExecuted(bytes32 commandId);
     error ExecuteWithTokenNotSupported();
     error InvalidExpressSelector();
+    error UntrustedChain(string chainName);
 
     event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event TokenSentWithData(
@@ -78,12 +79,13 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         address mintTo
     );
     event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
+    event PausedSet(bool indexed paused, address indexed msgSender);
 
     /**
-     * @notice Returns the address of the token manager deployer contract.
-     * @return remoteAddressValidator The remoteAddressValidator.
+     * @notice Returns the address of the interchain router contract.
+     * @return interchainRouter The interchainRouter.
      */
-    function remoteAddressValidator() external view returns (IRemoteAddressValidator remoteAddressValidator);
+    function interchainRouter() external view returns (IInterchainRouter interchainRouter);
 
     /**
      * @notice Returns the address of the token manager deployer contract.

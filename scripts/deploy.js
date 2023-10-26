@@ -12,16 +12,16 @@ async function deployContract(wallet, contractName, args = []) {
 }
 
 async function deployRemoteAddressValidator(wallet, chainName, interchainTokenServiceAddress = '', evmChains = []) {
-    const remoteAddressValidatorImpl = await deployContract(wallet, 'RemoteAddressValidator', [chainName]);
+    const remoteAddressValidatorImpl = await deployContract(wallet, 'InterchainRouter', [chainName]);
     const params = defaultAbiCoder.encode(['string[]', 'string[]'], [evmChains, evmChains.map(() => interchainTokenServiceAddress)]);
 
-    const remoteAddressValidatorProxy = await deployContract(wallet, 'RemoteAddressValidatorProxy', [
+    const interchainRouterProxy = await deployContract(wallet, 'InterchainRouterProxy', [
         remoteAddressValidatorImpl.address,
         wallet.address,
         params,
     ]);
-    const remoteAddressValidator = new Contract(remoteAddressValidatorProxy.address, remoteAddressValidatorImpl.interface, wallet);
-    return remoteAddressValidator;
+    const interchainRouter = new Contract(interchainRouterProxy.address, remoteAddressValidatorImpl.interface, wallet);
+    return interchainRouter;
 }
 
 async function deployMockGateway(wallet) {
@@ -82,7 +82,7 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
     const standardizedToken = await deployContract(wallet, 'StandardizedToken');
     const standardizedTokenDeployer = await deployContract(wallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-    const remoteAddressValidator = await deployRemoteAddressValidator(wallet, chainName, interchainTokenServiceAddress, evmChains);
+    const interchainRouter = await deployRemoteAddressValidator(wallet, chainName, interchainTokenServiceAddress, evmChains);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
 
     const service = await deployInterchainTokenService(
@@ -92,7 +92,7 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
         standardizedTokenDeployer.address,
         gateway.address,
         gasService.address,
-        remoteAddressValidator.address,
+        interchainRouter.address,
         tokenManagerImplementations.map((impl) => impl.address),
         deploymentKey,
     );

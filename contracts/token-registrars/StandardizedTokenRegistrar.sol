@@ -3,14 +3,14 @@
 pragma solidity ^0.8.0;
 
 import { SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
+
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { IStandardizedTokenRegistrar } from '../interfaces/IStandardizedTokenRegistrar.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
-
-import { Multicall } from '../utils/Multicall.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 
@@ -36,7 +36,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainRouter().chainName();
         chainName = chainName_;
         chainNameHash = keccak256(bytes(chainName_));
     }

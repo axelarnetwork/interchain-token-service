@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.0;
 
+import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
+
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ICanonicalTokenRegistrar } from '../interfaces/ICanonicalTokenRegistrar.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
-import { Multicall } from '../utils/Multicall.sol';
 
 contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType, Multicall {
     IInterchainTokenService public immutable service;
@@ -19,7 +20,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainRouter().chainName();
         chainName = chainName_;
         chainNameHash = keccak256(bytes(chainName_));
     }
