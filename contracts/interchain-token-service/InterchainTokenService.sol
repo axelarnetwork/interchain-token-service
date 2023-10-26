@@ -851,6 +851,7 @@ contract InterchainTokenService is
         assembly {
             tokenAddress := mload(add(returnData, 0x20))
         }
+        // slither-disable-next-line reentrancy-events
         emit StandardizedTokenDeployed(tokenId, tokenAddress, distributor, name, symbol, decimals, mintAmount, mintTo);
     }
 
