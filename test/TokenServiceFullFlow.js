@@ -191,9 +191,10 @@ describe('Interchain Token Service Full Flow', () => {
             const tx = service.multicall(data, { value });
 
             const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const expectedTokenAddress = await service.getStandardizedTokenAddress(tokenId);
             await expect(tx)
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, wallet.address, name, symbol, decimals, tokenCap, wallet.address)
+                .withArgs(tokenId, expectedTokenAddress, wallet.address, name, symbol, decimals, tokenCap, wallet.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')

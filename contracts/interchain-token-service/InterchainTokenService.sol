@@ -827,13 +827,11 @@ contract InterchainTokenService is
         uint256 mintAmount,
         address mintTo
     ) internal {
-        emit StandardizedTokenDeployed(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
-
         bytes32 salt = _getStandardizedTokenSalt(tokenId);
         address tokenManagerAddress = getTokenManagerAddress(tokenId);
 
         // slither-disable-next-line controlled-delegatecall
-        (bool success, bytes memory error) = standardizedTokenDeployer.delegatecall(
+        (bool success, bytes memory returnData) = standardizedTokenDeployer.delegatecall(
             abi.encodeWithSelector(
                 IStandardizedTokenDeployer.deployStandardizedToken.selector,
                 salt,
@@ -847,8 +845,13 @@ contract InterchainTokenService is
             )
         );
         if (!success) {
-            revert StandardizedTokenDeploymentFailed(error);
+            revert StandardizedTokenDeploymentFailed(returnData);
         }
+        address tokenAddress;
+        assembly {
+            tokenAddress := mload(add(returnData, 0x20))
+        }
+        emit StandardizedTokenDeployed(tokenId, tokenAddress, distributor, name, symbol, decimals, mintAmount, mintTo);
     }
 
     function _decodeMetadata(bytes memory metadata) internal pure returns (uint32 version, bytes memory data) {

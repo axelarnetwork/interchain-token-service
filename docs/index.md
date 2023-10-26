@@ -1214,7 +1214,7 @@ event TokenManagerDeployed(bytes32 tokenId, enum ITokenManagerType.TokenManagerT
 ### StandardizedTokenDeployed
 
 ```solidity
-event StandardizedTokenDeployed(bytes32 tokenId, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo)
+event StandardizedTokenDeployed(bytes32 indexed tokenId, address tokenAddress, address indexed distributor, string name, string symbol, uint8 decimals, uint256 indexed mintAmount, address mintTo)
 ```
 
 ### CustomTokenIdClaimed

@@ -787,14 +787,13 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
             const token = new Contract(tokenAddress, Token.abi, wallet);
 
-            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, distributor, tokenName, tokenSymbol, tokenDecimals, mintAmount, distributor)
+                .withArgs(tokenId, tokenAddress, distributor, tokenName, tokenSymbol, tokenDecimals, mintAmount, distributor)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, mintAmount)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
@@ -825,12 +824,11 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, distributor, tokenName, tokenSymbol, tokenDecimals, mintAmount, distributor)
+                .withArgs(tokenId, tokenAddress, distributor, tokenName, tokenSymbol, tokenDecimals, mintAmount, distributor)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
@@ -862,14 +860,22 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
             const token = new Contract(tokenAddress, Token.abi, wallet);
 
-            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, tokenManagerAddress, tokenName, tokenSymbol, tokenDecimals, mintAmount, tokenManagerAddress)
+                .withArgs(
+                    tokenId,
+                    tokenAddress,
+                    tokenManagerAddress,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    mintAmount,
+                    tokenManagerAddress,
+                )
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, tokenManagerAddress, mintAmount)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
@@ -901,14 +907,22 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
             const token = new Contract(tokenAddress, Token.abi, wallet);
 
-            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, tokenManagerAddress, tokenName, tokenSymbol, tokenDecimals, mintAmount, tokenManagerAddress)
+                .withArgs(
+                    tokenId,
+                    tokenAddress,
+                    tokenManagerAddress,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    mintAmount,
+                    tokenManagerAddress,
+                )
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, tokenManagerAddress, mintAmount)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;

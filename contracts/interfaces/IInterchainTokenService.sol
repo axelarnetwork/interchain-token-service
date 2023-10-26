@@ -68,6 +68,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
     event StandardizedTokenDeployed(
         bytes32 indexed tokenId,
+        address tokenAddress,
         address indexed distributor,
         string name,
         string symbol,

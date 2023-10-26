@@ -45,12 +45,12 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
         uint8 decimals,
         uint256 mintAmount,
         address mintTo
-    ) external payable {
+    ) external payable returns (address tokenAddress) {
         bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
         // slither-disable-next-line too-many-digits
         bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
 
-        address tokenAddress = _create3(bytecode, salt);
+        tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
     }
 
