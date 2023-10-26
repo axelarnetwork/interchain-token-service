@@ -26,7 +26,7 @@
     "node": ">=16"
   },
   "dependencies": {
-    "@axelar-network/axelar-cgp-solidity": "6.1.2",
+    "@axelar-network/axelar-cgp-solidity": "https://github.com/axelarnetwork/axelar-gmp-sdk-solidity.git#feat/interchain-router",
     "@axelar-network/axelar-gmp-sdk-solidity": "^5.5.0"
   },
   "devDependencies": {
