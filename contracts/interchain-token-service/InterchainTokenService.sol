@@ -19,7 +19,6 @@ import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDepl
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';

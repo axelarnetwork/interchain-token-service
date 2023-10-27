@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
 
-import { IImplementation } from './IImplementation.sol';
 import { IInterchainToken } from './IInterchainToken.sol';
 import { IDistributable } from './IDistributable.sol';
 import { IERC20MintableBurnable } from './IERC20MintableBurnable.sol';

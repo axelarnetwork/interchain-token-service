@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 
+import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { IStandardizedTokenRegistrar } from '../interfaces/IStandardizedTokenRegistrar.sol';
@@ -14,14 +15,15 @@ import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 
-contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManagerType, Multicall {
+contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManagerType, Multicall, Upgradable {
     using AddressBytesUtils for bytes;
     using AddressBytesUtils for address;
     using SafeTokenTransfer for IStandardizedToken;
 
     IInterchainTokenService public immutable service;
-    string public chainName;
     bytes32 public immutable chainNameHash;
+
+    bytes32 private constant CONTRACT_ID = keccak256('standardized-token-registrar');
 
     struct DeployParams {
         address deployer;
@@ -36,9 +38,15 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainRouter().chainName();
-        chainName = chainName_;
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
         chainNameHash = keccak256(bytes(chainName_));
+    }
+
+    /**
+     * @notice Getter for the contract id.
+     */
+    function contractId() external pure returns (bytes32) {
+        return CONTRACT_ID;
     }
 
     function getStandardizedTokenSalt(address deployer, bytes32 salt) public view returns (bytes32) {

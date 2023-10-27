@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import { IImplementation } from '../interfaces/IImplementation.sol';
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';

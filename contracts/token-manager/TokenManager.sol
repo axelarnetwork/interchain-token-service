@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
 import { Operatable } from '../utils/Operatable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
