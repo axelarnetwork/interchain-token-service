@@ -21,7 +21,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainRouter().chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
