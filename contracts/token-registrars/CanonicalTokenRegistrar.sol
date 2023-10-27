@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
+
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ICanonicalTokenRegistrar } from '../interfaces/ICanonicalTokenRegistrar.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
@@ -9,19 +11,25 @@ import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
 import { Multicall } from '../utils/Multicall.sol';
 
-contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType, Multicall {
+contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType, Multicall, Upgradable {
     IInterchainTokenService public immutable service;
-    string public chainName;
     bytes32 public immutable chainNameHash;
 
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
+    bytes32 private constant CONTRACT_ID = keccak256('canonical-token-registrar');
 
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
         string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
-        chainName = chainName_;
         chainNameHash = keccak256(bytes(chainName_));
+    }
+
+    /**
+     * @notice Getter for the contract id.
+     */
+    function contractId() external pure returns (bytes32) {
+        return CONTRACT_ID;
     }
 
     function getCanonicalTokenSalt(address tokenAddress) public view returns (bytes32 salt) {

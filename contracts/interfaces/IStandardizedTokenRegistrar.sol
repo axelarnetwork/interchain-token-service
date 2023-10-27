@@ -7,8 +7,6 @@ interface IStandardizedTokenRegistrar {
     error NotDistributor(address distributor);
     error NotOperator(address operator);
 
-    function chainName() external view returns (string memory);
-
     function chainNameHash() external view returns (bytes32);
 
     function getStandardizedTokenSalt(address deployer, bytes32 salt) external view returns (bytes32);

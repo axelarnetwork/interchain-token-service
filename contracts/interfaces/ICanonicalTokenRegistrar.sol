@@ -5,8 +5,6 @@ pragma solidity ^0.8.0;
 interface ICanonicalTokenRegistrar {
     error ZeroAddress();
 
-    function chainName() external view returns (string memory);
-
     function chainNameHash() external view returns (bytes32);
 
     function getCanonicalTokenSalt(address tokenAddress) external view returns (bytes32 salt);
