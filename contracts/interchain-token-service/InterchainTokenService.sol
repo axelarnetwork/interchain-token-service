@@ -442,7 +442,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external payable{
+    ) external payable {
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
@@ -454,7 +454,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external payable{
+    ) external payable {
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         uint32 prefix = 0;

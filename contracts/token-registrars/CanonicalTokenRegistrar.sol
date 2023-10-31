@@ -74,18 +74,23 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
         );
     }
 
-
-    function transferCanonicalToken(address tokenAddress, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount, uint256 gasValue) external payable {
+    function transferCanonicalToken(
+        address tokenAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        uint256 gasValue
+    ) external payable {
         // This ensures that the token manages has been deployed by this address, so it's safe to trust it.
         bytes32 tokenId = getCanonicalTokenId(tokenAddress);
         service.getValidTokenManagerAddress(tokenId);
         IERC20 token = IERC20(tokenAddress);
-        
+
         token.safeTransferFrom(msg.sender, address(this), amount);
-        
+
         address tokenManagerAddress = service.getTokenManagerAddress(tokenId);
         token.approve(tokenManagerAddress, amount);
 
-        service.interchainTransfer{value: gasValue}(tokenId, destinationChain, destinationAddress, amount, bytes(''));
+        service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, bytes(''));
     }
 }
