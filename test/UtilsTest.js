@@ -226,12 +226,14 @@ describe('ExpressCallHandler', () => {
 
 describe('FlowLimit', async () => {
     let test;
+    let tokenId;
     const flowLimit = isHardhat ? 5 : 2;
 
     before(async () => {
         test = isHardhat
             ? await deployContract(ownerWallet, 'FlowLimitTest')
             : await deployContract(ownerWallet, 'FlowLimitTestLiveNetwork');
+        tokenId = await test.TOKEN_ID();
     });
 
     async function nextEpoch() {
