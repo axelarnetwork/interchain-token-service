@@ -5,14 +5,12 @@ pragma solidity ^0.8.0;
 import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarValuedExpressExecutable.sol';
 import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
 
-import { IExpressCallHandler } from './IExpressCallHandler.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
 import { IMulticall } from './IMulticall.sol';
 
 interface IInterchainTokenService is
     ITokenManagerType,
-    IExpressCallHandler,
     IAxelarValuedExpressExecutable,
     IPausable,
     IMulticall,
