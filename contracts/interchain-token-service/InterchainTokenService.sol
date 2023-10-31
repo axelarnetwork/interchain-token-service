@@ -415,41 +415,38 @@ contract InterchainTokenService is
     function expressExecute(
         bytes32 commandId,
         string calldata sourceChain,
-        string calldata sourceService,
+        string calldata sourceAddress,
         bytes calldata payload
     ) external payable notPaused {
-        uint256 selector = abi.decode(payload, (uint256));
-        if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
-            revert InvalidExpressSelector();
-        }
+        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted();
 
+        address expressExecutor = msg.sender;
         bytes32 payloadHash = keccak256(payload);
-        _expressReceiveToken(commandId, sourceChain, payload, payloadHash);
 
-        emit ExpressExecuted(commandId, sourceChain, sourceService, payloadHash, msg.sender);
+        _setExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
+        _expressExecute(sourceChain, payload, payloadHash);
+
+        emit ExpressExecuted(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
     }
 
     function getExpressExecutor(
         bytes32 commandId,
-        string calldata /*sourceChain*/,
-        string calldata /*sourceAddress*/,
+        string calldata sourceChain,
+        string calldata sourceAddress,
         bytes32 payloadHash
     ) external view returns (address) {
-        return _getExpressCaller(commandId, payloadHash);
+        return _getExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
     }
 
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
      * interchainTransfer that matches the parameters passed here.
      * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller.
+     * @param sourceChain the name of the chain where the interchainTransfer originated from.
      * @param payload the payload of the receive token
-     * @param commandId the sendHash detected at the sourceChain.
+     * @param payloadHash the hash of the payload
      */
-    function _expressReceiveToken(bytes32 commandId, string calldata sourceChain, bytes calldata payload, bytes32 payloadHash) internal {
-        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted();
-
-        _setExpressCaller(commandId, payloadHash, msg.sender);
-
+    function _expressExecute(string calldata sourceChain, bytes calldata payload, bytes32 payloadHash) internal {
         (uint256 selector, bytes32 tokenId, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
             payload,
             (uint256, bytes32, bytes, bytes, uint256)
@@ -477,6 +474,8 @@ contract InterchainTokenService is
             );
 
             if (result != EXPRESS_CALL_SUCCESS) revert ExpressExecuteWithInterchainTokenFailed(destinationAddress);
+        } else if (selector != SELECTOR_RECEIVE_TOKEN) {
+            revert InvalidExpressSelector();
         }
     }
 
@@ -576,26 +575,26 @@ contract InterchainTokenService is
     /**
      * @notice Executes operations based on the payload and selector.
      * @param sourceChain The chain where the transaction originates from
-     * @param sourceService The address of the remote ITS where the transaction originates from
+     * @param sourceAddress The address of the remote ITS where the transaction originates from
      * @param payload The encoded data payload for the transaction
      */
     function execute(
         bytes32 commandId,
         string calldata sourceChain,
-        string calldata sourceService,
+        string calldata sourceAddress,
         bytes calldata payload
-    ) external onlyRemoteService(sourceChain, sourceService) notPaused {
+    ) external onlyRemoteService(sourceChain, sourceAddress) notPaused {
         bytes32 payloadHash = keccak256(payload);
 
-        if (!gateway.validateContractCall(commandId, sourceChain, sourceService, payloadHash)) revert NotApprovedByGateway();
+        if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
 
         uint256 selector = abi.decode(payload, (uint256));
         if (selector == SELECTOR_RECEIVE_TOKEN || selector == SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
-            address expressCaller = _popExpressCaller(commandId, payloadHash);
+            address expressCaller = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
             _processReceiveTokenPayload(expressCaller, sourceChain, payload, selector);
 
             if (expressCaller != address(0))
-                emit ExpressExecutionFulfilled(commandId, sourceChain, sourceService, payloadHash, expressCaller);
+                emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressCaller);
 
             return;
         }
