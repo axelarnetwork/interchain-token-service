@@ -653,9 +653,9 @@ contract InterchainTokenService is
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
 
         // Return token to the existing express caller
-        if (expressCaller != address(0)) {
+        if (expressExecutor != address(0)) {
             // slither-disable-next-line unused-return
-            tokenManager.giveToken(expressCaller, amount);
+            tokenManager.giveToken(expressExecutor, amount);
             return;
         }
 
