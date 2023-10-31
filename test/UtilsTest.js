@@ -51,9 +51,9 @@ describe('Operatable', () => {
 
         await expect(test.transferOperatorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(ownerWallet.address, [operatorRole])
+            .withArgs(ownerWallet.address, 1 << operatorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(otherWallet.address, [operatorRole]);
+            .withArgs(otherWallet.address, 1 << operatorRole);
 
         expect(await test.hasRole(otherWallet.address, operatorRole)).to.be.true;
 
@@ -67,7 +67,7 @@ describe('Operatable', () => {
 
         await expect(test.connect(otherWallet).proposeOperatorship(ownerWallet.address))
             .to.emit(test, 'RolesProposed')
-            .withArgs(otherWallet.address, ownerWallet.address, [operatorRole]);
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << operatorRole);
     });
 
     it('Should be able to accept operatorship only as proposed operator', async () => {
@@ -81,9 +81,9 @@ describe('Operatable', () => {
 
         await expect(test.connect(ownerWallet).acceptOperatorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(otherWallet.address, [operatorRole])
+            .withArgs(otherWallet.address, 1 << operatorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(ownerWallet.address, [operatorRole]);
+            .withArgs(ownerWallet.address, 1 << operatorRole);
     });
 });
 
@@ -115,9 +115,9 @@ describe('Distributable', () => {
 
         await expect(test.transferDistributorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(ownerWallet.address, [distributorRole])
+            .withArgs(ownerWallet.address, 1 << distributorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(otherWallet.address, [distributorRole]);
+            .withArgs(otherWallet.address, 1 << distributorRole);
 
         expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
 
@@ -135,7 +135,7 @@ describe('Distributable', () => {
 
         await expect(test.connect(otherWallet).proposeDistributorship(ownerWallet.address))
             .to.emit(test, 'RolesProposed')
-            .withArgs(otherWallet.address, ownerWallet.address, [distributorRole]);
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << distributorRole);
     });
 
     it('Should be able to accept distributorship only as the proposed distributor', async () => {
@@ -149,9 +149,9 @@ describe('Distributable', () => {
 
         await expect(test.connect(ownerWallet).acceptDistributorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(otherWallet.address, [distributorRole])
+            .withArgs(otherWallet.address, 1 << distributorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(ownerWallet.address, [distributorRole]);
+            .withArgs(ownerWallet.address, 1 << distributorRole);
     });
 });
 
@@ -419,9 +419,9 @@ describe('StandardizedTokenDeployer', () => {
             .to.emit(token, 'Transfer')
             .withArgs(AddressZero, mintTo, mintAmount)
             .and.to.emit(token, 'RolesAdded')
-            .withArgs(tokenManager, [DISTRIBUTOR_ROLE])
+            .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE)
             .to.emit(token, 'RolesAdded')
-            .withArgs(tokenManager, [DISTRIBUTOR_ROLE]);
+            .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE);
 
         expect(await tokenProxy.implementation()).to.equal(standardizedToken.address);
         expect(await token.name()).to.equal(name);

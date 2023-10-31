@@ -123,9 +123,9 @@ describe('Interchain Token Service Full Flow', () => {
 
             await expect(token.transferDistributorship(newAddress))
                 .to.emit(token, 'RolesRemoved')
-                .withArgs(wallet.address, [DISTRIBUTOR_ROLE])
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
                 .to.emit(token, 'RolesAdded')
-                .withArgs(newAddress, [DISTRIBUTOR_ROLE]);
+                .withArgs(newAddress, 1 << DISTRIBUTOR_ROLE);
 
             await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
             await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
@@ -235,9 +235,9 @@ describe('Interchain Token Service Full Flow', () => {
 
             await expect(token.transferDistributorship(newAddress))
                 .to.emit(token, 'RolesRemoved')
-                .withArgs(wallet.address, [DISTRIBUTOR_ROLE])
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
                 .to.emit(token, 'RolesAdded')
-                .withArgs(newAddress, [DISTRIBUTOR_ROLE]);
+                .withArgs(newAddress, 1 << DISTRIBUTOR_ROLE);
 
             await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
             await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
@@ -313,9 +313,9 @@ describe('Interchain Token Service Full Flow', () => {
 
             await expect(token.transferDistributorship(tokenManager.address))
                 .to.emit(token, 'RolesRemoved')
-                .withArgs(wallet.address, [DISTRIBUTOR_ROLE])
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
                 .to.emit(token, 'RolesAdded')
-                .withArgs(tokenManager.address, [DISTRIBUTOR_ROLE]);
+                .withArgs(tokenManager.address, 1 << DISTRIBUTOR_ROLE);
 
             await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
             await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
