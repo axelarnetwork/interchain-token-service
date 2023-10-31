@@ -8,7 +8,7 @@ const { Wallet, Contract } = ethers;
 const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, arrayify, toUtf8Bytes, hexlify } = ethers.utils;
 const { expect } = chai;
-const { getRandomBytes32, expectRevert } = require('./utils');
+const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 const ImplemenationTest = require('../artifacts/contracts/test/utils/ImplementationTest.sol/ImplementationTest.json');
@@ -226,20 +226,25 @@ describe('ExpressCallHandler', () => {
 
 describe('FlowLimit', async () => {
     let test;
-    let tokenId;
-    const flowLimit = 5;
+    const flowLimit = isHardhat ? 5 : 2;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'FlowLimitTest');
-        tokenId = await test.TOKEN_ID();
+        test = isHardhat
+            ? await deployContract(ownerWallet, 'FlowLimitTest')
+            : await deployContract(ownerWallet, 'FlowLimitTestLiveNetwork');
     });
 
     async function nextEpoch() {
-        const latest = Number(await time.latest());
-        const epoch = 6 * 3600;
-        const next = (Math.floor(latest / epoch) + 1) * epoch;
+        const epoch = isHardhat ? 6 * 3600 : 60;
 
-        await time.increaseTo(next);
+        if (isHardhat) {
+            const latest = Number(await time.latest());
+            const next = (Math.floor(latest / epoch) + 1) * epoch;
+
+            await time.increaseTo(next);
+        } else {
+            await waitFor(epoch);
+        }
     }
 
     it('Should calculate hardcoded constants correctly', async () => {

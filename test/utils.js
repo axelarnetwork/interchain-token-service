@@ -24,6 +24,15 @@ const expectRevert = async (txFunc, contract, error, args) => {
     }
 };
 
+const waitFor = async (timeDelay) => {
+    if (isHardhat) {
+        await network.provider.send('evm_increaseTime', [timeDelay]);
+        await network.provider.send('evm_mine');
+    } else {
+        await new Promise((resolve) => setTimeout(resolve, timeDelay * 1000));
+    }
+};
+
 const getChainId = () => {
     return network.config.chainId;
 };
@@ -32,5 +41,7 @@ module.exports = {
     getRandomBytes32,
     getChainId,
     getGasOptions,
+    isHardhat,
     expectRevert,
+    waitFor,
 };
