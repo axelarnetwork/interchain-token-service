@@ -57,7 +57,7 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
             amount = diff;
         }
 
-        return token.balanceOf(address(this)) - balanceBefore;
+        return amount;
     }
 
     /**
