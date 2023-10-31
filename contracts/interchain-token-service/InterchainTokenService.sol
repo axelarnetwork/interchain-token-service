@@ -68,8 +68,8 @@ contract InterchainTokenService is
     uint256 private constant SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
-    bytes32 private constant CALL_SUCCESS = keccak256('call-success');
-    bytes32 private constant EXPRESS_CALL_SUCCESS = keccak256('express-call-success');
+    bytes32 private constant EXECUTE_SUCCESS = keccak256('its-execute-success');
+    bytes32 private constant EXPRESS_EXECUTE_SUCCESS = keccak256('its-express-execute-success');
 
     /**
      * @dev All of the variables passed here are stored as immutable variables.
@@ -467,7 +467,7 @@ contract InterchainTokenService is
                 amount
             );
 
-            if (result != EXPRESS_CALL_SUCCESS) revert ExpressExecuteWithInterchainTokenFailed(destinationAddress);
+            if (result != EXPRESS_EXECUTE_SUCCESS) revert ExpressExecuteWithInterchainTokenFailed(destinationAddress);
         }
     }
 
@@ -677,7 +677,7 @@ contract InterchainTokenService is
                 amount
             );
 
-            if (result != CALL_SUCCESS) revert ExecuteWithInterchainTokenFailed(destinationAddress);
+            if (result != EXECUTE_SUCCESS) revert ExecuteWithInterchainTokenFailed(destinationAddress);
         } else {
             // slither-disable-next-line reentrancy-events
             emit TokenReceived(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
