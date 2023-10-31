@@ -9,13 +9,7 @@ import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
 import { IMulticall } from './IMulticall.sol';
 
-interface IInterchainTokenService is
-    ITokenManagerType,
-    IAxelarValuedExpressExecutable,
-    IPausable,
-    IMulticall,
-    IContractIdentifier
-{
+interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
     error LengthMismatch();
     error InvalidTokenManagerImplementation();
