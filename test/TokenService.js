@@ -143,7 +143,9 @@ describe('Interchain Token Service', () => {
         const deploymentKey = 'interchainTokenService';
 
         before(async () => {
-            create3Deployer = await (new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)).deploy().then((d) => d.deployed());
+            create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
+                .deploy()
+                .then((d) => d.deployed());
             gateway = await deployMockGateway(wallet);
             gasService = await deployGasService(wallet);
             tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
