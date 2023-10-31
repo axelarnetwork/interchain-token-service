@@ -19,9 +19,7 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
      * @param distributor_ The address of the new distributor
      */
     function _addDistributor(address distributor_) internal {
-        uint8[] memory roles = new uint8[](1);
-        roles[0] = uint8(Roles.DISTRIBUTOR);
-        _addRoles(distributor_, roles);
+        _addRole(distributor_, uint8(Roles.DISTRIBUTOR));
     }
 
     /**

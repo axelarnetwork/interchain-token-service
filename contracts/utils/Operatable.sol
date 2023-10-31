@@ -19,9 +19,7 @@ contract Operatable is IOperatable, RolesBase, RolesConstants {
      * @param operator_ The address of the new operator
      */
     function _addOperator(address operator_) internal {
-        uint8[] memory roles = new uint8[](1);
-        roles[0] = uint8(Roles.OPERATOR);
-        _addRoles(operator_, roles);
+        _addRole(operator_, uint8(Roles.OPERATOR));
     }
 
     /**
