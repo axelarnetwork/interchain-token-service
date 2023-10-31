@@ -406,7 +406,11 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload
     ) public view virtual onlyRemoteService(sourceChain, sourceAddress) notPaused returns (address, uint256) {
-        (, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
+        (uint256 selector, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
+
+        if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
+            revert InvalidExpressSelector();
+        }
 
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
         return (tokenManager.tokenAddress(), amount);
