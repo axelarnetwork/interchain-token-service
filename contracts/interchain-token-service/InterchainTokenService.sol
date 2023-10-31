@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
@@ -21,7 +22,6 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
-import { ExpressCallHandler } from '../utils/ExpressCallHandler.sol';
 import { Pausable } from '../utils/Pausable.sol';
 import { Operatable } from '../utils/Operatable.sol';
 import { Multicall } from '../utils/Multicall.sol';
@@ -35,10 +35,10 @@ import { Multicall } from '../utils/Multicall.sol';
 contract InterchainTokenService is
     Upgradable,
     Operatable,
-    ExpressCallHandler,
     Pausable,
     Multicall,
     Create3Address,
+    ExpressExecutorTracker,
     IInterchainTokenService
 {
     using StringToBytes32 for string;
@@ -418,24 +418,19 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload
     ) external payable notPaused {
+        uint256 selector = abi.decode(payload, (uint256));
+        if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
+            revert InvalidExpressSelector();
+        }
         if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted();
 
         address expressExecutor = msg.sender;
         bytes32 payloadHash = keccak256(payload);
 
         _setExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
-        _expressExecute(sourceChain, payload, payloadHash);
+        _expressExecute(sourceChain, payload);
 
         emit ExpressExecuted(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
-    }
-
-    function getExpressExecutor(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes32 payloadHash
-    ) external view returns (address) {
-        return _getExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
     }
 
     /**
@@ -444,9 +439,8 @@ contract InterchainTokenService is
      * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller.
      * @param sourceChain the name of the chain where the interchainTransfer originated from.
      * @param payload the payload of the receive token
-     * @param payloadHash the hash of the payload
      */
-    function _expressExecute(string calldata sourceChain, bytes calldata payload, bytes32 payloadHash) internal {
+    function _expressExecute(string calldata sourceChain, bytes calldata payload) internal {
         (uint256 selector, bytes32 tokenId, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
             payload,
             (uint256, bytes32, bytes, bytes, uint256)
@@ -474,8 +468,6 @@ contract InterchainTokenService is
             );
 
             if (result != EXPRESS_CALL_SUCCESS) revert ExpressExecuteWithInterchainTokenFailed(destinationAddress);
-        } else if (selector != SELECTOR_RECEIVE_TOKEN) {
-            revert InvalidExpressSelector();
         }
     }
 
@@ -612,17 +604,6 @@ contract InterchainTokenService is
         string calldata /*symbol*/,
         uint256 /*amount*/
     ) public view virtual returns (address, uint256) {
-        revert ExecuteWithTokenNotSupported();
-    }
-
-    function getExpressExecutorWithToken(
-        bytes32 /*commandId*/,
-        string calldata /*sourceChain*/,
-        string calldata /*sourceAddress*/,
-        bytes32 /*payloadHash*/,
-        string calldata /*symbol*/,
-        uint256 /*amount*/
-    ) external pure returns (address) {
         revert ExecuteWithTokenNotSupported();
     }
 

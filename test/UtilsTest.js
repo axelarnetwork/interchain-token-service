@@ -125,51 +125,6 @@ describe('Distributable', () => {
     });
 });
 
-describe('ExpressCallHandler', () => {
-    let handler;
-    const expressCaller = new Wallet(getRandomBytes32()).address;
-    const sourceChain = 'TestChain';
-    const sourceAddress = '0x1234';
-    const payload = '0x5678';
-
-    before(async () => {
-        handler = await deployContract(ownerWallet, 'ExpressCallHandlerTest');
-    });
-
-    it('Should be able to set an express receive token', async () => {
-        const commandId = getRandomBytes32();
-
-        await handler.setExpressReceiveToken(commandId, sourceChain, sourceAddress, payload, expressCaller);
-
-        expect(await handler.getExpressReceiveToken(commandId, sourceChain, sourceAddress, payload)).to.equal(expressCaller);
-    });
-
-    it('Should not be able to set an express receive token if it is already set', async () => {
-        const commandId = getRandomBytes32();
-        await handler.setExpressReceiveToken(commandId, sourceChain, sourceAddress, payload, expressCaller);
-        expect(await handler.getExpressReceiveToken(commandId, sourceChain, sourceAddress, payload)).to.equal(expressCaller);
-
-        const newExpressCaller = new Wallet(getRandomBytes32()).address;
-        await expectRevert(
-            (gasOptions) => handler.setExpressReceiveToken(commandId, sourceChain, sourceAddress, payload, newExpressCaller, gasOptions),
-            handler,
-            'AlreadyExpressCalled',
-        );
-    });
-
-    it('Should properly pop an express receive token', async () => {
-        const commandId = getRandomBytes32();
-
-        expect(await handler.lastPoppedExpressCaller()).to.equal(AddressZero);
-
-        await (await handler.setExpressReceiveToken(commandId, sourceChain, sourceAddress, payload, expressCaller)).wait();
-
-        await expect(handler.popExpressReceiveToken(commandId, sourceChain, sourceAddress, payload));
-
-        expect(await handler.lastPoppedExpressCaller()).to.equal(expressCaller);
-    });
-});
-
 describe('FlowLimit', async () => {
     let test;
     const flowLimit = isHardhat ? 5 : 2;
