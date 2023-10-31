@@ -90,7 +90,7 @@ describe('Token Manager', () => {
         await expectRevert(
             (gasOptions) => tokenManagerLockUnlock.setFlowLimit(flowLimit, gasOptions),
             tokenManagerLockUnlock,
-            'NotOperator',
+            'MissingRole',
         );
     });
 

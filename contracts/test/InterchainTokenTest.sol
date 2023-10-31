@@ -18,7 +18,7 @@ contract InterchainTokenTest is InterchainToken, Distributable, IERC20MintableBu
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
-        _setDistributor(msg.sender);
+        _addDistributor(msg.sender);
         tokenManager_ = ITokenManager(tokenManagerAddress);
     }
 
@@ -49,11 +49,11 @@ contract InterchainTokenTest is InterchainToken, Distributable, IERC20MintableBu
         tokenManagerRequiresApproval_ = requiresApproval;
     }
 
-    function mint(address account, uint256 amount) external onlyDistributor {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _mint(account, amount);
     }
 
-    function burn(address account, uint256 amount) external onlyDistributor {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _burn(account, amount);
     }
 
