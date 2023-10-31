@@ -86,7 +86,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
             operator_ = operatorBytes.toAddress();
         }
 
-        _addAccountRoles(operator_, 1 << uint8(Roles.FLOW_LIMITER) | 1 << uint8(Roles.OPERATOR));
+        _addAccountRoles(operator_, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
         _setup(params);
     }
 
@@ -216,7 +216,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         if (flowLimiter == address(0)) revert ZeroAddress();
 
         if (!hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert NotFlowLimiter(flowLimiter);
-        
+
         _removeRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
     }
 
