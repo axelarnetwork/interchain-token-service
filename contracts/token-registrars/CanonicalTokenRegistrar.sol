@@ -3,6 +3,8 @@
 pragma solidity ^0.8.0;
 
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
+import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ICanonicalTokenRegistrar } from '../interfaces/ICanonicalTokenRegistrar.sol';
@@ -12,6 +14,8 @@ import { IERC20Named } from '../interfaces/IERC20Named.sol';
 import { Multicall } from '../utils/Multicall.sol';
 
 contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType, Multicall, Upgradable {
+    using SafeTokenTransferFrom for IERC20;
+
     IInterchainTokenService public immutable service;
     bytes32 public immutable chainNameHash;
 
@@ -68,5 +72,15 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
             destinationChain,
             gasValue
         );
+    }
+
+
+    function transferCanonicalToken(bytes32 salt, string calldata destinationChain, bytes calldata destinationAddress, uint256 amount, uint256 gasValue) external payable {
+        // This ensures that the token manages has been deployed by this address, so it's safe to trust it.
+        bytes32 tokenId = service.getCustomTokenId(address(this), salt);
+        IERC20 token = IERC20(service.getTokenAddress(tokenId));
+        
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        service.interchainTransfer(tokenId, destinationChain, destinationAddress, amount, bytes(''));
     }
 }

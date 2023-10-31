@@ -98,6 +98,34 @@ describe('Token Registrsrs', () => {
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), payload);
         });
+
+
+        it('Should initiate a remote standardized token deployment', async () => {
+            const gasValue = 1234;
+
+            await deployToken();
+
+            const salt = await canonicalTokenRegistrar.getCanonicalTokenSalt(token.address);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
+            );
+
+            await expect(canonicalTokenRegistrar.registerCanonicalToken(token.address))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, LOCK_UNLOCK, params);
+
+            await expect(
+                canonicalTokenRegistrar.deployAndRegisterRemoteCanonicalToken(salt, destinationChain, gasValue, { value: gasValue }),
+            )
+                .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
+                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', destinationChain, gasValue)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), payload);
+        });
     });
 
     describe('Standardized Token Registrar', async () => {
@@ -119,13 +147,14 @@ describe('Token Registrsrs', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
-                .withArgs(wallet.address, [OPERATOR_ROLE])
+                .withArgs(wallet.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
-                .withArgs(standardizedTokenRegistrar.address, [OPERATOR_ROLE]);
+                .withArgs(standardizedTokenRegistrar.address, 1 << OPERATOR_ROLE);
         });
 
         it('Should initiate a remote standardized token deployment with the same distributor', async () => {
             const gasValue = 1234;
+            const mintAmount = 5678;
 
             const salt = keccak256('0x12');
             tokenId = await standardizedTokenRegistrar.getStandardizedTokenId(wallet.address, salt);
@@ -141,9 +170,9 @@ describe('Token Registrsrs', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
-                .withArgs(wallet.address, [OPERATOR_ROLE])
+                .withArgs(wallet.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
-                .withArgs(standardizedTokenRegistrar.address, [OPERATOR_ROLE]);
+                .withArgs(standardizedTokenRegistrar.address, 1 << OPERATOR_ROLE);
 
             params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
@@ -156,13 +185,13 @@ describe('Token Registrsrs', () => {
                     decimals,
                     wallet.address.toLowerCase(),
                     '0x',
-                    0,
+                    mintAmount,
                     wallet.address.toLowerCase(),
                 ],
             );
 
             await expect(
-                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, wallet.address, wallet.address, destinationChain, gasValue, {
+                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, wallet.address, wallet.address, mintAmount, destinationChain, gasValue, {
                     value: gasValue,
                 }),
             )
@@ -174,7 +203,7 @@ describe('Token Registrsrs', () => {
                     decimals,
                     wallet.address.toLowerCase(),
                     '0x',
-                    0,
+                    mintAmount,
                     wallet.address.toLowerCase(),
                     destinationChain,
                     gasValue,
@@ -202,9 +231,9 @@ describe('Token Registrsrs', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
-                .withArgs(wallet.address, [OPERATOR_ROLE])
+                .withArgs(wallet.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
-                .withArgs(standardizedTokenRegistrar.address, [OPERATOR_ROLE]);
+                .withArgs(standardizedTokenRegistrar.address, 1 << OPERATOR_ROLE);
 
             params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
@@ -223,7 +252,7 @@ describe('Token Registrsrs', () => {
             );
 
             await expect(
-                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, AddressZero, wallet.address, destinationChain, gasValue, {
+                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, AddressZero, wallet.address, 0, destinationChain, gasValue, {
                     value: gasValue,
                 }),
             )
@@ -233,6 +262,53 @@ describe('Token Registrsrs', () => {
                 .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), payload);
+        });
+
+
+        it('Should fail initiate a remote standardized token deployment without the same distributor with a mintAmount', async () => {
+            const gasValue = 1234;
+            const mintAmount = 5678;
+
+            const salt = keccak256('0x124567');
+            tokenId = await standardizedTokenRegistrar.getStandardizedTokenId(wallet.address, salt);
+            const tokenAddress = await standardizedTokenRegistrar.getStandardizedTokenAddress(wallet.address, salt);
+            let params = defaultAbiCoder.encode(['bytes', 'address'], [standardizedTokenRegistrar.address, tokenAddress]);
+            const tokenManager = new Contract(await service.getTokenManagerAddress(tokenId), ITokenManager.abi, wallet);
+            const token = new Contract(tokenAddress, IERC20.abi, wallet);
+            await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
+                .to.emit(service, 'StandardizedTokenDeployed')
+                .withArgs(tokenId, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, MINT_BURN, params)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
+                .and.to.emit(tokenManager, 'RolesAdded')
+                .withArgs(wallet.address, 1 << OPERATOR_ROLE)
+                .and.to.emit(tokenManager, 'RolesRemoved')
+                .withArgs(standardizedTokenRegistrar.address, 1 << OPERATOR_ROLE);
+
+            params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [
+                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    tokenId,
+                    name,
+                    symbol,
+                    decimals,
+                    '0x',
+                    '0x',
+                    0,
+                    wallet.address.toLowerCase(),
+                ],
+            );
+
+            await expect(
+                standardizedTokenRegistrar.deployRemoteStandarizedToken(salt, AddressZero, wallet.address, mintAmount, destinationChain, gasValue, {
+                    value: gasValue,
+                }),
+            )
+                .to.be.revertedWithCustomError(standardizedTokenRegistrar, 'NonZeroMintAmount');
         });
     });
 });

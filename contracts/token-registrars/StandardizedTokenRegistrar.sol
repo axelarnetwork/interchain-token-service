@@ -107,9 +107,10 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             tokenSymbol = token.symbol();
             tokenDecimals = token.decimals();
             if (additionalDistributor != address(0)) {
-                if (mintAmount != 0) revert NonZeroMintAmount();
                 if (!token.isDistributor(additionalDistributor)) revert NotDistributor(additionalDistributor);
                 distributor = additionalDistributor.toBytes();
+            } else if (mintAmount != 0) {
+                revert NonZeroMintAmount();
             }
             if (optionalOperator != address(0)) {
                 if (!tokenManager.isOperator(optionalOperator)) revert NotOperator(optionalOperator);
