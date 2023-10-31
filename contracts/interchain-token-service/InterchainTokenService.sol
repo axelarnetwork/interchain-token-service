@@ -583,7 +583,7 @@ contract InterchainTokenService is
         uint256 selector = abi.decode(payload, (uint256));
         if (selector == SELECTOR_RECEIVE_TOKEN || selector == SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
             address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
-            _processReceiveTokenPayload(expressCaller, sourceChain, payload, selector);
+            _processReceiveTokenPayload(expressExecutor, sourceChain, payload, selector);
 
             if (expressExecutor != address(0))
                 emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
