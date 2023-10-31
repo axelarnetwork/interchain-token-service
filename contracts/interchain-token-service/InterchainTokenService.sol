@@ -585,8 +585,8 @@ contract InterchainTokenService is
             address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
             _processReceiveTokenPayload(expressCaller, sourceChain, payload, selector);
 
-            if (expressCaller != address(0))
-                emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressCaller);
+            if (expressExecutor != address(0))
+                emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
 
             return;
         }
