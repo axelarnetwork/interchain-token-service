@@ -52,6 +52,11 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
 
         token.safeTransferFrom(from, address(this), amount);
 
+        uint256 diff = token.balanceOf(address(this)) - balanceBefore;
+        if (diff < amount) {
+            amount = diff;
+        }
+
         return token.balanceOf(address(this)) - balanceBefore;
     }
 
@@ -67,7 +72,12 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
 
         token.safeTransfer(to, amount);
 
-        return token.balanceOf(to) - balanceBefore;
+        uint256 diff = token.balanceOf(to) - balanceBefore;
+        if (diff < amount) {
+            amount = diff;
+        }
+
+        return amount;
     }
 
     /**
