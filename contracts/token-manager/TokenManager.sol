@@ -85,10 +85,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
             operator_ = operatorBytes.toAddress();
         }
 
-        uint8[] memory roles = new uint8[](2);
-        roles[0] = uint8(Roles.FLOW_LIMITER);
-        roles[1] = uint8(Roles.OPERATOR);
-        _addRoles(operator_, roles);
+        _addAccountRoles(operator_, 1 << uint8(Roles.FLOW_LIMITER) | 1 << uint8(Roles.OPERATOR));
         _setup(params);
     }
 
