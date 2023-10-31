@@ -635,7 +635,7 @@ contract InterchainTokenService is
      * @param payload The encoded data payload to be processed
      */
     function _processReceiveTokenPayload(
-        address expressCaller,
+        address expressExecutor,
         string calldata sourceChain,
         bytes calldata payload,
         uint256 selector
