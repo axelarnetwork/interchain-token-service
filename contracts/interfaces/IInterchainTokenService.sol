@@ -241,7 +241,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external;
+    ) external payable;
 
     function sendTokenWithData(
         bytes32 tokenId,
@@ -249,7 +249,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external;
+    ) external payable;
 
     /**
      * @notice Initiates an interchain token transfer. Only callable by TokenManagers
