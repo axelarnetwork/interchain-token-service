@@ -155,56 +155,6 @@ describe('Distributable', () => {
     });
 });
 
-describe('ExpressCallHandler', () => {
-    let handler;
-    const expressCaller = new Wallet(getRandomBytes32()).address;
-    const payload = '0x5678';
-
-    before(async () => {
-        handler = await deployContract(ownerWallet, 'ExpressCallHandlerTest');
-    });
-
-    it('Should be able to set an express receive token', async () => {
-        const commandId = getRandomBytes32();
-
-        await expect(handler.setExpressReceiveToken(payload, commandId, expressCaller))
-            .to.emit(handler, 'ExpressReceive')
-            .withArgs(payload, commandId, expressCaller);
-
-        expect(await handler.getExpressReceiveToken(payload, commandId)).to.equal(expressCaller);
-    });
-
-    it('Should not be able to set an express receive token if it is already set', async () => {
-        const commandId = getRandomBytes32();
-        await expect(handler.setExpressReceiveToken(payload, commandId, expressCaller))
-            .to.emit(handler, 'ExpressReceive')
-            .withArgs(payload, commandId, expressCaller);
-        expect(await handler.getExpressReceiveToken(payload, commandId)).to.equal(expressCaller);
-
-        const newExpressCaller = new Wallet(getRandomBytes32()).address;
-        await expectRevert(
-            (gasOptions) => handler.setExpressReceiveToken(payload, commandId, newExpressCaller, gasOptions),
-            handler,
-            'AlreadyExpressCalled',
-        );
-    });
-
-    it('Should properly pop an express receive token', async () => {
-        const commandId = getRandomBytes32();
-        await expect(handler.popExpressReceiveToken(payload, commandId)).to.not.emit(handler, 'ExpressExecutionFulfilled');
-
-        expect(await handler.lastPoppedExpressCaller()).to.equal(AddressZero);
-
-        await (await handler.setExpressReceiveToken(payload, commandId, expressCaller)).wait();
-
-        await expect(handler.popExpressReceiveToken(payload, commandId))
-            .to.emit(handler, 'ExpressExecutionFulfilled')
-            .withArgs(payload, commandId, expressCaller);
-
-        expect(await handler.lastPoppedExpressCaller()).to.equal(expressCaller);
-    });
-});
-
 describe('FlowLimit', async () => {
     let test;
     const flowLimit = isHardhat ? 5 : 2;
@@ -312,7 +262,7 @@ describe('Mutlicall', () => {
 
         await expect(test.multicall([function1Data, function2Data, function2Data, function1Data]))
             .to.emit(test, 'Function1Called')
-            .withArgs(nonce + 0)
+            .withArgs(nonce)
             .and.to.emit(test, 'Function2Called')
             .withArgs(nonce + 1)
             .and.to.emit(test, 'Function2Called')
@@ -326,7 +276,7 @@ describe('Mutlicall', () => {
 
         await expect(test.multicallTest([function2Data, function1Data, function2Data, function2Data]))
             .to.emit(test, 'Function2Called')
-            .withArgs(nonce + 0)
+            .withArgs(nonce)
             .and.to.emit(test, 'Function1Called')
             .withArgs(nonce + 1)
             .and.to.emit(test, 'Function2Called')
@@ -347,7 +297,7 @@ describe('Mutlicall', () => {
 
         await expect(test.multicall([function1Data, function2Data, function3Data, function1Data]))
             .to.emit(test, 'Function1Called')
-            .withArgs(nonce + 0)
+            .withArgs(nonce)
             .and.to.emit(test, 'Function2Called')
             .withArgs(nonce + 1).to.be.reverted;
     });

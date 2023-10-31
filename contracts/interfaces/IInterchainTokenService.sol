@@ -2,16 +2,15 @@
 
 pragma solidity ^0.8.0;
 
-import { IAxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarExecutable.sol';
+import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarValuedExpressExecutable.sol';
 import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
 
-import { IExpressCallHandler } from './IExpressCallHandler.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
 import { IMulticall } from './IMulticall.sol';
 import { IRemoteAddressValidator } from './IRemoteAddressValidator.sol';
 
-interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAxelarExecutable, IPausable, IMulticall, IContractIdentifier {
+interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
     error LengthMismatch();
     error InvalidTokenManagerImplementation();
@@ -19,6 +18,7 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager();
     error ExecuteWithInterchainTokenFailed(address contractAddress);
+    error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error NotCanonicalTokenManager();
     error GatewayToken();
     error TokenManagerDeploymentFailed();
@@ -26,7 +26,6 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     error DoesNotAcceptExpressExecute(address contractAddress);
     error SelectorUnknown();
     error InvalidMetadataVersion(uint32 version);
-    error AlreadyExecuted(bytes32 commandId);
     error ExecuteWithTokenNotSupported();
     error InvalidExpressSelector();
 
@@ -39,14 +38,19 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         address indexed sourceAddress,
         bytes data
     );
-    event TokenReceived(bytes32 indexed tokenId, string sourceChain, address indexed destinationAddress, uint256 indexed amount);
+    event TokenReceived(
+        bytes32 indexed tokenId,
+        string sourceChain,
+        bytes sourceAddress,
+        address indexed destinationAddress,
+        uint256 indexed amount
+    );
     event TokenReceivedWithData(
         bytes32 indexed tokenId,
         string sourceChain,
-        address indexed destinationAddress,
-        uint256 indexed amount,
         bytes sourceAddress,
-        bytes data
+        address indexed destinationAddress,
+        uint256 indexed amount
     );
     event RemoteTokenManagerDeploymentInitialized(
         bytes32 indexed tokenId,
@@ -302,11 +306,4 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      * @param paused The boolean value indicating whether the contract is paused or not.
      */
     function setPaused(bool paused) external;
-
-    /**
-     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing interchainTransfer that matches the parameters passed here.
-     * @param payload the payload of the receive token
-     * @param commandId the commandId calculated from the event at the sourceChain.
-     */
-    function expressReceiveToken(bytes calldata payload, bytes32 commandId, string calldata sourceChain) external;
 }
