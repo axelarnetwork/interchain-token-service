@@ -25,8 +25,11 @@ before(async () => {
 
 describe('Operatable', () => {
     let test;
+    let operatorRole;
+
     before(async () => {
         test = await deployContract(ownerWallet, 'OperatorableTest', [ownerWallet.address]);
+        operatorRole = await test.getOperatorRole();
     });
 
     it('Should calculate hardcoded constants correctly', async () => {
@@ -40,40 +43,57 @@ describe('Operatable', () => {
     });
 
     it('Should not be able to run the onlyOperatorable function as not the operator', async () => {
-        await expectRevert((gasOptions) => test.connect(otherWallet).testOperatorable(gasOptions), test, 'NotOperator');
+        await expectRevert((gasOptions) => test.connect(otherWallet).testOperatorable(gasOptions), test, 'MissingRole');
     });
 
     it('Should be able to change the operator only as the operator', async () => {
-        expect(await test.operator()).to.equal(ownerWallet.address);
+        expect(await test.hasRole(ownerWallet.address, operatorRole)).to.be.true;
 
-        await expect(test.transferOperatorship(otherWallet.address)).to.emit(test, 'OperatorshipTransferred').withArgs(otherWallet.address);
+        await expect(test.transferOperatorship(otherWallet.address))
+            .to.emit(test, 'RolesRemoved')
+            .withArgs(ownerWallet.address, 1 << operatorRole)
+            .to.emit(test, 'RolesAdded')
+            .withArgs(otherWallet.address, 1 << operatorRole);
 
-        expect(await test.operator()).to.equal(otherWallet.address);
+        expect(await test.hasRole(otherWallet.address, operatorRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.transferOperatorship(otherWallet.address, gasOptions), test, 'NotOperator');
+        await expectRevert((gasOptions) => test.transferOperatorship(otherWallet.address, gasOptions), test, 'MissingRole');
     });
 
     it('Should be able to propose operator only as the operator', async () => {
-        expect(await test.operator()).to.equal(otherWallet.address);
+        expect(await test.hasRole(otherWallet.address, operatorRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.proposeOperatorship(ownerWallet.address, gasOptions), test, 'NotOperator');
+        await expectRevert((gasOptions) => test.proposeOperatorship(ownerWallet.address, gasOptions), test, 'MissingRole');
+
         await expect(test.connect(otherWallet).proposeOperatorship(ownerWallet.address))
-            .to.emit(test, 'OperatorChangeProposed')
-            .withArgs(ownerWallet.address);
+            .to.emit(test, 'RolesProposed')
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << operatorRole);
     });
 
     it('Should be able to accept operatorship only as proposed operator', async () => {
-        expect(await test.operator()).to.equal(otherWallet.address);
+        expect(await test.hasRole(otherWallet.address, operatorRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.connect(otherWallet).acceptOperatorship(gasOptions), test, 'NotProposedOperator');
-        await expect(test.acceptOperatorship()).to.emit(test, 'OperatorshipTransferred').withArgs(ownerWallet.address);
+        await expectRevert(
+            (gasOptions) => test.connect(otherWallet).acceptOperatorship(otherWallet.address, gasOptions),
+            test,
+            'InvalidProposedRoles',
+        );
+
+        await expect(test.connect(ownerWallet).acceptOperatorship(otherWallet.address))
+            .to.emit(test, 'RolesRemoved')
+            .withArgs(otherWallet.address, 1 << operatorRole)
+            .to.emit(test, 'RolesAdded')
+            .withArgs(ownerWallet.address, 1 << operatorRole);
     });
 });
 
 describe('Distributable', () => {
     let test;
+    let distributorRole;
+
     before(async () => {
         test = await deployContract(ownerWallet, 'DistributableTest', [ownerWallet.address]);
+        distributorRole = await test.getDistributorRole();
     });
 
     it('Should calculate hardcoded constants correctly', async () => {
@@ -87,41 +107,51 @@ describe('Distributable', () => {
     });
 
     it('Should not be able to run the onlyDistributor function as not the distributor', async () => {
-        await expectRevert((gasOptions) => test.connect(otherWallet).testDistributable(gasOptions), test, 'NotDistributor');
+        await expectRevert((gasOptions) => test.connect(otherWallet).testDistributable(gasOptions), test, 'MissingRole');
     });
 
     it('Should be able to change the distributor only as the distributor', async () => {
-        expect(await test.distributor()).to.equal(ownerWallet.address);
+        expect(await test.hasRole(ownerWallet.address, distributorRole)).to.be.true;
 
         await expect(test.transferDistributorship(otherWallet.address))
-            .to.emit(test, 'DistributorshipTransferred')
-            .withArgs(otherWallet.address);
+            .to.emit(test, 'RolesRemoved')
+            .withArgs(ownerWallet.address, 1 << distributorRole)
+            .to.emit(test, 'RolesAdded')
+            .withArgs(otherWallet.address, 1 << distributorRole);
 
-        expect(await test.distributor()).to.equal(otherWallet.address);
+        expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.transferDistributorship(otherWallet.address, gasOptions), test, 'NotDistributor');
+        await expectRevert((gasOptions) => test.transferDistributorship(otherWallet.address, gasOptions), test, 'MissingRole');
     });
 
     it('Should be able to propose a new distributor only as distributor', async () => {
-        expect(await test.distributor()).to.equal(otherWallet.address);
+        expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
 
         await expectRevert(
             (gasOptions) => test.connect(ownerWallet).proposeDistributorship(ownerWallet.address, gasOptions),
             test,
-            'NotDistributor',
+            'MissingRole',
         );
+
         await expect(test.connect(otherWallet).proposeDistributorship(ownerWallet.address))
-            .to.emit(test, 'DistributorshipTransferStarted')
-            .withArgs(ownerWallet.address);
+            .to.emit(test, 'RolesProposed')
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << distributorRole);
     });
 
     it('Should be able to accept distributorship only as the proposed distributor', async () => {
-        expect(await test.distributor()).to.equal(otherWallet.address);
+        expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.connect(otherWallet).acceptDistributorship(gasOptions), test, 'NotProposedDistributor');
-        await expect(test.connect(ownerWallet).acceptDistributorship())
-            .to.emit(test, 'DistributorshipTransferred')
-            .withArgs(ownerWallet.address);
+        await expectRevert(
+            (gasOptions) => test.connect(otherWallet).acceptDistributorship(otherWallet.address, gasOptions),
+            test,
+            'InvalidProposedRoles',
+        );
+
+        await expect(test.connect(ownerWallet).acceptDistributorship(otherWallet.address))
+            .to.emit(test, 'RolesRemoved')
+            .withArgs(otherWallet.address, 1 << distributorRole)
+            .to.emit(test, 'RolesAdded')
+            .withArgs(ownerWallet.address, 1 << distributorRole);
     });
 });
 
@@ -310,6 +340,7 @@ describe('StandardizedTokenDeployer', () => {
     const symbol = 'tokenSymbol';
     const decimals = 18;
     const mintAmount = 123;
+    const DISTRIBUTOR_ROLE = 0;
 
     before(async () => {
         standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');
@@ -337,15 +368,17 @@ describe('StandardizedTokenDeployer', () => {
         )
             .to.emit(token, 'Transfer')
             .withArgs(AddressZero, mintTo, mintAmount)
-            .and.to.emit(token, 'DistributorshipTransferred')
-            .withArgs(tokenManager);
+            .and.to.emit(token, 'RolesAdded')
+            .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE)
+            .to.emit(token, 'RolesAdded')
+            .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE);
 
         expect(await tokenProxy.implementation()).to.equal(standardizedToken.address);
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);
         expect(await token.balanceOf(mintTo)).to.equal(mintAmount);
-        expect(await token.distributor()).to.equal(tokenManager);
+        expect(await token.hasRole(tokenManager, DISTRIBUTOR_ROLE)).to.be.true;
         expect(await token.tokenManager()).to.equal(tokenManager);
 
         await expectRevert(

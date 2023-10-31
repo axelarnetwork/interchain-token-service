@@ -8,7 +8,7 @@ const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256, hexlify } = ethers.utils;
 const { Contract, Wallet } = ethers;
 
-const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
+const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
 
@@ -19,11 +19,10 @@ const SELECTOR_RECEIVE_TOKEN = 1;
 const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
+const DISTRIBUTOR_ROLE = 0;
+
 const MINT_BURN = 0;
-// const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
-// const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
-// const LIQUIDITY_POOL = 4;
 
 describe('Interchain Token Service Full Flow', () => {
     let wallet;
@@ -122,10 +121,14 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress))
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(newAddress, 1 << DISTRIBUTOR_ROLE);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
         });
     });
 
@@ -139,7 +142,7 @@ describe('Interchain Token Service Full Flow', () => {
         before(async () => {
             tokenId = await service.getCustomTokenId(wallet.address, salt);
             const tokenAddress = await service.getStandardizedTokenAddress(tokenId);
-            token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
+            token = new Contract(tokenAddress, StandardizedToken.abi, wallet);
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
         });
@@ -230,10 +233,14 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress))
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(newAddress, 1 << DISTRIBUTOR_ROLE);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
         });
     });
 
@@ -305,11 +312,13 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
             await expect(token.transferDistributorship(tokenManager.address))
-                .to.emit(token, 'DistributorshipTransferred')
-                .withArgs(tokenManager.address);
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(tokenManager.address, 1 << DISTRIBUTOR_ROLE);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole');
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole');
         });
 
         // In order to be able to receive tokens the distributorship should be changed on other chains as well.

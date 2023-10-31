@@ -21,10 +21,7 @@ contract TestTokenManager is TokenManagerLiquidityPool {
 contract TestDistributable is Distributable {
     string public constant NAME = 'TestDistributable';
 
-    constructor() {
-        require(DISTRIBUTOR_SLOT == uint256(keccak256('distributor')) - 1, 'invalid constant');
-        require(PROPOSED_DISTRIBUTOR_SLOT == uint256(keccak256('proposed-distributor')) - 1, 'invalid constant');
-    }
+    constructor() {}
 }
 
 contract TestFlowLimit is FlowLimit {
@@ -46,10 +43,7 @@ contract TestNoReEntrancy is NoReEntrancy {
 contract TestOperatable is Operatable {
     string public constant NAME = 'TestOperatable';
 
-    constructor() {
-        require(OPERATOR_SLOT == uint256(keccak256('operator')) - 1, 'invalid constant');
-        require(PROPOSED_OPERATOR_SLOT == uint256(keccak256('proposed-operator')) - 1, 'invalid constant');
-    }
+    constructor() {}
 }
 
 contract TestPausable is Pausable {
