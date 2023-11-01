@@ -11,14 +11,14 @@ interface IInterchainToken {
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwitten.
-     * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
+     * @return tokenManager_ The TokenManager called to facilitate cross chain transfers.
      */
     function tokenManager() external view returns (ITokenManager tokenManager_);
 
     /**
      * @notice Implementation of the interchainTransfer method
-     * @dev We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
-     * A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well.
+     * @dev We chose to either pass `metadata` as raw data on a remote contract call, or if no data is passed, just do a transfer.
+     * A different implementation could use metadata to specify a function to invoke, or for other purposes as well.
      * @param destinationChain The destination chain identifier.
      * @param recipient The bytes representation of the address of the recipient.
      * @param amount The amount of token to be transferred.
@@ -34,12 +34,12 @@ interface IInterchainToken {
     /**
      * @notice Implementation of the interchainTransferFrom method
      * @dev We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
-     * A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well.
-     * @param sender the sender of the tokens. They need to have approved `msg.sender` before this is called.
-     * @param destinationChain the string representation of the destination chain.
-     * @param recipient the bytes representation of the address of the recipient.
-     * @param amount the amount of token to be transferred.
-     * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
+     * A different implementation could use metadata to specify a function to invoke, or for other purposes as well.
+     * @param sender The sender of the tokens. They need to have approved `msg.sender` before this is called.
+     * @param destinationChain The string representation of the destination chain.
+     * @param recipient The bytes representation of the address of the recipient.
+     * @param amount The amount of token to be transferred.
+     * @param metadata Either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
      */
     function interchainTransferFrom(
         address sender,

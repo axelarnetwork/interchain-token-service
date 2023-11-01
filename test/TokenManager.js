@@ -115,7 +115,7 @@ describe('Token Manager', () => {
         expect(expectedParams).to.eq(params);
     });
 
-    it('Should return the correct parameters for fee on transfer token manager', async () => {
+    it('Should return the correct parameters for fee-on-transfer token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
         const params = await tokenManagerLockUnlockFeeOnTransfer.getParams(toUtf8Bytes(owner.address), token.address);
         expect(expectedParams).to.eq(params);

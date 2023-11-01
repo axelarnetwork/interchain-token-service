@@ -16,8 +16,8 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
     address public immutable implementationAddress;
 
     /**
-     * @notice Constructor for the StandardizedTokenDeployer contract
-     * @param implementationAddress_ Address of the StandardizedToken contract
+     * @notice Constructor for the StandardizedTokenDeployer contract.
+     * @param implementationAddress_ Address of the StandardizedToken contract.
      */
     constructor(address implementationAddress_) {
         if (implementationAddress_ == address(0)) revert AddressZero();
@@ -25,15 +25,15 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
     }
 
     /**
-     * @notice Deploys a new instance of the StandardizedTokenProxy contract
-     * @param salt The salt used by Create3Deployer
-     * @param tokenManager Address of the token manager
-     * @param distributor Address of the distributor
-     * @param name Name of the token
-     * @param symbol Symbol of the token
-     * @param decimals Decimals of the token
-     * @param mintAmount Amount of tokens to mint initially
-     * @param mintTo Address to mint initial tokens to
+     * @notice Deploys a new instance of the StandardizedTokenProxy contract.
+     * @param salt The salt used by Create3Deployer.
+     * @param tokenManager Address of the token manager.
+     * @param distributor Address of the distributor.
+     * @param name Name of the token.
+     * @param symbol Symbol of the token.
+     * @param decimals Decimals of the token.
+     * @param mintAmount Amount of tokens to mint initially.
+     * @param mintTo Address to mint initial tokens to.
      */
     // slither-disable-next-line locked-ether
     function deployStandardizedToken(

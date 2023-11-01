@@ -980,7 +980,7 @@ describe('Interchain Token Service', () => {
             expect(tokenAddress).to.eq(token.address);
         });
 
-        it('Should deploy a lock/unlock with fee on transfer token manager', async () => {
+        it('Should deploy a lock/unlock with fee-on-transfer token manager', async () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
             const tokenDecimals = 13;
@@ -1380,7 +1380,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, sourceChain, destAddress, amount);
         });
 
-        it('Should be able to receive lock/unlock with fee on transfer token', async () => {
+        it('Should be able to receive lock/unlock with fee-on-transfer token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(`Test Token Lock Unlock`, 'TT', 12, amount + 10);
             (await await token.transfer(tokenManager.address, amount + 10)).wait();
 
@@ -1564,7 +1564,7 @@ describe('Interchain Token Service', () => {
             expect(await executable.lastMessage()).to.equal(msg);
         });
 
-        it('Should be able to receive lock/unlock with fee on transfer token', async () => {
+        it('Should be able to receive lock/unlock with fee-on-transfer token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(`Test Token Lock Unlock`, 'TT', 12, amount + 10);
             (await await token.transfer(tokenManager.address, amount + 10)).wait();
             const msg = `lock/unlock`;
@@ -1867,7 +1867,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(payload, commandId, wallet.address);
         });
 
-        it('Should be able to receive lock/unlock with fee on transfer token', async () => {
+        it('Should be able to receive lock/unlock with fee-on-transfer token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(`Test Token Lock Unlock`, 'TT', 12, 2 * amount + 10);
             await (await token.transfer(tokenManager.address, amount + 10)).wait();
             await (await token.approve(service.address, amount)).wait();
@@ -1950,7 +1950,7 @@ describe('Interchain Token Service', () => {
             expect(await executable.lastMessage()).to.equal(msg);
         });
 
-        it('Should be able to receive lock/unlock with fee on transfer token', async () => {
+        it('Should be able to receive lock/unlock with fee-on-transfer token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(`Test Token Lock Unlock`, 'TT', 12, amount * 2 + 10);
             await (await token.transfer(tokenManager.address, amount + 10)).wait();
             await (await token.approve(service.address, amount)).wait();

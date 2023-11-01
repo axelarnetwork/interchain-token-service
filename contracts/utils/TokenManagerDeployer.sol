@@ -14,10 +14,10 @@ import { TokenManagerProxy } from '../proxies/TokenManagerProxy.sol';
  */
 contract TokenManagerDeployer is ITokenManagerDeployer, Create3 {
     /**
-     * @notice Deploys a new instance of the TokenManagerProxy contract
-     * @param tokenId The unique identifier for the token
-     * @param implementationType Token manager implementation type
-     * @param params Additional parameters used in the setup of the token manager
+     * @notice Deploys a new instance of the TokenManagerProxy contract.
+     * @param tokenId The unique identifier for the token.
+     * @param implementationType Token manager implementation type.
+     * @param params Additional parameters used in the setup of the token manager.
      */
     // slither-disable-next-line locked-ether
     function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes calldata params) external payable {

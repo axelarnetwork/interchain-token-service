@@ -6,8 +6,9 @@ import { IExpressCallHandler } from '../interfaces/IExpressCallHandler.sol';
 
 /**
  * @title ExpressCallHandler
- * @dev Integrates the interchain token service with the GMP express service by providing methods to handle express calls for
- * token transfers and token transfers with contract calls between chains. Implements the IExpressCallHandler interface.
+ * @notice Integrates the interchain token service with the GMP express service by providing methods to handle express calls for
+ * token transfers and token transfers with contract calls between chains.
+ * @dev Implements the IExpressCallHandler interface.
  */
 contract ExpressCallHandler is IExpressCallHandler {
     // uint256(keccak256('prefix-express-give-token'));
@@ -15,19 +16,19 @@ contract ExpressCallHandler is IExpressCallHandler {
 
     /**
      * @notice Calculates the unique slot for a given express token transfer.
-     * @param payload the payload of the receive token
-     * @param commandId The unique hash for this token transfer
-     * @return slot The calculated slot for this token transfer
+     * @param payload The payload of the receive token.
+     * @param commandId The unique hash for this token transfer.
+     * @return slot The calculated slot for this token transfer.
      */
     function _getExpressReceiveTokenSlot(bytes calldata payload, bytes32 commandId) internal pure returns (uint256 slot) {
         slot = uint256(keccak256(abi.encode(PREFIX_EXPRESS_RECEIVE_TOKEN, payload, commandId)));
     }
 
     /**
-     * @notice Stores the address of the express caller at the storage slot determined by _getExpressSendTokenSlot
-     * @param payload The payload for the receive token
-     * @param commandId The unique hash for this token transfer
-     * @param expressCaller The address of the express caller
+     * @notice Stores the address of the express caller at the storage slot determined by _getExpressSendTokenSlot.
+     * @param payload The payload for the receive token.
+     * @param commandId The unique hash for this token transfer.
+     * @param expressCaller The address of the express caller.
      */
     function _setExpressReceiveToken(bytes calldata payload, bytes32 commandId, address expressCaller) internal {
         uint256 slot = _getExpressReceiveTokenSlot(payload, commandId);
@@ -46,10 +47,10 @@ contract ExpressCallHandler is IExpressCallHandler {
     }
 
     /**
-     * @notice Gets the address of the express caller for a specific token transfer
-     * @param payload The payload for the receive token
-     * @param commandId The unique hash for this token transfer
-     * @return expressCaller The address of the express caller for this token transfer
+     * @notice Gets the address of the express caller for a specific token transfer.
+     * @param payload The payload for the receive token.
+     * @param commandId The unique hash for this token transfer.
+     * @return expressCaller The address of the express caller for this token transfer.
      */
     function getExpressReceiveToken(bytes calldata payload, bytes32 commandId) public view returns (address expressCaller) {
         uint256 slot = _getExpressReceiveTokenSlot(payload, commandId);
@@ -60,9 +61,9 @@ contract ExpressCallHandler is IExpressCallHandler {
 
     /**
      * @notice Removes the express caller from storage for a specific token transfer, if it exists.
-     * @param payload the payload for the receive token
-     * @param commandId The unique hash for this token transfer
-     * @return expressCaller The address of the express caller for this token transfer
+     * @param payload The payload for the receive token.
+     * @param commandId The unique hash for this token transfer.
+     * @return expressCaller The address of the express caller for this token transfer.
      */
     function _popExpressReceiveToken(bytes calldata payload, bytes32 commandId) internal returns (address expressCaller) {
         uint256 slot = _getExpressReceiveTokenSlot(payload, commandId);

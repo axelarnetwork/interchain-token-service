@@ -2,6 +2,12 @@
 
 pragma solidity ^0.8.0;
 
+/**
+ * @title IDistributable Interface
+ * @dev An interface which provides functions for a basic access control mechanism, where
+ * there is an account (a distributor) that can be granted exclusive access to
+ * specific functions.
+ */
 interface IDistributable {
     error NotDistributor();
     error NotProposedDistributor();
@@ -10,28 +16,28 @@ interface IDistributable {
     event DistributorshipTransferStarted(address indexed distributor);
 
     /**
-     * @notice Get the address of the distributor
-     * @return distributor_ of the distributor
+     * @notice Get the address of the distributor.
+     * @return distributor_ The address of the distributor.
      */
     function distributor() external view returns (address distributor_);
 
     /**
-     * @notice Change the distributor of the contract
-     * @dev Can only be called by the current distributor
-     * @param distributor_ The address of the new distributor
+     * @notice Change the distributor of the contract.
+     * @dev Can only be called by the current distributor.
+     * @param distributor_ The address of the new distributor.
      */
     function transferDistributorship(address distributor_) external;
 
     /**
-     * @notice Proposed a change of the distributor of the contract
-     * @dev Can only be called by the current distributor
-     * @param distributor_ The address of the new distributor
+     * @notice Proposed a change of the distributor of the contract.
+     * @dev Can only be called by the current distributor.
+     * @param distributor_ The address of the new distributor.
      */
     function proposeDistributorship(address distributor_) external;
 
     /**
-     * @notice Accept a change of the distributor of the contract
-     * @dev Can only be called by the proposed distributor
+     * @notice Accept a change of the distributor of the contract.
+     * @dev Can only be called by the proposed distributor.
      */
     function acceptDistributorship() external;
 }

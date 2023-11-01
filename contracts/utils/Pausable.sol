@@ -14,8 +14,8 @@ contract Pausable is IPausable {
     uint256 internal constant PAUSE_SLOT = 0xee35723ac350a69d2a92d3703f17439cbaadf2f093a21ba5bf5f1a53eb2a14d8;
 
     /**
-     * @notice A modifier that throws a Paused custom error if the contract is paused
-     * @dev This modifier should be used with functions that can be paused
+     * @notice A modifier that throws a Paused custom error if the contract is paused.
+     * @dev This modifier should be used with functions that can be paused.
      */
     modifier notPaused() {
         if (isPaused()) revert Paused();
@@ -23,7 +23,7 @@ contract Pausable is IPausable {
     }
 
     /**
-     * @notice Check if the contract is paused
+     * @notice Check if the contract is paused.
      * @return paused A boolean representing the pause status. True if paused, false otherwise.
      */
     function isPaused() public view returns (bool paused) {
@@ -33,10 +33,10 @@ contract Pausable is IPausable {
     }
 
     /**
-     * @notice Sets the pause status of the contract
+     * @notice Sets the pause status of the contract.
      * @dev This is an internal function, meaning it can only be called from within the contract itself
      * or from derived contracts.
-     * @param paused The new pause status
+     * @param paused The new pause status.
      */
     function _setPaused(bool paused) internal {
         assembly {

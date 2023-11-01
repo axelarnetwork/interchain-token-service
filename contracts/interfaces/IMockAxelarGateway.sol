@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 /**
+ * @title IMockAxelarGateway Interface
  * @notice This interface is used for testing with an AxelarGateway that will arbitrarily approve calls.
  */
 interface IMockAxelarGateway {

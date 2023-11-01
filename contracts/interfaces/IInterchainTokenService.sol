@@ -10,6 +10,10 @@ import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
 import { IMulticall } from './IMulticall.sol';
 
+/**
+ * @title IInterchainTokenService Interface
+ * @notice Interface for the Interchain Token Service
+ */
 interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAxelarExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
     error LengthMismatch();
@@ -178,7 +182,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     ) external payable returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys a standardized token and registers it. The token manager type will be lock/unlock unless the distributor matches its address, in which case it will be a mint/burn one.
+     * @notice Deploys a standardized token and registers it.
+     * @dev The token manager type will be lock/unlock unless the distributor matches its address, in which case it will be a mint/burn one.
      * @param salt The salt used for token deployment.
      * @param name The name of the standardized token.
      * @param symbol The symbol of the standardized token.
@@ -228,6 +233,14 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
      */
     function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
 
+    /**
+     * @notice Initiates an interchain transfer of a specified token to a destination chain.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param amount The amount of tokens to be transferred.
+     * @param metadata Additional data to be passed along with the transfer.
+     */
     function interchainTransfer(
         bytes32 tokenId,
         string calldata destinationChain,
@@ -236,6 +249,14 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
         bytes calldata metadata
     ) external;
 
+    /**
+     * @notice Sends tokens to a specified address on a destination chain along with additional data.
+     * @param tokenId The unique identifier of the token to be sent.
+     * @param destinationChain The destination chain where the tokens will be sent.
+     * @param destinationAddress The address on the destination chain where the tokens will be sent.
+     * @param amount The amount of tokens to be sent.
+     * @param data Additional data to be sent along with the tokens.
+     */
     function sendTokenWithData(
         bytes32 tokenId,
         string calldata destinationChain,
@@ -245,7 +266,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     ) external;
 
     /**
-     * @notice Initiates an interchain token transfer. Only callable by TokenManagers
+     * @notice Initiates an interchain token transfer.
+     * @dev Only callable by TokenManagers.
      * @param tokenId The tokenId of the token to be transmitted.
      * @param sourceAddress The source address of the token.
      * @param destinationChain The name of the destination chain.
@@ -297,7 +319,8 @@ interface IInterchainTokenService is ITokenManagerType, IExpressCallHandler, IAx
     function setPaused(bool paused) external;
 
     /**
-     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing interchainTransfer that matches the parameters passed here.
+     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time.
+     * @dev This function should only be called if an outgoing interchainTransfer that matches the parameters passed here has been detected.
      * @param payload the payload of the receive token
      * @param commandId the commandId calculated from the event at the sourceChain.
      */

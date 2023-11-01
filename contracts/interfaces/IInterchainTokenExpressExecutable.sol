@@ -5,19 +5,19 @@ pragma solidity ^0.8.0;
 import { IInterchainTokenExecutable } from './IInterchainTokenExecutable.sol';
 
 /**
- * @title IInterchainTokenExpressExecutable
- * @notice Implement this to accept express calls from the InterchainTokenService.
+ * @title IInterchainTokenExpressExecutable Interface
+ * @notice This interface contains functions for accepting express calls from the InterchainTokenService.
  */
 interface IInterchainTokenExpressExecutable is IInterchainTokenExecutable {
     /**
-     * @notice This will be called after the tokens arrive to this contract
-     * @dev Executable should revert unless the msg.sender is the InterchainTokenService
-     * @param sourceChain the name of the source chain
-     * @param sourceAddress the address that sent the contract call
-     * @param data the data to be processed
-     * @param tokenId the token id of the token manager managing the token.
-     * @param token the address of the token.
-     * @param amount the amount of token that was sent
+     * @notice This will be called after the tokens are sent to this contract.
+     * @dev Execution should revert unless the msg.sender is the InterchainTokenService.
+     * @param sourceChain The name of the source chain.
+     * @param sourceAddress The address that sent the contract call.
+     * @param data The data to be processed.
+     * @param tokenId The token id of the token manager managing the token.
+     * @param token The address of the token.
+     * @param amount The amount of token that was sent.
      */
     function expressExecuteWithInterchainToken(
         string calldata sourceChain,

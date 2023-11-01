@@ -6,9 +6,10 @@ import { IDistributable } from '../interfaces/IDistributable.sol';
 
 /**
  * @title Distributable Contract
- * @dev A contract module which provides a basic access control mechanism, where
+ * @notice A contract module which provides a basic access control mechanism, where
  * there is an account (a distributor) that can be granted exclusive access to
- * specific functions. This module is used through inheritance.
+ * specific functions.
+ * @dev This module is used through inheritance.
  */
 contract Distributable is IDistributable {
     // uint256(keccak256('distributor')) - 1
@@ -26,8 +27,8 @@ contract Distributable is IDistributable {
     }
 
     /**
-     * @notice Get the address of the distributor
-     * @return distributor_ of the distributor
+     * @notice Gets the address of the distributor.
+     * @return distributor_ The address of the distributor.
      */
     function distributor() public view returns (address distributor_) {
         assembly {
@@ -36,8 +37,8 @@ contract Distributable is IDistributable {
     }
 
     /**
-     * @dev Internal function that stores the new distributor address in the correct storage slot
-     * @param distributor_ The address of the new distributor
+     * @notice Internal function that stores the new distributor address in the correct storage slot.
+     * @param distributor_ The address of the new distributor.
      */
     function _setDistributor(address distributor_) internal {
         assembly {
@@ -47,18 +48,18 @@ contract Distributable is IDistributable {
     }
 
     /**
-     * @notice Change the distributor of the contract
-     * @dev Can only be called by the current distributor
-     * @param distributor_ The address of the new distributor
+     * @notice Changes the distributor of the contract.
+     * @dev Can only be called by the current distributor.
+     * @param distributor_ The address of the new distributor.
      */
     function transferDistributorship(address distributor_) external onlyDistributor {
         _setDistributor(distributor_);
     }
 
     /**
-     * @notice Proposed a change of the distributor of the contract
-     * @dev Can only be called by the current distributor
-     * @param distributor_ The address of the new distributor
+     * @notice Proposes a change of the distributor of the contract.
+     * @dev Can only be called by the current distributor.
+     * @param distributor_ The address of the new distributor.
      */
     function proposeDistributorship(address distributor_) external onlyDistributor {
         assembly {
@@ -68,8 +69,8 @@ contract Distributable is IDistributable {
     }
 
     /**
-     * @notice Accept a change of the distributor of the contract
-     * @dev Can only be called by the proposed distributor
+     * @notice Accept a change of the distributor of the contract.
+     * @dev Can only be called by the proposed distributor.
      */
     function acceptDistributorship() external {
         address proposedDistributor;

@@ -6,9 +6,10 @@ import { IOperatable } from '../interfaces/IOperatable.sol';
 
 /**
  * @title Operatable Contract
- * @dev A contract module which provides a basic access control mechanism, where
+ * @notice A contract module which provides a basic access control mechanism, where
  * there is an account (an operator) that can be granted exclusive access to
- * specific functions. This module is used through inheritance.
+ * specific functions.
+ * @dev This module is used through inheritance.
  */
 contract Operatable is IOperatable {
     // uint256(keccak256('operator')) - 1
@@ -17,6 +18,7 @@ contract Operatable is IOperatable {
     uint256 internal constant PROPOSED_OPERATOR_SLOT = 0x18dd7104fe20f6107b1523000995e8f87ac02b734a65cf0a45fafa7635a2c526;
 
     /**
+     * @notice Modifier for functions that should only be called by an operator.
      * @dev Throws a NotOperator custom error if called by any account other than the operator.
      */
     modifier onlyOperator() {
@@ -25,8 +27,8 @@ contract Operatable is IOperatable {
     }
 
     /**
-     * @notice Get the address of the operator
-     * @return operator_ of the operator
+     * @notice Gets the address of the operator.
+     * @return operator_ The address of the operator.
      */
     function operator() public view returns (address operator_) {
         assembly {
@@ -35,8 +37,8 @@ contract Operatable is IOperatable {
     }
 
     /**
-     * @dev Internal function that stores the new operator address in the operator storage slot
-     * @param operator_ The address of the new operator
+     * @dev Internal function that stores the new operator address in the operator storage slot.
+     * @param operator_ The address of the new operator.
      */
     function _setOperator(address operator_) internal {
         assembly {
@@ -46,18 +48,18 @@ contract Operatable is IOperatable {
     }
 
     /**
-     * @notice Change the operator of the contract
-     * @dev Can only be called by the current operator
-     * @param operator_ The address of the new operator
+     * @notice Change the operator of the contract.
+     * @dev Can only be called by the current operator.
+     * @param operator_ The address of the new operator.
      */
     function transferOperatorship(address operator_) external onlyOperator {
         _setOperator(operator_);
     }
 
     /**
-     * @notice Proposed a change of the operator of the contract
-     * @dev Can only be called by the current operator
-     * @param operator_ The address of the new operator
+     * @notice Propose a change of the operator of the contract.
+     * @dev Can only be called by the current operator.
+     * @param operator_ The address of the new operator.
      */
     function proposeOperatorship(address operator_) external onlyOperator {
         assembly {
@@ -67,8 +69,8 @@ contract Operatable is IOperatable {
     }
 
     /**
-     * @notice Accept a proposed change of operatorship
-     * @dev Can only be called by the proposed operator
+     * @notice Accept a proposed change of operatorship.
+     * @dev Can only be called by the proposed operator.
      */
     function acceptOperatorship() external {
         address proposedOperator;

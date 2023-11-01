@@ -264,7 +264,7 @@ describe('Implementation', () => {
     });
 });
 
-describe('Mutlicall', () => {
+describe('Multicall', () => {
     let test;
     let function1Data;
     let function2Data;

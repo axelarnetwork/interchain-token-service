@@ -18,8 +18,8 @@ contract FlowLimit is IFlowLimit {
     uint256 internal constant EPOCH_TIME = 6 hours;
 
     /**
-     * @notice Returns the current flow limit
-     * @return flowLimit The current flow limit value
+     * @notice Returns the current flow limit.
+     * @return flowLimit The current flow limit value.
      */
     function getFlowLimit() public view returns (uint256 flowLimit) {
         assembly {
@@ -28,8 +28,8 @@ contract FlowLimit is IFlowLimit {
     }
 
     /**
-     * @dev Internal function to set the flow limit
-     * @param flowLimit The value to set the flow limit to
+     * @notice Internal function to set the flow limit.
+     * @param flowLimit The value to set the flow limit to.
      */
     function _setFlowLimit(uint256 flowLimit) internal {
         assembly {
@@ -40,26 +40,26 @@ contract FlowLimit is IFlowLimit {
     }
 
     /**
-     * @dev Returns the slot which is used to get the flow out amount for a specific epoch
-     * @param epoch The epoch to get the flow out amount for
-     * @return slot The slot to get the flow out amount from
+     * @notice Returns the slot which is used to get the flow out amount for a specific epoch.
+     * @param epoch The epoch to get the flow out amount for.
+     * @return slot The slot to get the flow out amount from.
      */
     function _getFlowOutSlot(uint256 epoch) internal pure returns (uint256 slot) {
         slot = uint256(keccak256(abi.encode(PREFIX_FLOW_OUT_AMOUNT, epoch)));
     }
 
     /**
-     * @dev Returns the slot which is used to get the flow in amount for a specific epoch
-     * @param epoch The epoch to get the flow in amount for
-     * @return slot The slot to get the flow in amount from
+     * @dev Returns the slot which is used to get the flow in amount for a specific epoch.
+     * @param epoch The epoch to get the flow in amount for.
+     * @return slot The slot to get the flow in amount from.
      */
     function _getFlowInSlot(uint256 epoch) internal pure returns (uint256 slot) {
         slot = uint256(keccak256(abi.encode(PREFIX_FLOW_IN_AMOUNT, epoch)));
     }
 
     /**
-     * @notice Returns the current flow out amount
-     * @return flowOutAmount The current flow out amount
+     * @notice Returns the current flow out amount.
+     * @return flowOutAmount The current flow out amount.
      */
     function getFlowOutAmount() external view returns (uint256 flowOutAmount) {
         uint256 epoch = block.timestamp / EPOCH_TIME;
@@ -71,8 +71,8 @@ contract FlowLimit is IFlowLimit {
     }
 
     /**
-     * @notice Returns the current flow in amount
-     * @return flowInAmount The current flow in amount
+     * @notice Returns the current flow in amount.
+     * @return flowInAmount The current flow in amount.
      */
     function getFlowInAmount() external view returns (uint256 flowInAmount) {
         uint256 epoch = block.timestamp / EPOCH_TIME;
@@ -84,11 +84,11 @@ contract FlowLimit is IFlowLimit {
     }
 
     /**
-     * @dev Adds a flow amount while ensuring it does not exceed the flow limit
-     * @param flowLimit The current flow limit value
-     * @param slotToAdd The slot to add the flow to
-     * @param slotToCompare The slot to compare the flow against
-     * @param flowAmount The flow amount to add
+     * @notice Adds a flow amount while ensuring it does not exceed the flow limit.
+     * @param flowLimit The current flow limit value.
+     * @param slotToAdd The slot to add the flow to.
+     * @param slotToCompare The slot to compare the flow against.
+     * @param flowAmount The flow amount to add.
      */
     function _addFlow(uint256 flowLimit, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal {
         uint256 flowToAdd;
@@ -108,8 +108,8 @@ contract FlowLimit is IFlowLimit {
     }
 
     /**
-     * @dev Adds a flow out amount
-     * @param flowOutAmount The flow out amount to add
+     * @notice Adds a flow out amount.
+     * @param flowOutAmount The flow out amount to add.
      */
     function _addFlowOut(uint256 flowOutAmount) internal {
         uint256 flowLimit = getFlowLimit();
@@ -123,8 +123,8 @@ contract FlowLimit is IFlowLimit {
     }
 
     /**
-     * @dev Adds a flow in amount
-     * @param flowInAmount The flow in amount to add
+     * @notice Adds a flow in amount.
+     * @param flowInAmount The flow in amount to add.
      */
     function _addFlowIn(uint256 flowInAmount) internal {
         uint256 flowLimit = getFlowLimit();

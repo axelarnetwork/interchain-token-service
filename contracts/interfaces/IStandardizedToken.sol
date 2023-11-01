@@ -11,9 +11,8 @@ import { IDistributable } from './IDistributable.sol';
 import { IERC20MintableBurnable } from './IERC20MintableBurnable.sol';
 
 /**
- * @title StandardizedToken
- * @notice This contract implements a standardized token which extends InterchainToken functionality.
- * This contract also inherits Distributable and Implementation logic.
+ * @title IStandardizedToken Interface
+ * @notice This interface implements a standardized token which extends InterchainToken functionality.
  */
 interface IStandardizedToken is IImplementation, IInterchainToken, IDistributable, IERC20MintableBurnable, IERC20, IContractIdentifier {
     error TokenManagerAddressZero();

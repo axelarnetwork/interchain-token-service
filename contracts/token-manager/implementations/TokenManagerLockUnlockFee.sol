@@ -20,9 +20,9 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
     using SafeTokenTransferFrom for IERC20;
 
     /**
-     * @dev Constructs an instance of TokenManagerLockUnlock. Calls the constructor
-     * of TokenManagerAddressStorage which calls the constructor of TokenManager.
-     * @param interchainTokenService_ The address of the interchain token service contract
+     * @notice Constructs an instance of TokenManagerLockUnlock.
+     * @dev Calls the constructor of TokenManagerAddressStorage which calls the constructor of TokenManager.
+     * @param interchainTokenService_ The address of the interchain token service contract.
      */
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
@@ -31,8 +31,9 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
     }
 
     /**
-     * @dev Sets up the token address.
-     * @param params The setup parameters in bytes. Should be encoded with the token address.
+     * @notice Sets up the token address.
+     * @dev Should be encoded with the token address.
+     * @param params The setup parameters in bytes.
      */
     function _setup(bytes calldata params) internal override {
         // The first argument is reserved for the operator.
@@ -41,9 +42,9 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
     }
 
     /**
-     * @dev Transfers a specified amount of tokens from a specified address to this contract.
-     * @param from The address to transfer tokens from
-     * @param amount The amount of tokens to transfer
+     * @notice Transfers a specified amount of tokens from a specified address to this contract.
+     * @param from The address to transfer tokens from.
+     * @param amount The amount of tokens to transfer.
      * @return uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
      */
     function _takeToken(address from, uint256 amount) internal override noReEntrancy returns (uint256) {
@@ -56,10 +57,10 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
     }
 
     /**
-     * @dev Transfers a specified amount of tokens from this contract to a specified address.
-     * @param to The address to transfer tokens to
-     * @param amount The amount of tokens to transfer
-     * @return uint The actual amount of tokens transferred
+     * @notice Transfers a specified amount of tokens from this contract to a specified address.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of tokens to transfer.
+     * @return uint The actual amount of tokens transferred.
      */
     function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
@@ -71,10 +72,11 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
     }
 
     /**
-     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-     * @param operator_ the operator of the TokenManager.
-     * @param tokenAddress_ the token to be managed.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
+     * @notice Getter function for the parameters of a lock/unlock with fee TokenManager.
+     * @dev This function will be mainly used by frontends.
+     * @param operator_ The operator of the TokenManager.
+     * @param tokenAddress_ The token to be managed.
+     * @return params The resulting params to be passed to custom TokenManager deployments.
      */
     function getParams(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params) {
         params = abi.encode(operator_, tokenAddress_);

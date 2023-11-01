@@ -10,15 +10,16 @@ import { IImplementation } from '../interfaces/IImplementation.sol';
 
 /**
  * @title StandardizedTokenProxy
- * @dev Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy.
+ * @notice Proxy contract for StandardizedToken contracts.
+ * @dev Inherits from FixedProxy and implements IStandardizedTokenProxy.
  */
 contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
     /**
-     * @dev Constructs the StandardizedTokenProxy contract.
-     * @param implementationAddress Address of the StandardizedToken implementation
-     * @param params Initialization parameters for the StandardizedToken contract
+     * @notice Constructs the StandardizedTokenProxy contract.
+     * @param implementationAddress Address of the StandardizedToken implementation.
+     * @param params Initialization parameters for the StandardizedToken contract.
      */
     constructor(address implementationAddress, bytes memory params) FixedProxy(implementationAddress) {
         if (IStandardizedToken(implementationAddress).contractId() != CONTRACT_ID) revert InvalidImplementation();
@@ -29,6 +30,7 @@ contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
 
     /**
      * @notice Getter for the contract id.
+     * @return bytes32 The contract id.
      */
     function contractId() internal pure override returns (bytes32) {
         return CONTRACT_ID;

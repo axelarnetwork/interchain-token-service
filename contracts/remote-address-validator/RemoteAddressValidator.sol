@@ -8,7 +8,7 @@ import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 
 /**
  * @title RemoteAddressValidator
- * @dev Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract
+ * @notice Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract.
  */
 contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     using AddressToString for address;
@@ -20,7 +20,7 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     bytes32 private constant CONTRACT_ID = keccak256('remote-address-validator');
 
     /**
-     * @dev Constructs the RemoteAddressValidator contract, both array parameters must be equal in length.
+     * @notice Constructs the RemoteAddressValidator contract, both array parameters must be equal in length.
      * @param chainName_ The name of the current chain.
      */
     constructor(string memory chainName_) {
@@ -30,6 +30,7 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
 
     /**
      * @notice Getter for the contract id.
+     * @return bytes32 The contract id.
      */
     function contractId() external pure returns (bytes32) {
         return CONTRACT_ID;
@@ -47,9 +48,9 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     }
 
     /**
-     * @dev Converts a string to lower case
-     * @param s Input string to be converted
-     * @return string lowercase version of the input string
+     * @notice Converts a string to lower case.
+     * @param s Input string to be converted.
+     * @return string Lowercase version of the input string.
      */
     function _lowerCase(string memory s) internal pure returns (string memory) {
         uint256 length = bytes(s).length;
@@ -63,10 +64,10 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     }
 
     /**
-     * @dev Validates that the sender is a valid interchain token service address
-     * @param sourceChain Source chain of the transaction
-     * @param sourceAddress Source address of the transaction
-     * @return bool true if the sender is validated, false otherwise
+     * @notice Validates that the sender is a valid interchain token service address.
+     * @param sourceChain Source chain of the transaction.
+     * @param sourceAddress Source address of the transaction.
+     * @return bool True if the sender is validated, false otherwise.
      */
     function validateSender(string calldata sourceChain, string calldata sourceAddress) external view returns (bool) {
         string memory sourceAddressNormalized = _lowerCase(sourceAddress);
@@ -76,9 +77,9 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     }
 
     /**
-     * @dev Adds a trusted interchain token service address for the specified chain
-     * @param sourceChain Chain name of the interchain token service
-     * @param sourceAddress Interchain token service address to be added
+     * @notice Adds a trusted interchain token service address for the specified chain.
+     * @param sourceChain Chain name of the interchain token service.
+     * @param sourceAddress Interchain token service address to be added.
      */
     function addTrustedAddress(string memory sourceChain, string memory sourceAddress) public onlyOwner {
         if (bytes(sourceChain).length == 0) revert ZeroStringLength();
@@ -91,8 +92,8 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     }
 
     /**
-     * @dev Removes a trusted interchain token service address
-     * @param sourceChain Chain name of the interchain token service to be removed
+     * @notice Removes a trusted interchain token service address.
+     * @param sourceChain Chain name of the interchain token service to be removed.
      */
     function removeTrustedAddress(string calldata sourceChain) external onlyOwner {
         if (bytes(sourceChain).length == 0) revert ZeroStringLength();
@@ -104,9 +105,9 @@ contract RemoteAddressValidator is IRemoteAddressValidator, Upgradable {
     }
 
     /**
-     * @dev Fetches the interchain token service address for the specified chain
-     * @param chainName_ Name of the chain
-     * @return remoteAddress Interchain token service address for the specified chain
+     * @notice Fetches the interchain token service address for the specified chain.
+     * @param chainName_ Name of the chain.
+     * @return remoteAddress Interchain token service address for the specified chain.
      */
     function getRemoteAddress(string calldata chainName_) external view returns (string memory remoteAddress) {
         remoteAddress = remoteAddresses[chainName_];

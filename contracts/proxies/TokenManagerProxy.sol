@@ -8,7 +8,7 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 /**
  * @title TokenManagerProxy
  * @notice This contract is a proxy for token manager contracts.
- * @dev It implements ITokenManagerProxy.
+ * @dev This contract implements ITokenManagerProxy.
  */
 contract TokenManagerProxy is ITokenManagerProxy {
     IInterchainTokenService public immutable interchainTokenService;
@@ -16,11 +16,11 @@ contract TokenManagerProxy is ITokenManagerProxy {
     bytes32 public immutable tokenId;
 
     /**
-     * @dev Constructs the TokenManagerProxy contract.
-     * @param interchainTokenServiceAddress_ The address of the interchain token service
-     * @param implementationType_ The token manager type
-     * @param tokenId_ The identifier for the token
-     * @param params The initialization parameters for the token manager contract
+     * @notice Constructs the TokenManagerProxy contract.
+     * @param interchainTokenServiceAddress_ The address of the interchain token service.
+     * @param implementationType_ The token manager type.
+     * @param tokenId_ The identifier for the token.
+     * @param params The initialization parameters for the token manager contract.
      */
     constructor(address interchainTokenServiceAddress_, uint256 implementationType_, bytes32 tokenId_, bytes memory params) {
         interchainTokenService = IInterchainTokenService(interchainTokenServiceAddress_);
@@ -33,18 +33,18 @@ contract TokenManagerProxy is ITokenManagerProxy {
     }
 
     /**
-     * @dev Returns the address of the current implementation.
-     * @return impl The address of the current implementation
+     * @notice Returns the address of the current implementation.
+     * @return impl The address of the current implementation.
      */
     function implementation() public view returns (address impl) {
         impl = _getImplementation(interchainTokenService, implementationType);
     }
 
     /**
-     * @dev Returns the implementation address from the interchain token service for the provided type.
-     * @param interchainTokenServiceAddress_ The address of the interchain token service
-     * @param implementationType_ The token manager type
-     * @return impl The address of the implementation
+     * @notice Returns the implementation address from the interchain token service for the provided type.
+     * @param interchainTokenServiceAddress_ The address of the interchain token service.
+     * @param implementationType_ The token manager type.
+     * @return impl The address of the implementation.
      */
     function _getImplementation(
         IInterchainTokenService interchainTokenServiceAddress_,
@@ -54,12 +54,13 @@ contract TokenManagerProxy is ITokenManagerProxy {
     }
 
     /**
-     * @dev Setup function. Empty in this contract.
-     * @param setupParams Initialization parameters
+     * @notice Setup function. Empty in this contract.
+     * @param setupParams Initialization parameters.
      */
     function setup(bytes calldata setupParams) external {}
 
     /**
+     * @notice Receive function.
      * @dev Reverts if native token is sent.
      */
     receive() external payable virtual {
@@ -67,7 +68,8 @@ contract TokenManagerProxy is ITokenManagerProxy {
     }
 
     /**
-     * @dev Fallback function. Delegates the call to the token manager contract.
+     * @notice Fallback function.
+     * @dev Delegates the call to the token manager contract.
      */
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable virtual {

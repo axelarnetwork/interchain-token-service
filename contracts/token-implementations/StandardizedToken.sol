@@ -15,7 +15,7 @@ import { Distributable } from '../utils/Distributable.sol';
 /**
  * @title StandardizedToken
  * @notice This contract implements a standardized token which extends InterchainToken functionality.
- * This contract also inherits Distributable and Implementation logic.
+ * @dev This contract also inherits Distributable and Implementation logic.
  */
 contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable, IStandardizedToken {
     using AddressBytesUtils for bytes;
@@ -37,23 +37,24 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
 
     /**
      * @notice Getter for the contract id.
+     * @return bytes32 The contract id.
      */
     function contractId() external pure returns (bytes32) {
         return CONTRACT_ID;
     }
 
     /**
-     * @notice Returns the token manager for this token
-     * @return ITokenManager The token manager contract
+     * @notice Returns the token manager for this token.
+     * @return ITokenManager The token manager contract.
      */
     function tokenManager() public view override(InterchainToken, IInterchainToken) returns (ITokenManager) {
         return ITokenManager(tokenManager_);
     }
 
     /**
-     * @notice Setup function to initialize contract parameters
-     * @param params The setup parameters in bytes
-     * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo
+     * @notice Setup function to initialize contract parameters.
+     * @dev      * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo.
+     * @param params The setup parameters in bytes.
      */
     function setup(bytes calldata params) external override onlyProxy {
         {
@@ -86,20 +87,20 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
     }
 
     /**
-     * @notice Function to mint new tokens
-     * Can only be called by the distributor address.
-     * @param account The address that will receive the minted tokens
-     * @param amount The amount of tokens to mint
+     * @notice Function to mint new tokens.
+     * @dev Can only be called by the distributor address.
+     * @param account The address that will receive the minted tokens.
+     * @param amount The amount of tokens to mint.
      */
     function mint(address account, uint256 amount) external onlyDistributorOrTokenManager {
         _mint(account, amount);
     }
 
     /**
-     * @notice Function to burn tokens
-     * Can only be called by the distributor address.
-     * @param account The address that will have its tokens burnt
-     * @param amount The amount of tokens to burn
+     * @notice Function to burn tokens.
+     * @dev Can only be called by the distributor address.
+     * @param account The address that will have its tokens burnt.
+     * @param amount The amount of tokens to burn.
      */
     function burn(address account, uint256 amount) external onlyDistributorOrTokenManager {
         _burn(account, amount);

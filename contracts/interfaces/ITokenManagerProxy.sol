@@ -3,9 +3,8 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title TokenManagerProxy
- * @dev This contract is a proxy for token manager contracts. It implements ITokenManagerProxy and
- * inherits from FixedProxy from the gmp sdk repo
+ * @title ITokenManagerProxy Interface
+ * @notice This interface is for a proxy for token manager contracts.
  */
 interface ITokenManagerProxy {
     error ImplementationLookupFailed();
@@ -13,18 +12,20 @@ interface ITokenManagerProxy {
     error NativeTokenNotAccepted();
 
     /**
-     * @notice Returns implementation type of this token manager
+     * @notice Returns implementation type of this token manager.
+     * @return uint256 The implementation type of this token manager.
      */
     function implementationType() external view returns (uint256);
 
     /**
      * @notice Returns the address of the current implementation.
-     * @return impl The address of the current implementation
+     * @return address The address of the current implementation.
      */
     function implementation() external view returns (address);
 
     /**
-     * @notice Returns token ID of the token manager.
+     * @notice Returns the token ID of the token manager.
+     * @return bytes32 The token ID of the token manager.
      */
     function tokenId() external view returns (bytes32);
 }

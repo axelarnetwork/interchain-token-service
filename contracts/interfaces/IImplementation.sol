@@ -2,6 +2,10 @@
 
 pragma solidity ^0.8.0;
 
+/**
+ * @title IImplementation Interface
+ * @notice An interface for proxy contract implementations.
+ */
 interface IImplementation {
     error NotProxy();
 
