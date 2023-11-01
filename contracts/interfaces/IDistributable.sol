@@ -4,6 +4,11 @@ pragma solidity ^0.8.0;
 
 import { IRolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IRolesBase.sol';
 
+/**
+ * @title IDistributable Interface
+ * @notice An interface for a contract module which provides a basic access control mechanism, where
+ * there is an account (a distributor) that can be granted exclusive access to specific functions.
+ */
 interface IDistributable is IRolesBase {
     /**
      * @notice Change the distributor of the contract.

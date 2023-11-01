@@ -675,7 +675,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Processes the payload data for a send token call.
-     * @param commandId The AxelarGateway command ID.
+     * @param expressExecutor The address of the express executor.
      * @param sourceChain The chain where the transaction originates from.
      * @param payload The encoded data payload to be processed.
      * @param selector The selector specifying what action the service must perform.

@@ -25,16 +25,16 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
     }
 
     /**
-     * @notice Deploys a new instance of the StandardizedTokenProxy contract
-     * @param salt The salt used by Create3Deployer
-     * @param tokenManager Address of the token manager
-     * @param distributor Address of the distributor
-     * @param name Name of the token
-     * @param symbol Symbol of the token
-     * @param decimals Decimals of the token
-     * @param mintAmount Amount of tokens to mint initially
-     * @param mintTo Address to mint initial tokens to
-     * @return tokenAddress Address of the deployed token
+     * @notice Deploys a new instance of the StandardizedTokenProxy contract.
+     * @param salt The salt used by Create3Deployer.
+     * @param tokenManager Address of the token manager.
+     * @param distributor Address of the distributor.
+     * @param name Name of the token.
+     * @param symbol Symbol of the token.
+     * @param decimals Decimals of the token.
+     * @param mintAmount Amount of tokens to mint initially.
+     * @param mintTo Address to mint initial tokens to.
+     * @return tokenAddress Address of the deployed token.
      */
     // slither-disable-next-line locked-ether
     function deployStandardizedToken(
@@ -55,6 +55,11 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
     }
 
+    /**
+     * @notice Returns the deployed address of the StandardizedTokenProxy contract.
+     * @param salt The deployment salt.
+     * @return tokenAddress The deployed address.
+     */
     function deployedAddress(bytes32 salt) external view returns (address tokenAddress) {
         return _create3Address(salt);
     }
