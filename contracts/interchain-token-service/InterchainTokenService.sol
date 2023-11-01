@@ -414,7 +414,7 @@ contract InterchainTokenService is
         (uint256 selector, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
 
         if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
-            revert InvalidExpressSelector();
+            revert InvalidExpressSelector(selector);
         }
 
         ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
@@ -429,7 +429,7 @@ contract InterchainTokenService is
     ) external payable notPaused {
         uint256 selector = abi.decode(payload, (uint256));
         if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
-            revert InvalidExpressSelector();
+            revert InvalidExpressSelector(selector);
         }
         if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted();
 

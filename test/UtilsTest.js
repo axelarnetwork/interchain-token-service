@@ -54,9 +54,9 @@ describe('Operatable', () => {
 
         await expect(test.transferOperatorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(ownerWallet.address, [operatorRole])
+            .withArgs(ownerWallet.address, 1 << operatorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(otherWallet.address, [operatorRole]);
+            .withArgs(otherWallet.address, 1 << operatorRole);
 
         expect(await test.hasRole(otherWallet.address, operatorRole)).to.be.true;
 
@@ -76,7 +76,7 @@ describe('Operatable', () => {
 
         await expect(test.connect(otherWallet).proposeOperatorship(ownerWallet.address))
             .to.emit(test, 'RolesProposed')
-            .withArgs(otherWallet.address, ownerWallet.address, [operatorRole]);
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << operatorRole);
     });
 
     it('Should be able to accept operatorship only as proposed operator', async () => {
@@ -86,14 +86,14 @@ describe('Operatable', () => {
             (gasOptions) => test.connect(otherWallet).acceptOperatorship(otherWallet.address, gasOptions),
             test,
             'InvalidProposedRoles',
-            [otherWallet.address, otherWallet.address, [operatorRole]],
+            [otherWallet.address, otherWallet.address, 1 << operatorRole],
         );
 
         await expect(test.connect(ownerWallet).acceptOperatorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(otherWallet.address, [operatorRole])
+            .withArgs(otherWallet.address, 1 << operatorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(ownerWallet.address, [operatorRole]);
+            .withArgs(ownerWallet.address, 1 << operatorRole);
     });
 });
 
@@ -128,9 +128,9 @@ describe('Distributable', () => {
 
         await expect(test.transferDistributorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(ownerWallet.address, [distributorRole])
+            .withArgs(ownerWallet.address, 1 << distributorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(otherWallet.address, [distributorRole]);
+            .withArgs(otherWallet.address, 1 << distributorRole);
 
         expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
 
@@ -152,7 +152,7 @@ describe('Distributable', () => {
 
         await expect(test.connect(otherWallet).proposeDistributorship(ownerWallet.address))
             .to.emit(test, 'RolesProposed')
-            .withArgs(otherWallet.address, ownerWallet.address, [distributorRole]);
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << distributorRole);
     });
 
     it('Should be able to accept distributorship only as the proposed distributor', async () => {
