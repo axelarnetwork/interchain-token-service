@@ -31,10 +31,10 @@ address implementationLiquidityPool
 contract IAxelarGasService gasService
 ```
 
-### interchainRouter
+### interchainAddressTracker
 
 ```solidity
-contract IRemoteAddressValidator interchainRouter
+contract IInterchainAddressTracker interchainAddressTracker
 ```
 
 ### tokenManagerDeployer
@@ -115,7 +115,7 @@ _All of the variables passed here are stored as immutable variables._
 | standardizedTokenDeployer\_ | address   | the address of the StandardizedTokenDeployer.                                                                       |
 | gateway\_                   | address   | the address of the AxelarGateway.                                                                                   |
 | gasService\_                | address   | the address of the AxelarGasService.                                                                                |
-| interchainRouter\_    | address   | the address of the InterchainRouter.                                                                          |
+| interchainAddressTracker\_    | address   | the address of the InterchainAddressTracker.                                                                          |
 | tokenManagerImplementations | address[] | this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool. |
 | chainName\_                 | string    | the name of the current chain.                                                                                      |
 
@@ -1834,7 +1834,7 @@ Check if the contract is paused
 | ---- | ---- | -------------------------------------------------------------------------------- |
 | [0]  | bool | paused A boolean representing the pause status. True if paused, false otherwise. |
 
-## IRemoteAddressValidator
+## IInterchainAddressTracker
 
 _Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract_
 
@@ -2344,7 +2344,7 @@ _Converts an address to bytes._
 | ------------ | ----- | --------------------------------------- |
 | bytesAddress | bytes | The bytes representation of the address |
 
-## InterchainRouter
+## InterchainAddressTracker
 
 _Manages and validates remote addresses, keeps track of addresses supported by the Axelar gateway contract_
 
@@ -2391,7 +2391,7 @@ Returns true if the gateway delivers token to this chain.
 constructor(address _interchainTokenServiceAddress) public
 ```
 
-_Constructs the InterchainRouter contract, both array parameters must be equal in length_
+_Constructs the InterchainAddressTracker contract, both array parameters must be equal in length_
 
 #### Parameters
 
@@ -2531,9 +2531,9 @@ _Fetches the interchain token service address for the specified chain_
 | ------------- | ------ | -------------------------------------------------------- |
 | remoteAddress | string | Interchain token service address for the specified chain |
 
-## InterchainRouterProxy
+## InterchainAddressTrackerProxy
 
-_Proxy contract for the InterchainRouter contract. Inherits from the Proxy contract._
+_Proxy contract for the InterchainAddressTracker contract. Inherits from the Proxy contract._
 
 ### constructor
 
@@ -2541,13 +2541,13 @@ _Proxy contract for the InterchainRouter contract. Inherits from the Proxy contr
 constructor(address implementationAddress, address owner, bytes params) public
 ```
 
-_Constructs the InterchainRouterProxy contract._
+_Constructs the InterchainAddressTrackerProxy contract._
 
 #### Parameters
 
 | Name                  | Type    | Description                                                            |
 | --------------------- | ------- | ---------------------------------------------------------------------- |
-| implementationAddress | address | Address of the InterchainRouter implementation                   |
+| implementationAddress | address | Address of the InterchainAddressTracker implementation                   |
 | owner                 | address | Address of the owner of the proxy                                      |
 | params                | bytes   | The params to be passed to the \_setup function of the implementation. |
 

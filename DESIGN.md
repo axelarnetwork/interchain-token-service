@@ -32,7 +32,7 @@ Most projects that look to go cross-chain nowadays have more complex needs that 
 
 ## Linker Router
 
-We plan to finalize the design of the `InterchainTokenService` but we want to be able to support new chains as they get added to the Axelar Network. For this purpose, the service will ask a separate contract, the [`InterchainRouter`](./contracts/interchainRouter/InterchainRouter.sol) to obtain the destination address for outgoing messages, and for validation of incoming messages. This contract might eventually stop being upgradable but it will probably be able to support new addresses for new chains indefinitely.
+We plan to finalize the design of the `InterchainTokenService` but we want to be able to support new chains as they get added to the Axelar Network. For this purpose, the service will ask a separate contract, the [`InterchainAddressTracker`](./contracts/interchainAddressTracker/InterchainAddressTracker.sol) to obtain the destination address for outgoing messages, and for validation of incoming messages. This contract might eventually stop being upgradable but it will probably be able to support new addresses for new chains indefinitely.
 
 ## Interchain Token
 

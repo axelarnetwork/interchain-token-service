@@ -136,7 +136,7 @@ describe('Interchain Token Service', () => {
         let standardizedToken;
         let standardizedTokenDeployer;
         let interchainTokenServiceAddress;
-        let interchainRouter;
+        let interchainAddressTracker;
         let tokenManagerImplementations;
 
         const chainName = 'Test';
@@ -152,7 +152,7 @@ describe('Interchain Token Service', () => {
             standardizedToken = await deployContract(wallet, 'StandardizedToken');
             standardizedTokenDeployer = await deployContract(wallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
             interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-            interchainRouter = await deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName);
+            interchainAddressTracker = await deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName);
             tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
         });
 
@@ -186,7 +186,7 @@ describe('Interchain Token Service', () => {
                         standardizedTokenDeployer.address,
                         gateway.address,
                         AddressZero,
-                        interchainRouter.address,
+                        interchainAddressTracker.address,
                         tokenManagerImplementations.map((impl) => impl.address),
                         deploymentKey,
                         gasOptions,
@@ -206,7 +206,7 @@ describe('Interchain Token Service', () => {
                         standardizedTokenDeployer.address,
                         gateway.address,
                         gasService.address,
-                        interchainRouter.address,
+                        interchainAddressTracker.address,
                         tokenManagerImplementations.map((impl) => impl.address),
                         deploymentKey,
                         gasOptions,
@@ -226,7 +226,7 @@ describe('Interchain Token Service', () => {
                         AddressZero,
                         gateway.address,
                         gasService.address,
-                        interchainRouter.address,
+                        interchainAddressTracker.address,
                         tokenManagerImplementations.map((impl) => impl.address),
                         deploymentKey,
                         gasOptions,
@@ -246,7 +246,7 @@ describe('Interchain Token Service', () => {
                         standardizedTokenDeployer.address,
                         AddressZero,
                         gasService.address,
-                        interchainRouter.address,
+                        interchainAddressTracker.address,
                         tokenManagerImplementations.map((impl) => impl.address),
                         deploymentKey,
                         gasOptions,
@@ -268,7 +268,7 @@ describe('Interchain Token Service', () => {
                         standardizedTokenDeployer.address,
                         gateway.address,
                         gasService.address,
-                        interchainRouter.address,
+                        interchainAddressTracker.address,
                         tokenManagerImplementations.map((impl) => impl.address),
                         deploymentKey,
                         gasOptions,
@@ -288,7 +288,7 @@ describe('Interchain Token Service', () => {
                 standardizedTokenDeployer.address,
                 gateway.address,
                 gasService.address,
-                interchainRouter.address,
+                interchainAddressTracker.address,
                 tokenManagerImplementations.map((impl) => impl.address),
                 deploymentKey,
             );
@@ -316,7 +316,7 @@ describe('Interchain Token Service', () => {
                         standardizedTokenDeployer.address,
                         gateway.address,
                         gasService.address,
-                        interchainRouter.address,
+                        interchainAddressTracker.address,
                         [...tokenManagerImplementations.map((impl) => impl.address), AddressZero],
                         deploymentKey,
                         gasOptions,
@@ -341,7 +341,7 @@ describe('Interchain Token Service', () => {
                         standardizedTokenDeployer.address,
                         gateway.address,
                         gasService.address,
-                        interchainRouter.address,
+                        interchainAddressTracker.address,
                         tokenManagerImplementations.map((impl) => impl.address),
                         deploymentKey,
                         gasOptions,

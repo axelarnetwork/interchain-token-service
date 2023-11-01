@@ -11,7 +11,7 @@ import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
-import { IInterchainRouter } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainRouter.sol';
+import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
 import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
@@ -52,7 +52,7 @@ contract InterchainTokenService is
     address internal immutable implementationLockUnlockFee;
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
-    IInterchainRouter public immutable interchainRouter;
+    IInterchainAddressTracker public immutable interchainAddressTracker;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
     bytes32 public immutable chainNameHash;
@@ -76,7 +76,7 @@ contract InterchainTokenService is
      * @param standardizedTokenDeployer_ the address of the StandardizedTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
-     * @param interchainRouter_ the address of the InterchainRouter.
+     * @param interchainRouter_ the address of the InterchainAddressTracker.
      * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, and Lock-unlock with fee.
      */
     constructor(
@@ -96,7 +96,7 @@ contract InterchainTokenService is
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
-        interchainRouter = IInterchainRouter(interchainRouter_);
+        interchainAddressTracker = IInterchainAddressTracker(interchainRouter_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         standardizedTokenDeployer = standardizedTokenDeployer_;
@@ -107,7 +107,7 @@ contract InterchainTokenService is
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
-        string memory chainName_ = interchainRouter.chainName();
+        string memory chainName_ = interchainAddressTracker.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
@@ -121,7 +121,7 @@ contract InterchainTokenService is
      * @param sourceAddress the address that the call came from.
      */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
-        if (!interchainRouter.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
+        if (!interchainAddressTracker.isTrustedAddress(sourceChain, sourceAddress)) revert NotRemoteService();
         _;
     }
 
@@ -280,7 +280,7 @@ contract InterchainTokenService is
      * At least the amount specified needs to be passed to the call
      * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
      */
-    function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable notPaused {
+    function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable whenNotPaused {
         address tokenAddress;
         {
             tokenAddress = getValidTokenManagerAddress(tokenId);
@@ -410,7 +410,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) notPaused returns (address, uint256) {
+    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
         (uint256 selector, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
 
         if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
@@ -426,7 +426,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external payable notPaused {
+    ) external payable whenNotPaused {
         uint256 selector = abi.decode(payload, (uint256));
         if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
             revert InvalidExpressSelector(selector);
@@ -494,7 +494,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external payable notPaused {
+    ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
@@ -506,7 +506,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external payable notPaused {
+    ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         uint32 prefix = 0;
@@ -764,8 +764,8 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction
      */
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
-        string memory destinationAddress = interchainRouter.getTrustedAddress(destinationChain);
-        if(bytes(destinationAddress).length == 0) revert UntrustedChain(destinationChain);
+        string memory destinationAddress = interchainAddressTracker.trustedAddress(destinationChain);
+        if (bytes(destinationAddress).length == 0) revert UntrustedChain(destinationChain);
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
                 address(this),

@@ -38,7 +38,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainRouter().chainName();
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainAddressTracker().chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 

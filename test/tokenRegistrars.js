@@ -94,9 +94,9 @@ describe('Token Registrsrs', () => {
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', destinationChain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), payload);
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
         it('Should transfer some tokens though the registrar as the deployer', async () => {
@@ -219,9 +219,9 @@ describe('Token Registrsrs', () => {
                     gasValue,
                 )
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), payload);
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
         it('Should initiate a remote standardized token deployment without the same distributor', async () => {
@@ -269,9 +269,9 @@ describe('Token Registrsrs', () => {
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), destinationChain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), gasValue, wallet.address)
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destinationChain, service.address.toLowerCase(), keccak256(payload), payload);
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
         it('Should fail initiate a remote standardized token deployment without the same distributor with a mintAmount', async () => {

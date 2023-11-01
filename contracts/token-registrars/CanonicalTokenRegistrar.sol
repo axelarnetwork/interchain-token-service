@@ -5,13 +5,12 @@ pragma solidity ^0.8.0;
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ICanonicalTokenRegistrar } from '../interfaces/ICanonicalTokenRegistrar.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
-
-import { Multicall } from '../utils/Multicall.sol';
 
 contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType, Multicall, Upgradable {
     using SafeTokenTransferFrom for IERC20;
@@ -25,7 +24,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainAddressTracker().chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
