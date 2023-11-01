@@ -21,10 +21,10 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 private constant CONTRACT_ID = keccak256('canonical-token-registrar');
 
-    constructor(address interchainTokenServiceAddress) {
-        if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
-        service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainAddressTracker().chainName();
+    constructor(address interchainTokenService) {
+        if (interchainTokenService == address(0)) revert ZeroAddress();
+        service = IInterchainTokenService(interchainTokenService);
+        string memory chainName_ = IInterchainTokenService(interchainTokenService).interchainAddressTracker().chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
@@ -50,7 +50,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
     }
 
     function deployAndRegisterRemoteCanonicalToken(bytes32 salt, string calldata destinationChain, uint256 gasValue) external payable {
-        // This ensures that the token manages has been deployed by this address, so it's safe to trust it.
+        // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
         bytes32 tokenId = service.customTokenId(address(this), salt);
         IERC20Named token = IERC20Named(service.tokenAddress(tokenId));
         // The 3 lines below will revert if the token manager does not exist.
