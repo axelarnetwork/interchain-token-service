@@ -8,6 +8,7 @@ import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/con
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IPausable } from './IPausable.sol';
 import { IMulticall } from './IMulticall.sol';
+import { IRemoteAddressValidator } from './IRemoteAddressValidator.sol';
 
 interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
@@ -81,6 +82,12 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         address mintTo
     );
     event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
+
+    /**
+     * @notice Returns the address of the token manager deployer contract.
+     * @return remoteAddressValidator_ The remoteAddressValidator.
+     */
+    function remoteAddressValidator() external view returns (IRemoteAddressValidator remoteAddressValidator_);
 
     /**
      * @notice Returns the address of the token manager deployer contract.
@@ -238,7 +245,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external;
+    ) external payable;
 
     function sendTokenWithData(
         bytes32 tokenId,
@@ -246,7 +253,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external;
+    ) external payable;
 
     /**
      * @notice Initiates an interchain token transfer. Only callable by TokenManagers

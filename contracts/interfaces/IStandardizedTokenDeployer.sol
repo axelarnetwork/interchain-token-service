@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import { Create3Deployer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Deployer.sol';
-
 /**
  * @title IStandardizedTokenDeployer
  * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.

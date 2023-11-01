@@ -18,7 +18,6 @@ import { IRemoteAddressValidator } from '../interfaces/IRemoteAddressValidator.s
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
@@ -475,13 +474,21 @@ contract InterchainTokenService is
         }
     }
 
+    /**
+     * @notice Transfer a token interchain.
+     * @param tokenId the tokenId for the token link.
+     * @param destinationChain the name of the chain to send the token to.
+     * @param destinationAddress the recipient of the interchain transfer.
+     * @param amount the amount of token to give.
+     * @param metadata the data to be passed to the destination. If provided with a bytes4(0) prefix, it'll execute the destination contract.
+     */
     function interchainTransfer(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external notPaused {
+    ) external payable notPaused {
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
@@ -493,7 +500,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external notPaused {
+    ) external payable notPaused {
         ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         uint32 prefix = 0;

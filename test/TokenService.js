@@ -7,6 +7,7 @@ const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
 const { defaultAbiCoder, solidityPack, keccak256, arrayify, hexlify } = ethers.utils;
 const { Contract, Wallet } = ethers;
+const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
 const Token = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
@@ -142,7 +143,9 @@ describe('Interchain Token Service', () => {
         const deploymentKey = 'interchainTokenService';
 
         before(async () => {
-            create3Deployer = await deployContract(wallet, 'Create3Deployer');
+            create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
+                .deploy()
+                .then((d) => d.deployed());
             gateway = await deployMockGateway(wallet);
             gasService = await deployGasService(wallet);
             tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
