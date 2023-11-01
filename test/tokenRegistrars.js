@@ -51,13 +51,13 @@ describe('Token Registrsrs', () => {
     });
 
     describe('Canonical Token Registrar', async () => {
-        let token, tokenId;
+        let token, tokenId, tokenManagerAddress;
         const tokenCap = BigInt(1e18);
 
         async function deployToken() {
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
             tokenId = await canonicalTokenRegistrar.getCanonicalTokenId(token.address);
-            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
         }
@@ -69,7 +69,7 @@ describe('Token Registrsrs', () => {
 
             await expect(canonicalTokenRegistrar.registerCanonicalToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params);
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
         });
 
         it('Should initiate a remote standardized token deployment', async () => {
@@ -86,7 +86,7 @@ describe('Token Registrsrs', () => {
 
             await expect(canonicalTokenRegistrar.registerCanonicalToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params);
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
             await expect(
                 canonicalTokenRegistrar.deployAndRegisterRemoteCanonicalToken(salt, destinationChain, gasValue, { value: gasValue }),
@@ -110,9 +110,9 @@ describe('Token Registrsrs', () => {
 
             await expect(canonicalTokenRegistrar.registerCanonicalToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params);
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
-            const tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
+            tokenManagerAddress = await service.getValidTokenManagerAddress(tokenId);
 
             await (await token.approve(canonicalTokenRegistrar.address, amount)).wait();
 
@@ -143,9 +143,9 @@ describe('Token Registrsrs', () => {
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
             await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
+                .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params)
+                .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
@@ -166,9 +166,9 @@ describe('Token Registrsrs', () => {
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
             await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
+                .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params)
+                .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
@@ -235,9 +235,9 @@ describe('Token Registrsrs', () => {
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
             await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
+                .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params)
+                .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
@@ -286,9 +286,9 @@ describe('Token Registrsrs', () => {
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
             await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
+                .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params)
+                .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(standardizedTokenRegistrar.address, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')

@@ -31,6 +31,7 @@ interface IStandardizedTokenDeployer {
      * @param decimals Decimals of the token
      * @param mintAmount Amount of tokens to mint initially
      * @param mintTo Address to mint initial tokens to
+     * @return tokenAddress Address of the deployed token
      */
     function deployStandardizedToken(
         bytes32 salt,
@@ -41,5 +42,5 @@ interface IStandardizedTokenDeployer {
         uint8 decimals,
         uint256 mintAmount,
         address mintTo
-    ) external payable;
+    ) external payable returns (address tokenAddress);
 }

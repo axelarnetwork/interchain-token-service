@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 
 abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
-    error NotService();
+    error NotService(address caller);
 
     address public immutable interchainTokenService;
 
@@ -16,7 +16,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
     }
 
     modifier onlyService() {
-        if (msg.sender != interchainTokenService) revert NotService();
+        if (msg.sender != interchainTokenService) revert NotService(msg.sender);
         _;
     }
 

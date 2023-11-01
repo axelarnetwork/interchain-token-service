@@ -12,11 +12,17 @@ const getGasOptions = () => {
 
 const isHardhat = network.name === 'hardhat';
 
-const expectRevert = async (txFunc, contract, error) => {
+const expectRevert = async (txFunc, contract, error, args) => {
     if (network.config.skipRevertTests) {
         await expect(txFunc(getGasOptions())).to.be.reverted;
     } else {
-        await expect(txFunc(null)).to.be.revertedWithCustomError(contract, error);
+        if (args) {
+            await expect(txFunc(null))
+                .to.be.revertedWithCustomError(contract, error)
+                .withArgs(...args);
+        } else {
+            await expect(txFunc(null)).to.be.revertedWithCustomError(contract, error);
+        }
     }
 };
 

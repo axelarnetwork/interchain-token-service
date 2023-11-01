@@ -13,21 +13,20 @@ import { IRemoteAddressValidator } from './IRemoteAddressValidator.sol';
 interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
     error LengthMismatch();
-    error InvalidTokenManagerImplementation();
+    error InvalidTokenManagerImplementationType(address implementation);
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
-    error NotTokenManager();
+    error NotTokenManager(address caller, address tokenManager);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
+    error InvalidCanonicalTokenId(bytes32 expectedCanonicalTokenId);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
-    error NotCanonicalTokenManager();
     error GatewayToken();
-    error TokenManagerDeploymentFailed();
-    error StandardizedTokenDeploymentFailed();
-    error DoesNotAcceptExpressExecute(address contractAddress);
-    error SelectorUnknown();
+    error TokenManagerDeploymentFailed(bytes error);
+    error StandardizedTokenDeploymentFailed(bytes error);
+    error SelectorUnknown(uint256 selector);
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
-    error InvalidExpressSelector();
+    error InvalidExpressSelector(uint256 selector);
 
     event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event TokenSentWithData(
@@ -71,9 +70,10 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         string destinationChain,
         uint256 indexed gasValue
     );
-    event TokenManagerDeployed(bytes32 indexed tokenId, TokenManagerType indexed tokenManagerType, bytes params);
+    event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
     event StandardizedTokenDeployed(
         bytes32 indexed tokenId,
+        address tokenAddress,
         address indexed distributor,
         string name,
         string symbol,

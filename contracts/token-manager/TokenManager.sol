@@ -35,7 +35,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @dev A modifier that allows only the interchain token service to execute the function.
      */
     modifier onlyService() {
-        if (msg.sender != address(interchainTokenService)) revert NotService();
+        if (msg.sender != address(interchainTokenService)) revert NotService(msg.sender);
         _;
     }
 
@@ -43,7 +43,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @dev A modifier that allows only the token to execute the function.
      */
     modifier onlyToken() {
-        if (msg.sender != tokenAddress()) revert NotToken();
+        if (msg.sender != tokenAddress()) revert NotToken(msg.sender);
         _;
     }
 
@@ -224,7 +224,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
     function setFlowLimit(uint256 flowLimit) external onlyRole(uint8(Roles.FLOW_LIMITER)) {
-        _setFlowLimit(flowLimit);
+        _setFlowLimit(flowLimit, tokenId());
     }
 
     /**
