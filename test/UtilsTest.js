@@ -29,7 +29,7 @@ describe('Operatable', () => {
 
     before(async () => {
         test = await deployContract(ownerWallet, 'OperatorableTest', [ownerWallet.address]);
-        operatorRole = await test.getOperatorRole();
+        operatorRole = await test.operatorRole();
     });
 
     it('Should calculate hardcoded constants correctly', async () => {
@@ -103,7 +103,7 @@ describe('Distributable', () => {
 
     before(async () => {
         test = await deployContract(ownerWallet, 'DistributableTest', [ownerWallet.address]);
-        distributorRole = await test.getDistributorRole();
+        distributorRole = await test.distributorRole();
     });
 
     it('Should calculate hardcoded constants correctly', async () => {
@@ -204,7 +204,7 @@ describe('FlowLimit', async () => {
     it('Should be able to set the flow limit', async () => {
         await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(tokenId, ownerWallet.address, flowLimit);
 
-        expect(await test.getFlowLimit()).to.equal(flowLimit);
+        expect(await test.flowLimit()).to.equal(flowLimit);
     });
 
     it('Should test flow in', async () => {
@@ -212,14 +212,14 @@ describe('FlowLimit', async () => {
 
         for (let i = 0; i < flowLimit; i++) {
             await (await test.addFlowIn(1)).wait();
-            expect(await test.getFlowInAmount()).to.equal(i + 1);
+            expect(await test.flowInAmount()).to.equal(i + 1);
         }
 
         await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
-        expect(await test.getFlowInAmount()).to.equal(0);
+        expect(await test.flowInAmount()).to.equal(0);
 
         await (await test.addFlowIn(flowLimit)).wait();
     });
@@ -229,14 +229,14 @@ describe('FlowLimit', async () => {
 
         for (let i = 0; i < flowLimit; i++) {
             await (await test.addFlowOut(1)).wait();
-            expect(await test.getFlowOutAmount()).to.equal(i + 1);
+            expect(await test.flowOutAmount()).to.equal(i + 1);
         }
 
         await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
-        expect(await test.getFlowOutAmount()).to.equal(0);
+        expect(await test.flowOutAmount()).to.equal(0);
 
         await (await test.addFlowOut(flowLimit)).wait();
     });
@@ -260,94 +260,6 @@ describe('Implementation', () => {
         expect(await proxy.val()).to.equal(val);
 
         await expectRevert((gasOptions) => implementation.setup(params, gasOptions), implementation, 'NotProxy');
-    });
-});
-
-describe('Mutlicall', () => {
-    let test;
-    let function1Data;
-    let function2Data;
-    let function3Data;
-
-    before(async () => {
-        test = await deployContract(ownerWallet, 'MulticallTest');
-        function1Data = (await test.populateTransaction.function1()).data;
-        function2Data = (await test.populateTransaction.function2()).data;
-        function3Data = (await test.populateTransaction.function3()).data;
-    });
-
-    it('Shoult test the multicall', async () => {
-        const nonce = Number(await test.nonce());
-
-        await expect(test.multicall([function1Data, function2Data, function2Data, function1Data]))
-            .to.emit(test, 'Function1Called')
-            .withArgs(nonce)
-            .and.to.emit(test, 'Function2Called')
-            .withArgs(nonce + 1)
-            .and.to.emit(test, 'Function2Called')
-            .withArgs(nonce + 2)
-            .and.to.emit(test, 'Function1Called')
-            .withArgs(nonce + 3);
-    });
-
-    it('Shoult test the multicall returns', async () => {
-        const nonce = Number(await test.nonce());
-
-        await expect(test.multicallTest([function2Data, function1Data, function2Data, function2Data]))
-            .to.emit(test, 'Function2Called')
-            .withArgs(nonce)
-            .and.to.emit(test, 'Function1Called')
-            .withArgs(nonce + 1)
-            .and.to.emit(test, 'Function2Called')
-            .withArgs(nonce + 2)
-            .and.to.emit(test, 'Function2Called')
-            .withArgs(nonce + 3);
-
-        const lastReturns = await test.getLastMulticallReturns();
-
-        for (let i = 0; i < lastReturns.length; i++) {
-            const val = Number(defaultAbiCoder.decode(['uint256'], lastReturns[i]));
-            expect(val).to.equal(nonce + i);
-        }
-    });
-
-    it('Shoult revert if any of the calls fail', async () => {
-        const nonce = Number(await test.nonce());
-
-        await expect(test.multicall([function1Data, function2Data, function3Data, function1Data]))
-            .to.emit(test, 'Function1Called')
-            .withArgs(nonce)
-            .and.to.emit(test, 'Function2Called')
-            .withArgs(nonce + 1).to.be.reverted;
-    });
-});
-
-describe('Pausable', () => {
-    let test;
-    before(async () => {
-        test = await deployContract(ownerWallet, 'PausableTest');
-    });
-
-    it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(ownerWallet, `TestPausable`, [])).to.not.be.reverted;
-    });
-
-    it('Should be able to set paused to true or false', async () => {
-        await expect(test.setPaused(true)).to.emit(test, 'PausedSet').withArgs(true);
-
-        expect(await test.isPaused()).to.equal(true);
-
-        await expect(test.setPaused(false)).to.emit(test, 'PausedSet').withArgs(false);
-
-        expect(await test.isPaused()).to.equal(false);
-    });
-
-    it('Should be able to execute notPaused functions only when not paused', async () => {
-        await expect(test.setPaused(false)).to.emit(test, 'PausedSet').withArgs(false);
-        await expect(test.testPaused()).to.emit(test, 'TestEvent');
-
-        await expect(test.setPaused(true)).to.emit(test, 'PausedSet').withArgs(true);
-        await expectRevert((gasOptions) => test.testPaused(gasOptions), test, 'Paused');
     });
 });
 
@@ -443,22 +355,6 @@ describe('StandardizedTokenDeployer', () => {
         it('Should convert address to bytes address', async () => {
             const convertedAddress = await addressBytesUtils.toBytes(ownerWallet.address);
             expect(convertedAddress).to.eq(hexlify(ownerWallet.address));
-        });
-    });
-
-    describe('NoReEntrancy', () => {
-        let noReEntrancy;
-
-        before(async () => {
-            noReEntrancy = await deployContract(ownerWallet, 'NoReEntrancyTest');
-        });
-
-        it('Should calculate hardcoded constants correctly', async () => {
-            await expect(deployContract(ownerWallet, `TestNoReEntrancy`, [])).to.not.be.reverted;
-        });
-
-        it('Should revert on reentrancy', async function () {
-            await expect(noReEntrancy.testFunction()).to.be.revertedWithCustomError(noReEntrancy, 'ReEntrancy');
         });
     });
 });

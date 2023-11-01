@@ -8,9 +8,9 @@ interface ICanonicalTokenRegistrar {
 
     function chainNameHash() external view returns (bytes32);
 
-    function getCanonicalTokenSalt(address tokenAddress) external view returns (bytes32 salt);
+    function canonicalTokenSalt(address tokenAddress) external view returns (bytes32 salt);
 
-    function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
+    function canonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
     function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId);
 

@@ -100,7 +100,7 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
 
     /**
      * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.
-     * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
+     * @param flowLimit_ the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
-    function setFlowLimit(uint256 flowLimit) external;
+    function setFlowLimit(uint256 flowLimit_) external;
 }

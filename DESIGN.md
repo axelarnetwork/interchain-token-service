@@ -30,9 +30,9 @@ Most projects that look to go cross-chain nowadays have more complex needs that 
 - Mint/Burn: This `TokenManager` will burn/mint tokens from/to the user to initiate/fulfill cross-chain transfers. Tokens used with this kind of `TokenManager` need to be properly permissioned to allow for this behavior.
 - Liquidity Pool: This `TokenManager` functions exactly like a Lock/Unlock one, except the balance is kept at a separate, pre-specified account. This allows for deployers to have more control over the bridged funds.
 
-## Linker Router
+## Interchain Address Tracker
 
-We plan to finalize the design of the `InterchainTokenService` but we want to be able to support new chains as they get added to the Axelar Network. For this purpose, the service will ask a separate contract, the [`RemoteAddressValidator`](./contracts/remoteAddressValidator/RemoteAddressValidator.sol) to obtain the destination address for outgoing messages, and for validation of incoming messages. This contract might eventually stop being upgradable but it will probably be able to support new addresses for new chains indefinitely.
+We plan to finalize the design of the `InterchainTokenService` but we want to be able to support new chains as they get added to the Axelar Network. For this purpose, the service will ask a separate contract, the [`InterchainAddressTracker`](https://github.com/axelarnetwork/axelar-gmp-sdk-solidity/blob/main/contracts/utils/InterchainAddressTracker.sol) to obtain the destination address for outgoing messages, and for validation of incoming messages.
 
 ## Interchain Token
 

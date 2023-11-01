@@ -14,9 +14,9 @@ interface ITokenManagerLiquidityPool is ITokenManager {
      * @param operator_ the operator of the TokenManager.
      * @param tokenAddress_ the token to be managed.
      * @param liquidityPool_ he address of the liquidity pool.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
+     * @return params_ the resulting params to be passed to custom TokenManager deployments.
      */
-    function getParams(bytes memory operator_, address tokenAddress_, address liquidityPool_) external pure returns (bytes memory params);
+    function params(bytes memory operator_, address tokenAddress_, address liquidityPool_) external pure returns (bytes memory params_);
 
     /**
      * @dev Reads the stored liquidity pool address from the specified storage slot

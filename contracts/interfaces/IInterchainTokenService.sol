@@ -4,11 +4,11 @@ pragma solidity ^0.8.0;
 
 import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarValuedExpressExecutable.sol';
 import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
+import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
+import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
+import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
-import { IPausable } from './IPausable.sol';
-import { IMulticall } from './IMulticall.sol';
-import { IRemoteAddressValidator } from './IRemoteAddressValidator.sol';
 
 interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExecutable, IPausable, IMulticall, IContractIdentifier {
     error ZeroAddress();
@@ -26,6 +26,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error SelectorUnknown(uint256 selector);
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
+    error UntrustedChain(string chainName);
     error InvalidExpressSelector(uint256 selector);
 
     event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
@@ -82,12 +83,13 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         address mintTo
     );
     event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
+    event PausedSet(bool indexed paused, address indexed msgSender);
 
     /**
-     * @notice Returns the address of the token manager deployer contract.
-     * @return remoteAddressValidator_ The remoteAddressValidator.
+     * @notice Returns the address of the interchain router contract.
+     * @return interchainAddressTracker_ The interchainAddressTracker.
      */
-    function remoteAddressValidator() external view returns (IRemoteAddressValidator remoteAddressValidator_);
+    function interchainAddressTracker() external view returns (IInterchainAddressTracker interchainAddressTracker_);
 
     /**
      * @notice Returns the address of the token manager deployer contract.
@@ -104,52 +106,52 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     /**
      * @notice Returns the address of the token manager associated with the given tokenId.
      * @param tokenId The tokenId of the token manager.
-     * @return tokenManagerAddress The address of the token manager.
+     * @return tokenManagerAddress_ The address of the token manager.
      */
-    function getTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
+    function tokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
 
     /**
      * @notice Returns the address of the valid token manager associated with the given tokenId.
      * @param tokenId The tokenId of the token manager.
-     * @return tokenManagerAddress The address of the valid token manager.
+     * @return tokenManagerAddress_ The address of the valid token manager.
      */
-    function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress);
+    function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
 
     /**
      * @notice Returns the address of the token associated with the given tokenId.
      * @param tokenId The tokenId of the token manager.
-     * @return tokenAddress The address of the token.
+     * @return tokenAddress_ The address of the token.
      */
-    function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
+    function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
 
     /**
      * @notice Returns the address of the standardized token associated with the given tokenId.
      * @param tokenId The tokenId of the standardized token.
-     * @return tokenAddress The address of the standardized token.
+     * @return tokenAddress_ The address of the standardized token.
      */
-    function getStandardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
+    function standardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
 
     /**
      * @notice Returns the canonical tokenId associated with the given tokenAddress.
-     * @param tokenAddress The address of the token.
+     * @param tokenAddress_ The address of the token.
      * @return tokenId The canonical tokenId associated with the tokenAddress.
      */
-    function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
+    function canonicalTokenId(address tokenAddress_) external view returns (bytes32 tokenId);
 
     /**
      * @notice Returns the custom tokenId associated with the given operator and salt.
-     * @param operator The operator address.
+     * @param operator_ The operator address.
      * @param salt The salt used for token id calculation.
      * @return tokenId The custom tokenId associated with the operator and salt.
      */
-    function getCustomTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId);
+    function customTokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId);
 
     /**
      * @notice Registers a canonical token and returns its associated tokenId.
-     * @param tokenAddress The address of the canonical token.
+     * @param tokenAddress_ The address of the canonical token.
      * @return tokenId The tokenId associated with the registered canonical token.
      */
-    function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId);
+    function registerCanonicalToken(address tokenAddress_) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Deploys a standardized canonical token on a remote chain.
@@ -235,9 +237,9 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     /**
      * @notice Returns the implementation address for a given token manager type.
      * @param tokenManagerType The type of token manager.
-     * @return tokenManagerAddress The address of the token manager implementation.
+     * @return tokenManagerAddress_ The address of the token manager implementation.
      */
-    function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress);
+    function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress_);
 
     function interchainTransfer(
         bytes32 tokenId,
@@ -283,23 +285,23 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     /**
      * @notice Returns the flow limit for a specific token.
      * @param tokenId The tokenId of the token.
-     * @return flowLimit The flow limit for the token.
+     * @return flowLimit_ The flow limit for the token.
      */
-    function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit);
+    function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_);
 
     /**
      * @notice Returns the total amount of outgoing flow for a specific token.
      * @param tokenId The tokenId of the token.
-     * @return flowOutAmount The total amount of outgoing flow for the token.
+     * @return flowOutAmount_ The total amount of outgoing flow for the token.
      */
-    function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount);
+    function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_);
 
     /**
      * @notice Returns the total amount of incoming flow for a specific token.
      * @param tokenId The tokenId of the token.
-     * @return flowInAmount The total amount of incoming flow for the token.
+     * @return flowInAmount_ The total amount of incoming flow for the token.
      */
-    function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount);
+    function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_);
 
     /**
      * @notice Sets the paused state of the contract.

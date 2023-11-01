@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
 import { ITokenManagerLockUnlock } from '../../interfaces/ITokenManagerLockUnlock.sol';
 import { TokenManager } from '../TokenManager.sol';
-import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
 
 /**
  * @title TokenManagerLockUnlock
@@ -15,7 +15,7 @@ import { NoReEntrancy } from '../../utils/NoReEntrancy.sol';
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerLockUnlock {
+contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManagerLockUnlock {
     using SafeTokenTransfer for IERC20;
     using SafeTokenTransferFrom for IERC20;
 
@@ -32,11 +32,11 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
 
     /**
      * @dev Sets up the token address.
-     * @param params The setup parameters in bytes. Should be encoded with the token address.
+     * @param params_ The setup parameters in bytes. Should be encoded with the token address.
      */
-    function _setup(bytes calldata params) internal override {
+    function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
-        (, address tokenAddress_) = abi.decode(params, (bytes, address));
+        (, address tokenAddress_) = abi.decode(params_, (bytes, address));
         _setTokenAddress(tokenAddress_);
     }
 
@@ -84,9 +84,9 @@ contract TokenManagerLockUnlockFee is TokenManager, NoReEntrancy, ITokenManagerL
      * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
      * @param operator_ the operator of the TokenManager.
      * @param tokenAddress_ the token to be managed.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
+     * @return params_ the resulting params to be passed to custom TokenManager deployments.
      */
-    function getParams(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params) {
-        params = abi.encode(operator_, tokenAddress_);
+    function params(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params_) {
+        params_ = abi.encode(operator_, tokenAddress_);
     }
 }
