@@ -5,23 +5,23 @@ pragma solidity ^0.8.0;
 interface IFlowLimit {
     error FlowLimitExceeded(uint256 limit, uint256 flowAmount);
 
-    event FlowLimitSet(bytes32 indexed tokenId, address operator, uint256 flowLimit);
+    event FlowLimitSet(bytes32 indexed tokenId, address operator, uint256 flowLimit_);
 
     /**
      * @notice Returns the current flow limit
-     * @return flowLimit The current flow limit value
+     * @return flowLimit_ The current flow limit value
      */
-    function flowLimit() external view returns (uint256 flowLimit);
+    function flowLimit() external view returns (uint256 flowLimit_);
 
     /**
      * @notice Returns the current flow out amount
-     * @return flowOutAmount The current flow out amount
+     * @return flowOutAmount_ The current flow out amount
      */
-    function flowOutAmount() external view returns (uint256 flowOutAmount);
+    function flowOutAmount() external view returns (uint256 flowOutAmount_);
 
     /**
      * @notice Returns the current flow in amount
-     * @return flowInAmount The current flow in amount
+     * @return flowInAmount_ The current flow in amount
      */
-    function flowInAmount() external view returns (uint256 flowInAmount);
+    function flowInAmount() external view returns (uint256 flowInAmount_);
 }
