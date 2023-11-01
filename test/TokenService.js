@@ -397,11 +397,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on get token manager if token manager does not exist', async () => {
-            await expectRevert(
-                (gasOptions) => service.validTokenManagerAddress(tokenId, gasOptions),
-                service,
-                'TokenManagerDoesNotExist',
-            );
+            await expectRevert((gasOptions) => service.validTokenManagerAddress(tokenId, gasOptions), service, 'TokenManagerDoesNotExist');
         });
 
         it('Should register a canonical token', async () => {
