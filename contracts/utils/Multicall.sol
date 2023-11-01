@@ -28,7 +28,7 @@ contract Multicall is IMulticall {
             (success, result) = address(this).delegatecall(data[i]);
 
             if (!success) {
-                revert(string(result));
+                revert MulticallFailed(result);
             }
 
             results[i] = result;

@@ -5,16 +5,18 @@ pragma solidity ^0.8.0;
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 
 abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
-    error NotService();
+    error NotService(address caller);
 
     address public immutable interchainTokenService;
+
+    bytes32 internal constant EXECUTE_SUCCESS = keccak256('its-execute-success');
 
     constructor(address interchainTokenService_) {
         interchainTokenService = interchainTokenService_;
     }
 
     modifier onlyService() {
-        if (msg.sender != interchainTokenService) revert NotService();
+        if (msg.sender != interchainTokenService) revert NotService(msg.sender);
         _;
     }
 
@@ -25,8 +27,9 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
         bytes32 tokenId,
         address token,
         uint256 amount
-    ) external onlyService {
+    ) external virtual onlyService returns (bytes32) {
         _executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, token, amount);
+        return EXECUTE_SUCCESS;
     }
 
     function _executeWithInterchainToken(

@@ -26,5 +26,5 @@ interface IInterchainTokenExpressExecutable is IInterchainTokenExecutable {
         bytes32 tokenId,
         address token,
         uint256 amount
-    ) external;
+    ) external returns (bytes32);
 }

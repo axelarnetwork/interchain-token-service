@@ -2,23 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-/**
- * @title IOperatable Interface
- * @notice This interface defines functions for managing operator roles in a contract.
- */
-interface IOperatable {
-    error NotOperator();
-    error NotProposedOperator();
+import { IRolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IRolesBase.sol';
 
-    event OperatorshipTransferred(address indexed operator);
-    event OperatorChangeProposed(address indexed operator);
-
-    /**
-     * @notice Get the address of the operator.
-     * @return operator_ The operator of the contract.
-     */
-    function operator() external view returns (address operator_);
-
+interface IOperatable is IRolesBase {
     /**
      * @notice Change the operator of the contract.
      * @dev Can only be called by the current operator.
@@ -37,5 +23,11 @@ interface IOperatable {
      * @notice Accept a proposed change of operatorship.
      * @dev Can only be called by the proposed operator.
      */
-    function acceptOperatorship() external;
+    function acceptOperatorship(address fromOperator) external;
+
+    /**
+     * @notice Query if an address is a operator
+     * @param addr the address to query for
+     */
+    function isOperator(address addr) external view returns (bool);
 }

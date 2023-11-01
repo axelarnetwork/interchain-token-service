@@ -2,25 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-/**
- * @title IDistributable Interface
- * @dev An interface which provides functions for a basic access control mechanism, where
- * there is an account (a distributor) that can be granted exclusive access to
- * specific functions.
- */
-interface IDistributable {
-    error NotDistributor();
-    error NotProposedDistributor();
+import { IRolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IRolesBase.sol';
 
-    event DistributorshipTransferred(address indexed distributor);
-    event DistributorshipTransferStarted(address indexed distributor);
-
-    /**
-     * @notice Get the address of the distributor.
-     * @return distributor_ The address of the distributor.
-     */
-    function distributor() external view returns (address distributor_);
-
+interface IDistributable is IRolesBase {
     /**
      * @notice Change the distributor of the contract.
      * @dev Can only be called by the current distributor.
@@ -39,5 +23,11 @@ interface IDistributable {
      * @notice Accept a change of the distributor of the contract.
      * @dev Can only be called by the proposed distributor.
      */
-    function acceptDistributorship() external;
+    function acceptDistributorship(address fromDistributor) external;
+
+    /**
+     * @notice Query if an address is a distributor
+     * @param addr the address to query for
+     */
+    function isDistributor(address addr) external view returns (bool);
 }

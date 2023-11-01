@@ -4,47 +4,23 @@ pragma solidity ^0.8.0;
 
 import { IOperatable } from '../interfaces/IOperatable.sol';
 
+import { RolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/RolesBase.sol';
+import { RolesConstants } from './RolesConstants.sol';
+
 /**
  * @title Operatable Contract
  * @notice A contract module which provides a basic access control mechanism, where
- * there is an account (an operator) that can be granted exclusive access to
+ * there is an account (a operator) that can be granted exclusive access to
  * specific functions.
  * @dev This module is used through inheritance.
  */
-contract Operatable is IOperatable {
-    // uint256(keccak256('operator')) - 1
-    uint256 internal constant OPERATOR_SLOT = 0x46a52cf33029de9f84853745a87af28464c80bf0346df1b32e205fc73319f621;
-    // uint256(keccak256('proposed-operator')) - 1
-    uint256 internal constant PROPOSED_OPERATOR_SLOT = 0x18dd7104fe20f6107b1523000995e8f87ac02b734a65cf0a45fafa7635a2c526;
-
+contract Operatable is IOperatable, RolesBase, RolesConstants {
     /**
-     * @notice Modifier for functions that should only be called by an operator.
-     * @dev Throws a NotOperator custom error if called by any account other than the operator.
+     * @dev Internal function that stores the new operator address in the correct storage slot
+     * @param operator_ The address of the new operator
      */
-    modifier onlyOperator() {
-        if (operator() != msg.sender) revert NotOperator();
-        _;
-    }
-
-    /**
-     * @notice Gets the address of the operator.
-     * @return operator_ The address of the operator.
-     */
-    function operator() public view returns (address operator_) {
-        assembly {
-            operator_ := sload(OPERATOR_SLOT)
-        }
-    }
-
-    /**
-     * @dev Internal function that stores the new operator address in the operator storage slot.
-     * @param operator_ The address of the new operator.
-     */
-    function _setOperator(address operator_) internal {
-        assembly {
-            sstore(OPERATOR_SLOT, operator_)
-        }
-        emit OperatorshipTransferred(operator_);
+    function _addOperator(address operator_) internal {
+        _addRole(operator_, uint8(Roles.OPERATOR));
     }
 
     /**
@@ -52,8 +28,8 @@ contract Operatable is IOperatable {
      * @dev Can only be called by the current operator.
      * @param operator_ The address of the new operator.
      */
-    function transferOperatorship(address operator_) external onlyOperator {
-        _setOperator(operator_);
+    function transferOperatorship(address operator_) external onlyRole(uint8(Roles.OPERATOR)) {
+        _transferRole(msg.sender, operator_, uint8(Roles.OPERATOR));
     }
 
     /**
@@ -61,24 +37,23 @@ contract Operatable is IOperatable {
      * @dev Can only be called by the current operator.
      * @param operator_ The address of the new operator.
      */
-    function proposeOperatorship(address operator_) external onlyOperator {
-        assembly {
-            sstore(PROPOSED_OPERATOR_SLOT, operator_)
-        }
-        emit OperatorChangeProposed(operator_);
+    function proposeOperatorship(address operator_) external onlyRole(uint8(Roles.OPERATOR)) {
+        _proposeRole(msg.sender, operator_, uint8(Roles.OPERATOR));
     }
 
     /**
      * @notice Accept a proposed change of operatorship.
      * @dev Can only be called by the proposed operator.
      */
-    function acceptOperatorship() external {
-        address proposedOperator;
-        assembly {
-            proposedOperator := sload(PROPOSED_OPERATOR_SLOT)
-            sstore(PROPOSED_OPERATOR_SLOT, 0)
-        }
-        if (msg.sender != proposedOperator) revert NotProposedOperator();
-        _setOperator(proposedOperator);
+    function acceptOperatorship(address fromOperator) external {
+        _acceptRole(fromOperator, msg.sender, uint8(Roles.OPERATOR));
+    }
+
+    /**
+     * @notice Query if an address is an operator
+     * @param addr the address to query for
+     */
+    function isOperator(address addr) external view returns (bool) {
+        return hasRole(addr, uint8(Roles.OPERATOR));
     }
 }

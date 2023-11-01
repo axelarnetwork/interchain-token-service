@@ -5,25 +5,24 @@ const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero } = ethers.constants;
-const { defaultAbiCoder, keccak256 } = ethers.utils;
+const { defaultAbiCoder, keccak256, hexlify } = ethers.utils;
 const { Contract, Wallet } = ethers;
 
-const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
+const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
 
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
-const SELECTOR_SEND_TOKEN = 1;
+const SELECTOR_RECEIVE_TOKEN = 1;
 const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
 const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
+const DISTRIBUTOR_ROLE = 0;
+
 const MINT_BURN = 0;
-// const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
-// const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
-// const LIQUIDITY_POOL = 4;
 
 describe('Interchain Token Service Full Flow', () => {
     let wallet;
@@ -70,9 +69,10 @@ describe('Interchain Token Service Full Flow', () => {
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
             );
+            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, LOCK_UNLOCK, params)
+                .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -94,8 +94,8 @@ describe('Interchain Token Service Full Flow', () => {
             const gasValue = 6789;
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 
@@ -122,10 +122,20 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress))
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(newAddress, 1 << DISTRIBUTOR_ROLE);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
         });
     });
 
@@ -139,7 +149,7 @@ describe('Interchain Token Service Full Flow', () => {
         before(async () => {
             tokenId = await service.getCustomTokenId(wallet.address, salt);
             const tokenAddress = await service.getStandardizedTokenAddress(tokenId);
-            token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
+            token = new Contract(tokenAddress, StandardizedToken.abi, wallet);
             const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
         });
@@ -180,11 +190,13 @@ describe('Interchain Token Service Full Flow', () => {
             );
             const tx = service.multicall(data, { value });
 
+            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const expectedTokenAddress = await service.getStandardizedTokenAddress(tokenId);
             await expect(tx)
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(tokenId, wallet.address, name, symbol, decimals, tokenCap, wallet.address)
+                .withArgs(tokenId, expectedTokenAddress, wallet.address, name, symbol, decimals, tokenCap, wallet.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params)
+                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), otherChains[0], gasValues[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -206,8 +218,8 @@ describe('Interchain Token Service Full Flow', () => {
             const gasValue = 6789;
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 
@@ -223,6 +235,7 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         // For this test the token must be a standardized token (or a distributable token in general)
+        // TODO no token is deployed so how will mint and burn work?
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
@@ -230,10 +243,20 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress)).to.emit(token, 'DistributorshipTransferred').withArgs(newAddress);
+            await expect(token.transferDistributorship(newAddress))
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(newAddress, 1 << DISTRIBUTOR_ROLE);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
         });
     });
 
@@ -279,9 +302,10 @@ describe('Interchain Token Service Full Flow', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
             );
+            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, MINT_BURN, params)
+                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
                 .withArgs(tokenId, otherChains[0], gasValues[0], MINT_BURN, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -305,11 +329,19 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
             await expect(token.transferDistributorship(tokenManager.address))
-                .to.emit(token, 'DistributorshipTransferred')
-                .withArgs(tokenManager.address);
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(tokenManager.address, 1 << DISTRIBUTOR_ROLE);
 
-            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'NotDistributor');
-            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'NotDistributor');
+            await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
+            await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole', [
+                wallet.address,
+                DISTRIBUTOR_ROLE,
+            ]);
         });
 
         // In order to be able to receive tokens the distributorship should be changed on other chains as well.
@@ -320,8 +352,8 @@ describe('Interchain Token Service Full Flow', () => {
             const gasValue = 6789;
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [SELECTOR_SEND_TOKEN, tokenId, destAddress, amount],
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 

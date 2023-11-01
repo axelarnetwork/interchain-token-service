@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
+import { IImplementation } from '../interfaces/IImplementation.sol';
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
@@ -27,14 +27,6 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
 
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
-    modifier onlyDistributorOrTokenManager() {
-        if (msg.sender != tokenManager_) {
-            if (msg.sender != distributor()) revert NotDistributor();
-        }
-
-        _;
-    }
-
     /**
      * @notice Getter for the contract id.
      * @return bytes32 The contract id.
@@ -47,7 +39,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @notice Returns the token manager for this token.
      * @return ITokenManager The token manager contract.
      */
-    function tokenManager() public view override(InterchainToken, IInterchainToken) returns (ITokenManager) {
+    function tokenManager() public view override(InterchainToken, IStandardizedToken) returns (ITokenManager) {
         return ITokenManager(tokenManager_);
     }
 
@@ -56,7 +48,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @dev      * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo.
      * @param params The setup parameters in bytes.
      */
-    function setup(bytes calldata params) external override onlyProxy {
+    function setup(bytes calldata params) external override(IImplementation, IStandardizedToken) onlyProxy {
         {
             address distributor_;
             address tokenManagerAddress;
@@ -72,7 +64,8 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
             tokenManager_ = tokenManagerAddress;
             name = tokenName;
 
-            _setDistributor(distributor_);
+            _addDistributor(distributor_);
+            _addDistributor(tokenManagerAddress);
             _setNameHash(tokenName);
         }
         {
@@ -92,7 +85,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @param account The address that will receive the minted tokens.
      * @param amount The amount of tokens to mint.
      */
-    function mint(address account, uint256 amount) external onlyDistributorOrTokenManager {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _mint(account, amount);
     }
 
@@ -102,7 +95,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @param account The address that will have its tokens burnt.
      * @param amount The amount of tokens to burn.
      */
-    function burn(address account, uint256 amount) external onlyDistributorOrTokenManager {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _burn(account, amount);
     }
 }
