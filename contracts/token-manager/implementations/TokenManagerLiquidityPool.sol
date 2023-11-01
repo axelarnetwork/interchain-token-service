@@ -32,7 +32,7 @@ contract TokenManagerLiquidityPool is TokenManager, NoReEntrancy, ITokenManagerL
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
-        revert(NotSupported());
+        revert NotSupported();
     }
 
     /**
