@@ -164,6 +164,7 @@ describe('Token Registrsrs', () => {
             let params = defaultAbiCoder.encode(['bytes', 'address'], [standardizedTokenRegistrar.address, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
+
             await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
                 .to.emit(service, 'StandardizedTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
@@ -186,7 +187,7 @@ describe('Token Registrsrs', () => {
                     symbol,
                     decimals,
                     wallet.address.toLowerCase(),
-                    '0x',
+                    wallet.address.toLowerCase(),
                     mintAmount,
                     wallet.address.toLowerCase(),
                 ],
@@ -212,7 +213,7 @@ describe('Token Registrsrs', () => {
                     symbol,
                     decimals,
                     wallet.address.toLowerCase(),
-                    '0x',
+                    wallet.address.toLowerCase(),
                     mintAmount,
                     wallet.address.toLowerCase(),
                     destinationChain,
