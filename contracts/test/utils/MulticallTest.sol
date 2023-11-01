@@ -23,7 +23,7 @@ contract MulticallTest is Multicall {
     }
 
     function function3() external pure {
-        // solhint-disable-next-line reason-string
+        // solhint-disable-next-line reason-string,custom-errors
         revert();
     }
 

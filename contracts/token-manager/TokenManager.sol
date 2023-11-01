@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
 import { Operatable } from '../utils/Operatable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
@@ -86,10 +85,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
             operator_ = operatorBytes.toAddress();
         }
 
-        uint8[] memory roles = new uint8[](2);
-        roles[0] = uint8(Roles.FLOW_LIMITER);
-        roles[1] = uint8(Roles.OPERATOR);
-        _addRoles(operator_, roles);
+        _addAccountRoles(operator_, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
         _setup(params);
     }
 
@@ -205,10 +201,10 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      */
     function addFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
         if (flowLimiter == address(0)) revert ZeroAddress();
+
         if (hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert AlreadyFlowLimiter(flowLimiter);
-        uint8[] memory roles = new uint8[](1);
-        roles[0] = uint8(Roles.FLOW_LIMITER);
-        _addRoles(flowLimiter, roles);
+
+        _addRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
     }
 
     /**
@@ -217,10 +213,10 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      */
     function removeFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
         if (flowLimiter == address(0)) revert ZeroAddress();
+
         if (!hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert NotFlowLimiter(flowLimiter);
-        uint8[] memory roles = new uint8[](1);
-        roles[0] = uint8(Roles.FLOW_LIMITER);
-        _removeRoles(flowLimiter, roles);
+
+        _removeRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
     }
 
     /**

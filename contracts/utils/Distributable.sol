@@ -19,9 +19,7 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
      * @param distributor_ The address of the new distributor
      */
     function _addDistributor(address distributor_) internal {
-        uint8[] memory roles = new uint8[](1);
-        roles[0] = uint8(Roles.DISTRIBUTOR);
-        _addRoles(distributor_, roles);
+        _addRole(distributor_, uint8(Roles.DISTRIBUTOR));
     }
 
     /**
@@ -30,9 +28,7 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
      * @param distributor_ The address of the new distributor
      */
     function transferDistributorship(address distributor_) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
-        uint8[] memory roles = new uint8[](1);
-        roles[0] = uint8(Roles.DISTRIBUTOR);
-        _transferRoles(msg.sender, distributor_, roles);
+        _transferRole(msg.sender, distributor_, uint8(Roles.DISTRIBUTOR));
     }
 
     /**
@@ -41,9 +37,7 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
      * @param distributor_ The address of the new distributor
      */
     function proposeDistributorship(address distributor_) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
-        uint8[] memory roles = new uint8[](1);
-        roles[0] = uint8(Roles.DISTRIBUTOR);
-        _proposeRoles(msg.sender, distributor_, roles);
+        _proposeRole(msg.sender, distributor_, uint8(Roles.DISTRIBUTOR));
     }
 
     /**
@@ -51,9 +45,7 @@ contract Distributable is IDistributable, RolesBase, RolesConstants {
      * @dev Can only be called by the proposed distributor
      */
     function acceptDistributorship(address fromDistributor) external {
-        uint8[] memory roles = new uint8[](1);
-        roles[0] = uint8(Roles.DISTRIBUTOR);
-        _acceptRoles(fromDistributor, msg.sender, roles);
+        _acceptRole(fromDistributor, msg.sender, uint8(Roles.DISTRIBUTOR));
     }
 
     /**
