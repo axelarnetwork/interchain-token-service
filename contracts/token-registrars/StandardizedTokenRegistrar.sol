@@ -149,7 +149,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             tokenSymbol,
             tokenDecimals,
             distributor,
-            '',
+            distributor,
             mintAmount,
             operator,
             destinationChain,
