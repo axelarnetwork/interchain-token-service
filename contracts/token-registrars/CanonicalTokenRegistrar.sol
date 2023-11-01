@@ -2,16 +2,20 @@
 
 pragma solidity ^0.8.0;
 
-import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
+import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ICanonicalTokenRegistrar } from '../interfaces/ICanonicalTokenRegistrar.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
+import { Multicall } from '../utils/Multicall.sol';
 
 contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType, Multicall, Upgradable {
+    using SafeTokenTransferFrom for IERC20;
+
     IInterchainTokenService public immutable service;
     bytes32 public immutable chainNameHash;
 
@@ -21,7 +25,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainRouter().chainName();
+        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).remoteAddressValidator().chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
@@ -68,5 +72,27 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
             destinationChain,
             gasValue
         );
+    }
+
+    function transferCanonicalToken(
+        address tokenAddress,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        uint256 gasValue
+    ) external payable {
+        // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
+        bytes32 tokenId = getCanonicalTokenId(tokenAddress);
+        // slither-disable-next-line unused-return
+        service.getValidTokenManagerAddress(tokenId);
+        IERC20 token = IERC20(tokenAddress);
+
+        token.safeTransferFrom(msg.sender, address(this), amount);
+
+        address tokenManagerAddress = service.getTokenManagerAddress(tokenId);
+        if (!token.approve(tokenManagerAddress, amount)) revert ApproveFailed();
+
+        // slither-disable-next-line arbitrary-send-eth
+        service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, bytes(''));
     }
 }

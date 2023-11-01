@@ -34,6 +34,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
      * @param decimals Decimals of the token
      * @param mintAmount Amount of tokens to mint initially
      * @param mintTo Address to mint initial tokens to
+     * @return tokenAddress Address of the deployed token
      */
     // slither-disable-next-line locked-ether
     function deployStandardizedToken(
@@ -45,12 +46,12 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
         uint8 decimals,
         uint256 mintAmount,
         address mintTo
-    ) external payable {
+    ) external payable returns (address tokenAddress) {
         bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
         // slither-disable-next-line too-many-digits
         bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
 
-        address tokenAddress = _create3(bytecode, salt);
+        tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
     }
 

@@ -8,7 +8,7 @@ const { Wallet, Contract } = ethers;
 const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, arrayify, toUtf8Bytes, hexlify } = ethers.utils;
 const { expect } = chai;
-const { getRandomBytes32, expectRevert } = require('./utils');
+const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 const ImplemenationTest = require('../artifacts/contracts/test/utils/ImplementationTest.sol/ImplementationTest.json');
@@ -43,7 +43,10 @@ describe('Operatable', () => {
     });
 
     it('Should not be able to run the onlyOperatorable function as not the operator', async () => {
-        await expectRevert((gasOptions) => test.connect(otherWallet).testOperatorable(gasOptions), test, 'MissingRole');
+        await expectRevert((gasOptions) => test.connect(otherWallet).testOperatorable(gasOptions), test, 'MissingRole', [
+            otherWallet.address,
+            operatorRole,
+        ]);
     });
 
     it('Should be able to change the operator only as the operator', async () => {
@@ -51,23 +54,29 @@ describe('Operatable', () => {
 
         await expect(test.transferOperatorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(ownerWallet.address, [operatorRole])
+            .withArgs(ownerWallet.address, 1 << operatorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(otherWallet.address, [operatorRole]);
+            .withArgs(otherWallet.address, 1 << operatorRole);
 
         expect(await test.hasRole(otherWallet.address, operatorRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.transferOperatorship(otherWallet.address, gasOptions), test, 'MissingRole');
+        await expectRevert((gasOptions) => test.transferOperatorship(otherWallet.address, gasOptions), test, 'MissingRole', [
+            ownerWallet.address,
+            operatorRole,
+        ]);
     });
 
     it('Should be able to propose operator only as the operator', async () => {
         expect(await test.hasRole(otherWallet.address, operatorRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.proposeOperatorship(ownerWallet.address, gasOptions), test, 'MissingRole');
+        await expectRevert((gasOptions) => test.proposeOperatorship(ownerWallet.address, gasOptions), test, 'MissingRole', [
+            ownerWallet.address,
+            operatorRole,
+        ]);
 
         await expect(test.connect(otherWallet).proposeOperatorship(ownerWallet.address))
             .to.emit(test, 'RolesProposed')
-            .withArgs(otherWallet.address, ownerWallet.address, [operatorRole]);
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << operatorRole);
     });
 
     it('Should be able to accept operatorship only as proposed operator', async () => {
@@ -77,13 +86,14 @@ describe('Operatable', () => {
             (gasOptions) => test.connect(otherWallet).acceptOperatorship(otherWallet.address, gasOptions),
             test,
             'InvalidProposedRoles',
+            [otherWallet.address, otherWallet.address, 1 << operatorRole],
         );
 
         await expect(test.connect(ownerWallet).acceptOperatorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(otherWallet.address, [operatorRole])
+            .withArgs(otherWallet.address, 1 << operatorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(ownerWallet.address, [operatorRole]);
+            .withArgs(ownerWallet.address, 1 << operatorRole);
     });
 });
 
@@ -107,7 +117,10 @@ describe('Distributable', () => {
     });
 
     it('Should not be able to run the onlyDistributor function as not the distributor', async () => {
-        await expectRevert((gasOptions) => test.connect(otherWallet).testDistributable(gasOptions), test, 'MissingRole');
+        await expectRevert((gasOptions) => test.connect(otherWallet).testDistributable(gasOptions), test, 'MissingRole', [
+            otherWallet.address,
+            distributorRole,
+        ]);
     });
 
     it('Should be able to change the distributor only as the distributor', async () => {
@@ -115,13 +128,16 @@ describe('Distributable', () => {
 
         await expect(test.transferDistributorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(ownerWallet.address, [distributorRole])
+            .withArgs(ownerWallet.address, 1 << distributorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(otherWallet.address, [distributorRole]);
+            .withArgs(otherWallet.address, 1 << distributorRole);
 
         expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.transferDistributorship(otherWallet.address, gasOptions), test, 'MissingRole');
+        await expectRevert((gasOptions) => test.transferDistributorship(otherWallet.address, gasOptions), test, 'MissingRole', [
+            ownerWallet.address,
+            distributorRole,
+        ]);
     });
 
     it('Should be able to propose a new distributor only as distributor', async () => {
@@ -131,11 +147,12 @@ describe('Distributable', () => {
             (gasOptions) => test.connect(ownerWallet).proposeDistributorship(ownerWallet.address, gasOptions),
             test,
             'MissingRole',
+            [ownerWallet.address, distributorRole],
         );
 
         await expect(test.connect(otherWallet).proposeDistributorship(ownerWallet.address))
             .to.emit(test, 'RolesProposed')
-            .withArgs(otherWallet.address, ownerWallet.address, [distributorRole]);
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << distributorRole);
     });
 
     it('Should be able to accept distributorship only as the proposed distributor', async () => {
@@ -149,76 +166,35 @@ describe('Distributable', () => {
 
         await expect(test.connect(ownerWallet).acceptDistributorship(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(otherWallet.address, [distributorRole])
+            .withArgs(otherWallet.address, 1 << distributorRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(ownerWallet.address, [distributorRole]);
-    });
-});
-
-describe('ExpressCallHandler', () => {
-    let handler;
-    const expressCaller = new Wallet(getRandomBytes32()).address;
-    const payload = '0x5678';
-
-    before(async () => {
-        handler = await deployContract(ownerWallet, 'ExpressCallHandlerTest');
-    });
-
-    it('Should be able to set an express receive token', async () => {
-        const commandId = getRandomBytes32();
-
-        await expect(handler.setExpressReceiveToken(payload, commandId, expressCaller))
-            .to.emit(handler, 'ExpressReceive')
-            .withArgs(payload, commandId, expressCaller);
-
-        expect(await handler.getExpressReceiveToken(payload, commandId)).to.equal(expressCaller);
-    });
-
-    it('Should not be able to set an express receive token if it is already set', async () => {
-        const commandId = getRandomBytes32();
-        await expect(handler.setExpressReceiveToken(payload, commandId, expressCaller))
-            .to.emit(handler, 'ExpressReceive')
-            .withArgs(payload, commandId, expressCaller);
-        expect(await handler.getExpressReceiveToken(payload, commandId)).to.equal(expressCaller);
-
-        const newExpressCaller = new Wallet(getRandomBytes32()).address;
-        await expectRevert(
-            (gasOptions) => handler.setExpressReceiveToken(payload, commandId, newExpressCaller, gasOptions),
-            handler,
-            'AlreadyExpressCalled',
-        );
-    });
-
-    it('Should properly pop an express receive token', async () => {
-        const commandId = getRandomBytes32();
-        await expect(handler.popExpressReceiveToken(payload, commandId)).to.not.emit(handler, 'ExpressExecutionFulfilled');
-
-        expect(await handler.lastPoppedExpressCaller()).to.equal(AddressZero);
-
-        await (await handler.setExpressReceiveToken(payload, commandId, expressCaller)).wait();
-
-        await expect(handler.popExpressReceiveToken(payload, commandId))
-            .to.emit(handler, 'ExpressExecutionFulfilled')
-            .withArgs(payload, commandId, expressCaller);
-
-        expect(await handler.lastPoppedExpressCaller()).to.equal(expressCaller);
+            .withArgs(ownerWallet.address, 1 << distributorRole);
     });
 });
 
 describe('FlowLimit', async () => {
     let test;
-    const flowLimit = 5;
+    let tokenId;
+    const flowLimit = isHardhat ? 5 : 2;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'FlowLimitTest');
+        test = isHardhat
+            ? await deployContract(ownerWallet, 'FlowLimitTest')
+            : await deployContract(ownerWallet, 'FlowLimitTestLiveNetwork');
+        tokenId = await test.TOKEN_ID();
     });
 
     async function nextEpoch() {
-        const latest = Number(await time.latest());
-        const epoch = 6 * 3600;
-        const next = (Math.floor(latest / epoch) + 1) * epoch;
+        const epoch = isHardhat ? 6 * 3600 : 60;
 
-        await time.increaseTo(next);
+        if (isHardhat) {
+            const latest = Number(await time.latest());
+            const next = (Math.floor(latest / epoch) + 1) * epoch;
+
+            await time.increaseTo(next);
+        } else {
+            await waitFor(epoch);
+        }
     }
 
     it('Should calculate hardcoded constants correctly', async () => {
@@ -226,7 +202,7 @@ describe('FlowLimit', async () => {
     });
 
     it('Should be able to set the flow limit', async () => {
-        await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(flowLimit);
+        await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(tokenId, ownerWallet.address, flowLimit);
 
         expect(await test.getFlowLimit()).to.equal(flowLimit);
     });
@@ -239,7 +215,7 @@ describe('FlowLimit', async () => {
             expect(await test.getFlowInAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded');
+        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
@@ -256,7 +232,7 @@ describe('FlowLimit', async () => {
             expect(await test.getFlowOutAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded');
+        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
@@ -284,6 +260,94 @@ describe('Implementation', () => {
         expect(await proxy.val()).to.equal(val);
 
         await expectRevert((gasOptions) => implementation.setup(params, gasOptions), implementation, 'NotProxy');
+    });
+});
+
+describe('Mutlicall', () => {
+    let test;
+    let function1Data;
+    let function2Data;
+    let function3Data;
+
+    before(async () => {
+        test = await deployContract(ownerWallet, 'MulticallTest');
+        function1Data = (await test.populateTransaction.function1()).data;
+        function2Data = (await test.populateTransaction.function2()).data;
+        function3Data = (await test.populateTransaction.function3()).data;
+    });
+
+    it('Shoult test the multicall', async () => {
+        const nonce = Number(await test.nonce());
+
+        await expect(test.multicall([function1Data, function2Data, function2Data, function1Data]))
+            .to.emit(test, 'Function1Called')
+            .withArgs(nonce)
+            .and.to.emit(test, 'Function2Called')
+            .withArgs(nonce + 1)
+            .and.to.emit(test, 'Function2Called')
+            .withArgs(nonce + 2)
+            .and.to.emit(test, 'Function1Called')
+            .withArgs(nonce + 3);
+    });
+
+    it('Shoult test the multicall returns', async () => {
+        const nonce = Number(await test.nonce());
+
+        await expect(test.multicallTest([function2Data, function1Data, function2Data, function2Data]))
+            .to.emit(test, 'Function2Called')
+            .withArgs(nonce)
+            .and.to.emit(test, 'Function1Called')
+            .withArgs(nonce + 1)
+            .and.to.emit(test, 'Function2Called')
+            .withArgs(nonce + 2)
+            .and.to.emit(test, 'Function2Called')
+            .withArgs(nonce + 3);
+
+        const lastReturns = await test.getLastMulticallReturns();
+
+        for (let i = 0; i < lastReturns.length; i++) {
+            const val = Number(defaultAbiCoder.decode(['uint256'], lastReturns[i]));
+            expect(val).to.equal(nonce + i);
+        }
+    });
+
+    it('Shoult revert if any of the calls fail', async () => {
+        const nonce = Number(await test.nonce());
+
+        await expect(test.multicall([function1Data, function2Data, function3Data, function1Data]))
+            .to.emit(test, 'Function1Called')
+            .withArgs(nonce)
+            .and.to.emit(test, 'Function2Called')
+            .withArgs(nonce + 1).to.be.reverted;
+    });
+});
+
+describe('Pausable', () => {
+    let test;
+    before(async () => {
+        test = await deployContract(ownerWallet, 'PausableTest');
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestPausable`, [])).to.not.be.reverted;
+    });
+
+    it('Should be able to set paused to true or false', async () => {
+        await expect(test.setPaused(true)).to.emit(test, 'PausedSet').withArgs(true);
+
+        expect(await test.isPaused()).to.equal(true);
+
+        await expect(test.setPaused(false)).to.emit(test, 'PausedSet').withArgs(false);
+
+        expect(await test.isPaused()).to.equal(false);
+    });
+
+    it('Should be able to execute notPaused functions only when not paused', async () => {
+        await expect(test.setPaused(false)).to.emit(test, 'PausedSet').withArgs(false);
+        await expect(test.testPaused()).to.emit(test, 'TestEvent');
+
+        await expect(test.setPaused(true)).to.emit(test, 'PausedSet').withArgs(true);
+        await expectRevert((gasOptions) => test.testPaused(gasOptions), test, 'Paused');
     });
 });
 
@@ -324,9 +388,9 @@ describe('StandardizedTokenDeployer', () => {
             .to.emit(token, 'Transfer')
             .withArgs(AddressZero, mintTo, mintAmount)
             .and.to.emit(token, 'RolesAdded')
-            .withArgs(tokenManager, [DISTRIBUTOR_ROLE])
+            .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE)
             .to.emit(token, 'RolesAdded')
-            .withArgs(tokenManager, [DISTRIBUTOR_ROLE]);
+            .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE);
 
         expect(await tokenProxy.implementation()).to.equal(standardizedToken.address);
         expect(await token.name()).to.equal(name);

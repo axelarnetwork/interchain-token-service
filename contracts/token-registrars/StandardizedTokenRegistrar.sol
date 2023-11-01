@@ -85,6 +85,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         bytes32 salt,
         address additionalDistributor,
         address optionalOperator,
+        uint256 mintAmount,
         string memory destinationChain,
         uint256 gasValue
     ) external payable {
@@ -108,6 +109,8 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             if (additionalDistributor != address(0)) {
                 if (!token.isDistributor(additionalDistributor)) revert NotDistributor(additionalDistributor);
                 distributor = additionalDistributor.toBytes();
+            } else if (mintAmount != 0) {
+                revert NonZeroMintAmount();
             }
             if (optionalOperator != address(0)) {
                 if (!tokenManager.isOperator(optionalOperator)) revert NotOperator(optionalOperator);
@@ -122,6 +125,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             tokenDecimals,
             distributor,
             operator,
+            mintAmount,
             destinationChain,
             gasValue
         );
@@ -134,6 +138,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         uint8 tokenDecimals,
         bytes memory distributor,
         bytes memory operator,
+        uint256 mintAmount,
         string memory destinationChain,
         uint256 gasValue
     ) internal {
@@ -145,7 +150,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             tokenDecimals,
             distributor,
             '',
-            0,
+            mintAmount,
             operator,
             destinationChain,
             gasValue

@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import { FinalProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/FinalProxy.sol';
+import { Proxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Proxy.sol';
 
 /**
- * @title InterchainTokenServiceProxy
- * @dev Proxy contract for interchain token service contracts. Inherits from the FinalProxy contract.
+ * @title StandardizedTokenRegistrarProxy
+ * @dev Proxy contract for interchain token service contracts. Inherits from the Proxy contract.
  */
-contract StandardizedTokenRegistrarProxy is FinalProxy {
+contract StandardizedTokenRegistrarProxy is Proxy {
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token-registrar');
 
     /**
@@ -16,7 +16,7 @@ contract StandardizedTokenRegistrarProxy is FinalProxy {
      * @param implementationAddress Address of the interchain token service implementation
      * @param owner Address of the owner of the proxy
      */
-    constructor(address implementationAddress, address owner) FinalProxy(implementationAddress, owner, '') {}
+    constructor(address implementationAddress, address owner) Proxy(implementationAddress, owner, '') {}
 
     /**
      * @dev Override for the 'contractId' function in FinalProxy. Returns a unique identifier for this contract.

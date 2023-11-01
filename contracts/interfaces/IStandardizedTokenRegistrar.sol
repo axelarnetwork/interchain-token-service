@@ -6,6 +6,7 @@ interface IStandardizedTokenRegistrar {
     error ZeroAddress();
     error NotDistributor(address distributor);
     error NotOperator(address operator);
+    error NonZeroMintAmount();
 
     function chainNameHash() external view returns (bytes32);
 
@@ -28,6 +29,7 @@ interface IStandardizedTokenRegistrar {
         bytes32 salt,
         address additionalDistributor,
         address optionalOperator,
+        uint256 mintAmount,
         string memory destinationChain,
         uint256 gasValue
     ) external payable;
