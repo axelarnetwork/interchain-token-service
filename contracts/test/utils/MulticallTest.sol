@@ -10,8 +10,6 @@ contract MulticallTest is Multicall {
     event Function1Called(uint256 nonce_);
     event Function2Called(uint256 nonce_);
 
-    error Invalid();
-
     function function1() external returns (uint256) {
         uint256 nonce_ = nonce++;
         emit Function1Called(nonce_);
@@ -25,7 +23,8 @@ contract MulticallTest is Multicall {
     }
 
     function function3() external pure {
-        revert Invalid();
+        // solhint-disable-next-line reason-string,custom-errors
+        revert();
     }
 
     function multicallTest(bytes[] calldata data) external {
