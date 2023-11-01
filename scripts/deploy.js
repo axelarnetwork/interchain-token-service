@@ -12,7 +12,7 @@ async function deployContract(wallet, contractName, args = []) {
 }
 
 async function deployAddressTracker(wallet, chainName, interchainTokenServiceAddress = '', evmChains = []) {
-    const addressTracker =  deployContract(wallet, 'AddressTracker', [
+    const addressTracker = deployContract(wallet, 'AddressTracker', [
         wallet.address,
         chainName,
         evmChains,
