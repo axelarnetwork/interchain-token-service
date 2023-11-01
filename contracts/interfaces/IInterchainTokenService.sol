@@ -85,9 +85,9 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
 
     /**
      * @notice Returns the address of the token manager deployer contract.
-     * @return remoteAddressValidator The remoteAddressValidator.
+     * @return remoteAddressValidator_ The remoteAddressValidator.
      */
-    function remoteAddressValidator() external view returns (IRemoteAddressValidator remoteAddressValidator);
+    function remoteAddressValidator() external view returns (IRemoteAddressValidator remoteAddressValidator_);
 
     /**
      * @notice Returns the address of the token manager deployer contract.

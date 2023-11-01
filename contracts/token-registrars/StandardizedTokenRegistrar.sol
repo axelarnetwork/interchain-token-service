@@ -92,8 +92,8 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         string memory tokenName;
         string memory tokenSymbol;
         uint8 tokenDecimals;
-        bytes memory distributor;
-        bytes memory operator;
+        bytes memory distributor = new bytes(0);
+        bytes memory operator = new bytes(0);
 
         {
             address sender = msg.sender;

@@ -474,6 +474,14 @@ contract InterchainTokenService is
         }
     }
 
+    /**
+     * @notice Transfer a token interchain.
+     * @param tokenId the tokenId for the token link.
+     * @param destinationChain the name of the chain to send the token to.
+     * @param destinationAddress the recipient of the interchain transfer.
+     * @param amount the amount of token to give.
+     * @param metadata the data to be passed to the destination. If provided with a bytes4(0) prefix, it'll execute the destination contract.
+     */
     function interchainTransfer(
         bytes32 tokenId,
         string calldata destinationChain,

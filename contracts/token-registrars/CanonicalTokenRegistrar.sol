@@ -81,16 +81,18 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
         uint256 amount,
         uint256 gasValue
     ) external payable {
-        // This ensures that the token manages has been deployed by this address, so it's safe to trust it.
+        // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
         bytes32 tokenId = getCanonicalTokenId(tokenAddress);
+        // slither-disable-next-line unused-return
         service.getValidTokenManagerAddress(tokenId);
         IERC20 token = IERC20(tokenAddress);
 
         token.safeTransferFrom(msg.sender, address(this), amount);
 
         address tokenManagerAddress = service.getTokenManagerAddress(tokenId);
-        token.approve(tokenManagerAddress, amount);
+        if (!token.approve(tokenManagerAddress, amount)) revert ApproveFailed();
 
+        // slither-disable-next-line arbitrary-send-eth
         service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, bytes(''));
     }
 }
