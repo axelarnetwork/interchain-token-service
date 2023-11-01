@@ -37,11 +37,11 @@ contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManag
 
     /**
      * @dev Sets up the token address and liquidity pool address.
-     * @param params The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address.
+     * @param params_ The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address.
      */
-    function _setup(bytes calldata params) internal override {
+    function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
-        (, address tokenAddress_, address liquidityPool_) = abi.decode(params, (bytes, address, address));
+        (, address tokenAddress_, address liquidityPool_) = abi.decode(params_, (bytes, address, address));
         _setTokenAddress(tokenAddress_);
         _setLiquidityPool(liquidityPool_);
     }
@@ -119,13 +119,13 @@ contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManag
      * @param operator_ the operator of the TokenManager.
      * @param tokenAddress_ the token to be managed.
      * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
+     * @return params_ the resulting params to be passed to custom TokenManager deployments.
      */
     function params(
         bytes memory operator_,
         address tokenAddress_,
         address liquidityPoolAddress
-    ) external pure returns (bytes memory params) {
-        params = abi.encode(operator_, tokenAddress_, liquidityPoolAddress);
+    ) external pure returns (bytes memory params_) {
+        params_ = abi.encode(operator_, tokenAddress_, liquidityPoolAddress);
     }
 }

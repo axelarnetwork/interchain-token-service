@@ -31,11 +31,11 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
 
     /**
      * @dev Sets up the token address.
-     * @param params The setup parameters in bytes. Should be encoded with the token address.
+     * @param params_ The setup parameters in bytes. Should be encoded with the token address.
      */
-    function _setup(bytes calldata params) internal override {
+    function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
-        (, address tokenAddress_) = abi.decode(params, (bytes, address));
+        (, address tokenAddress_) = abi.decode(params_, (bytes, address));
         _setTokenAddress(tokenAddress_);
     }
 
@@ -71,9 +71,9 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
      * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
      * @param operator_ the operator of the TokenManager.
      * @param tokenAddress_ the token to be managed.
-     * @return params the resulting params to be passed to custom TokenManager deployments.
+     * @return params_ the resulting params to be passed to custom TokenManager deployments.
      */
-    function params(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params) {
-        params = abi.encode(operator_, tokenAddress_);
+    function params(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params_) {
+        params_ = abi.encode(operator_, tokenAddress_);
     }
 }
