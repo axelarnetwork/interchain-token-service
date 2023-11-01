@@ -10,11 +10,11 @@ interface IStandardizedTokenRegistrar {
 
     function chainNameHash() external view returns (bytes32);
 
-    function getStandardizedTokenSalt(address deployer, bytes32 salt) external view returns (bytes32);
+    function standardizedTokenSalt(address deployer, bytes32 salt) external view returns (bytes32);
 
-    function getStandardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
+    function standardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
 
-    function getStandardizedTokenAddress(address deployer, bytes32 salt) external view returns (address tokenAddress);
+    function standardizedTokenAddress(address deployer, bytes32 salt) external view returns (address tokenAddress);
 
     function deployStandardizedToken(
         bytes32 salt,

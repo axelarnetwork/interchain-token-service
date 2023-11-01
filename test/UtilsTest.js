@@ -29,7 +29,7 @@ describe('Operatable', () => {
 
     before(async () => {
         test = await deployContract(ownerWallet, 'OperatorableTest', [ownerWallet.address]);
-        operatorRole = await test.getOperatorRole();
+        operatorRole = await test.operatorRole();
     });
 
     it('Should calculate hardcoded constants correctly', async () => {
@@ -103,7 +103,7 @@ describe('Distributable', () => {
 
     before(async () => {
         test = await deployContract(ownerWallet, 'DistributableTest', [ownerWallet.address]);
-        distributorRole = await test.getDistributorRole();
+        distributorRole = await test.distributorRole();
     });
 
     it('Should calculate hardcoded constants correctly', async () => {
@@ -204,7 +204,7 @@ describe('FlowLimit', async () => {
     it('Should be able to set the flow limit', async () => {
         await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(tokenId, ownerWallet.address, flowLimit);
 
-        expect(await test.getFlowLimit()).to.equal(flowLimit);
+        expect(await test.flowLimit()).to.equal(flowLimit);
     });
 
     it('Should test flow in', async () => {
@@ -212,14 +212,14 @@ describe('FlowLimit', async () => {
 
         for (let i = 0; i < flowLimit; i++) {
             await (await test.addFlowIn(1)).wait();
-            expect(await test.getFlowInAmount()).to.equal(i + 1);
+            expect(await test.flowInAmount()).to.equal(i + 1);
         }
 
         await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
-        expect(await test.getFlowInAmount()).to.equal(0);
+        expect(await test.flowInAmount()).to.equal(0);
 
         await (await test.addFlowIn(flowLimit)).wait();
     });
@@ -229,14 +229,14 @@ describe('FlowLimit', async () => {
 
         for (let i = 0; i < flowLimit; i++) {
             await (await test.addFlowOut(1)).wait();
-            expect(await test.getFlowOutAmount()).to.equal(i + 1);
+            expect(await test.flowOutAmount()).to.equal(i + 1);
         }
 
         await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
 
         await nextEpoch();
 
-        expect(await test.getFlowOutAmount()).to.equal(0);
+        expect(await test.flowOutAmount()).to.equal(0);
 
         await (await test.addFlowOut(flowLimit)).wait();
     });

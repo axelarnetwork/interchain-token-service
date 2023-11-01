@@ -21,7 +21,7 @@ contract FlowLimit is IFlowLimit {
      * @notice Returns the current flow limit
      * @return flowLimit The current flow limit value
      */
-    function getFlowLimit() public view returns (uint256 flowLimit) {
+    function flowLimit() public view returns (uint256 flowLimit) {
         assembly {
             flowLimit := sload(FLOW_LIMIT_SLOT)
         }
@@ -61,7 +61,7 @@ contract FlowLimit is IFlowLimit {
      * @notice Returns the current flow out amount
      * @return flowOutAmount The current flow out amount
      */
-    function getFlowOutAmount() external view returns (uint256 flowOutAmount) {
+    function flowOutAmount() external view returns (uint256 flowOutAmount) {
         uint256 epoch = block.timestamp / EPOCH_TIME;
         uint256 slot = _getFlowOutSlot(epoch);
 
@@ -74,7 +74,7 @@ contract FlowLimit is IFlowLimit {
      * @notice Returns the current flow in amount
      * @return flowInAmount The current flow in amount
      */
-    function getFlowInAmount() external view returns (uint256 flowInAmount) {
+    function flowInAmount() external view returns (uint256 flowInAmount) {
         uint256 epoch = block.timestamp / EPOCH_TIME;
         uint256 slot = _getFlowInSlot(epoch);
 
@@ -113,7 +113,7 @@ contract FlowLimit is IFlowLimit {
      * @param flowOutAmount The flow out amount to add
      */
     function _addFlowOut(uint256 flowOutAmount) internal {
-        uint256 flowLimit = getFlowLimit();
+        uint256 flowLimit = flowLimit();
         if (flowLimit == 0) return;
 
         uint256 epoch = block.timestamp / EPOCH_TIME;
@@ -128,7 +128,7 @@ contract FlowLimit is IFlowLimit {
      * @param flowInAmount The flow in amount to add
      */
     function _addFlowIn(uint256 flowInAmount) internal {
-        uint256 flowLimit = getFlowLimit();
+        uint256 flowLimit = flowLimit();
         if (flowLimit == 0) return;
 
         uint256 epoch = block.timestamp / EPOCH_TIME;

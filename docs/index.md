@@ -170,10 +170,10 @@ Getter for the chain name.
 | ---- | ------ | --------------------- |
 | name | string | the name of the chain |
 
-### getTokenManagerAddress
+### tokenManagerAddress
 
 ```solidity
-function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress)
+function tokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress)
 ```
 
 Calculates the address of a TokenManager from a specific tokenId. The TokenManager does not need to exist already.
@@ -190,10 +190,10 @@ Calculates the address of a TokenManager from a specific tokenId. The TokenManag
 | ------------------- | ------- | --------------------------------------- |
 | tokenManagerAddress | address | deployment address of the TokenManager. |
 
-### getValidTokenManagerAddress
+### validTokenManagerAddress
 
 ```solidity
-function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress)
+function validTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress)
 ```
 
 Returns the address of a TokenManager from a specific tokenId. The TokenManager needs to exist already.
@@ -210,10 +210,10 @@ Returns the address of a TokenManager from a specific tokenId. The TokenManager 
 | ------------------- | ------- | --------------------------------------- |
 | tokenManagerAddress | address | deployment address of the TokenManager. |
 
-### getTokenAddress
+### tokenAddress
 
 ```solidity
-function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
 ```
 
 Returns the address of the token that an existing tokenManager points to.
@@ -230,10 +230,10 @@ Returns the address of the token that an existing tokenManager points to.
 | ------------ | ------- | ------------------------- |
 | tokenAddress | address | the address of the token. |
 
-### getStandardizedTokenAddress
+### standardizedTokenAddress
 
 ```solidity
-function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
+function standardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
 ```
 
 Returns the address of the standardized token that would be deployed with a given tokenId.
@@ -251,10 +251,10 @@ The token does not need to exist.
 | ------------ | ------- | -------------------------------------- |
 | tokenAddress | address | the address of the standardized token. |
 
-### getCanonicalTokenId
+### canonicalTokenId
 
 ```solidity
-function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId)
+function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId)
 ```
 
 Calculates the tokenId that would correspond to a canonical link for a given token.
@@ -272,10 +272,10 @@ This will depend on what chain it is called from, unlike custom tokenIds.
 | ------- | ------- | ------------------------------------------------------------------------------------ |
 | tokenId | bytes32 | the tokenId that the canonical TokenManager would get (or has gotten) for the token. |
 
-### getCustomTokenId
+### customTokenId
 
 ```solidity
-function getCustomTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId)
+function customTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId)
 ```
 
 Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt.
@@ -294,10 +294,10 @@ This will not depend on what chain it is called from, unlike canonical tokenIds.
 | ------- | ------- | ------------------------------------------------------------------- |
 | tokenId | bytes32 | the tokenId that the custom TokenManager would get (or has gotten). |
 
-### getImplementation
+### tokenManagerImplementation
 
 ```solidity
-function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress)
+function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress)
 ```
 
 Getter function for TokenManager implementations. This will mainly be called by TokenManagerProxies
@@ -315,10 +315,10 @@ to figure out their implementations
 | ------------------- | ------- | ---------------------------------------------- |
 | tokenManagerAddress | address | the address of the TokenManagerImplementation. |
 
-### getParamsLockUnlock
+### paramsLockUnlock
 
 ```solidity
-function getParamsLockUnlock(bytes operator, address tokenAddress) public pure returns (bytes params)
+function paramsLockUnlock(bytes operator, address tokenAddress) public pure returns (bytes params)
 ```
 
 Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
@@ -336,10 +336,10 @@ Getter function for the parameters of a lock/unlock TokenManager. Mainly to be u
 | ------ | ----- | --------------------------------------------------------------------- |
 | params | bytes | the resulting params to be passed to custom TokenManager deployments. |
 
-### getParamsMintBurn
+### paramsMintBurn
 
 ```solidity
-function getParamsMintBurn(bytes operator, address tokenAddress) public pure returns (bytes params)
+function paramsMintBurn(bytes operator, address tokenAddress) public pure returns (bytes params)
 ```
 
 Getter function for the parameters of a mint/burn TokenManager. Mainly to be used by frontends.
@@ -357,10 +357,10 @@ Getter function for the parameters of a mint/burn TokenManager. Mainly to be use
 | ------ | ----- | --------------------------------------------------------------------- |
 | params | bytes | the resulting params to be passed to custom TokenManager deployments. |
 
-### getParamsLiquidityPool
+### paramsLiquidityPool
 
 ```solidity
-function getParamsLiquidityPool(bytes operator, address tokenAddress, address liquidityPoolAddress) public pure returns (bytes params)
+function paramsLiquidityPool(bytes operator, address tokenAddress, address liquidityPoolAddress) public pure returns (bytes params)
 ```
 
 Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
@@ -379,10 +379,10 @@ Getter function for the parameters of a liquidity pool TokenManager. Mainly to b
 | ------ | ----- | --------------------------------------------------------------------- |
 | params | bytes | the resulting params to be passed to custom TokenManager deployments. |
 
-### getFlowLimit
+### flowLimit
 
 ```solidity
-function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit)
+function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit)
 ```
 
 Getter function for the flow limit of an existing token manager with a give token ID.
@@ -399,10 +399,10 @@ Getter function for the flow limit of an existing token manager with a give toke
 | --------- | ------- | --------------- |
 | flowLimit | uint256 | the flow limit. |
 
-### getFlowOutAmount
+### flowOutAmount
 
 ```solidity
-function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount)
+function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount)
 ```
 
 Getter function for the flow out amount of an existing token manager with a give token ID.
@@ -419,10 +419,10 @@ Getter function for the flow out amount of an existing token manager with a give
 | ------------- | ------- | -------------------- |
 | flowOutAmount | uint256 | the flow out amount. |
 
-### getFlowInAmount
+### flowInAmount
 
 ```solidity
-function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount)
+function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount)
 ```
 
 Getter function for the flow in amount of an existing token manager with a give token ID.
@@ -985,10 +985,10 @@ error FlowLimitExceeded(bytes32 tokenId, uint256 limit, uint256 flowAmount)
 event FlowLimitSet(bytes32 indexed tokenId, address operator, uint256 flowLimit)
 ```
 
-### getFlowLimit
+### flowLimit
 
 ```solidity
-function getFlowLimit() external view returns (uint256 flowLimit)
+function flowLimit() external view returns (uint256 flowLimit)
 ```
 
 Returns the current flow limit
@@ -999,10 +999,10 @@ Returns the current flow limit
 | --------- | ------- | ---------------------------- |
 | flowLimit | uint256 | The current flow limit value |
 
-### getFlowOutAmount
+### flowOutAmount
 
 ```solidity
-function getFlowOutAmount() external view returns (uint256 flowOutAmount)
+function flowOutAmount() external view returns (uint256 flowOutAmount)
 ```
 
 Returns the current flow out amount
@@ -1013,10 +1013,10 @@ Returns the current flow out amount
 | ------------- | ------- | --------------------------- |
 | flowOutAmount | uint256 | The current flow out amount |
 
-### getFlowInAmount
+### flowInAmount
 
 ```solidity
-function getFlowInAmount() external view returns (uint256 flowInAmount)
+function flowInAmount() external view returns (uint256 flowInAmount)
 ```
 
 Returns the current flow in amount
@@ -1265,10 +1265,10 @@ Returns the name of the current chain.
 | ---- | ------ | ------------------------------ |
 | name | string | The name of the current chain. |
 
-### getTokenManagerAddress
+### tokenManagerAddress
 
 ```solidity
-function getTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress)
+function tokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress)
 ```
 
 Returns the address of the token manager associated with the given tokenId.
@@ -1285,10 +1285,10 @@ Returns the address of the token manager associated with the given tokenId.
 | ------------------- | ------- | --------------------------------- |
 | tokenManagerAddress | address | The address of the token manager. |
 
-### getValidTokenManagerAddress
+### validTokenManagerAddress
 
 ```solidity
-function getValidTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress)
+function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress)
 ```
 
 Returns the address of the valid token manager associated with the given tokenId.
@@ -1305,10 +1305,10 @@ Returns the address of the valid token manager associated with the given tokenId
 | ------------------- | ------- | --------------------------------------- |
 | tokenManagerAddress | address | The address of the valid token manager. |
 
-### getTokenAddress
+### tokenAddress
 
 ```solidity
-function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
 ```
 
 Returns the address of the token associated with the given tokenId.
@@ -1325,10 +1325,10 @@ Returns the address of the token associated with the given tokenId.
 | ------------ | ------- | ------------------------- |
 | tokenAddress | address | The address of the token. |
 
-### getStandardizedTokenAddress
+### standardizedTokenAddress
 
 ```solidity
-function getStandardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+function standardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
 ```
 
 Returns the address of the standardized token associated with the given tokenId.
@@ -1345,10 +1345,10 @@ Returns the address of the standardized token associated with the given tokenId.
 | ------------ | ------- | -------------------------------------- |
 | tokenAddress | address | The address of the standardized token. |
 
-### getCanonicalTokenId
+### canonicalTokenId
 
 ```solidity
-function getCanonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId)
+function canonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId)
 ```
 
 Returns the canonical tokenId associated with the given tokenAddress.
@@ -1365,10 +1365,10 @@ Returns the canonical tokenId associated with the given tokenAddress.
 | ------- | ------- | ------------------------------------------------------- |
 | tokenId | bytes32 | The canonical tokenId associated with the tokenAddress. |
 
-### getCustomTokenId
+### customTokenId
 
 ```solidity
-function getCustomTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
+function customTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
 ```
 
 Returns the custom tokenId associated with the given operator and salt.
@@ -1386,10 +1386,10 @@ Returns the custom tokenId associated with the given operator and salt.
 | ------- | ------- | --------------------------------------------------------- |
 | tokenId | bytes32 | The custom tokenId associated with the operator and salt. |
 
-### getParamsLockUnlock
+### paramsLockUnlock
 
 ```solidity
-function getParamsLockUnlock(bytes operator, address tokenAddress) external pure returns (bytes params)
+function paramsLockUnlock(bytes operator, address tokenAddress) external pure returns (bytes params)
 ```
 
 Returns the parameters for the lock/unlock operation.
@@ -1407,10 +1407,10 @@ Returns the parameters for the lock/unlock operation.
 | ------ | ----- | --------------------------------------------- |
 | params | bytes | The parameters for the lock/unlock operation. |
 
-### getParamsMintBurn
+### paramsMintBurn
 
 ```solidity
-function getParamsMintBurn(bytes operator, address tokenAddress) external pure returns (bytes params)
+function paramsMintBurn(bytes operator, address tokenAddress) external pure returns (bytes params)
 ```
 
 Returns the parameters for the mint/burn operation.
@@ -1428,10 +1428,10 @@ Returns the parameters for the mint/burn operation.
 | ------ | ----- | ------------------------------------------- |
 | params | bytes | The parameters for the mint/burn operation. |
 
-### getParamsLiquidityPool
+### paramsLiquidityPool
 
 ```solidity
-function getParamsLiquidityPool(bytes operator, address tokenAddress, address liquidityPoolAddress) external pure returns (bytes params)
+function paramsLiquidityPool(bytes operator, address tokenAddress, address liquidityPoolAddress) external pure returns (bytes params)
 ```
 
 Returns the parameters for the liquidity pool operation.
@@ -1566,10 +1566,10 @@ Deploys and registers a standardized token on a remote chain.
 | destinationChain | string  | The name of the destination chain.                  |
 | gasValue         | uint256 | The gas value for deployment.                       |
 
-### getImplementation
+### tokenManagerImplementation
 
 ```solidity
-function getImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress)
+function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress)
 ```
 
 Returns the implementation address for a given token manager type.
@@ -1620,10 +1620,10 @@ Sets the flow limits for multiple tokens.
 | tokenIds   | bytes32[] | An array of tokenIds.                                  |
 | flowLimits | uint256[] | An array of flow limits corresponding to the tokenIds. |
 
-### getFlowLimit
+### flowLimit
 
 ```solidity
-function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit)
+function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit)
 ```
 
 Returns the flow limit for a specific token.
@@ -1640,10 +1640,10 @@ Returns the flow limit for a specific token.
 | --------- | ------- | ----------------------------- |
 | flowLimit | uint256 | The flow limit for the token. |
 
-### getFlowOutAmount
+### flowOutAmount
 
 ```solidity
-function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount)
+function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount)
 ```
 
 Returns the total amount of outgoing flow for a specific token.
@@ -1660,10 +1660,10 @@ Returns the total amount of outgoing flow for a specific token.
 | ------------- | ------- | ------------------------------------------------ |
 | flowOutAmount | uint256 | The total amount of outgoing flow for the token. |
 
-### getFlowInAmount
+### flowInAmount
 
 ```solidity
-function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount)
+function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount)
 ```
 
 Returns the total amount of incoming flow for a specific token.
@@ -3458,10 +3458,10 @@ _Returns the address of the current implementation._
 | ---- | ------- | ----------------------------------------- |
 | impl | address | The address of the current implementation |
 
-### \_getImplementation
+### \_tokenManagerImplementation
 
 ```solidity
-function _getImplementation(contract IInterchainTokenService interchainTokenServiceAddress_, uint256 implementationType_) internal view returns (address impl)
+function _tokenManagerImplementation(contract IInterchainTokenService interchainTokenServiceAddress_, uint256 implementationType_) internal view returns (address impl)
 ```
 
 _Returns the implementation address from the interchain token service for the provided type._
@@ -4768,10 +4768,10 @@ uint256 PREFIX_FLOW_IN_AMOUNT
 uint256 EPOCH_TIME
 ```
 
-### getFlowLimit
+### flowLimit
 
 ```solidity
-function getFlowLimit() public view returns (uint256 flowLimit)
+function flowLimit() public view returns (uint256 flowLimit)
 ```
 
 Returns the current flow limit
@@ -4837,10 +4837,10 @@ _Returns the slot which is used to get the flow in amount for a specific epoch_
 | ---- | ------- | --------------------------------------- |
 | slot | uint256 | The slot to get the flow in amount from |
 
-### getFlowOutAmount
+### flowOutAmount
 
 ```solidity
-function getFlowOutAmount() external view returns (uint256 flowOutAmount)
+function flowOutAmount() external view returns (uint256 flowOutAmount)
 ```
 
 Returns the current flow out amount
@@ -4851,10 +4851,10 @@ Returns the current flow out amount
 | ------------- | ------- | --------------------------- |
 | flowOutAmount | uint256 | The current flow out amount |
 
-### getFlowInAmount
+### flowInAmount
 
 ```solidity
-function getFlowInAmount() external view returns (uint256 flowInAmount)
+function flowInAmount() external view returns (uint256 flowInAmount)
 ```
 
 Returns the current flow in amount

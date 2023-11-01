@@ -130,7 +130,7 @@ contract InterchainTokenService is
      * @param tokenId the `tokenId` of the TokenManager trying to perform the call.
      */
     modifier onlyTokenManager(bytes32 tokenId) {
-        address tokenManager = getTokenManagerAddress(tokenId);
+        address tokenManager = tokenManagerAddress(tokenId);
         if (msg.sender != tokenManager) revert NotTokenManager(msg.sender, tokenManager);
 
         _;
@@ -152,18 +152,18 @@ contract InterchainTokenService is
      * @param tokenId the tokenId.
      * @return tokenManagerAddress deployment address of the TokenManager.
      */
-    function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
+    function tokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
         tokenManagerAddress = _create3Address(tokenId);
     }
 
     /**
      * @notice Returns the address of a TokenManager from a specific tokenId. The TokenManager needs to exist already.
      * @param tokenId the tokenId.
-     * @return tokenManagerAddress deployment address of the TokenManager.
+     * @return tokenManagerAddress_ deployment address of the TokenManager.
      */
-    function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
-        tokenManagerAddress = getTokenManagerAddress(tokenId);
-        if (tokenManagerAddress.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
+    function validTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress_) {
+        tokenManagerAddress_ = tokenManagerAddress(tokenId);
+        if (tokenManagerAddress_.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
     }
 
     /**
@@ -171,8 +171,8 @@ contract InterchainTokenService is
      * @param tokenId the tokenId.
      * @return tokenAddress the address of the token.
      */
-    function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress) {
-        address tokenManagerAddress = getValidTokenManagerAddress(tokenId);
+    function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress) {
+        address tokenManagerAddress = validTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenManagerAddress).tokenAddress();
     }
 
@@ -182,7 +182,7 @@ contract InterchainTokenService is
      * @param tokenId the tokenId.
      * @return tokenAddress the address of the standardized token.
      */
-    function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
+    function standardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
         tokenId = _getStandardizedTokenSalt(tokenId);
         tokenAddress = _create3Address(tokenId);
     }
@@ -193,7 +193,7 @@ contract InterchainTokenService is
      * @param tokenAddress the address of the token.
      * @return tokenId the tokenId that the canonical TokenManager would get (or has gotten) for the token.
      */
-    function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
+    function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_ID, chainNameHash, tokenAddress));
     }
 
@@ -204,7 +204,7 @@ contract InterchainTokenService is
      * @param salt the salt that the deployer uses for the deployment.
      * @return tokenId the tokenId that the custom TokenManager would get (or has gotten).
      */
-    function getCustomTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId) {
+    function customTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId) {
         tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, sender, salt));
     }
 
@@ -214,7 +214,7 @@ contract InterchainTokenService is
      * @param tokenManagerType the type of the TokenManager.
      * @return tokenManagerAddress the address of the TokenManagerImplementation.
      */
-    function getImplementation(uint256 tokenManagerType) external view returns (address) {
+    function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address) {
         if (tokenManagerType > uint256(type(TokenManagerType).max)) revert InvalidImplementation();
 
         if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) return implementationMintBurn;
@@ -230,9 +230,9 @@ contract InterchainTokenService is
      * @param tokenId the token ID of the TokenManager.
      * @return flowLimit the flow limit.
      */
-    function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit) {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        flowLimit = tokenManager.getFlowLimit();
+    function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit) {
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
+        flowLimit = tokenManager.flowLimit();
     }
 
     /**
@@ -240,9 +240,9 @@ contract InterchainTokenService is
      * @param tokenId the token ID of the TokenManager.
      * @return flowOutAmount the flow out amount.
      */
-    function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount) {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        flowOutAmount = tokenManager.getFlowOutAmount();
+    function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount) {
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
+        flowOutAmount = tokenManager.flowOutAmount();
     }
 
     /**
@@ -250,9 +250,9 @@ contract InterchainTokenService is
      * @param tokenId the token ID of the TokenManager.
      * @return flowInAmount the flow in amount.
      */
-    function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount) {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        flowInAmount = tokenManager.getFlowInAmount();
+    function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount) {
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
+        flowInAmount = tokenManager.flowInAmount();
     }
 
     /************\
@@ -267,7 +267,7 @@ contract InterchainTokenService is
     function registerCanonicalToken(address tokenAddress) external payable whenNotPaused returns (bytes32 tokenId) {
         (, string memory tokenSymbol, ) = _validateToken(tokenAddress);
         if (gateway.tokenAddresses(tokenSymbol) == tokenAddress) revert GatewayToken();
-        tokenId = getCanonicalTokenId(tokenAddress);
+        tokenId = canonicalTokenId(tokenAddress);
         _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode('', tokenAddress));
     }
 
@@ -283,9 +283,9 @@ contract InterchainTokenService is
     function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable whenNotPaused {
         address tokenAddress;
         {
-            tokenAddress = getValidTokenManagerAddress(tokenId);
+            tokenAddress = validTokenManagerAddress(tokenId);
             tokenAddress = ITokenManager(tokenAddress).tokenAddress();
-            bytes32 canonicalTokenId = getCanonicalTokenId(tokenAddress);
+            bytes32 canonicalTokenId = canonicalTokenId(tokenAddress);
 
             if (canonicalTokenId != tokenId) revert InvalidCanonicalTokenId(canonicalTokenId);
         }
@@ -306,7 +306,7 @@ contract InterchainTokenService is
         bytes memory params
     ) public payable whenNotPaused returns (bytes32 tokenId) {
         address deployer_ = msg.sender;
-        tokenId = getCustomTokenId(deployer_, salt);
+        tokenId = customTokenId(deployer_, salt);
 
         emit CustomTokenIdClaimed(tokenId, deployer_, salt);
 
@@ -332,7 +332,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer_ = msg.sender;
-        tokenId = getCustomTokenId(deployer_, salt);
+        tokenId = customTokenId(deployer_, salt);
 
         emit CustomTokenIdClaimed(tokenId, deployer_, salt);
 
@@ -356,9 +356,9 @@ contract InterchainTokenService is
         uint256 mintAmount,
         address distributor
     ) external payable whenNotPaused {
-        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        bytes32 tokenId = customTokenId(msg.sender, salt);
         _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
-        address tokenAddress = getStandardizedTokenAddress(tokenId);
+        address tokenAddress = standardizedTokenAddress(tokenId);
         _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(msg.sender.toBytes(), tokenAddress));
     }
 
@@ -390,7 +390,7 @@ contract InterchainTokenService is
         string calldata destinationChain,
         uint256 gasValue
     ) external payable whenNotPaused {
-        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+        bytes32 tokenId = customTokenId(msg.sender, salt);
         _deployRemoteStandardizedToken(
             tokenId,
             name,
@@ -417,7 +417,7 @@ contract InterchainTokenService is
             revert InvalidExpressSelector(selector);
         }
 
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
         return (tokenManager.tokenAddress(), amount);
     }
 
@@ -458,7 +458,7 @@ contract InterchainTokenService is
 
         IERC20 token;
         {
-            ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+            ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
             token = IERC20(tokenManager.tokenAddress());
         }
 
@@ -495,7 +495,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable whenNotPaused {
-        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
     }
@@ -507,7 +507,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata data
     ) external payable whenNotPaused {
-        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+        ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         uint32 prefix = 0;
         _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
@@ -550,7 +550,7 @@ contract InterchainTokenService is
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
-            ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
+            ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenIds[i]));
             // slither-disable-next-line calls-loop
             tokenManager.setFlowLimit(flowLimits[i]);
         }
@@ -669,7 +669,7 @@ contract InterchainTokenService is
             destinationAddress = destinationAddressBytes.toAddress();
         }
 
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
 
         // Return token to the existing express caller
         if (expressExecutor != address(0)) {
@@ -732,8 +732,8 @@ contract InterchainTokenService is
             uint256 mintAmount,
             bytes memory operatorBytes
         ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes, uint256, bytes));
-        address tokenAddress = getStandardizedTokenAddress(tokenId);
-        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        address tokenAddress = standardizedTokenAddress(tokenId);
+        address tokenManagerAddress = tokenManagerAddress(tokenId);
         address distributor;
         address mintTo;
 
@@ -910,7 +910,7 @@ contract InterchainTokenService is
         address mintTo
     ) internal {
         bytes32 salt = _getStandardizedTokenSalt(tokenId);
-        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        address tokenManagerAddress = tokenManagerAddress(tokenId);
 
         // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory returnData) = standardizedTokenDeployer.delegatecall(

@@ -49,16 +49,16 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         return CONTRACT_ID;
     }
 
-    function getStandardizedTokenSalt(address deployer, bytes32 salt) public view returns (bytes32) {
+    function standardizedTokenSalt(address deployer, bytes32 salt) public view returns (bytes32) {
         return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, chainNameHash, deployer, salt));
     }
 
-    function getStandardizedTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = service.getCustomTokenId(address(this), getStandardizedTokenSalt(deployer, salt));
+    function standardizedTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
+        tokenId = service.customTokenId(address(this), standardizedTokenSalt(deployer, salt));
     }
 
-    function getStandardizedTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
-        tokenAddress = service.getStandardizedTokenAddress(getStandardizedTokenId(deployer, salt));
+    function standardizedTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
+        tokenAddress = service.standardizedTokenAddress(standardizedTokenId(deployer, salt));
     }
 
     function deployStandardizedToken(
@@ -70,14 +70,14 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         address distributor
     ) external payable {
         address sender = msg.sender;
-        salt = getStandardizedTokenSalt(sender, salt);
-        bytes32 tokenId = service.getCustomTokenId(address(this), salt);
+        salt = standardizedTokenSalt(sender, salt);
+        bytes32 tokenId = service.customTokenId(address(this), salt);
 
         service.deployAndRegisterStandardizedToken(salt, name, symbol, decimals, mintAmount, distributor);
-        ITokenManager tokenManager = ITokenManager(service.getTokenManagerAddress(tokenId));
+        ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
         tokenManager.transferOperatorship(sender);
 
-        IStandardizedToken token = IStandardizedToken(service.getStandardizedTokenAddress(tokenId));
+        IStandardizedToken token = IStandardizedToken(service.standardizedTokenAddress(tokenId));
         token.safeTransfer(sender, mintAmount);
     }
 
@@ -97,11 +97,11 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
 
         {
             address sender = msg.sender;
-            salt = getStandardizedTokenSalt(sender, salt);
-            bytes32 tokenId = service.getCustomTokenId(address(this), salt);
+            salt = standardizedTokenSalt(sender, salt);
+            bytes32 tokenId = service.customTokenId(address(this), salt);
 
-            IStandardizedToken token = IStandardizedToken(service.getStandardizedTokenAddress(tokenId));
-            ITokenManager tokenManager = ITokenManager(service.getTokenManagerAddress(tokenId));
+            IStandardizedToken token = IStandardizedToken(service.standardizedTokenAddress(tokenId));
+            ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
 
             tokenName = token.name();
             tokenSymbol = token.symbol();

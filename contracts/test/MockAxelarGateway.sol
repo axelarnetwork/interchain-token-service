@@ -52,7 +52,7 @@ contract MockAxelarGateway is IMockAxelarGateway {
     }
 
     function tokenAddresses(string calldata symbol) external view returns (address tokenAddress) {
-        tokenAddress = _addressStorage[_getTokenAddressKey(symbol)];
+        tokenAddress = _addressStorage[_tokenAddressKey(symbol)];
     }
 
     /********************\
@@ -74,7 +74,7 @@ contract MockAxelarGateway is IMockAxelarGateway {
     }
 
     function setTokenAddress(string calldata symbol, address tokenAddress) external {
-        _addressStorage[_getTokenAddressKey(symbol)] = tokenAddress;
+        _addressStorage[_tokenAddressKey(symbol)] = tokenAddress;
     }
 
     function setCommandExecuted(bytes32 commandId, bool executed) external {
@@ -99,7 +99,7 @@ contract MockAxelarGateway is IMockAxelarGateway {
         return keccak256(abi.encode(PREFIX_CONTRACT_CALL_APPROVED, commandId, sourceChain, sourceAddress, contractAddress, payloadHash));
     }
 
-    function _getTokenAddressKey(string memory symbol) internal pure returns (bytes32) {
+    function _tokenAddressKey(string memory symbol) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(PREFIX_TOKEN_ADDRESS, symbol));
     }
 

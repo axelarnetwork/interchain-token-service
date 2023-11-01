@@ -15,5 +15,5 @@ interface ITokenManagerLockUnlock is ITokenManager {
      * @param tokenAddress_ the token to be managed.
      * @return params the resulting params to be passed to custom TokenManager deployments.
      */
-    function getParams(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params);
+    function params(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params);
 }

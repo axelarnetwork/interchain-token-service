@@ -121,7 +121,7 @@ contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManag
      * @param liquidityPoolAddress the liquidity pool to be used to store the bridged tokens.
      * @return params the resulting params to be passed to custom TokenManager deployments.
      */
-    function getParams(
+    function params(
         bytes memory operator_,
         address tokenAddress_,
         address liquidityPoolAddress

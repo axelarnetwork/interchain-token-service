@@ -46,8 +46,8 @@ describe('Interchain Token Service Full Flow', () => {
         before(async () => {
             // The below is used to deploy a token, but any ERC20 can be used instead.
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
-            tokenId = await service.getCanonicalTokenId(token.address);
-            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            tokenId = await service.canonicalTokenId(token.address);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
@@ -69,7 +69,7 @@ describe('Interchain Token Service Full Flow', () => {
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
             );
-            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params)
@@ -147,10 +147,10 @@ describe('Interchain Token Service Full Flow', () => {
         const tokenCap = BigInt(1e18);
 
         before(async () => {
-            tokenId = await service.getCustomTokenId(wallet.address, salt);
-            const tokenAddress = await service.getStandardizedTokenAddress(tokenId);
+            tokenId = await service.customTokenId(wallet.address, salt);
+            const tokenAddress = await service.standardizedTokenAddress(tokenId);
             token = new Contract(tokenAddress, StandardizedToken.abi, wallet);
-            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
         });
 
@@ -190,8 +190,8 @@ describe('Interchain Token Service Full Flow', () => {
             );
             const tx = service.multicall(data, { value });
 
-            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
-            const expectedTokenAddress = await service.getStandardizedTokenAddress(tokenId);
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const expectedTokenAddress = await service.standardizedTokenAddress(tokenId);
             await expect(tx)
                 .to.emit(service, 'StandardizedTokenDeployed')
                 .withArgs(tokenId, expectedTokenAddress, wallet.address, name, symbol, decimals, tokenCap, wallet.address)
@@ -271,17 +271,17 @@ describe('Interchain Token Service Full Flow', () => {
             // The below is used to deploy a token, but any ERC20 that has a mint capability can be used instead.
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
 
-            tokenId = await service.getCustomTokenId(wallet.address, salt);
-            const tokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            tokenId = await service.customTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const implAddress = await service.getImplementation(MINT_BURN);
+            const implAddress = await service.tokenManagerImplementation(MINT_BURN);
             const impl = new Contract(implAddress, ITokenManagerMintBurn.abi, wallet);
-            const params = await impl.getParams(wallet.address, token.address);
+            const params = await impl.params(wallet.address, token.address);
             const tx1 = await service.populateTransaction.deployCustomTokenManager(salt, MINT_BURN, params);
             const data = [tx1.data];
             let value = 0;
@@ -302,7 +302,7 @@ describe('Interchain Token Service Full Flow', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
                 [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
             );
-            const expectedTokenManagerAddress = await service.getTokenManagerAddress(tokenId);
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)

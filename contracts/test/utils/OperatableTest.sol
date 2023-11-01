@@ -15,7 +15,7 @@ contract OperatorableTest is Operatable {
         nonce++;
     }
 
-    function getOperatorRole() external pure returns (uint8) {
+    function operatorRole() external pure returns (uint8) {
         return uint8(Roles.OPERATOR);
     }
 }

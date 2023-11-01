@@ -12,7 +12,7 @@ contract FlowLimitTestLiveNetwork is IFlowLimit {
 
     uint256 internal constant EPOCH_TIME = 60;
 
-    function getFlowLimit() public view returns (uint256 flowLimit) {
+    function flowLimit() public view returns (uint256 flowLimit) {
         assembly {
             flowLimit := sload(FLOW_LIMIT_SLOT)
         }
@@ -34,7 +34,7 @@ contract FlowLimitTestLiveNetwork is IFlowLimit {
         slot = uint256(keccak256(abi.encode(PREFIX_FLOW_IN_AMOUNT, epoch)));
     }
 
-    function getFlowOutAmount() external view returns (uint256 flowOutAmount) {
+    function flowOutAmount() external view returns (uint256 flowOutAmount) {
         uint256 epoch = block.timestamp / EPOCH_TIME;
         uint256 slot = _getFlowOutSlot(epoch);
 
@@ -43,7 +43,7 @@ contract FlowLimitTestLiveNetwork is IFlowLimit {
         }
     }
 
-    function getFlowInAmount() external view returns (uint256 flowInAmount) {
+    function flowInAmount() external view returns (uint256 flowInAmount) {
         uint256 epoch = block.timestamp / EPOCH_TIME;
         uint256 slot = _getFlowInSlot(epoch);
 
@@ -72,7 +72,7 @@ contract FlowLimitTestLiveNetwork is IFlowLimit {
     }
 
     function _addFlowOut(uint256 flowOutAmount) internal {
-        uint256 flowLimit = getFlowLimit();
+        uint256 flowLimit = flowLimit();
         if (flowLimit == 0) return;
 
         uint256 epoch = block.timestamp / EPOCH_TIME;
@@ -83,7 +83,7 @@ contract FlowLimitTestLiveNetwork is IFlowLimit {
     }
 
     function _addFlowIn(uint256 flowInAmount) internal {
-        uint256 flowLimit = getFlowLimit();
+        uint256 flowLimit = flowLimit();
         if (flowLimit == 0) return;
 
         uint256 epoch = block.timestamp / EPOCH_TIME;
