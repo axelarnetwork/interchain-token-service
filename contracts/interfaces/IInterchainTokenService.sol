@@ -215,8 +215,8 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
 
     /**
      * @notice Sets the flow limits for multiple tokens.
-     * @param tokenIds An array of tokenId_s.
-     * @param flowLimits An array of flow limits corresponding to the tokenId_s.
+     * @param tokenIds An array of tokenIds.
+     * @param flowLimits An array of flow limits corresponding to the tokenIds.
      */
     function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
 

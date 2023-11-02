@@ -189,7 +189,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Calculates the tokenId_ that would correspond to a custom link for a given deployer with a specified salt.
-     * This will not depend on what chain it is called from, unlike canonical tokenId_s.
+     * This will not depend on what chain it is called from, unlike canonical tokenIds.
      * @param sender the address of the TokenManager deployer.
      * @param salt the salt that the deployer uses for the deployment.
      * @return tokenId_ the tokenId_ that the custom TokenManager would get (or has gotten).
@@ -628,10 +628,15 @@ contract InterchainTokenService is
      * @param payload The encoded data payload to be processed
      */
     function _processDeployInterchainTokenPayload(bytes calldata payload) internal {
-        (, bytes32 tokenId_, string memory name, string memory symbol, uint8 decimals, bytes memory distributorBytes, bytes memory opeatorBytes) = abi.decode(
-            payload,
-            (uint256, bytes32, string, string, uint8, bytes, bytes)
-        );
+        (
+            ,
+            bytes32 tokenId_,
+            string memory name,
+            string memory symbol,
+            uint8 decimals,
+            bytes memory distributorBytes,
+            bytes memory opeatorBytes
+        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
         address tokenAddress_;
 
         tokenAddress_ = _deployInterchainToken(tokenId_, distributorBytes, name, symbol, decimals);

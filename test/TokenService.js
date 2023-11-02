@@ -416,7 +416,17 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, wallet.address, 0, gasOptions),
+                    service.deployInterchainToken(
+                        salt,
+                        '',
+                        tokenName,
+                        tokenSymbol,
+                        tokenDecimals,
+                        wallet.address,
+                        wallet.address,
+                        0,
+                        gasOptions,
+                    ),
                 service,
                 'Pause',
             );
@@ -444,7 +454,17 @@ describe('Interchain Token Service', () => {
             const revertData = keccak256(toUtf8Bytes('AlreadyDeployed()')).substring(0, 10);
             await expectRevert(
                 (gasOptions) =>
-                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, wallet.address, 0, gasOptions),
+                    service.deployInterchainToken(
+                        salt,
+                        '',
+                        tokenName,
+                        tokenSymbol,
+                        tokenDecimals,
+                        wallet.address,
+                        wallet.address,
+                        0,
+                        gasOptions,
+                    ),
                 service,
                 'InterchainTokenDeploymentFailed',
                 [revertData],
@@ -474,9 +494,19 @@ describe('Interchain Token Service', () => {
                 [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             await expect(
-                service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, operator, gasValue, {
-                    value: gasValue,
-                }),
+                service.deployInterchainToken(
+                    salt,
+                    destinationChain,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    distributor,
+                    operator,
+                    gasValue,
+                    {
+                        value: gasValue,
+                    },
+                ),
             )
                 .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
                 .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator, destinationChain, gasValue)
@@ -492,10 +522,20 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, operator, gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
+                    service.deployInterchainToken(
+                        salt,
+                        destinationChain,
+                        tokenName,
+                        tokenSymbol,
+                        tokenDecimals,
+                        distributor,
+                        operator,
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
                 service,
                 'Pause',
             );
@@ -525,20 +565,10 @@ describe('Interchain Token Service', () => {
             const tokenId = getRandomBytes32();
             const distributor = wallet.address;
             const operator = wallet.address;
-            const mintTo = '0x';
-            const mintAmount = 1234;
             const commandId = getRandomBytes32();
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
 
             await expectRevert(

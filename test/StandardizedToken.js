@@ -55,15 +55,7 @@ describe('StandardizedToken', () => {
             const salt = getRandomBytes32();
 
             await expect(
-                interchainTokenDeployer.deployInterchainToken(
-                    salt,
-                    owner.address,
-                    owner.address,
-                    name,
-                    symbol,
-                    decimals,
-                    getGasOptions(),
-                ),
+                interchainTokenDeployer.deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals, getGasOptions()),
             ).to.be.reverted;
         });
 
