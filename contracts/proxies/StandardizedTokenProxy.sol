@@ -9,7 +9,7 @@ import { IImplementation } from '../interfaces/IImplementation.sol';
 
 /**
  * @title StandardizedTokenProxy
- * @dev Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy.
+ * @dev Proxy contract for StandardizedToken contracts. Inherits from FixedProxy.
  */
 contract StandardizedTokenProxy is FixedProxy {
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
