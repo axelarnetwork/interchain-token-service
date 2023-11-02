@@ -26,7 +26,7 @@ contract TokenManagerProxy is ITokenManagerProxy {
         interchainTokenService = IInterchainTokenService(interchainTokenServiceAddress_);
         implementationType = implementationType_;
         tokenId = tokenId_;
-        address impl = _getImplementation(IInterchainTokenService(interchainTokenServiceAddress_), implementationType_);
+        address impl = _tokenManagerImplementation(IInterchainTokenService(interchainTokenServiceAddress_), implementationType_);
 
         (bool success, bytes memory returnData) = impl.delegatecall(abi.encodeWithSelector(TokenManagerProxy.setup.selector, params));
         if (!success) revert SetupFailed(returnData);
@@ -37,7 +37,7 @@ contract TokenManagerProxy is ITokenManagerProxy {
      * @return impl The address of the current implementation
      */
     function implementation() public view returns (address impl) {
-        impl = _getImplementation(interchainTokenService, implementationType);
+        impl = _tokenManagerImplementation(interchainTokenService, implementationType);
     }
 
     /**
@@ -46,11 +46,11 @@ contract TokenManagerProxy is ITokenManagerProxy {
      * @param implementationType_ The token manager type
      * @return impl The address of the implementation
      */
-    function _getImplementation(
+    function _tokenManagerImplementation(
         IInterchainTokenService interchainTokenServiceAddress_,
         uint256 implementationType_
     ) internal view returns (address impl) {
-        impl = interchainTokenServiceAddress_.getImplementation(implementationType_);
+        impl = interchainTokenServiceAddress_.tokenManagerImplementation(implementationType_);
     }
 
     /**

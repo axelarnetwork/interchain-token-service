@@ -101,13 +101,13 @@ describe('Token Manager', () => {
 
     it('Should return the correct parameters for lock/unlock token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
-        const params = await tokenManagerLockUnlock.getParams(toUtf8Bytes(owner.address), token.address);
+        const params = await tokenManagerLockUnlock.params(toUtf8Bytes(owner.address), token.address);
         expect(expectedParams).to.eq(params);
     });
 
     it('Should return the correct parameters for mint/burn token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
-        const params = await tokenManagerMintBurn.getParams(toUtf8Bytes(owner.address), token.address);
+        const params = await tokenManagerMintBurn.params(toUtf8Bytes(owner.address), token.address);
         expect(expectedParams).to.eq(params);
     });
 
@@ -116,13 +116,13 @@ describe('Token Manager', () => {
             ['bytes', 'address', 'address'],
             [toUtf8Bytes(owner.address), token.address, liquidityPool.address],
         );
-        const params = await tokenManagerLiquidityPool.getParams(toUtf8Bytes(owner.address), token.address, liquidityPool.address);
+        const params = await tokenManagerLiquidityPool.params(toUtf8Bytes(owner.address), token.address, liquidityPool.address);
         expect(expectedParams).to.eq(params);
     });
 
     it('Should return the correct parameters for fee on transfer token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
-        const params = await tokenManagerLockUnlockFeeOnTransfer.getParams(toUtf8Bytes(owner.address), token.address);
+        const params = await tokenManagerLockUnlockFeeOnTransfer.params(toUtf8Bytes(owner.address), token.address);
         expect(expectedParams).to.eq(params);
     });
 });

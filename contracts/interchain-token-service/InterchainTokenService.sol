@@ -10,20 +10,20 @@ import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
+import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
+import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
+import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
-import { IRemoteAddressValidator } from '../interfaces/IRemoteAddressValidator.sol';
 import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
 import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
-import { Pausable } from '../utils/Pausable.sol';
 import { Operatable } from '../utils/Operatable.sol';
-import { Multicall } from '../utils/Multicall.sol';
 
 /**
  * @title The Interchain Token Service
@@ -52,7 +52,7 @@ contract InterchainTokenService is
     address internal immutable implementationLockUnlockFee;
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
-    IRemoteAddressValidator public immutable remoteAddressValidator;
+    IInterchainAddressTracker public immutable interchainAddressTracker;
     address public immutable tokenManagerDeployer;
     address public immutable standardizedTokenDeployer;
     bytes32 public immutable chainNameHash;
@@ -76,7 +76,7 @@ contract InterchainTokenService is
      * @param standardizedTokenDeployer_ the address of the StandardizedTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
-     * @param remoteAddressValidator_ the address of the RemoteAddressValidator.
+     * @param interchainRouter_ the address of the InterchainAddressTracker.
      * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, and Lock-unlock with fee.
      */
     constructor(
@@ -84,11 +84,11 @@ contract InterchainTokenService is
         address standardizedTokenDeployer_,
         address gateway_,
         address gasService_,
-        address remoteAddressValidator_,
+        address interchainRouter_,
         address[] memory tokenManagerImplementations
     ) {
         if (
-            remoteAddressValidator_ == address(0) ||
+            interchainRouter_ == address(0) ||
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             standardizedTokenDeployer_ == address(0) ||
@@ -96,7 +96,7 @@ contract InterchainTokenService is
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
-        remoteAddressValidator = IRemoteAddressValidator(remoteAddressValidator_);
+        interchainAddressTracker = IInterchainAddressTracker(interchainRouter_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         standardizedTokenDeployer = standardizedTokenDeployer_;
@@ -107,7 +107,7 @@ contract InterchainTokenService is
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
-        string memory chainName_ = remoteAddressValidator.chainName();
+        string memory chainName_ = interchainAddressTracker.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
@@ -121,16 +121,16 @@ contract InterchainTokenService is
      * @param sourceAddress the address that the call came from.
      */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
-        if (!remoteAddressValidator.validateSender(sourceChain, sourceAddress)) revert NotRemoteService();
+        if (!interchainAddressTracker.isTrustedAddress(sourceChain, sourceAddress)) revert NotRemoteService();
         _;
     }
 
     /**
      * @notice This modifier is used to ensure certain functions can only be called by TokenManagers.
-     * @param tokenId the `tokenId` of the TokenManager trying to perform the call.
+     * @param tokenId_ the `tokenId_` of the TokenManager trying to perform the call.
      */
-    modifier onlyTokenManager(bytes32 tokenId) {
-        address tokenManager = getTokenManagerAddress(tokenId);
+    modifier onlyTokenManager(bytes32 tokenId_) {
+        address tokenManager = tokenManagerAddress(tokenId_);
         if (msg.sender != tokenManager) revert NotTokenManager(msg.sender, tokenManager);
 
         _;
@@ -148,64 +148,64 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Calculates the address of a TokenManager from a specific tokenId. The TokenManager does not need to exist already.
-     * @param tokenId the tokenId.
-     * @return tokenManagerAddress deployment address of the TokenManager.
+     * @notice Calculates the address of a TokenManager from a specific tokenId_. The TokenManager does not need to exist already.
+     * @param tokenId_ the tokenId_.
+     * @return tokenManagerAddress_ deployment address of the TokenManager.
      */
-    function getTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
-        tokenManagerAddress = _create3Address(tokenId);
+    function tokenManagerAddress(bytes32 tokenId_) public view returns (address tokenManagerAddress_) {
+        tokenManagerAddress_ = _create3Address(tokenId_);
     }
 
     /**
-     * @notice Returns the address of a TokenManager from a specific tokenId. The TokenManager needs to exist already.
-     * @param tokenId the tokenId.
-     * @return tokenManagerAddress deployment address of the TokenManager.
+     * @notice Returns the address of a TokenManager from a specific tokenId_. The TokenManager needs to exist already.
+     * @param tokenId_ the tokenId_.
+     * @return tokenManagerAddress_ deployment address of the TokenManager.
      */
-    function getValidTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress) {
-        tokenManagerAddress = getTokenManagerAddress(tokenId);
-        if (tokenManagerAddress.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
+    function validTokenManagerAddress(bytes32 tokenId_) public view returns (address tokenManagerAddress_) {
+        tokenManagerAddress_ = tokenManagerAddress(tokenId_);
+        if (tokenManagerAddress_.code.length == 0) revert TokenManagerDoesNotExist(tokenId_);
     }
 
     /**
      * @notice Returns the address of the token that an existing tokenManager points to.
-     * @param tokenId the tokenId.
-     * @return tokenAddress the address of the token.
+     * @param tokenId_ the tokenId_.
+     * @return tokenAddress_ the address of the token.
      */
-    function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress) {
-        address tokenManagerAddress = getValidTokenManagerAddress(tokenId);
-        tokenAddress = ITokenManager(tokenManagerAddress).tokenAddress();
+    function tokenAddress(bytes32 tokenId_) external view returns (address tokenAddress_) {
+        address tokenManagerAddress_ = validTokenManagerAddress(tokenId_);
+        tokenAddress_ = ITokenManager(tokenManagerAddress_).tokenAddress();
     }
 
     /**
-     * @notice Returns the address of the standardized token that would be deployed with a given tokenId.
+     * @notice Returns the address of the standardized token that would be deployed with a given tokenId_.
      * The token does not need to exist.
-     * @param tokenId the tokenId.
-     * @return tokenAddress the address of the standardized token.
+     * @param tokenId_ the tokenId_.
+     * @return tokenAddress_ the address of the standardized token.
      */
-    function getStandardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
-        tokenId = _getStandardizedTokenSalt(tokenId);
-        tokenAddress = _create3Address(tokenId);
+    function interchainTokenAddress(bytes32 tokenId_) public view returns (address tokenAddress_) {
+        tokenId_ = _getStandardizedTokenSalt(tokenId_);
+        tokenAddress_ = _create3Address(tokenId_);
     }
 
     /**
-     * @notice Calculates the tokenId that would correspond to a canonical link for a given token.
+     * @notice Calculates the tokenId_ that would correspond to a canonical link for a given token.
      * This will depend on what chain it is called from, unlike custom tokenIds.
-     * @param tokenAddress the address of the token.
-     * @return tokenId the tokenId that the canonical TokenManager would get (or has gotten) for the token.
+     * @param tokenAddress_ the address of the token.
+     * @return tokenId_ the tokenId_ that the canonical TokenManager would get (or has gotten) for the token.
      */
-    function getCanonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_ID, chainNameHash, tokenAddress));
+    function canonicalTokenId(address tokenAddress_) public view returns (bytes32 tokenId_) {
+        tokenId_ = keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_ID, chainNameHash, tokenAddress_));
     }
 
     /**
-     * @notice Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt.
+     * @notice Calculates the tokenId_ that would correspond to a custom link for a given deployer with a specified salt.
      * This will not depend on what chain it is called from, unlike canonical tokenIds.
      * @param sender the address of the TokenManager deployer.
      * @param salt the salt that the deployer uses for the deployment.
-     * @return tokenId the tokenId that the custom TokenManager would get (or has gotten).
+     * @return tokenId_ the tokenId_ that the custom TokenManager would get (or has gotten).
      */
-    function getCustomTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId) {
-        tokenId = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, sender, salt));
+    function tokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId_) {
+        tokenId_ = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_ID, sender, salt));
     }
 
     /**
@@ -214,7 +214,7 @@ contract InterchainTokenService is
      * @param tokenManagerType the type of the TokenManager.
      * @return tokenManagerAddress the address of the TokenManagerImplementation.
      */
-    function getImplementation(uint256 tokenManagerType) external view returns (address) {
+    function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address) {
         if (tokenManagerType > uint256(type(TokenManagerType).max)) revert InvalidImplementation();
 
         if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) return implementationMintBurn;
@@ -227,32 +227,32 @@ contract InterchainTokenService is
 
     /**
      * @notice Getter function for the flow limit of an existing token manager with a give token ID.
-     * @param tokenId the token ID of the TokenManager.
-     * @return flowLimit the flow limit.
+     * @param tokenId_ the token ID of the TokenManager.
+     * @return flowLimit_ the flow limit.
      */
-    function getFlowLimit(bytes32 tokenId) external view returns (uint256 flowLimit) {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        flowLimit = tokenManager.getFlowLimit();
+    function flowLimit(bytes32 tokenId_) external view returns (uint256 flowLimit_) {
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId_));
+        flowLimit_ = tokenManager.flowLimit();
     }
 
     /**
      * @notice Getter function for the flow out amount of an existing token manager with a give token ID.
-     * @param tokenId the token ID of the TokenManager.
-     * @return flowOutAmount the flow out amount.
+     * @param tokenId_ the token ID of the TokenManager.
+     * @return flowOutAmount_ the flow out amount.
      */
-    function getFlowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount) {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        flowOutAmount = tokenManager.getFlowOutAmount();
+    function flowOutAmount(bytes32 tokenId_) external view returns (uint256 flowOutAmount_) {
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId_));
+        flowOutAmount_ = tokenManager.flowOutAmount();
     }
 
     /**
      * @notice Getter function for the flow in amount of an existing token manager with a give token ID.
-     * @param tokenId the token ID of the TokenManager.
-     * @return flowInAmount the flow in amount.
+     * @param tokenId_ the token ID of the TokenManager.
+     * @return flowInAmount_ the flow in amount.
      */
-    function getFlowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount) {
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
-        flowInAmount = tokenManager.getFlowInAmount();
+    function flowInAmount(bytes32 tokenId_) external view returns (uint256 flowInAmount_) {
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId_));
+        flowInAmount_ = tokenManager.flowInAmount();
     }
 
     /************\
@@ -261,37 +261,37 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to register canonical tokens. Caller does not matter.
-     * @param tokenAddress the token to be bridged.
-     * @return tokenId the tokenId that was used for this canonical token.
+     * @param tokenAddress_ the token to be bridged.
+     * @return tokenId_ the tokenId_ that was used for this canonical token.
      */
-    function registerCanonicalToken(address tokenAddress) external payable notPaused returns (bytes32 tokenId) {
-        (, string memory tokenSymbol, ) = _validateToken(tokenAddress);
-        if (gateway.tokenAddresses(tokenSymbol) == tokenAddress) revert GatewayToken();
-        tokenId = getCanonicalTokenId(tokenAddress);
-        _deployTokenManager(tokenId, TokenManagerType.LOCK_UNLOCK, abi.encode('', tokenAddress));
+    function registerCanonicalToken(address tokenAddress_) external payable whenNotPaused returns (bytes32 tokenId_) {
+        (, string memory tokenSymbol, ) = _validateToken(tokenAddress_);
+        if (gateway.tokenAddresses(tokenSymbol) == tokenAddress_) revert GatewayToken();
+        tokenId_ = canonicalTokenId(tokenAddress_);
+        _deployTokenManager(tokenId_, TokenManagerType.LOCK_UNLOCK, abi.encode('', tokenAddress_));
     }
 
     /**
      * @notice Used to deploy remote TokenManagers and standardized tokens for a canonical token. This needs to be
      * called from the chain that registered the canonical token, and anyone can call it.
-     * @param tokenId the tokenId of the canonical token.
+     * @param tokenId_ the tokenId_ of the canonical token.
      * @param destinationChain the name of the chain to deploy the TokenManager and standardized token to.
      * @param gasValue the amount of native tokens to be used to pay for gas for the remote deployment.
      * At least the amount specified needs to be passed to the call
      * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
      */
-    function deployRemoteCanonicalToken(bytes32 tokenId, string calldata destinationChain, uint256 gasValue) public payable notPaused {
-        address tokenAddress;
+    function deployRemoteCanonicalToken(bytes32 tokenId_, string calldata destinationChain, uint256 gasValue) public payable whenNotPaused {
+        address tokenAddress_;
         {
-            tokenAddress = getValidTokenManagerAddress(tokenId);
-            tokenAddress = ITokenManager(tokenAddress).tokenAddress();
-            bytes32 canonicalTokenId = getCanonicalTokenId(tokenAddress);
+            tokenAddress_ = validTokenManagerAddress(tokenId_);
+            tokenAddress_ = ITokenManager(tokenAddress_).tokenAddress();
+            bytes32 canonicalTokenId_ = canonicalTokenId(tokenAddress_);
 
-            if (canonicalTokenId != tokenId) revert InvalidCanonicalTokenId(canonicalTokenId);
+            if (canonicalTokenId_ != tokenId_) revert InvalidCanonicalTokenId(canonicalTokenId_);
         }
 
-        (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress);
-        _deployRemoteStandardizedToken(tokenId, tokenName, tokenSymbol, tokenDecimals, '', '', 0, '', destinationChain, gasValue);
+        (string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) = _validateToken(tokenAddress_);
+        _deployRemoteStandardizedToken(tokenId_, tokenName, tokenSymbol, tokenDecimals, '', '', 0, '', destinationChain, gasValue);
     }
 
     /**
@@ -304,13 +304,13 @@ contract InterchainTokenService is
         bytes32 salt,
         TokenManagerType tokenManagerType,
         bytes memory params
-    ) public payable notPaused returns (bytes32 tokenId) {
+    ) public payable whenNotPaused returns (bytes32 tokenId_) {
         address deployer_ = msg.sender;
-        tokenId = getCustomTokenId(deployer_, salt);
+        tokenId_ = tokenId(deployer_, salt);
 
-        emit CustomTokenIdClaimed(tokenId, deployer_, salt);
+        emit CustomTokenIdClaimed(tokenId_, deployer_, salt);
 
-        _deployTokenManager(tokenId, tokenManagerType, params);
+        _deployTokenManager(tokenId_, tokenManagerType, params);
     }
 
     /**
@@ -324,19 +324,19 @@ contract InterchainTokenService is
      * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions
      * that could make remote contract calls.
      */
-    function deployRemoteCustomTokenManager(
+    function deployTokenManager(
         bytes32 salt,
         string calldata destinationChain,
         TokenManagerType tokenManagerType,
         bytes calldata params,
         uint256 gasValue
-    ) external payable notPaused returns (bytes32 tokenId) {
+    ) external payable whenNotPaused returns (bytes32 tokenId_) {
         address deployer_ = msg.sender;
-        tokenId = getCustomTokenId(deployer_, salt);
+        tokenId_ = tokenId(deployer_, salt);
 
-        emit CustomTokenIdClaimed(tokenId, deployer_, salt);
+        emit CustomTokenIdClaimed(tokenId_, deployer_, salt);
 
-        _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
+        _deployRemoteTokenManager(tokenId_, destinationChain, gasValue, tokenManagerType, params);
     }
 
     /**
@@ -355,11 +355,11 @@ contract InterchainTokenService is
         uint8 decimals,
         uint256 mintAmount,
         address distributor
-    ) external payable notPaused {
-        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
-        _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, msg.sender);
-        address tokenAddress = getStandardizedTokenAddress(tokenId);
-        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(msg.sender.toBytes(), tokenAddress));
+    ) external payable whenNotPaused {
+        bytes32 tokenId_ = tokenId(msg.sender, salt);
+        _deployInterchainToken(tokenId_, distributor, name, symbol, decimals, mintAmount, msg.sender);
+        address tokenAddress_ = interchainTokenAddress(tokenId_);
+        _deployTokenManager(tokenId_, TokenManagerType.MINT_BURN, abi.encode(msg.sender.toBytes(), tokenAddress_));
     }
 
     /**
@@ -378,7 +378,7 @@ contract InterchainTokenService is
      * specified needs to be passed to the call
      * @dev `gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls.
      */
-    function deployAndRegisterRemoteStandardizedToken(
+    function deployInterchainToken(
         bytes32 salt,
         string memory name,
         string memory symbol,
@@ -389,10 +389,10 @@ contract InterchainTokenService is
         bytes memory operator_,
         string calldata destinationChain,
         uint256 gasValue
-    ) external payable notPaused {
-        bytes32 tokenId = getCustomTokenId(msg.sender, salt);
+    ) external payable whenNotPaused {
+        bytes32 tokenId_ = tokenId(msg.sender, salt);
         _deployRemoteStandardizedToken(
-            tokenId,
+            tokenId_,
             name,
             symbol,
             decimals,
@@ -410,14 +410,14 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) notPaused returns (address, uint256) {
-        (uint256 selector, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
+    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
+        (uint256 selector, bytes32 tokenId_, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
 
         if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
             revert InvalidExpressSelector(selector);
         }
 
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId_));
         return (tokenManager.tokenAddress(), amount);
     }
 
@@ -426,7 +426,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external payable notPaused {
+    ) external payable whenNotPaused {
         uint256 selector = abi.decode(payload, (uint256));
         if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
             revert InvalidExpressSelector(selector);
@@ -450,7 +450,7 @@ contract InterchainTokenService is
      * @param payload the payload of the receive token
      */
     function _expressExecute(string calldata sourceChain, bytes calldata payload) internal {
-        (uint256 selector, bytes32 tokenId, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
+        (uint256 selector, bytes32 tokenId_, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
             payload,
             (uint256, bytes32, bytes, bytes, uint256)
         );
@@ -458,7 +458,7 @@ contract InterchainTokenService is
 
         IERC20 token;
         {
-            ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+            ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId_));
             token = IERC20(tokenManager.tokenAddress());
         }
 
@@ -471,7 +471,7 @@ contract InterchainTokenService is
                 sourceChain,
                 sourceAddress,
                 data,
-                tokenId,
+                tokenId_,
                 address(token),
                 amount
             );
@@ -482,35 +482,35 @@ contract InterchainTokenService is
 
     /**
      * @notice Transfer a token interchain.
-     * @param tokenId the tokenId for the token link.
+     * @param tokenId_ the tokenId_ for the token link.
      * @param destinationChain the name of the chain to send the token to.
      * @param destinationAddress the recipient of the interchain transfer.
      * @param amount the amount of token to give.
      * @param metadata the data to be passed to the destination. If provided with a bytes4(0) prefix, it'll execute the destination contract.
      */
     function interchainTransfer(
-        bytes32 tokenId,
+        bytes32 tokenId_,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external payable notPaused {
-        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+    ) external payable whenNotPaused {
+        ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId_));
         amount = tokenManager.takeToken(msg.sender, amount);
-        _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
+        _transmitSendToken(tokenId_, msg.sender, destinationChain, destinationAddress, amount, metadata);
     }
 
     function sendTokenWithData(
-        bytes32 tokenId,
+        bytes32 tokenId_,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external payable notPaused {
-        ITokenManager tokenManager = ITokenManager(getTokenManagerAddress(tokenId));
+    ) external payable whenNotPaused {
+        ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId_));
         amount = tokenManager.takeToken(msg.sender, amount);
         uint32 prefix = 0;
-        _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
+        _transmitSendToken(tokenId_, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
     }
 
     /*********************\
@@ -518,8 +518,8 @@ contract InterchainTokenService is
     \*********************/
 
     /**
-     * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
-     * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
+     * @notice Transmit a sendTokenWithData for the given tokenId_. Only callable by a token manager.
+     * @param tokenId_ the tokenId_ of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimbursement of gas.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the destinationAddress for the interchainTransfer.
@@ -527,14 +527,14 @@ contract InterchainTokenService is
      * @param metadata the data to be passed to the destination.
      */
     function transmitSendToken(
-        bytes32 tokenId,
+        bytes32 tokenId_,
         address sourceAddress,
         string calldata destinationChain,
         bytes memory destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external payable onlyTokenManager(tokenId) notPaused {
-        _transmitSendToken(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadata);
+    ) external payable onlyTokenManager(tokenId_) whenNotPaused {
+        _transmitSendToken(tokenId_, sourceAddress, destinationChain, destinationAddress, amount, metadata);
     }
 
     /*************\
@@ -550,7 +550,7 @@ contract InterchainTokenService is
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
-            ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenIds[i]));
+            ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenIds[i]));
             // slither-disable-next-line calls-loop
             tokenManager.setFlowLimit(flowLimits[i]);
         }
@@ -562,6 +562,7 @@ contract InterchainTokenService is
      */
     function setPaused(bool paused) external onlyOwner {
         _setPaused(paused);
+        emit PausedSet(paused, msg.sender);
     }
 
     /****************\
@@ -593,7 +594,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external onlyRemoteService(sourceChain, sourceAddress) notPaused {
+    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
@@ -610,7 +611,7 @@ contract InterchainTokenService is
         }
 
         if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) return _processDeployTokenManagerPayload(payload);
-        if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) return _processDeployStandardizedTokenAndManagerPayload(payload);
+        if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) return _processDeployInterchainTokenPayload(payload);
 
         revert SelectorUnknown(selector);
     }
@@ -658,17 +659,17 @@ contract InterchainTokenService is
         bytes calldata payload,
         uint256 selector
     ) internal {
-        bytes32 tokenId;
+        bytes32 tokenId_;
         bytes memory sourceAddress;
         address destinationAddress;
         uint256 amount;
         {
             bytes memory destinationAddressBytes;
-            (, tokenId, sourceAddress, destinationAddressBytes, amount) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256));
+            (, tokenId_, sourceAddress, destinationAddressBytes, amount) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256));
             destinationAddress = destinationAddressBytes.toAddress();
         }
 
-        ITokenManager tokenManager = ITokenManager(getValidTokenManagerAddress(tokenId));
+        ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId_));
 
         // Return token to the existing express caller
         if (expressExecutor != address(0)) {
@@ -684,13 +685,13 @@ contract InterchainTokenService is
             (, , , , , data) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256, bytes));
 
             // slither-disable-next-line reentrancy-events
-            emit TokenReceivedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
+            emit TokenReceivedWithData(tokenId_, sourceChain, sourceAddress, destinationAddress, amount);
 
             bytes32 result = IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(
                 sourceChain,
                 sourceAddress,
                 data,
-                tokenId,
+                tokenId_,
                 tokenManager.tokenAddress(),
                 amount
             );
@@ -698,7 +699,7 @@ contract InterchainTokenService is
             if (result != EXECUTE_SUCCESS) revert ExecuteWithInterchainTokenFailed(destinationAddress);
         } else {
             // slither-disable-next-line reentrancy-events
-            emit TokenReceived(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
+            emit TokenReceived(tokenId_, sourceChain, sourceAddress, destinationAddress, amount);
         }
     }
 
@@ -707,22 +708,22 @@ contract InterchainTokenService is
      * @param payload The encoded data payload to be processed
      */
     function _processDeployTokenManagerPayload(bytes calldata payload) internal {
-        (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
+        (, bytes32 tokenId_, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
             payload,
             (uint256, bytes32, TokenManagerType, bytes)
         );
 
-        _deployTokenManager(tokenId, tokenManagerType, params);
+        _deployTokenManager(tokenId_, tokenManagerType, params);
     }
 
     /**
      * @notice Process a deploy standardized token and manager payload.
      * @param payload The encoded data payload to be processed
      */
-    function _processDeployStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
+    function _processDeployInterchainTokenPayload(bytes calldata payload) internal {
         (
             ,
-            bytes32 tokenId,
+            bytes32 tokenId_,
             string memory name,
             string memory symbol,
             uint8 decimals,
@@ -731,13 +732,13 @@ contract InterchainTokenService is
             uint256 mintAmount,
             bytes memory operatorBytes
         ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes, uint256, bytes));
-        address tokenAddress = getStandardizedTokenAddress(tokenId);
-        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        address tokenAddress_ = interchainTokenAddress(tokenId_);
+        address tokenManagerAddress_ = tokenManagerAddress(tokenId_);
         address distributor;
         address mintTo;
 
         if (distributorBytes.length == 0) {
-            distributor = tokenManagerAddress;
+            distributor = tokenManagerAddress_;
         } else {
             distributor = distributorBytes.toAddress();
         }
@@ -752,8 +753,8 @@ contract InterchainTokenService is
             operatorBytes = address(this).toBytes();
         }
 
-        _deployStandardizedToken(tokenId, distributor, name, symbol, decimals, mintAmount, mintTo);
-        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(operatorBytes, tokenAddress));
+        _deployInterchainToken(tokenId_, distributor, name, symbol, decimals, mintAmount, mintTo);
+        _deployTokenManager(tokenId_, TokenManagerType.MINT_BURN, abi.encode(operatorBytes, tokenAddress_));
     }
 
     /**
@@ -763,7 +764,8 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction
      */
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
-        string memory destinationAddress = remoteAddressValidator.getRemoteAddress(destinationChain);
+        string memory destinationAddress = interchainAddressTracker.trustedAddress(destinationChain);
+        if (bytes(destinationAddress).length == 0) revert UntrustedChain(destinationChain);
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
                 address(this),
@@ -776,8 +778,8 @@ contract InterchainTokenService is
         gateway.callContract(destinationChain, destinationAddress, payload);
     }
 
-    function _validateToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
-        IERC20Named token = IERC20Named(tokenAddress);
+    function _validateToken(address tokenAddress_) internal returns (string memory name, string memory symbol, uint8 decimals) {
+        IERC20Named token = IERC20Named(tokenAddress_);
         name = token.name();
         symbol = token.symbol();
         decimals = token.decimals();
@@ -785,28 +787,28 @@ contract InterchainTokenService is
 
     /**
      * @notice Deploys a token manager on a destination chain.
-     * @param tokenId The ID of the token
+     * @param tokenId_ The ID of the token
      * @param destinationChain The chain where the token manager will be deployed
      * @param gasValue The amount of gas to be paid for the transaction
      * @param tokenManagerType The type of token manager to be deployed
      * @param params Additional parameters for the token manager deployment
      */
     function _deployRemoteTokenManager(
-        bytes32 tokenId,
+        bytes32 tokenId_,
         string calldata destinationChain,
         uint256 gasValue,
         TokenManagerType tokenManagerType,
         bytes memory params
     ) internal {
-        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
+        emit RemoteTokenManagerDeploymentInitialized(tokenId_, destinationChain, gasValue, tokenManagerType, params);
 
-        bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
+        bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId_, tokenManagerType, params);
         _callContract(destinationChain, payload, gasValue);
     }
 
     /**
      * @notice Deploys a standardized token on a destination chain.
-     * @param tokenId The ID of the token
+     * @param tokenId_ The ID of the token
      * @param name The name of the token
      * @param symbol The symbol of the token
      * @param decimals The number of decimals of the token
@@ -818,7 +820,7 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction
      */
     function _deployRemoteStandardizedToken(
-        bytes32 tokenId,
+        bytes32 tokenId_,
         string memory name,
         string memory symbol,
         uint8 decimals,
@@ -831,7 +833,7 @@ contract InterchainTokenService is
     ) internal {
         // slither-disable-next-line reentrancy-events
         emit RemoteStandardizedTokenAndManagerDeploymentInitialized(
-            tokenId,
+            tokenId_,
             name,
             symbol,
             decimals,
@@ -845,7 +847,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(
             SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-            tokenId,
+            tokenId_,
             name,
             symbol,
             decimals,
@@ -859,14 +861,14 @@ contract InterchainTokenService is
 
     /**
      * @notice Deploys a token manager
-     * @param tokenId The ID of the token
+     * @param tokenId_ The ID of the token
      * @param tokenManagerType The type of the token manager to be deployed
      * @param params Additional parameters for the token manager deployment
      */
-    function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
+    function _deployTokenManager(bytes32 tokenId_, TokenManagerType tokenManagerType, bytes memory params) internal {
         // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
-            abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
+            abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId_, tokenManagerType, params)
         );
         if (!success) revert TokenManagerDeploymentFailed(returnData);
 
@@ -876,21 +878,21 @@ contract InterchainTokenService is
         }
 
         // slither-disable-next-line reentrancy-events
-        emit TokenManagerDeployed(tokenId, tokenManager, tokenManagerType, params);
+        emit TokenManagerDeployed(tokenId_, tokenManager, tokenManagerType, params);
     }
 
     /**
      * @notice Compute the salt for a standardized token deployment.
-     * @param tokenId The ID of the token
+     * @param tokenId_ The ID of the token
      * @return salt The computed salt for the token deployment
      */
-    function _getStandardizedTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
-        return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, tokenId));
+    function _getStandardizedTokenSalt(bytes32 tokenId_) internal pure returns (bytes32 salt) {
+        return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, tokenId_));
     }
 
     /**
      * @notice Deploys a standardized token.
-     * @param tokenId The ID of the token
+     * @param tokenId_ The ID of the token
      * @param distributor The distributor address for the token
      * @param name The name of the token
      * @param symbol The symbol of the token
@@ -898,8 +900,8 @@ contract InterchainTokenService is
      * @param mintAmount The amount of tokens to be minted upon deployment
      * @param mintTo The address where the minted tokens will be sent upon deployment
      */
-    function _deployStandardizedToken(
-        bytes32 tokenId,
+    function _deployInterchainToken(
+        bytes32 tokenId_,
         address distributor,
         string memory name,
         string memory symbol,
@@ -907,15 +909,15 @@ contract InterchainTokenService is
         uint256 mintAmount,
         address mintTo
     ) internal {
-        bytes32 salt = _getStandardizedTokenSalt(tokenId);
-        address tokenManagerAddress = getTokenManagerAddress(tokenId);
+        bytes32 salt = _getStandardizedTokenSalt(tokenId_);
+        address tokenManagerAddress_ = tokenManagerAddress(tokenId_);
 
         // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory returnData) = standardizedTokenDeployer.delegatecall(
             abi.encodeWithSelector(
                 IStandardizedTokenDeployer.deployStandardizedToken.selector,
                 salt,
-                tokenManagerAddress,
+                tokenManagerAddress_,
                 distributor,
                 name,
                 symbol,
@@ -928,13 +930,13 @@ contract InterchainTokenService is
             revert StandardizedTokenDeploymentFailed(returnData);
         }
 
-        address tokenAddress;
+        address tokenAddress_;
         assembly {
-            tokenAddress := mload(add(returnData, 0x20))
+            tokenAddress_ := mload(add(returnData, 0x20))
         }
 
         // slither-disable-next-line reentrancy-events
-        emit StandardizedTokenDeployed(tokenId, tokenAddress, distributor, name, symbol, decimals, mintAmount, mintTo);
+        emit StandardizedTokenDeployed(tokenId_, tokenAddress_, distributor, name, symbol, decimals, mintAmount, mintTo);
     }
 
     function _decodeMetadata(bytes memory metadata) internal pure returns (uint32 version, bytes memory data) {
@@ -952,8 +954,8 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
-     * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
+     * @notice Transmit a sendTokenWithData for the given tokenId_. Only callable by a token manager.
+     * @param tokenId_ the tokenId_ of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the destinationAddress for the interchainTransfer.
@@ -961,7 +963,7 @@ contract InterchainTokenService is
      * @param metadata the data to be passed to the destiantion.
      */
     function _transmitSendToken(
-        bytes32 tokenId,
+        bytes32 tokenId_,
         address sourceAddress,
         string calldata destinationChain,
         bytes memory destinationAddress,
@@ -971,9 +973,9 @@ contract InterchainTokenService is
         bytes memory payload;
         if (metadata.length < 4) {
             // slither-disable-next-line reentrancy-events
-            emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
+            emit TokenSent(tokenId_, destinationChain, destinationAddress, amount);
 
-            payload = abi.encode(SELECTOR_RECEIVE_TOKEN, tokenId, sourceAddress.toBytes(), destinationAddress, amount);
+            payload = abi.encode(SELECTOR_RECEIVE_TOKEN, tokenId_, sourceAddress.toBytes(), destinationAddress, amount);
 
             _callContract(destinationChain, payload, msg.value);
             return;
@@ -983,9 +985,9 @@ contract InterchainTokenService is
         if (version > 0) revert InvalidMetadataVersion(version);
 
         // slither-disable-next-line reentrancy-events
-        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
+        emit TokenSentWithData(tokenId_, destinationChain, destinationAddress, amount, sourceAddress, metadata);
 
-        payload = abi.encode(SELECTOR_RECEIVE_TOKEN_WITH_DATA, tokenId, sourceAddress.toBytes(), destinationAddress, amount, metadata);
+        payload = abi.encode(SELECTOR_RECEIVE_TOKEN_WITH_DATA, tokenId_, sourceAddress.toBytes(), destinationAddress, amount, metadata);
 
         _callContract(destinationChain, payload, msg.value);
     }
