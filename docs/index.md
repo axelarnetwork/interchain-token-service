@@ -494,10 +494,10 @@ Used to deploy custom TokenManagers with the specified salt. Different callers w
 | tokenManagerType | enum ITokenManagerType.TokenManagerType | the type of TokenManager to be deployed.                     |
 | params           | bytes                                   | the params that will be used to initialize the TokenManager. |
 
-### deployRemoteCustomTokenManager
+### deployTokenManager
 
 ```solidity
-function deployRemoteCustomTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
+function deployTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Used to deploy remote custom TokenManagers.
@@ -535,10 +535,10 @@ can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwis
 | mintAmount  | uint256 | the amount of token to be mint during deployment to msg.sender.    |
 | distributor | address | the address that will be able to mint and burn the deployed token. |
 
-### deployAndRegisterRemoteStandardizedToken
+### deployInterchainToken
 
 ```solidity
-function deployAndRegisterRemoteStandardizedToken(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
+function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
 ```
 
 Used to deploy a standardized token alongside a TokenManager in another chain. If the `distributor` is empty
@@ -1508,10 +1508,10 @@ Deploys a custom token manager contract.
 | ------- | ------- | ------------------------------------------ |
 | tokenId | bytes32 | The tokenId of the deployed token manager. |
 
-### deployRemoteCustomTokenManager
+### deployTokenManager
 
 ```solidity
-function deployRemoteCustomTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
+function deployTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Deploys a custom token manager contract on a remote chain.
@@ -1545,10 +1545,10 @@ Deploys a standardized token and registers it. The token manager type will be lo
 | mintAmount  | uint256 | The amount of tokens to mint to the deployer.            |
 | distributor | address | The address of the distributor for mint/burn operations. |
 
-### deployAndRegisterRemoteStandardizedToken
+### deployInterchainToken
 
 ```solidity
-function deployAndRegisterRemoteStandardizedToken(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
+function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
 ```
 
 Deploys and registers a standardized token on a remote chain.

@@ -167,7 +167,7 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await service.populateTransaction.deployAndRegisterRemoteStandardizedToken(
+                const tx = await service.populateTransaction.deployInterchainToken(
                     salt,
                     name,
                     symbol,
@@ -287,13 +287,7 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await service.populateTransaction.deployRemoteCustomTokenManager(
-                    salt,
-                    otherChains[i],
-                    MINT_BURN,
-                    params,
-                    gasValues[i],
-                );
+                const tx = await service.populateTransaction.deployTokenManager(salt, otherChains[i], MINT_BURN, params, gasValues[i]);
                 data.push(tx.data);
                 value += gasValues[i];
             }

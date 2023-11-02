@@ -517,7 +517,7 @@ contract InterchainTokenService is
         }
 
         if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) return _processDeployTokenManagerPayload(payload);
-        if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) return _processDeployStandardizedTokenAndManagerPayload(payload);
+        if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) return _processDeployInterchainTokenPayload(payload);
 
         revert SelectorUnknown(selector);
     }
