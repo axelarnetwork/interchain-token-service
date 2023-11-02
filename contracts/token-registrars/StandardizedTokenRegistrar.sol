@@ -118,17 +118,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             }
         }
 
-        _deployInterchainToken(
-            salt,
-            tokenName,
-            tokenSymbol,
-            tokenDecimals,
-            distributor,
-            operator,
-            mintAmount,
-            destinationChain,
-            gasValue
-        );
+        _deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, distributor, operator, mintAmount, destinationChain, gasValue);
     }
 
     function _deployInterchainToken(
