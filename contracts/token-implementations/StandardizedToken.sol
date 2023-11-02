@@ -2,13 +2,14 @@
 
 pragma solidity ^0.8.0;
 
+import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
+
 import { IImplementation } from '../interfaces/IImplementation.sol';
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
-import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
@@ -18,7 +19,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * This contract also inherits Distributable and Implementation logic.
  */
 contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable, IStandardizedToken {
-    using AddressBytesUtils for bytes;
+    using AddressBytes for bytes;
 
     string public name;
     string public symbol;
