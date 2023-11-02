@@ -51,10 +51,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
         address distributor_;
         address tokenManagerAddress;
         string memory tokenName;
-        (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(
-            params,
-            (address, address, string, string, uint8)
-        );
+        (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
 
         if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();
@@ -62,7 +59,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
         tokenManager_ = tokenManagerAddress;
         name = tokenName;
 
-        if(distributor_ != address(0)) _addDistributor(distributor_);
+        if (distributor_ != address(0)) _addDistributor(distributor_);
         _addDistributor(tokenManagerAddress);
         _setNameHash(tokenName);
     }

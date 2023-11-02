@@ -59,15 +59,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
         uint8 tokenDecimals = token.decimals();
 
         // slither-disable-next-line arbitrary-send-eth
-        service.deployInterchainToken{ value: gasValue }(
-            salt,
-            destinationChain,
-            tokenName,
-            tokenSymbol,
-            tokenDecimals,
-            '',
-            gasValue
-        );
+        service.deployInterchainToken{ value: gasValue }(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
     }
 
     function transferCanonicalToken(

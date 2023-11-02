@@ -138,8 +138,6 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         string memory tokenSymbol,
         uint8 tokenDecimals,
         bytes memory distributor,
-        bytes memory operator,
-        uint256 mintAmount,
         string memory destinationChain,
         uint256 gasValue
     ) internal {

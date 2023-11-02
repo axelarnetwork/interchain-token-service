@@ -43,7 +43,7 @@ describe('StandardizedToken', () => {
         await standardizedTokenDeployer
             .deployStandardizedToken(salt, owner.address, owner.address, name, symbol, decimals)
             .then((tx) => tx.wait());
-            
+
         await (await token.mint(owner.address, mintAmount)).wait();
     });
 

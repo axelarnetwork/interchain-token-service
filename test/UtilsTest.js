@@ -292,9 +292,7 @@ describe('StandardizedTokenDeployer', () => {
         const token = new Contract(tokenAddress, StandardizedToken.abi, ownerWallet);
         const tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, ownerWallet);
 
-        await expect(
-            standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, tokenManager, name, symbol, decimals),
-        )
+        await expect(standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, tokenManager, name, symbol, decimals))
             .and.to.emit(token, 'RolesAdded')
             .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE)
             .to.emit(token, 'RolesAdded')
@@ -309,15 +307,7 @@ describe('StandardizedTokenDeployer', () => {
 
         await expectRevert(
             (gasOptions) =>
-                standardizedTokenDeployer.deployStandardizedToken(
-                    salt,
-                    tokenManager,
-                    tokenManager,
-                    name,
-                    symbol,
-                    decimals,
-                    gasOptions,
-                ),
+                standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, tokenManager, name, symbol, decimals, gasOptions),
             standardizedTokenDeployer,
             'AlreadyDeployed',
         );

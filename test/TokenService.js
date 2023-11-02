@@ -5,7 +5,7 @@ const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero, MaxUint256 } = ethers.constants;
-const { defaultAbiCoder, solidityPack, keccak256, arrayify, toUtf8Bytes, hexlify } = ethers.utils;
+const { defaultAbiCoder, solidityPack, keccak256, toUtf8Bytes, hexlify } = ethers.utils;
 const { Contract, Wallet } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
@@ -392,9 +392,7 @@ describe('Interchain Token Service', () => {
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(
-                service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0),
-            )
+            await expect(service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0))
                 .to.emit(service, 'StandardizedTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
                 .to.emit(service, 'TokenManagerDeployed')
@@ -418,16 +416,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.deployInterchainToken(
-                        salt,
-                        '',
-                        tokenName,
-                        tokenSymbol,
-                        tokenDecimals,
-                        wallet.address,
-                        0,
-                        gasOptions,
-                    ),
+                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
                 service,
                 'Pause',
             );
@@ -442,9 +431,7 @@ describe('Interchain Token Service', () => {
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(
-                service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0),
-            )
+            await expect(service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
             const tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
@@ -457,16 +444,7 @@ describe('Interchain Token Service', () => {
             const revertData = keccak256(toUtf8Bytes('AlreadyDeployed()')).substring(0, 10);
             await expectRevert(
                 (gasOptions) =>
-                    service.deployInterchainToken(
-                        salt,
-                        '',
-                        tokenName,
-                        tokenSymbol,
-                        tokenDecimals,
-                        wallet.address,
-                        0,
-                        gasOptions,
-                    ),
+                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
                 service,
                 'StandardizedTokenDeploymentFailed',
                 [revertData],
@@ -492,37 +470,15 @@ describe('Interchain Token Service', () => {
             const tokenId = await service.tokenId(wallet.address, salt);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [
-                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor
-                ],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
             );
             await expect(
-                service.deployInterchainToken(
-                    salt,
-                    destinationChain,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    gasValue,
-                    { value: gasValue },
-                ),
+                service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, gasValue, {
+                    value: gasValue,
+                }),
             )
                 .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
-                .withArgs(
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    destinationChain,
-                    gasValue,
-                )
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, destinationChain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -535,16 +491,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.deployInterchainToken(
-                        salt,
-                        destinationChain,
-                        tokenName,
-                        tokenSymbol,
-                        tokenDecimals,
-                        distributor,
-                        gasValue,
-                        { ...gasOptions, value: gasValue },
-                    ),
+                    service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'Pause',
             );
@@ -608,14 +558,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [distributor, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [
-                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor
-                ],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -637,14 +580,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [distributor, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [
-                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor
-                ],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -666,27 +602,13 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [
-                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor
-                ],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(
-                    tokenId,
-                    tokenAddress,
-                    AddressZero,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals
-                )
+                .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);
@@ -702,27 +624,13 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [distributor, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [
-                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor
-                ],
+                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'StandardizedTokenDeployed')
-                .withArgs(
-                    tokenId,
-                    tokenAddress,
-                    AddressZero,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals
-                )
+                .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
             const tokenManager = new Contract(tokenManagerAddress, TokenManager.abi, wallet);

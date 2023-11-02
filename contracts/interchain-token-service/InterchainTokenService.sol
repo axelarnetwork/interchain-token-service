@@ -271,7 +271,7 @@ contract InterchainTokenService is
         tokenId_ = tokenId(deployer_, salt);
 
         emit CustomTokenIdClaimed(tokenId_, deployer_, salt);
-        if(bytes(destinationChain).length == 0) {
+        if (bytes(destinationChain).length == 0) {
             _deployTokenManager(tokenId_, tokenManagerType, params);
         } else {
             _deployRemoteTokenManager(tokenId_, destinationChain, gasValue, tokenManagerType, params);
@@ -307,15 +307,7 @@ contract InterchainTokenService is
             tokenAddress_ = _deployStandardizedToken(tokenId_, distributor, name, symbol, decimals);
             _deployTokenManager(tokenId_, TokenManagerType.MINT_BURN, abi.encode(msg.sender.toBytes(), tokenAddress_));
         } else {
-            _deployRemoteStandardizedToken(
-                tokenId_,
-                name,
-                symbol,
-                decimals,
-                distributor,
-                destinationChain,
-                gasValue
-            );
+            _deployRemoteStandardizedToken(tokenId_, name, symbol, decimals, distributor, destinationChain, gasValue);
         }
     }
 
@@ -457,14 +449,14 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to set a flow limit for a token manager that has the service as its operator.
-     * @param tokenId_s an array of the token Ids of the tokenManagers to set the flow limit of.
+     * @param tokenId_ an array of the token Ids of the tokenManagers to set the flow limit of.
      * @param flowLimits the flowLimits to set
      */
-    function setFlowLimits(bytes32[] calldata tokenId_s, uint256[] calldata flowLimits) external onlyRole(uint8(Roles.OPERATOR)) {
-        uint256 length = tokenId_s.length;
+    function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyRole(uint8(Roles.OPERATOR)) {
+        uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
-            ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId_s[i]));
+            ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenIds[i]));
             // slither-disable-next-line calls-loop
             tokenManager.setFlowLimit(flowLimits[i]);
         }
@@ -635,14 +627,10 @@ contract InterchainTokenService is
      * @param payload The encoded data payload to be processed
      */
     function _processDeployStandardizedTokenAndManagerPayload(bytes calldata payload) internal {
-        (
-            ,
-            bytes32 tokenId_,
-            string memory name,
-            string memory symbol,
-            uint8 decimals,
-            bytes memory distributorBytes
-        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes));
+        (, bytes32 tokenId_, string memory name, string memory symbol, uint8 decimals, bytes memory distributorBytes) = abi.decode(
+            payload,
+            (uint256, bytes32, string, string, uint8, bytes)
+        );
         address tokenAddress_;
 
         tokenAddress_ = _deployStandardizedToken(tokenId_, distributorBytes, name, symbol, decimals);
@@ -728,14 +716,7 @@ contract InterchainTokenService is
             gasValue
         );
 
-        bytes memory payload = abi.encode(
-            SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-            tokenId_,
-            name,
-            symbol,
-            decimals,
-            distributor
-        );
+        bytes memory payload = abi.encode(SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId_, name, symbol, decimals, distributor);
         _callContract(destinationChain, payload, gasValue);
     }
 
@@ -789,7 +770,7 @@ contract InterchainTokenService is
         address tokenManagerAddress_ = tokenManagerAddress(tokenId_);
 
         address distributor;
-        if(bytes(distributorBytes).length != 0) distributor = distributorBytes.toAddress();
+        if (bytes(distributorBytes).length != 0) distributor = distributorBytes.toAddress();
 
         // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory returnData) = standardizedTokenDeployer.delegatecall(
@@ -813,7 +794,6 @@ contract InterchainTokenService is
 
         // slither-disable-next-line reentrancy-events
         emit StandardizedTokenDeployed(tokenId_, tokenAddress_, distributor, name, symbol, decimals);
-
     }
 
     function _decodeMetadata(bytes memory metadata) internal pure returns (uint32 version, bytes memory data) {
