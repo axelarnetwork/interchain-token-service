@@ -685,6 +685,7 @@ contract InterchainTokenService is
         TokenManagerType tokenManagerType,
         bytes memory params
     ) internal {
+        validTokenManagerAddress(tokenId_);
         emit RemoteTokenManagerDeploymentInitialized(tokenId_, destinationChain, gasValue, tokenManagerType, params);
 
         bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId_, tokenManagerType, params);
@@ -711,6 +712,8 @@ contract InterchainTokenService is
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
+        validTokenManagerAddress(tokenId_);
+        
         // slither-disable-next-line reentrancy-events
         emit RemoteInterchainTokenDeploymentInitialized(
             tokenId_,
