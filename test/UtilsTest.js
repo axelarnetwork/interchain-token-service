@@ -263,8 +263,8 @@ describe('Implementation', () => {
     });
 });
 
-describe('StandardizedTokenDeployer', () => {
-    let standardizedToken, standardizedTokenDeployer;
+describe('InterchainTokenDeployer', () => {
+    let standardizedToken, interchainTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -273,13 +273,13 @@ describe('StandardizedTokenDeployer', () => {
 
     before(async () => {
         standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');
-        standardizedTokenDeployer = await deployContract(ownerWallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
+        interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [standardizedToken.address]);
     });
 
     it('Should revert on deployment with invalid implementation address', async () => {
         await expectRevert(
-            (gasOptions) => deployContract(ownerWallet, 'StandardizedTokenDeployer', [AddressZero, gasOptions]),
-            standardizedTokenDeployer,
+            (gasOptions) => deployContract(ownerWallet, 'InterchainTokenDeployer', [AddressZero, gasOptions]),
+            interchainTokenDeployer,
             'AddressZero',
         );
     });
@@ -287,12 +287,12 @@ describe('StandardizedTokenDeployer', () => {
     it('Should deploy a mint burn token only once', async () => {
         const salt = getRandomBytes32();
 
-        const tokenAddress = await standardizedTokenDeployer.deployedAddress(salt);
+        const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
         const token = new Contract(tokenAddress, StandardizedToken.abi, ownerWallet);
         const tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, ownerWallet);
 
-        await expect(standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, tokenManager, name, symbol, decimals))
+        await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals))
             .and.to.emit(token, 'RolesAdded')
             .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE)
             .to.emit(token, 'RolesAdded')
@@ -307,8 +307,8 @@ describe('StandardizedTokenDeployer', () => {
 
         await expectRevert(
             (gasOptions) =>
-                standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, tokenManager, name, symbol, decimals, gasOptions),
-            standardizedTokenDeployer,
+                interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals, gasOptions),
+            interchainTokenDeployer,
             'AlreadyDeployed',
         );
     });

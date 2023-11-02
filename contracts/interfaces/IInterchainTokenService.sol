@@ -22,7 +22,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error GatewayToken();
     error TokenManagerDeploymentFailed(bytes error);
-    error StandardizedTokenDeploymentFailed(bytes error);
+    error InterchainTokenDeploymentFailed(bytes error);
     error SelectorUnknown(uint256 selector);
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
@@ -59,17 +59,18 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
-    event RemoteStandardizedTokenAndManagerDeploymentInitialized(
+    event RemoteInterchainTokenDeploymentInitialized(
         bytes32 indexed tokenId_,
         string tokenName,
         string tokenSymbol,
         uint8 tokenDecimals,
         bytes distributor,
+        bytes operator,
         string destinationChain,
         uint256 indexed gasValue
     );
     event TokenManagerDeployed(bytes32 indexed tokenId_, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
-    event StandardizedTokenDeployed(
+    event InterchainTokenDeployed(
         bytes32 indexed tokenId_,
         address tokenAddress,
         address indexed distributor,
@@ -94,9 +95,9 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
 
     /**
      * @notice Returns the address of the standardized token deployer contract.
-     * @return standardizedTokenDeployerAddress The address of the standardized token deployer contract.
+     * @return interchainTokenDeployerAddress The address of the standardized token deployer contract.
      */
-    function standardizedTokenDeployer() external view returns (address standardizedTokenDeployerAddress);
+    function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
 
     /**
      * @notice Returns the address of the token manager associated with the given tokenId_.
@@ -167,6 +168,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
+        bytes memory operator,
         uint256 gasValue
     ) external payable;
 
@@ -213,7 +215,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
 
     /**
      * @notice Sets the flow limits for multiple tokens.
-     * @param tokenId_s An array of tokenId_s.
+     * @param tokenIds An array of tokenId_s.
      * @param flowLimits An array of flow limits corresponding to the tokenId_s.
      */
     function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;

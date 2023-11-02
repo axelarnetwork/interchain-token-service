@@ -4,19 +4,19 @@ pragma solidity ^0.8.0;
 
 import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 
-import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
+import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
 
 import { StandardizedTokenProxy } from '../proxies/StandardizedTokenProxy.sol';
 
 /**
- * @title StandardizedTokenDeployer
+ * @title InterchainTokenDeployer
  * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
  */
-contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
+contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
     address public immutable implementationAddress;
 
     /**
-     * @notice Constructor for the StandardizedTokenDeployer contract
+     * @notice Constructor for the InterchainTokenDeployer contract
      * @param implementationAddress_ Address of the StandardizedToken contract
      */
     constructor(address implementationAddress_) {
@@ -35,7 +35,7 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
      * @return tokenAddress Address of the deployed token
      */
     // slither-disable-next-line locked-ether
-    function deployStandardizedToken(
+    function deployInterchainToken(
         bytes32 salt,
         address tokenManager,
         address distributor,

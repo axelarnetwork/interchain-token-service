@@ -61,19 +61,20 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         tokenAddress = service.interchainTokenAddress(standardizedTokenId(deployer, salt));
     }
 
-    function deployStandardizedToken(
+    function deployInterchainToken(
         bytes32 salt,
         string calldata name,
         string calldata symbol,
         uint8 decimals,
         uint256 mintAmount,
-        address distributor
+        address distributor,
+        address operator
     ) external payable {
         address sender = msg.sender;
         salt = standardizedTokenSalt(sender, salt);
         bytes32 tokenId = service.tokenId(address(this), salt);
 
-        service.deployInterchainToken(salt, '', name, symbol, decimals, address(this).toBytes(), 0);
+        service.deployInterchainToken(salt, '', name, symbol, decimals, address(this).toBytes(), operator.toBytes(), 0);
         ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
         tokenManager.transferOperatorship(sender);
 
@@ -119,7 +120,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             }
         }
 
-        _deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, distributor, operator, mintAmount, destinationChain, gasValue);
+        _deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, distributor, operator, destinationChain, gasValue);
     }
 
     function _deployInterchainToken(
@@ -128,6 +129,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         string memory tokenSymbol,
         uint8 tokenDecimals,
         bytes memory distributor,
+        bytes memory operator,
         string memory destinationChain,
         uint256 gasValue
     ) internal {
@@ -139,6 +141,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             tokenSymbol,
             tokenDecimals,
             distributor,
+            operator,
             gasValue
         );
     }

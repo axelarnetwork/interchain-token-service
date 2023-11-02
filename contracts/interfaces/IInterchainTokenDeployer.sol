@@ -3,10 +3,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title IStandardizedTokenDeployer
+ * @title IInterchainTokenDeployer
  * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
  */
-interface IStandardizedTokenDeployer {
+interface IInterchainTokenDeployer {
     error AddressZero();
     error TokenDeploymentFailed();
 
@@ -31,7 +31,7 @@ interface IStandardizedTokenDeployer {
      * @param decimals Decimals of the token
      * @return tokenAddress Address of the deployed token
      */
-    function deployStandardizedToken(
+    function deployInterchainToken(
         bytes32 salt,
         address tokenManager,
         address distributor,

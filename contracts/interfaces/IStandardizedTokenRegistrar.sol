@@ -16,13 +16,14 @@ interface IStandardizedTokenRegistrar {
 
     function interchainTokenAddress(address deployer, bytes32 salt) external view returns (address tokenAddress);
 
-    function deployStandardizedToken(
+    function deployInterchainToken(
         bytes32 salt,
         string calldata name,
         string calldata symbol,
         uint8 decimals,
         uint256 mintAmount,
-        address distributor
+        address distributor,
+        address operator
     ) external payable;
 
     function deployRemoteStandarizedToken(
