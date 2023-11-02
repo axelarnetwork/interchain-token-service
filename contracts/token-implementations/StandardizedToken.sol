@@ -48,34 +48,23 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo
      */
     function setup(bytes calldata params) external override(IImplementation, IStandardizedToken) onlyProxy {
-        {
-            address distributor_;
-            address tokenManagerAddress;
-            string memory tokenName;
-            (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(
-                params,
-                (address, address, string, string, uint8)
-            );
+        address distributor_;
+        address tokenManagerAddress;
+        string memory tokenName;
+        (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(
+            params,
+            (address, address, string, string, uint8)
+        );
 
-            if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
-            if (bytes(tokenName).length == 0) revert TokenNameEmpty();
+        if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
+        if (bytes(tokenName).length == 0) revert TokenNameEmpty();
 
-            tokenManager_ = tokenManagerAddress;
-            name = tokenName;
+        tokenManager_ = tokenManagerAddress;
+        name = tokenName;
 
-            _addDistributor(distributor_);
-            _addDistributor(tokenManagerAddress);
-            _setNameHash(tokenName);
-        }
-        {
-            uint256 mintAmount;
-            address mintTo;
-            (, , , , , mintAmount, mintTo) = abi.decode(params, (address, address, string, string, uint8, uint256, address));
-
-            if (mintAmount > 0 && mintTo != address(0)) {
-                _mint(mintTo, mintAmount);
-            }
-        }
+        if(distributor_ != address(0)) _addDistributor(distributor_);
+        _addDistributor(tokenManagerAddress);
+        _setNameHash(tokenName);
     }
 
     /**

@@ -29,8 +29,6 @@ interface IStandardizedTokenDeployer {
      * @param name Name of the token
      * @param symbol Symbol of the token
      * @param decimals Decimals of the token
-     * @param mintAmount Amount of tokens to mint initially
-     * @param mintTo Address to mint initial tokens to
      * @return tokenAddress Address of the deployed token
      */
     function deployStandardizedToken(
@@ -39,8 +37,6 @@ interface IStandardizedTokenDeployer {
         address distributor,
         string calldata name,
         string calldata symbol,
-        uint8 decimals,
-        uint256 mintAmount,
-        address mintTo
+        uint8 decimals
     ) external payable returns (address tokenAddress);
 }

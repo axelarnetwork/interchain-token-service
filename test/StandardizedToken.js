@@ -41,8 +41,10 @@ describe('StandardizedToken', () => {
         tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, owner);
 
         await standardizedTokenDeployer
-            .deployStandardizedToken(salt, owner.address, owner.address, name, symbol, decimals, mintAmount, owner.address)
+            .deployStandardizedToken(salt, owner.address, owner.address, name, symbol, decimals)
             .then((tx) => tx.wait());
+            
+        await (await token.mint(owner.address, mintAmount)).wait();
     });
 
     describe('Standardized Token Proxy', () => {
@@ -60,8 +62,6 @@ describe('StandardizedToken', () => {
                     name,
                     symbol,
                     decimals,
-                    mintAmount,
-                    owner.address,
                     getGasOptions(),
                 ),
             ).to.be.reverted;

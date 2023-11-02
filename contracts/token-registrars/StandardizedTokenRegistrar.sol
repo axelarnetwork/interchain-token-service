@@ -54,11 +54,11 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
     }
 
     function standardizedTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = service.customTokenId(address(this), standardizedTokenSalt(deployer, salt));
+        tokenId = service.tokenId(address(this), standardizedTokenSalt(deployer, salt));
     }
 
-    function standardizedTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
-        tokenAddress = service.standardizedTokenAddress(standardizedTokenId(deployer, salt));
+    function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
+        tokenAddress = service.interchainTokenAddress(standardizedTokenId(deployer, salt));
     }
 
     function deployStandardizedToken(
@@ -71,14 +71,15 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
     ) external payable {
         address sender = msg.sender;
         salt = standardizedTokenSalt(sender, salt);
-        bytes32 tokenId = service.customTokenId(address(this), salt);
+        bytes32 tokenId = service.tokenId(address(this), salt);
 
-        service.deployAndRegisterStandardizedToken(salt, name, symbol, decimals, mintAmount, distributor);
+        service.deployInterchainToken(salt, '', name, symbol, decimals, address(this).toBytes(), 0);
         ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
         tokenManager.transferOperatorship(sender);
 
-        IStandardizedToken token = IStandardizedToken(service.standardizedTokenAddress(tokenId));
-        token.safeTransfer(sender, mintAmount);
+        IStandardizedToken token = IStandardizedToken(service.interchainTokenAddress(tokenId));
+        token.mint(sender, mintAmount);
+        token.transferDistributorship(distributor);
     }
 
     function deployRemoteStandarizedToken(
@@ -98,9 +99,9 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         {
             address sender = msg.sender;
             salt = standardizedTokenSalt(sender, salt);
-            bytes32 tokenId = service.customTokenId(address(this), salt);
+            bytes32 tokenId = service.tokenId(address(this), salt);
 
-            IStandardizedToken token = IStandardizedToken(service.standardizedTokenAddress(tokenId));
+            IStandardizedToken token = IStandardizedToken(service.interchainTokenAddress(tokenId));
             ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
 
             tokenName = token.name();
@@ -143,16 +144,13 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         uint256 gasValue
     ) internal {
         // slither-disable-next-line arbitrary-send-eth
-        service.deployAndRegisterRemoteStandardizedToken{ value: gasValue }(
+        service.deployInterchainToken{ value: gasValue }(
             salt,
+            destinationChain,
             tokenName,
             tokenSymbol,
             tokenDecimals,
             distributor,
-            distributor,
-            mintAmount,
-            operator,
-            destinationChain,
             gasValue
         );
     }

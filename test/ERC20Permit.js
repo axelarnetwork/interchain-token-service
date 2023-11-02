@@ -42,8 +42,10 @@ describe('ERC20 Permit', () => {
         token = new Contract(tokenAddress, StandardizedToken.abi, owner);
 
         await standardizedTokenDeployer
-            .deployStandardizedToken(salt, owner.address, owner.address, name, symbol, decimals, mintAmount, owner.address)
+            .deployStandardizedToken(salt, owner.address, owner.address, name, symbol, decimals)
             .then((tx) => tx.wait());
+
+        await (await token.mint(owner.address, mintAmount)).wait();
     });
 
     it('should set allowance by verifying permit', async () => {

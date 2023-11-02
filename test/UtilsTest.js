@@ -266,11 +266,9 @@ describe('Implementation', () => {
 describe('StandardizedTokenDeployer', () => {
     let standardizedToken, standardizedTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
-    const mintTo = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const decimals = 18;
-    const mintAmount = 123;
     const DISTRIBUTOR_ROLE = 0;
 
     before(async () => {
@@ -295,10 +293,8 @@ describe('StandardizedTokenDeployer', () => {
         const tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, ownerWallet);
 
         await expect(
-            standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, tokenManager, name, symbol, decimals, mintAmount, mintTo),
+            standardizedTokenDeployer.deployStandardizedToken(salt, tokenManager, tokenManager, name, symbol, decimals),
         )
-            .to.emit(token, 'Transfer')
-            .withArgs(AddressZero, mintTo, mintAmount)
             .and.to.emit(token, 'RolesAdded')
             .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE)
             .to.emit(token, 'RolesAdded')
@@ -308,7 +304,6 @@ describe('StandardizedTokenDeployer', () => {
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);
-        expect(await token.balanceOf(mintTo)).to.equal(mintAmount);
         expect(await token.hasRole(tokenManager, DISTRIBUTOR_ROLE)).to.be.true;
         expect(await token.tokenManager()).to.equal(tokenManager);
 
@@ -321,8 +316,6 @@ describe('StandardizedTokenDeployer', () => {
                     name,
                     symbol,
                     decimals,
-                    mintAmount,
-                    mintTo,
                     gasOptions,
                 ),
             standardizedTokenDeployer,

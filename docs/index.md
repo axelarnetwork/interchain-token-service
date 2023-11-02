@@ -230,10 +230,10 @@ Returns the address of the token that an existing tokenManager points to.
 | ------------ | ------- | ------------------------- |
 | tokenAddress | address | the address of the token. |
 
-### standardizedTokenAddress
+### interchainTokenAddress
 
 ```solidity
-function standardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
+function interchainTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
 ```
 
 Returns the address of the standardized token that would be deployed with a given tokenId.
@@ -272,10 +272,10 @@ This will depend on what chain it is called from, unlike custom tokenIds.
 | ------- | ------- | ------------------------------------------------------------------------------------ |
 | tokenId | bytes32 | the tokenId that the canonical TokenManager would get (or has gotten) for the token. |
 
-### customTokenId
+### tokenId
 
 ```solidity
-function customTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId)
+function tokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId)
 ```
 
 Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt.
@@ -1325,10 +1325,10 @@ Returns the address of the token associated with the given tokenId.
 | ------------ | ------- | ------------------------- |
 | tokenAddress | address | The address of the token. |
 
-### standardizedTokenAddress
+### interchainTokenAddress
 
 ```solidity
-function standardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
 ```
 
 Returns the address of the standardized token associated with the given tokenId.
@@ -1365,10 +1365,10 @@ Returns the canonical tokenId associated with the given tokenAddress.
 | ------- | ------- | ------------------------------------------------------- |
 | tokenId | bytes32 | The canonical tokenId associated with the tokenAddress. |
 
-### customTokenId
+### tokenId
 
 ```solidity
-function customTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
+function tokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
 ```
 
 Returns the custom tokenId associated with the given operator and salt.
