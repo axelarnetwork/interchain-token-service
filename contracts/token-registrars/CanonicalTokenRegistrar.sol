@@ -40,7 +40,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
     }
 
     function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = service.customTokenId(address(this), canonicalTokenSalt(tokenAddress));
+        tokenId = service.tokenId(address(this), canonicalTokenSalt(tokenAddress));
     }
 
     function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId) {
@@ -51,7 +51,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
 
     function deployAndRegisterRemoteCanonicalToken(bytes32 salt, string calldata destinationChain, uint256 gasValue) external payable {
         // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
-        bytes32 tokenId = service.customTokenId(address(this), salt);
+        bytes32 tokenId = service.tokenId(address(this), salt);
         IERC20Named token = IERC20Named(service.tokenAddress(tokenId));
         // The 3 lines below will revert if the token manager does not exist.
         string memory tokenName = token.name();
@@ -59,7 +59,7 @@ contract CanonicalTokenRegistrar is ICanonicalTokenRegistrar, ITokenManagerType,
         uint8 tokenDecimals = token.decimals();
 
         // slither-disable-next-line arbitrary-send-eth
-        service.deployAndRegisterRemoteStandardizedToken{ value: gasValue }(
+        service.deployInterchainToken{ value: gasValue }(
             salt,
             tokenName,
             tokenSymbol,
