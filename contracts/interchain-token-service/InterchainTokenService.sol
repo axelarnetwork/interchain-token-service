@@ -685,6 +685,7 @@ contract InterchainTokenService is
         TokenManagerType tokenManagerType,
         bytes memory params
     ) internal {
+        // slither-disable-next-line unused-return
         validTokenManagerAddress(tokenId_);
         emit RemoteTokenManagerDeploymentInitialized(tokenId_, destinationChain, gasValue, tokenManagerType, params);
 
@@ -712,8 +713,9 @@ contract InterchainTokenService is
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
+        // slither-disable-next-line unused-return
         validTokenManagerAddress(tokenId_);
-        
+
         // slither-disable-next-line reentrancy-events
         emit RemoteInterchainTokenDeploymentInitialized(
             tokenId_,
