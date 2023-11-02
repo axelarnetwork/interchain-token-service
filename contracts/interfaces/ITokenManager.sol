@@ -13,10 +13,13 @@ import { IImplementation } from './IImplementation.sol';
  */
 interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
-    error NotService();
+    error NotService(address caller);
     error TakeTokenFailed();
     error GiveTokenFailed();
-    error NotToken();
+    error NotToken(address caller);
+    error ZeroAddress();
+    error AlreadyFlowLimiter(address flowLimiter);
+    error NotFlowLimiter(address flowLimiter);
 
     /**
      * @notice A function that returns the token id.

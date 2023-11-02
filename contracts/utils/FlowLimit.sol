@@ -31,12 +31,12 @@ contract FlowLimit is IFlowLimit {
      * @dev Internal function to set the flow limit
      * @param flowLimit The value to set the flow limit to
      */
-    function _setFlowLimit(uint256 flowLimit) internal {
+    function _setFlowLimit(uint256 flowLimit, bytes32 tokenId) internal {
         assembly {
             sstore(FLOW_LIMIT_SLOT, flowLimit)
         }
 
-        emit FlowLimitSet(flowLimit);
+        emit FlowLimitSet(tokenId, msg.sender, flowLimit);
     }
 
     /**
@@ -99,8 +99,9 @@ contract FlowLimit is IFlowLimit {
             flowToCompare := sload(slotToCompare)
         }
 
-        if (flowToAdd + flowAmount > flowToCompare + flowLimit) revert FlowLimitExceeded();
-        if (flowAmount > flowLimit) revert FlowLimitExceeded();
+        if (flowToAdd + flowAmount > flowToCompare + flowLimit)
+            revert FlowLimitExceeded((flowToCompare + flowLimit), flowToAdd + flowAmount);
+        if (flowAmount > flowLimit) revert FlowLimitExceeded(flowLimit, flowAmount);
 
         assembly {
             sstore(slotToAdd, add(flowToAdd, flowAmount))

@@ -895,13 +895,7 @@ Getter for the decimals of the token
 ### AlreadyExpressCalled
 
 ```solidity
-error AlreadyExpressCalled()
-```
-
-### SameDestinationAsCaller
-
-```solidity
-error SameDestinationAsCaller()
+error AlreadyExpressCalled(address prevExpressCaller, address expressCaller)
 ```
 
 ### ExpressReceive
@@ -982,13 +976,13 @@ Gets the address of the express caller for a specific token transfer with data
 ### FlowLimitExceeded
 
 ```solidity
-error FlowLimitExceeded()
+error FlowLimitExceeded(bytes32 tokenId, uint256 limit, uint256 flowAmount)
 ```
 
 ### FlowLimitSet
 
 ```solidity
-event FlowLimitSet(uint256 flowLimit)
+event FlowLimitSet(bytes32 indexed tokenId, address operator, uint256 flowLimit)
 ```
 
 ### getFlowLimit
@@ -1103,10 +1097,10 @@ error ZeroAddress()
 error LengthMismatch()
 ```
 
-### InvalidTokenManagerImplementation
+### InvalidTokenManagerImplementationType
 
 ```solidity
-error InvalidTokenManagerImplementation()
+error InvalidTokenManagerImplementationType(address implementation)
 ```
 
 ### NotRemoteService
@@ -1124,7 +1118,7 @@ error TokenManagerDoesNotExist(bytes32 tokenId)
 ### NotTokenManager
 
 ```solidity
-error NotTokenManager()
+error NotTokenManager(address caller, address tokenManager);
 ```
 
 ### ExecuteWithInterchainTokenFailed
@@ -1133,10 +1127,10 @@ error NotTokenManager()
 error ExecuteWithInterchainTokenFailed(address contractAddress)
 ```
 
-### NotCanonicalTokenManager
+### InvalidCanonicalTokenId
 
 ```solidity
-error NotCanonicalTokenManager()
+error InvalidCanonicalTokenId(bytes32 expectedCanonicalTokenId);
 ```
 
 ### GatewayToken
@@ -1148,25 +1142,19 @@ error GatewayToken()
 ### TokenManagerDeploymentFailed
 
 ```solidity
-error TokenManagerDeploymentFailed()
+error TokenManagerDeploymentFailed(bytes error)
 ```
 
 ### StandardizedTokenDeploymentFailed
 
 ```solidity
-error StandardizedTokenDeploymentFailed()
-```
-
-### DoesNotAcceptExpressExecute
-
-```solidity
-error DoesNotAcceptExpressExecute(address contractAddress)
+error StandardizedTokenDeploymentFailed(bytes error)
 ```
 
 ### SelectorUnknown
 
 ```solidity
-error SelectorUnknown()
+error SelectorUnknown(uint256 selector)
 ```
 
 ### InvalidMetadataVersion
@@ -1226,7 +1214,7 @@ event TokenManagerDeployed(bytes32 tokenId, enum ITokenManagerType.TokenManagerT
 ### StandardizedTokenDeployed
 
 ```solidity
-event StandardizedTokenDeployed(bytes32 tokenId, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo)
+event StandardizedTokenDeployed(bytes32 indexed tokenId, address tokenAddress, address indexed distributor, string name, string symbol, uint8 decimals, uint256 indexed mintAmount, address mintTo)
 ```
 
 ### CustomTokenIdClaimed
@@ -1776,7 +1764,7 @@ If any of the calls fail, the function will revert with the failure message._
 ### NotOperator
 
 ```solidity
-error NotOperator()
+error NotOperator(address caller)
 ```
 
 ### OperatorshipTransferred
@@ -2031,7 +2019,7 @@ Getter for the Create3Deployer.
 ### deployStandardizedToken
 
 ```solidity
-function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable
+function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable returns (address tokenAddress)
 ```
 
 Deploys a new instance of the StandardizedTokenProxy contract
@@ -2049,6 +2037,12 @@ Deploys a new instance of the StandardizedTokenProxy contract
 | mintAmount   | uint256 | Amount of tokens to mint initially |
 | mintTo       | address | Address to mint initial tokens to  |
 
+#### Return Values
+
+| Name         | Type    | Description                   |
+| ------------ | ------- | ----------------------------- |
+| tokenAddress | address | address of the token.         |
+
 ## ITokenManager
 
 This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
@@ -2062,7 +2056,7 @@ error TokenLinkerZeroAddress()
 ### NotService
 
 ```solidity
-error NotService()
+error NotService(address caller)
 ```
 
 ### TakeTokenFailed
@@ -2080,7 +2074,7 @@ error GiveTokenFailed()
 ### NotToken
 
 ```solidity
-error NotToken()
+error NotToken(address caller)
 ```
 
 ### tokenAddress
@@ -2220,7 +2214,7 @@ Getter for the Create3Deployer.
 ### deployTokenManager
 
 ```solidity
-function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable
+function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable returns(address tokenManager)
 ```
 
 Deploys a new instance of the TokenManagerProxy contract
@@ -2232,6 +2226,12 @@ Deploys a new instance of the TokenManagerProxy contract
 | tokenId            | bytes32 | The unique identifier for the token                          |
 | implementationType | uint256 | Token manager implementation type                            |
 | params             | bytes   | Additional parameters used in the setup of the token manager |
+
+#### Return Values
+
+| Name                | Type    | Description                              |
+| ------------------- | ------- | -----------------------------------------|
+| tokenManager | address | the address of the deployed tokenManager |
 
 ## ITokenManagerProxy
 
@@ -2247,7 +2247,7 @@ error ImplementationLookupFailed()
 ### SetupFailed
 
 ```solidity
-error SetupFailed()
+error SetupFailed(bytes error)
 ```
 
 ### implementationType
@@ -2924,7 +2924,7 @@ or from derived contracts._
 ### NotService
 
 ```solidity
-error NotService()
+error NotService(address caller)
 ```
 
 ### interchainTokenService
@@ -3088,13 +3088,13 @@ A different implementation could have `metadata` that tells this function which 
 ### NotDistributor
 
 ```solidity
-error NotDistributor()
+error NotDistributor(address caller)
 ```
 
 ### DistributorshipTransferred
 
 ```solidity
-event DistributorshipTransferred(address distributor)
+event DistributorshipTransferred(address previousDistributor, address distributor)
 ```
 
 ### distributor
@@ -4785,16 +4785,17 @@ Returns the current flow limit
 ### \_setFlowLimit
 
 ```solidity
-function _setFlowLimit(uint256 flowLimit) internal
+function _setFlowLimit(uint256 flowLimit, bytes32 tokenId) internal
 ```
 
 _Internal function to set the flow limit_
 
 #### Parameters
 
-| Name      | Type    | Description                        |
-| --------- | ------- | ---------------------------------- |
-| flowLimit | uint256 | The value to set the flow limit to |
+| Name      | Type    | Description                                  |
+| --------- | ------- | ---------------------------------------------|
+| flowLimit | uint256 | The value to set the flow limit to           |
+| tokenId   | bytes32 | The id of the token whose limit is being set |
 
 ### \_getFlowOutSlot
 
@@ -4874,12 +4875,12 @@ _Adds a flow amount while ensuring it does not exceed the flow limit_
 
 #### Parameters
 
-| Name          | Type    | Description                          |
-| ------------- | ------- | ------------------------------------ |
-| flowLimit     | uint256 |                                      |
-| slotToAdd     | uint256 | The slot to add the flow to          |
-| slotToCompare | uint256 | The slot to compare the flow against |
-| flowAmount    | uint256 | The flow amount to add               |
+| Name          | Type    | Description                                 |
+| ------------- | ------- | ------------------------------------------- |
+| flowLimit     | uint256 |                                             |
+| slotToAdd     | uint256 | The slot to add the flow to                 |
+| slotToCompare | uint256 | The slot to compare the flow against        |
+| flowAmount    | uint256 | The flow amount to add                      |
 
 ### \_addFlowOut
 
@@ -4891,9 +4892,9 @@ _Adds a flow out amount_
 
 #### Parameters
 
-| Name          | Type    | Description                |
-| ------------- | ------- | -------------------------- |
-| flowOutAmount | uint256 | The flow out amount to add |
+| Name          | Type    | Description                          |
+| ------------- | ------- | ------------------------------------ |
+| flowOutAmount | uint256 | The flow out amount to add           |
 
 ### \_addFlowIn
 
@@ -4905,9 +4906,9 @@ _Adds a flow in amount_
 
 #### Parameters
 
-| Name         | Type    | Description               |
-| ------------ | ------- | ------------------------- |
-| flowInAmount | uint256 | The flow in amount to add |
+| Name         | Type    | Description                             |
+| ------------ | ------- | --------------------------------------- |
+| flowInAmount | uint256 | The flow in amount to add               |
 
 ## Implementation
 
@@ -4977,7 +4978,7 @@ Constructor for the TokenManagerDeployer contract
 ### deployTokenManager
 
 ```solidity
-function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable
+function deployTokenManager(bytes32 tokenId, uint256 implementationType, bytes params) external payable returns(address tokenManager)
 ```
 
 Deploys a new instance of the TokenManagerProxy contract
@@ -4989,6 +4990,12 @@ Deploys a new instance of the TokenManagerProxy contract
 | tokenId            | bytes32 | The unique identifier for the token                          |
 | implementationType | uint256 | Token manager implementation type                            |
 | params             | bytes   | Additional parameters used in the setup of the token manager |
+
+#### Return Values
+
+| Name                | Type    | Description                              |
+| ------------------- | ------- | -----------------------------------------|
+| tokenManager | address | the address of the deployed tokenManager |
 
 ## IStandardizedToken
 
@@ -5107,7 +5114,7 @@ Constructor for the StandardizedTokenDeployer contract
 ### deployStandardizedToken
 
 ```solidity
-function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable
+function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable returns (address tokenAddress)
 ```
 
 Deploys a new instance of the StandardizedTokenProxy contract
@@ -5124,3 +5131,9 @@ Deploys a new instance of the StandardizedTokenProxy contract
 | decimals     | uint8   | Decimals of the token              |
 | mintAmount   | uint256 | Amount of tokens to mint initially |
 | mintTo       | address | Address to mint initial tokens to  |
+
+#### Return Values
+
+| Name         | Type    | Description                   |
+| ------------ | ------- | ----------------------------- |
+| tokenAddress | address | address of the token.         |

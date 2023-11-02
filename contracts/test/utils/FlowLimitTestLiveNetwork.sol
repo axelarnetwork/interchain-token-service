@@ -8,6 +8,7 @@ contract FlowLimitTestLiveNetwork is IFlowLimit {
     uint256 internal constant FLOW_LIMIT_SLOT = 0x201b7a0b7c19aaddc4ce9579b7df8d2db123805861bc7763627f13e04d8af42f;
     uint256 internal constant PREFIX_FLOW_OUT_AMOUNT = uint256(keccak256('flow-out-amount'));
     uint256 internal constant PREFIX_FLOW_IN_AMOUNT = uint256(keccak256('flow-in-amount'));
+    bytes32 public constant TOKEN_ID = 0x0;
 
     uint256 internal constant EPOCH_TIME = 60;
 
@@ -22,7 +23,7 @@ contract FlowLimitTestLiveNetwork is IFlowLimit {
             sstore(FLOW_LIMIT_SLOT, flowLimit)
         }
 
-        emit FlowLimitSet(flowLimit);
+        emit FlowLimitSet(TOKEN_ID, msg.sender, flowLimit);
     }
 
     function _getFlowOutSlot(uint256 epoch) internal pure returns (uint256 slot) {
@@ -60,8 +61,10 @@ contract FlowLimitTestLiveNetwork is IFlowLimit {
             flowToCompare := sload(slotToCompare)
         }
 
-        if (flowToAdd + flowAmount > flowToCompare + flowLimit) revert FlowLimitExceeded();
-        if (flowAmount > flowLimit) revert FlowLimitExceeded();
+        uint256 maxFlowLimit = flowToCompare + flowLimit;
+        uint256 netFlowAmount = flowToAdd + flowAmount;
+        if (netFlowAmount > maxFlowLimit) revert FlowLimitExceeded(maxFlowLimit, netFlowAmount);
+        if (flowAmount > flowLimit) revert FlowLimitExceeded(flowLimit, flowAmount);
 
         assembly {
             sstore(slotToAdd, add(flowToAdd, flowAmount))

@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 
 import { Operatable } from '../utils/Operatable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
@@ -36,7 +35,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @dev A modifier that allows only the interchain token service to execute the function.
      */
     modifier onlyService() {
-        if (msg.sender != address(interchainTokenService)) revert NotService();
+        if (msg.sender != address(interchainTokenService)) revert NotService(msg.sender);
         _;
     }
 
@@ -44,7 +43,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @dev A modifier that allows only the token to execute the function.
      */
     modifier onlyToken() {
-        if (msg.sender != tokenAddress()) revert NotToken();
+        if (msg.sender != tokenAddress()) revert NotToken(msg.sender);
         _;
     }
 
@@ -86,7 +85,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
             operator_ = operatorBytes.toAddress();
         }
 
-        _setOperator(operator_);
+        _addAccountRoles(operator_, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
         _setup(params);
     }
 
@@ -197,11 +196,35 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.
+     * @notice This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of the new flow limiter.
+     */
+    function addFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
+        if (flowLimiter == address(0)) revert ZeroAddress();
+
+        if (hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert AlreadyFlowLimiter(flowLimiter);
+
+        _addRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
+    }
+
+    /**
+     * @notice This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of the new flow limiter.
+     */
+    function removeFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
+        if (flowLimiter == address(0)) revert ZeroAddress();
+
+        if (!hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert NotFlowLimiter(flowLimiter);
+
+        _removeRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
+    }
+
+    /**
+     * @notice This function sets the flow limit for this TokenManager. Can only be called by the flow limiters.
      * @param flowLimit the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
-    function setFlowLimit(uint256 flowLimit) external onlyOperator {
-        _setFlowLimit(flowLimit);
+    function setFlowLimit(uint256 flowLimit) external onlyRole(uint8(Roles.FLOW_LIMITER)) {
+        _setFlowLimit(flowLimit, tokenId());
     }
 
     /**
