@@ -18,6 +18,7 @@ const {
 } = require('../scripts/deploy');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/governance/AxelarServiceGovernance.sol/AxelarServiceGovernance.json');
+const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, signer1, signer2, signer3;
@@ -41,7 +42,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
 
         buffer = isHardhat ? 10 * 60 * 60 : 10;
 
-        const create3Deployer = await deployContract(wallet, 'Create3Deployer');
+        const create3DeployerFactory = await ethers.getContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet);
+        const create3Deployer = await create3DeployerFactory.deploy().then((d) => d.deployed());
         const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
         const standardizedToken = await deployContract(wallet, 'StandardizedToken');
 
