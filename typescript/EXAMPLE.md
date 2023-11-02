@@ -1,3 +1,8 @@
+# Example
+
+Here are some examples of how you can use the clients
+
+```typescript
 import { ERC20Client } from './contracts/ERC20.sol';
 import { goerli } from 'viem/chains';
 import { InterchainTokenServiceClient } from './contracts/InterchainTokenService.sol';
@@ -35,3 +40,4 @@ const itsReadExample = async () => {
 };
 
 Promise.all([erc20ReadExample(), itsReadExample()]).then((res) => console.log(res));
+```
