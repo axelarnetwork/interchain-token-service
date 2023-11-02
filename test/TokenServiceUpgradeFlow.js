@@ -23,7 +23,7 @@ const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifac
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, signer1, signer2, signer3;
     let service, gateway, gasService;
-    let tokenManagerDeployer, standardizedTokenDeployer, remoteAddressValidator, tokenManagerImplementations;
+    let tokenManagerDeployer, interchainTokenDeployer, remoteAddressValidator, tokenManagerImplementations;
 
     let axelarServiceGovernanceFactory;
     let axelarServiceGovernance;
@@ -50,7 +50,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         gateway = await deployMockGateway(wallet);
         gasService = await deployGasService(wallet);
         tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-        standardizedTokenDeployer = await deployContract(wallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
+        interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [standardizedToken.address]);
         remoteAddressValidator = await deployRemoteAddressValidator(wallet, 'Test', interchainTokenServiceAddress);
         tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
 
@@ -75,7 +75,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             wallet,
             create3Deployer.address,
             tokenManagerDeployer.address,
-            standardizedTokenDeployer.address,
+            interchainTokenDeployer.address,
             gateway.address,
             gasService.address,
             remoteAddressValidator.address,
@@ -94,7 +94,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const targetInterface = new Interface(service.interface.fragments);
         const newServiceImplementation = await deployContract(wallet, 'InterchainTokenService', [
             tokenManagerDeployer.address,
-            standardizedTokenDeployer.address,
+            interchainTokenDeployer.address,
             gateway.address,
             gasService.address,
             remoteAddressValidator.address,
@@ -156,7 +156,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const targetInterface = new Interface(service.interface.fragments);
         const newServiceImplementation = await deployContract(wallet, 'InterchainTokenService', [
             tokenManagerDeployer.address,
-            standardizedTokenDeployer.address,
+            interchainTokenDeployer.address,
             gateway.address,
             gasService.address,
             remoteAddressValidator.address,
