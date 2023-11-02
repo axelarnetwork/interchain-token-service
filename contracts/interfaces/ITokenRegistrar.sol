@@ -2,15 +2,16 @@
 
 pragma solidity ^0.8.0;
 
-interface IStandardizedTokenRegistrar {
+interface ITokenRegistrar {
     error ZeroAddress();
     error NotDistributor(address distributor);
     error NotOperator(address operator);
     error NonZeroMintAmount();
+    error ApproveFailed();
 
     function chainNameHash() external view returns (bytes32);
 
-    function standardizedTokenSalt(address deployer, bytes32 salt) external view returns (bytes32);
+    function standardizedTokenSalt(bytes32 chainAddressHash_, address deployer, bytes32 salt) external view returns (bytes32);
 
     function standardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
 
@@ -26,12 +27,25 @@ interface IStandardizedTokenRegistrar {
         address operator
     ) external payable;
 
-    function deployRemoteStandarizedToken(
+    function deployRemoteInterchainToken(
+        string calldata originalChainName,
         bytes32 salt,
         address additionalDistributor,
         address optionalOperator,
-        uint256 mintAmount,
         string memory destinationChain,
+        uint256 gasValue
+    ) external payable;
+
+    function canonicalTokenSalt(bytes32 chainAddressHash_, address tokenAddress) external view returns (bytes32 salt);
+
+    function canonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
+
+    function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId);
+
+    function deployRemoteCanonicalToken(
+        string calldata originalChainName,
+        address originalAddress,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable;
 }
