@@ -230,10 +230,10 @@ Returns the address of the token that an existing tokenManager points to.
 | ------------ | ------- | ------------------------- |
 | tokenAddress | address | the address of the token. |
 
-### standardizedTokenAddress
+### interchainTokenAddress
 
 ```solidity
-function standardizedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
+function interchainTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
 ```
 
 Returns the address of the standardized token that would be deployed with a given tokenId.
@@ -272,10 +272,10 @@ This will depend on what chain it is called from, unlike custom tokenIds.
 | ------- | ------- | ------------------------------------------------------------------------------------ |
 | tokenId | bytes32 | the tokenId that the canonical TokenManager would get (or has gotten) for the token. |
 
-### customTokenId
+### tokenId
 
 ```solidity
-function customTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId)
+function tokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId)
 ```
 
 Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt.
@@ -494,10 +494,10 @@ Used to deploy custom TokenManagers with the specified salt. Different callers w
 | tokenManagerType | enum ITokenManagerType.TokenManagerType | the type of TokenManager to be deployed.                     |
 | params           | bytes                                   | the params that will be used to initialize the TokenManager. |
 
-### deployRemoteCustomTokenManager
+### deployTokenManager
 
 ```solidity
-function deployRemoteCustomTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
+function deployTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Used to deploy remote custom TokenManagers.
@@ -535,10 +535,10 @@ can be calculated ahead of time) then a mint/burn TokenManager is used. Otherwis
 | mintAmount  | uint256 | the amount of token to be mint during deployment to msg.sender.    |
 | distributor | address | the address that will be able to mint and burn the deployed token. |
 
-### deployAndRegisterRemoteStandardizedToken
+### deployInterchainToken
 
 ```solidity
-function deployAndRegisterRemoteStandardizedToken(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
+function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
 ```
 
 Used to deploy a standardized token alongside a TokenManager in another chain. If the `distributor` is empty
@@ -1325,10 +1325,10 @@ Returns the address of the token associated with the given tokenId.
 | ------------ | ------- | ------------------------- |
 | tokenAddress | address | The address of the token. |
 
-### standardizedTokenAddress
+### interchainTokenAddress
 
 ```solidity
-function standardizedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
 ```
 
 Returns the address of the standardized token associated with the given tokenId.
@@ -1365,10 +1365,10 @@ Returns the canonical tokenId associated with the given tokenAddress.
 | ------- | ------- | ------------------------------------------------------- |
 | tokenId | bytes32 | The canonical tokenId associated with the tokenAddress. |
 
-### customTokenId
+### tokenId
 
 ```solidity
-function customTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
+function tokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
 ```
 
 Returns the custom tokenId associated with the given operator and salt.
@@ -1508,10 +1508,10 @@ Deploys a custom token manager contract.
 | ------- | ------- | ------------------------------------------ |
 | tokenId | bytes32 | The tokenId of the deployed token manager. |
 
-### deployRemoteCustomTokenManager
+### deployTokenManager
 
 ```solidity
-function deployRemoteCustomTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
+function deployTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Deploys a custom token manager contract on a remote chain.
@@ -1545,10 +1545,10 @@ Deploys a standardized token and registers it. The token manager type will be lo
 | mintAmount  | uint256 | The amount of tokens to mint to the deployer.            |
 | distributor | address | The address of the distributor for mint/burn operations. |
 
-### deployAndRegisterRemoteStandardizedToken
+### deployInterchainToken
 
 ```solidity
-function deployAndRegisterRemoteStandardizedToken(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
+function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue) external payable
 ```
 
 Deploys and registers a standardized token on a remote chain.

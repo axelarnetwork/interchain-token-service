@@ -14,7 +14,7 @@ interface IStandardizedTokenRegistrar {
 
     function standardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
 
-    function standardizedTokenAddress(address deployer, bytes32 salt) external view returns (address tokenAddress);
+    function interchainTokenAddress(address deployer, bytes32 salt) external view returns (address tokenAddress);
 
     function deployStandardizedToken(
         bytes32 salt,
