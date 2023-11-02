@@ -14,7 +14,7 @@ const { deployContract } = require('../scripts/deploy');
 const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
 
 describe('ERC20 Permit', () => {
-    let standardizedToken, standardizedTokenDeployer;
+    let standardizedToken, interchainTokenDeployer;
 
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -33,17 +33,19 @@ describe('ERC20 Permit', () => {
 
     beforeEach(async () => {
         standardizedToken = await deployContract(owner, 'StandardizedToken');
-        standardizedTokenDeployer = await deployContract(owner, 'StandardizedTokenDeployer', [standardizedToken.address]);
+        interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [standardizedToken.address]);
 
         const salt = getRandomBytes32();
 
-        const tokenAddress = await standardizedTokenDeployer.deployedAddress(salt);
+        const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
         token = new Contract(tokenAddress, StandardizedToken.abi, owner);
 
-        await standardizedTokenDeployer
-            .deployStandardizedToken(salt, owner.address, owner.address, name, symbol, decimals, mintAmount, owner.address)
+        await interchainTokenDeployer
+            .deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals)
             .then((tx) => tx.wait());
+
+        await (await token.mint(owner.address, mintAmount)).wait();
     });
 
     it('should set allowance by verifying permit', async () => {

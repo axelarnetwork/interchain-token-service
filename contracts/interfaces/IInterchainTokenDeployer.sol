@@ -3,10 +3,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title IStandardizedTokenDeployer
+ * @title IInterchainTokenDeployer
  * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
  */
-interface IStandardizedTokenDeployer {
+interface IInterchainTokenDeployer {
     error AddressZero();
     error TokenDeploymentFailed();
 
@@ -29,18 +29,14 @@ interface IStandardizedTokenDeployer {
      * @param name Name of the token
      * @param symbol Symbol of the token
      * @param decimals Decimals of the token
-     * @param mintAmount Amount of tokens to mint initially
-     * @param mintTo Address to mint initial tokens to
      * @return tokenAddress Address of the deployed token
      */
-    function deployStandardizedToken(
+    function deployInterchainToken(
         bytes32 salt,
         address tokenManager,
         address distributor,
         string calldata name,
         string calldata symbol,
-        uint8 decimals,
-        uint256 mintAmount,
-        address mintTo
+        uint8 decimals
     ) external payable returns (address tokenAddress);
 }
