@@ -1,6 +1,5 @@
 const { ethers } = require('hardhat');
 const { Contract } = ethers;
-const { defaultAbiCoder } = ethers.utils;
 const InterchainTokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
@@ -12,17 +11,14 @@ async function deployContract(wallet, contractName, args = []) {
     return contract;
 }
 
-async function deployRemoteAddressValidator(wallet, chainName, interchainTokenServiceAddress = '', evmChains = []) {
-    const remoteAddressValidatorImpl = await deployContract(wallet, 'InterchainAddressTracker', [chainName]);
-    const params = defaultAbiCoder.encode(['string[]', 'string[]'], [evmChains, evmChains.map(() => interchainTokenServiceAddress)]);
-
-    const interchainAddressTrackerProxy = await deployContract(wallet, 'InterchainAddressTrackerProxy', [
-        remoteAddressValidatorImpl.address,
+async function deployAddressTracker(wallet, chainName, interchainTokenServiceAddress = '', evmChains = []) {
+    const addressTracker = deployContract(wallet, 'AddressTracker', [
         wallet.address,
-        params,
+        chainName,
+        evmChains,
+        evmChains.map(() => interchainTokenServiceAddress),
     ]);
-    const interchainAddressTracker = new Contract(interchainAddressTrackerProxy.address, remoteAddressValidatorImpl.interface, wallet);
-    return interchainAddressTracker;
+    return addressTracker;
 }
 
 async function deployMockGateway(wallet) {
@@ -85,7 +81,7 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
     const standardizedToken = await deployContract(wallet, 'StandardizedToken');
     const standardizedTokenDeployer = await deployContract(wallet, 'StandardizedTokenDeployer', [standardizedToken.address]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-    const interchainAddressTracker = await deployRemoteAddressValidator(wallet, chainName, interchainTokenServiceAddress, evmChains);
+    const interchainAddressTracker = await deployAddressTracker(wallet, chainName, interchainTokenServiceAddress, evmChains);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
 
     const service = await deployInterchainTokenService(
@@ -105,7 +101,7 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
 
 module.exports = {
     deployContract,
-    deployRemoteAddressValidator,
+    deployRemoteAddressValidator: deployAddressTracker,
     deployMockGateway,
     deployTokenManagerImplementations,
     deployGasService,
