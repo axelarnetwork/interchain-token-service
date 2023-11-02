@@ -58,7 +58,6 @@ contract InterchainTokenService is
     bytes32 public immutable chainNameHash;
 
     bytes32 internal constant PREFIX_TOKEN_ID = keccak256('its-custom-token-id');
-    bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_ID = keccak256('its-interchain-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
 
     uint256 private constant SELECTOR_RECEIVE_TOKEN = 1;
