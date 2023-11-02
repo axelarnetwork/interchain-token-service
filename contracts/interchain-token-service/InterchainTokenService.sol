@@ -611,7 +611,7 @@ contract InterchainTokenService is
         }
 
         if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) return _processDeployTokenManagerPayload(payload);
-        if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) return _processDeployInterchainTokePayload(payload);
+        if (selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) return _processDeployInterchainTokenPayload(payload);
 
         revert SelectorUnknown(selector);
     }
@@ -720,7 +720,7 @@ contract InterchainTokenService is
      * @notice Process a deploy standardized token and manager payload.
      * @param payload The encoded data payload to be processed
      */
-    function _processDeployInterchainTokePayload(bytes calldata payload) internal {
+    function _processDeployInterchainTokenPayload(bytes calldata payload) internal {
         (
             ,
             bytes32 tokenId_,
