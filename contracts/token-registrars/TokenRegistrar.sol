@@ -79,7 +79,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         if (mintAmount > 0) {
             bytes32 tokenId = service.tokenId(address(this), salt);
             IStandardizedToken token = IStandardizedToken(service.interchainTokenAddress(tokenId));
-            token.mint(distributor, mintAmount);
+            token.mint(address(this), mintAmount);
             token.transferDistributorship(distributor);
         }
     }
@@ -196,25 +196,19 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         service.deployInterchainToken{ value: gasValue }(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', '', gasValue);
     }
 
-    function transferCanonicalToken(
-        address tokenAddress,
+    function interchainTransfer(
+        bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
         uint256 gasValue
     ) external payable {
-        // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
-        bytes32 tokenId = canonicalTokenId(tokenAddress);
-        // slither-disable-next-line unused-return
-        service.validTokenManagerAddress(tokenId);
-        IStandardizedToken token = IStandardizedToken(tokenAddress);
-
-        token.safeTransferFrom(msg.sender, address(this), amount);
-
-        address tokenManagerAddress = service.tokenManagerAddress(tokenId);
-        token.safeCall(abi.encodeWithSelector(token.approve.selector, tokenManagerAddress, amount));
-
-        // slither-disable-next-line arbitrary-send-eth
-        service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, bytes(''));
+        if(bytes(destinationChain).length == 0) {
+            address tokenAddress = service.interchainTokenAddress(tokenId);
+            IStandardizedToken token = IStandardizedToken(tokenAddress);
+            token.safeTransfer(destinationAddress.toAddress(), amount);
+        } else {
+            service.interchainTransfer{value: gasValue}(tokenId, destinationChain, destinationAddress, amount, gasValue);
+        }
     }
 }
