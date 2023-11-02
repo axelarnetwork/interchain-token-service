@@ -14,7 +14,7 @@ const StandardizedToken = require('../artifacts/contracts/token-implementations/
 const StandardizedTokenProxy = require('../artifacts/contracts/proxies/StandardizedTokenProxy.sol/StandardizedTokenProxy.json');
 
 describe('StandardizedToken', () => {
-    let standardizedToken, standardizedTokenDeployer;
+    let standardizedToken, interchainTokenDeployer;
 
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -31,39 +31,31 @@ describe('StandardizedToken', () => {
         owner = wallets[0];
 
         standardizedToken = await deployContract(owner, 'StandardizedToken');
-        standardizedTokenDeployer = await deployContract(owner, 'StandardizedTokenDeployer', [standardizedToken.address]);
+        interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [standardizedToken.address]);
 
         const salt = getRandomBytes32();
 
-        const tokenAddress = await standardizedTokenDeployer.deployedAddress(salt);
+        const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
         token = new Contract(tokenAddress, StandardizedToken.abi, owner);
         tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, owner);
 
-        await standardizedTokenDeployer
-            .deployStandardizedToken(salt, owner.address, owner.address, name, symbol, decimals, mintAmount, owner.address)
+        await interchainTokenDeployer
+            .deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals)
             .then((tx) => tx.wait());
+
+        await (await token.mint(owner.address, mintAmount)).wait();
     });
 
     describe('Standardized Token Proxy', () => {
         it('should revert if standardized token implementation is invalid', async () => {
             const invalidStandardizedToken = await deployContract(owner, 'InvalidStandardizedToken');
-            standardizedTokenDeployer = await deployContract(owner, 'StandardizedTokenDeployer', [invalidStandardizedToken.address]);
+            interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [invalidStandardizedToken.address]);
 
             const salt = getRandomBytes32();
 
             await expect(
-                standardizedTokenDeployer.deployStandardizedToken(
-                    salt,
-                    owner.address,
-                    owner.address,
-                    name,
-                    symbol,
-                    decimals,
-                    mintAmount,
-                    owner.address,
-                    getGasOptions(),
-                ),
+                interchainTokenDeployer.deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals, getGasOptions()),
             ).to.be.reverted;
         });
 

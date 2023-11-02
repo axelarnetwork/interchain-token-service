@@ -22,7 +22,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error GatewayToken();
     error TokenManagerDeploymentFailed(bytes error);
-    error StandardizedTokenDeploymentFailed(bytes error);
+    error InterchainTokenDeploymentFailed(bytes error);
     error SelectorUnknown(uint256 selector);
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
@@ -59,28 +59,24 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
-    event RemoteStandardizedTokenAndManagerDeploymentInitialized(
+    event RemoteInterchainTokenDeploymentInitialized(
         bytes32 indexed tokenId_,
         string tokenName,
         string tokenSymbol,
         uint8 tokenDecimals,
         bytes distributor,
-        bytes mintTo,
-        uint256 indexed mintAmount,
         bytes operator,
         string destinationChain,
         uint256 indexed gasValue
     );
     event TokenManagerDeployed(bytes32 indexed tokenId_, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
-    event StandardizedTokenDeployed(
+    event InterchainTokenDeployed(
         bytes32 indexed tokenId_,
         address tokenAddress,
         address indexed distributor,
         string name,
         string symbol,
-        uint8 decimals,
-        uint256 indexed mintAmount,
-        address mintTo
+        uint8 decimals
     );
     event CustomTokenIdClaimed(bytes32 indexed tokenId_, address indexed deployer, bytes32 indexed salt);
     event PausedSet(bool indexed paused, address indexed msgSender);
@@ -99,9 +95,9 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
 
     /**
      * @notice Returns the address of the standardized token deployer contract.
-     * @return standardizedTokenDeployerAddress The address of the standardized token deployer contract.
+     * @return interchainTokenDeployerAddress The address of the standardized token deployer contract.
      */
-    function standardizedTokenDeployer() external view returns (address standardizedTokenDeployerAddress);
+    function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
 
     /**
      * @notice Returns the address of the token manager associated with the given tokenId_.
@@ -132,47 +128,12 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function interchainTokenAddress(bytes32 tokenId_) external view returns (address tokenAddress_);
 
     /**
-     * @notice Returns the canonical tokenId_ associated with the given tokenAddress.
-     * @param tokenAddress_ The address of the token.
-     * @return tokenId_ The canonical tokenId_ associated with the tokenAddress.
-     */
-    function canonicalTokenId(address tokenAddress_) external view returns (bytes32 tokenId_);
-
-    /**
      * @notice Returns the custom tokenId_ associated with the given operator and salt.
      * @param operator_ The operator address.
      * @param salt The salt used for token id calculation.
      * @return tokenId_ The custom tokenId_ associated with the operator and salt.
      */
     function tokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId_);
-
-    /**
-     * @notice Registers a canonical token and returns its associated tokenId_.
-     * @param tokenAddress_ The address of the canonical token.
-     * @return tokenId_ The tokenId_ associated with the registered canonical token.
-     */
-    function registerCanonicalToken(address tokenAddress_) external payable returns (bytes32 tokenId_);
-
-    /**
-     * @notice Deploys a standardized canonical token on a remote chain.
-     * @param tokenId_ The tokenId_ of the canonical token.
-     * @param destinationChain The name of the destination chain.
-     * @param gasValue The gas value for deployment.
-     */
-    function deployRemoteCanonicalToken(bytes32 tokenId_, string calldata destinationChain, uint256 gasValue) external payable;
-
-    /**
-     * @notice Deploys a custom token manager contract.
-     * @param salt The salt used for token manager deployment.
-     * @param tokenManagerType The type of token manager.
-     * @param params The deployment parameters.
-     * @return tokenId_ The tokenId_ of the deployed token manager.
-     */
-    function deployCustomTokenManager(
-        bytes32 salt,
-        TokenManagerType tokenManagerType,
-        bytes memory params
-    ) external payable returns (bytes32 tokenId_);
 
     /**
      * @notice Deploys a custom token manager contract on a remote chain.
@@ -191,46 +152,23 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     ) external payable returns (bytes32 tokenId_);
 
     /**
-     * @notice Deploys a standardized token and registers it. The token manager type will be lock/unlock unless the distributor matches its address, in which case it will be a mint/burn one.
-     * @param salt The salt used for token deployment.
-     * @param name The name of the standardized token.
-     * @param symbol The symbol of the standardized token.
-     * @param decimals The number of decimals for the standardized token.
-     * @param mintAmount The amount of tokens to mint to the deployer.
-     * @param distributor The address of the distributor for mint/burn operations.
-     */
-    function deployAndRegisterStandardizedToken(
-        bytes32 salt,
-        string calldata name,
-        string calldata symbol,
-        uint8 decimals,
-        uint256 mintAmount,
-        address distributor
-    ) external payable;
-
-    /**
      * @notice Deploys and registers a standardized token on a remote chain.
      * @param salt The salt used for token deployment.
+     * @param destinationChain The name of the destination chain. Use '' for this chain.
      * @param name The name of the standardized tokens.
      * @param symbol The symbol of the standardized tokens.
      * @param decimals The number of decimals for the standardized tokens.
      * @param distributor The distributor data for mint/burn operations.
-     * @param mintTo The address where the minted tokens will be sent upon deployment.
-     * @param mintAmount The amount of tokens to be minted upon deployment.
-     * @param operator The operator data for standardized tokens.
-     * @param destinationChain The name of the destination chain.
      * @param gasValue The gas value for deployment.
      */
     function deployInterchainToken(
         bytes32 salt,
+        string calldata destinationChain,
         string memory name,
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory mintTo,
-        uint256 mintAmount,
         bytes memory operator,
-        string calldata destinationChain,
         uint256 gasValue
     ) external payable;
 

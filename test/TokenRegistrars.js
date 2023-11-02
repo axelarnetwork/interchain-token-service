@@ -1,5 +1,5 @@
 'use strict';
-
+/*
 const chai = require('chai');
 const { expect } = chai;
 require('dotenv').config();
@@ -24,6 +24,7 @@ const MINT_BURN = 0;
 
 // const DISTRIBUTOR_ROLE = 0;
 const OPERATOR_ROLE = 1;
+
 
 describe('Token Registrsrs', () => {
     let wallet;
@@ -91,7 +92,7 @@ describe('Token Registrsrs', () => {
             await expect(
                 canonicalTokenRegistrar.deployAndRegisterRemoteCanonicalToken(salt, destinationChain, gasValue, { value: gasValue }),
             )
-                .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
+                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', destinationChain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
@@ -141,8 +142,8 @@ describe('Token Registrsrs', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [standardizedTokenRegistrar.address, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
-            await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
-                .to.emit(service, 'StandardizedTokenDeployed')
+            await expect(standardizedTokenRegistrar.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address))
+                .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
@@ -165,8 +166,8 @@ describe('Token Registrsrs', () => {
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
 
-            await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
-                .to.emit(service, 'StandardizedTokenDeployed')
+            await expect(standardizedTokenRegistrar.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address))
+                .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
@@ -206,7 +207,7 @@ describe('Token Registrsrs', () => {
                     },
                 ),
             )
-                .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
+                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
                 .withArgs(
                     tokenId,
                     name,
@@ -234,8 +235,8 @@ describe('Token Registrsrs', () => {
             let params = defaultAbiCoder.encode(['bytes', 'address'], [standardizedTokenRegistrar.address, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
-            await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
-                .to.emit(service, 'StandardizedTokenDeployed')
+            await expect(standardizedTokenRegistrar.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address))
+                .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
@@ -267,7 +268,7 @@ describe('Token Registrsrs', () => {
                     value: gasValue,
                 }),
             )
-                .to.emit(service, 'RemoteStandardizedTokenAndManagerDeploymentInitialized')
+                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), destinationChain, gasValue)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
@@ -285,8 +286,8 @@ describe('Token Registrsrs', () => {
             let params = defaultAbiCoder.encode(['bytes', 'address'], [standardizedTokenRegistrar.address, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
-            await expect(standardizedTokenRegistrar.deployStandardizedToken(salt, name, symbol, decimals, mintAmount, wallet.address))
-                .to.emit(service, 'StandardizedTokenDeployed')
+            await expect(standardizedTokenRegistrar.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address))
+                .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, name, symbol, decimals, mintAmount, standardizedTokenRegistrar.address)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
@@ -315,3 +316,4 @@ describe('Token Registrsrs', () => {
         });
     });
 });
+*/

@@ -11,15 +11,15 @@ interface IERC20Named is IERC20 {
     /**
      * @notice Getter for the name of the token
      */
-    function name() external returns (string memory);
+    function name() external view returns (string memory);
 
     /**
      * @notice Getter for the symbol of the token
      */
-    function symbol() external returns (string memory);
+    function symbol() external view returns (string memory);
 
     /**
      * @notice Getter for the decimals of the token
      */
-    function decimals() external returns (uint8);
+    function decimals() external view returns (uint8);
 }
