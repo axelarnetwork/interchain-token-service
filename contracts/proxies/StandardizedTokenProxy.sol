@@ -5,14 +5,13 @@ pragma solidity ^0.8.0;
 import { FixedProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/FixedProxy.sol';
 
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
-import { IStandardizedTokenProxy } from '../interfaces/IStandardizedTokenProxy.sol';
 import { IImplementation } from '../interfaces/IImplementation.sol';
 
 /**
  * @title StandardizedTokenProxy
  * @dev Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy.
  */
-contract StandardizedTokenProxy is FixedProxy, IStandardizedTokenProxy {
+contract StandardizedTokenProxy is FixedProxy {
     bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
 
     /**
