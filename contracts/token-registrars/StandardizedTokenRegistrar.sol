@@ -61,24 +61,26 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         tokenAddress = service.interchainTokenAddress(standardizedTokenId(deployer, salt));
     }
 
-    function deployStandardizedToken(
+    function deployInterchainToken(
         bytes32 salt,
         string calldata name,
         string calldata symbol,
         uint8 decimals,
         uint256 mintAmount,
-        address distributor
+        address distributor,
+        address operator
     ) external payable {
         address sender = msg.sender;
         salt = standardizedTokenSalt(sender, salt);
         bytes32 tokenId = service.tokenId(address(this), salt);
 
-        service.deployAndRegisterStandardizedToken(salt, name, symbol, decimals, mintAmount, distributor);
+        service.deployInterchainToken(salt, '', name, symbol, decimals, address(this).toBytes(), operator.toBytes(), 0);
         ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
         tokenManager.transferOperatorship(sender);
 
         IStandardizedToken token = IStandardizedToken(service.interchainTokenAddress(tokenId));
-        token.safeTransfer(sender, mintAmount);
+        token.mint(sender, mintAmount);
+        token.transferDistributorship(distributor);
     }
 
     function deployRemoteStandarizedToken(
@@ -118,7 +120,7 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
             }
         }
 
-        _deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, distributor, operator, mintAmount, destinationChain, gasValue);
+        _deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, distributor, operator, destinationChain, gasValue);
     }
 
     function _deployInterchainToken(
@@ -128,21 +130,18 @@ contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManage
         uint8 tokenDecimals,
         bytes memory distributor,
         bytes memory operator,
-        uint256 mintAmount,
         string memory destinationChain,
         uint256 gasValue
     ) internal {
         // slither-disable-next-line arbitrary-send-eth
         service.deployInterchainToken{ value: gasValue }(
             salt,
+            destinationChain,
             tokenName,
             tokenSymbol,
             tokenDecimals,
             distributor,
-            distributor,
-            mintAmount,
             operator,
-            destinationChain,
             gasValue
         );
     }

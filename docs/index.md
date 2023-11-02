@@ -50,10 +50,10 @@ Returns the address of the token manager deployer contract.
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 
-### standardizedTokenDeployer
+### interchainTokenDeployer
 
 ```solidity
-address standardizedTokenDeployer
+address interchainTokenDeployer
 ```
 
 Returns the address of the standardized token deployer contract.
@@ -102,7 +102,7 @@ bytes32 PREFIX_STANDARDIZED_TOKEN_SALT
 ### constructor
 
 ```solidity
-constructor(address tokenManagerDeployer_, address standardizedTokenDeployer_, address gateway_, address gasService_, address remoteAddressValidator_, address[] tokenManagerImplementations, string chainName_) public
+constructor(address tokenManagerDeployer_, address interchainTokenDeployer_, address gateway_, address gasService_, address remoteAddressValidator_, address[] tokenManagerImplementations, string chainName_) public
 ```
 
 _All of the variables passed here are stored as immutable variables._
@@ -112,7 +112,7 @@ _All of the variables passed here are stored as immutable variables._
 | Name                        | Type      | Description                                                                                                         |
 | --------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
 | tokenManagerDeployer\_      | address   | the address of the TokenManagerDeployer.                                                                            |
-| standardizedTokenDeployer\_ | address   | the address of the StandardizedTokenDeployer.                                                                       |
+| interchainTokenDeployer\_ | address   | the address of the InterchainTokenDeployer.                                                                       |
 | gateway\_                   | address   | the address of the AxelarGateway.                                                                                   |
 | gasService\_                | address   | the address of the AxelarGasService.                                                                                |
 | interchainAddressTracker\_  | address   | the address of the InterchainAddressTracker.                                                                        |
@@ -830,10 +830,10 @@ Compute the salt for a standardized token deployment.
 | ---- | ------- | ------------------------------------------ |
 | salt | bytes32 | The computed salt for the token deployment |
 
-### \_deployStandardizedToken
+### \_deployInterchainToken
 
 ```solidity
-function _deployStandardizedToken(bytes32 tokenId, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) internal
+function _deployInterchainToken(bytes32 tokenId, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) internal
 ```
 
 Deploys a standardized token.
@@ -1145,10 +1145,10 @@ error GatewayToken()
 error TokenManagerDeploymentFailed(bytes error)
 ```
 
-### StandardizedTokenDeploymentFailed
+### InterchainTokenDeploymentFailed
 
 ```solidity
-error StandardizedTokenDeploymentFailed(bytes error)
+error InterchainTokenDeploymentFailed(bytes error)
 ```
 
 ### SelectorUnknown
@@ -1199,10 +1199,10 @@ event TokenReceivedWithData(bytes32 tokenId, string sourceChain, address destina
 event RemoteTokenManagerDeploymentInitialized(bytes32 tokenId, string destinationChain, uint256 gasValue, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params)
 ```
 
-### RemoteStandardizedTokenAndManagerDeploymentInitialized
+### RemoteInterchainTokenDeploymentInitialized
 
 ```solidity
-event RemoteStandardizedTokenAndManagerDeploymentInitialized(bytes32 tokenId, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue)
+event RemoteInterchainTokenDeploymentInitialized(bytes32 tokenId, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue)
 ```
 
 ### TokenManagerDeployed
@@ -1211,10 +1211,10 @@ event RemoteStandardizedTokenAndManagerDeploymentInitialized(bytes32 tokenId, st
 event TokenManagerDeployed(bytes32 tokenId, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params)
 ```
 
-### StandardizedTokenDeployed
+### InterchainTokenDeployed
 
 ```solidity
-event StandardizedTokenDeployed(bytes32 indexed tokenId, address tokenAddress, address indexed distributor, string name, string symbol, uint8 decimals, uint256 indexed mintAmount, address mintTo)
+event InterchainTokenDeployed(bytes32 indexed tokenId, address tokenAddress, address indexed distributor, string name, string symbol, uint8 decimals, uint256 indexed mintAmount, address mintTo)
 ```
 
 ### CustomTokenIdClaimed
@@ -1237,10 +1237,10 @@ Returns the address of the token manager deployer contract.
 | --------------------------- | ------- | --------------------------------------------------- |
 | tokenManagerDeployerAddress | address | The address of the token manager deployer contract. |
 
-### standardizedTokenDeployer
+### interchainTokenDeployer
 
 ```solidity
-function standardizedTokenDeployer() external view returns (address standardizedTokenDeployerAddress)
+function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress)
 ```
 
 Returns the address of the standardized token deployer contract.
@@ -1249,7 +1249,7 @@ Returns the address of the standardized token deployer contract.
 
 | Name                             | Type    | Description                                              |
 | -------------------------------- | ------- | -------------------------------------------------------- |
-| standardizedTokenDeployerAddress | address | The address of the standardized token deployer contract. |
+| interchainTokenDeployerAddress | address | The address of the standardized token deployer contract. |
 
 ### getChainName
 
@@ -1992,7 +1992,7 @@ _Removes chains that are no longer supported by the Axelar gateway_
 | ---------- | -------- | ---------------------------------------------- |
 | chainNames | string[] | List of chain names to be removed as supported |
 
-## IStandardizedTokenDeployer
+## IInterchainTokenDeployer
 
 This contract is used to deploy new instances of the StandardizedTokenProxy contract.
 
@@ -2016,10 +2016,10 @@ function deployer() external view returns (contract Create3Deployer)
 
 Getter for the Create3Deployer.
 
-### deployStandardizedToken
+### deployInterchainToken
 
 ```solidity
-function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable returns (address tokenAddress)
+function deployInterchainToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable returns (address tokenAddress)
 ```
 
 Deploys a new instance of the StandardizedTokenProxy contract
@@ -5067,7 +5067,7 @@ _Constructs the StandardizedTokenProxy contract._
 | implementationAddress | address | Address of the StandardizedToken implementation              |
 | params                | bytes   | Initialization parameters for the StandardizedToken contract |
 
-## StandardizedTokenDeployer
+## InterchainTokenDeployer
 
 This contract is used to deploy new instances of the StandardizedTokenProxy contract.
 
@@ -5097,7 +5097,7 @@ address implementationLockUnlockAddress
 constructor(address deployer_, address implementationLockUnlockAddress_, address implementationMintBurnAddress_) public
 ```
 
-Constructor for the StandardizedTokenDeployer contract
+Constructor for the InterchainTokenDeployer contract
 
 #### Parameters
 
@@ -5107,10 +5107,10 @@ Constructor for the StandardizedTokenDeployer contract
 | implementationLockUnlockAddress\_ | address | Address of the StandardizedTokenLockUnlock contract |
 | implementationMintBurnAddress\_   | address | Address of the StandardizedTokenMintBurn contract   |
 
-### deployStandardizedToken
+### deployInterchainToken
 
 ```solidity
-function deployStandardizedToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable returns (address tokenAddress)
+function deployInterchainToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals, uint256 mintAmount, address mintTo) external payable returns (address tokenAddress)
 ```
 
 Deploys a new instance of the StandardizedTokenProxy contract

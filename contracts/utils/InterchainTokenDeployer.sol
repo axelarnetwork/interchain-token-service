@@ -4,19 +4,19 @@ pragma solidity ^0.8.0;
 
 import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 
-import { IStandardizedTokenDeployer } from '../interfaces/IStandardizedTokenDeployer.sol';
+import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
 
 import { StandardizedTokenProxy } from '../proxies/StandardizedTokenProxy.sol';
 
 /**
- * @title StandardizedTokenDeployer
+ * @title InterchainTokenDeployer
  * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
  */
-contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
+contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
     address public immutable implementationAddress;
 
     /**
-     * @notice Constructor for the StandardizedTokenDeployer contract
+     * @notice Constructor for the InterchainTokenDeployer contract
      * @param implementationAddress_ Address of the StandardizedToken contract
      */
     constructor(address implementationAddress_) {
@@ -32,22 +32,18 @@ contract StandardizedTokenDeployer is IStandardizedTokenDeployer, Create3 {
      * @param name Name of the token
      * @param symbol Symbol of the token
      * @param decimals Decimals of the token
-     * @param mintAmount Amount of tokens to mint initially
-     * @param mintTo Address to mint initial tokens to
      * @return tokenAddress Address of the deployed token
      */
     // slither-disable-next-line locked-ether
-    function deployStandardizedToken(
+    function deployInterchainToken(
         bytes32 salt,
         address tokenManager,
         address distributor,
         string calldata name,
         string calldata symbol,
-        uint8 decimals,
-        uint256 mintAmount,
-        address mintTo
+        uint8 decimals
     ) external payable returns (address tokenAddress) {
-        bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals, mintAmount, mintTo);
+        bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals);
         // slither-disable-next-line too-many-digits
         bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
 
