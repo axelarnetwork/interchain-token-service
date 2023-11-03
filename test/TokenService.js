@@ -26,8 +26,8 @@ const {
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 1;
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 2;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
-const messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
-const INVALID_messageType = 5;
+const MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
+const INVALID_MESSAGE_TYPE = 5;
 
 const MINT_BURN = 0;
 const MINT_BURN_FROM = 1;
@@ -501,7 +501,15 @@ describe('Interchain Token Service', () => {
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
+                [
+                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    tokenId,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    distributor,
+                    operator,
+                ],
             );
             await expect(
                 service.deployInterchainToken(
@@ -578,7 +586,15 @@ describe('Interchain Token Service', () => {
             const commandId = getRandomBytes32();
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
+                [
+                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    tokenId,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    distributor,
+                    operator,
+                ],
             );
 
             await expectRevert(
@@ -598,7 +614,15 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
+                [
+                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    tokenId,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    distributor,
+                    operator,
+                ],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -621,7 +645,15 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
+                [
+                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    tokenId,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    distributor,
+                    operator,
+                ],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -644,7 +676,15 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
+                [
+                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    tokenId,
+                    tokenName,
+                    tokenSymbol,
+                    tokenDecimals,
+                    distributor,
+                    operator,
+                ],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -1151,7 +1191,7 @@ describe('Interchain Token Service', () => {
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [INVALID_messageType, tokenId, destAddress, amount],
+                [INVALID_MESSAGE_TYPE, tokenId, destAddress, amount],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -1159,7 +1199,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
                 service,
                 'InvalidMessageType',
-                [INVALID_messageType],
+                [INVALID_MESSAGE_TYPE],
             );
         });
     });

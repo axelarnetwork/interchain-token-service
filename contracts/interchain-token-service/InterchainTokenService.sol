@@ -368,10 +368,8 @@ contract InterchainTokenService is
      * @param payload the payload of the receive token
      */
     function _expressExecute(string calldata sourceChain, bytes calldata payload) internal {
-        (uint256 messageType, bytes32 tokenId, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
-            payload,
-            (uint256, bytes32, bytes, bytes, uint256)
-        );
+        (uint256 messageType, bytes32 tokenId, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount) = abi
+            .decode(payload, (uint256, bytes32, bytes, bytes, uint256));
         address destinationAddress = destinationAddressBytes.toAddress();
 
         IERC20 token;
@@ -868,7 +866,14 @@ contract InterchainTokenService is
         // slither-disable-next-line reentrancy-events
         emit InterchainTransferWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
 
-        payload = abi.encode(MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA, tokenId, sourceAddress.toBytes(), destinationAddress, amount, metadata);
+        payload = abi.encode(
+            MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA,
+            tokenId,
+            sourceAddress.toBytes(),
+            destinationAddress,
+            amount,
+            metadata
+        );
 
         _callContract(destinationChain, payload, msg.value);
     }
