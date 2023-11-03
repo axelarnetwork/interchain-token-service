@@ -26,5 +26,5 @@ interface ITokenManagerProxy {
     /**
      * @notice Returns token ID of the token manager.
      */
-    function tokenId() external view returns (bytes32);
+    function interchainTokenId() external view returns (bytes32);
 }

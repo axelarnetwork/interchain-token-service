@@ -17,9 +17,9 @@ const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardi
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32 } = require('./utils');
 
-// const SELECTOR_SEND_TOKEN_WITH_DATA = 2;
-// const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
-const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
+// const MESSAGE_TYPE_SEND_TOKEN_WITH_DATA = 2;
+// const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
+const MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const LOCK_UNLOCK = 2;
 const MINT_BURN = 0;
@@ -78,7 +78,7 @@ describe('Token Registrars', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x'],
+                [MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x'],
             );
 
             await expect(tokenRegistrar.registerCanonicalToken(token.address))
@@ -88,15 +88,35 @@ describe('Token Registrars', () => {
             await expect(
                 tokenRegistrar.deployRemoteCanonicalToken(chainName, token.address, destinationChain, gasValue, { value: gasValue }),
             )
-                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
-                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', destinationChain, gasValue)
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
-        it('Should transfer some tokens through the registrar as the deployer', async () => {
+        it('Should transfer some tokens to the registrar', async () => {
+            const amount = 123456;
+
+            await deployToken();
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+
+            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
+
+            await token.approve(tokenRegistrar.address, amount).then((tx) => tx.wait());
+
+            await expect(tokenRegistrar.tokenTransferFrom(tokenId, amount))
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, tokenRegistrar.address, amount);
+        });
+
+        it('Should approve some tokens from the registrar to the token manager', async () => {
+            const amount = 123456;
+
             await deployToken();
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
@@ -107,18 +127,56 @@ describe('Token Registrars', () => {
 
             tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
 
-            // TODO: fix test
-            // await token.approve(tokenRegistrar.address, amount).then((tx) => tx.wait());
+            await expect(tokenRegistrar.tokenApprove(tokenId, amount))
+                .to.emit(token, 'Approval')
+                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount);
+        });
 
-            // await expect(
-            //     tokenRegistrar.interchainTransferFrom(tokenId, '', arrayify(wallet.address), amount, 0),
-            // )
-            //     // .to.emit(service, 'TokenSent')
-            //     // .withArgs(tokenId, destinationChain, destinationAddress, amount)
-            //     .to.emit(token, 'Transfer')
-            //     .withArgs(wallet.address, tokenRegistrar.address, amount)
-            //     .to.emit(token, 'Transfer')
-            //     .withArgs(tokenRegistrar.address, wallet.address, amount);
+        it('Should transfer some tokens through the registrar as the deployer', async () => {
+            const amount = 123456;
+            const destinationAddress = '0x57689403';
+            const gasValue = 45960;
+
+            await deployToken();
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+
+            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
+
+            await token.approve(tokenRegistrar.address, amount).then((tx) => tx.wait());
+
+            tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
+
+            const txs = [];
+
+            txs.push(await tokenRegistrar.populateTransaction.tokenTransferFrom(tokenId, amount));
+            txs.push(await tokenRegistrar.populateTransaction.tokenApprove(tokenId, amount));
+            txs.push(
+                await tokenRegistrar.populateTransaction.interchainTransfer(
+                    tokenId,
+                    destinationChain,
+                    destinationAddress,
+                    amount,
+                    gasValue,
+                ),
+            );
+
+            await expect(
+                tokenRegistrar.multicall(
+                    txs.map((tx) => tx.data),
+                    { value: gasValue },
+                ),
+            )
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, tokenRegistrar.address, amount)
+                .and.to.emit(token, 'Approval')
+                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount)
+                .and.to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, destinationChain, destinationAddress, amount);
         });
     });
 
@@ -185,7 +243,7 @@ describe('Token Registrars', () => {
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [
-                    SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
                     tokenId,
                     name,
                     symbol,
@@ -200,17 +258,8 @@ describe('Token Registrars', () => {
                     value: gasValue,
                 }),
             )
-                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
-                .withArgs(
-                    tokenId,
-                    name,
-                    symbol,
-                    decimals,
-                    wallet.address.toLowerCase(),
-                    wallet.address.toLowerCase(),
-                    destinationChain,
-                    gasValue,
-                )
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), wallet.address.toLowerCase(), destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -242,7 +291,7 @@ describe('Token Registrars', () => {
             params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', wallet.address],
+                [MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', wallet.address],
             );
 
             await expect(
@@ -250,8 +299,8 @@ describe('Token Registrars', () => {
                     value: gasValue,
                 }),
             )
-                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
-                .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address.toLowerCase(), destinationChain, gasValue)
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address.toLowerCase(), destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')

@@ -29,6 +29,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      */
     constructor(address interchainTokenService_) {
         if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
+
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
     }
 
@@ -62,9 +63,9 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @notice A function that returns the token id.
      * @dev This will only work when implementation is called by a proxy, which stores the tokenId as an immutable.
      */
-    function tokenId() public view returns (bytes32) {
+    function interchainTokenId() public view returns (bytes32) {
         // slither-disable-next-line var-read-using-this
-        return this.tokenId();
+        return this.interchainTokenId();
     }
 
     /**
@@ -75,18 +76,23 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      */
     function setup(bytes calldata params) external override onlyProxy {
         bytes memory operatorBytes = abi.decode(params, (bytes));
-        address operator_;
+        address operator;
+
         /**
          * @dev Specifying an empty operator will default to the service being the operator. This makes it easy to deploy
          * remote standardized tokens without knowing anything about the service address at the destination.
          */
         if (operatorBytes.length == 0) {
-            operator_ = address(interchainTokenService);
+            operator = address(interchainTokenService);
         } else {
-            operator_ = operatorBytes.toAddress();
+            operator = operatorBytes.toAddress();
+
+            // Add flow limiter role to the service by default. The operator can remove this if they so choose.
+            _addAccountRoles(address(interchainTokenService), 1 << uint8(Roles.FLOW_LIMITER));
         }
 
-        _addAccountRoles(operator_, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
+        _addAccountRoles(operator, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
+
         _setup(params);
     }
 
@@ -106,10 +112,12 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         address sender = msg.sender;
 
         amount = _takeToken(sender, amount);
+
+        // rate limit the outgoing amount to destination
         _addFlowOut(amount);
 
-        interchainTokenService.transmitSendToken{ value: msg.value }(
-            tokenId(),
+        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
+            interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -132,11 +140,15 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         bytes calldata data
     ) external payable virtual {
         address sender = msg.sender;
+
         amount = _takeToken(sender, amount);
+
+        // rate limit the outgoing amount to destination
         _addFlowOut(amount);
+
         uint32 version = 0;
-        interchainTokenService.transmitSendToken{ value: msg.value }(
-            tokenId(),
+        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
+            interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -161,9 +173,12 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         bytes calldata metadata
     ) external payable virtual onlyToken {
         amount = _takeToken(sender, amount);
+
+        // rate limit the outgoing amount to destination
         _addFlowOut(amount);
-        interchainTokenService.transmitSendToken{ value: msg.value }(
-            tokenId(),
+
+        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
+            interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -179,6 +194,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @return the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
+        // rate limit the incoming amount from source
         _addFlowIn(amount);
         amount = _giveToken(destinationAddress, amount);
         return amount;
@@ -191,8 +207,9 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
      */
     function takeToken(address sourceAddress, uint256 amount) external onlyService returns (uint256) {
-        _addFlowOut(amount);
         amount = _takeToken(sourceAddress, amount);
+        // rate limit the outgoing amount to destination
+        _addFlowOut(amount);
         return amount;
     }
 
@@ -209,8 +226,8 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @notice This function adds a flow limiter for this TokenManager. Can only be called by the operator.
-     * @param flowLimiter the address of the new flow limiter.
+     * @notice This function removes a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of an existing flow limiter.
      */
     function removeFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
         if (flowLimiter == address(0)) revert ZeroAddress();
@@ -225,7 +242,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param flowLimit_ the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
     function setFlowLimit(uint256 flowLimit_) external onlyRole(uint8(Roles.FLOW_LIMITER)) {
-        _setFlowLimit(flowLimit_, tokenId());
+        _setFlowLimit(flowLimit_, interchainTokenId());
     }
 
     /**
