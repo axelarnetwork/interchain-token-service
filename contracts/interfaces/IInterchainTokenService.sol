@@ -15,7 +15,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error LengthMismatch();
     error InvalidTokenManagerImplementationType(address implementation);
     error NotRemoteService();
-    error TokenManagerDoesNotExist(bytes32 tokenId_);
+    error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager(address caller, address tokenManager);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error InvalidCanonicalTokenId(bytes32 expectedCanonicalTokenId);
@@ -29,9 +29,9 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error UntrustedChain(string chainName);
     error InvalidExpressSelector(uint256 selector);
 
-    event TokenSent(bytes32 indexed tokenId_, string destinationChain, bytes destinationAddress, uint256 indexed amount);
+    event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
     event TokenSentWithData(
-        bytes32 indexed tokenId_,
+        bytes32 indexed tokenId,
         string destinationChain,
         bytes destinationAddress,
         uint256 indexed amount,
@@ -39,28 +39,28 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         bytes data
     );
     event TokenReceived(
-        bytes32 indexed tokenId_,
+        bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,
         address indexed destinationAddress,
         uint256 indexed amount
     );
     event TokenReceivedWithData(
-        bytes32 indexed tokenId_,
+        bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,
         address indexed destinationAddress,
         uint256 indexed amount
     );
     event RemoteTokenManagerDeploymentInitialized(
-        bytes32 indexed tokenId_,
+        bytes32 indexed tokenId,
         string destinationChain,
         uint256 indexed gasValue,
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
     event RemoteInterchainTokenDeploymentInitialized(
-        bytes32 indexed tokenId_,
+        bytes32 indexed tokenId,
         string tokenName,
         string tokenSymbol,
         uint8 tokenDecimals,
@@ -69,16 +69,16 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         string destinationChain,
         uint256 indexed gasValue
     );
-    event TokenManagerDeployed(bytes32 indexed tokenId_, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
+    event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
     event InterchainTokenDeployed(
-        bytes32 indexed tokenId_,
+        bytes32 indexed tokenId,
         address tokenAddress,
         address indexed distributor,
         string name,
         string symbol,
         uint8 decimals
     );
-    event CustomTokenIdClaimed(bytes32 indexed tokenId_, address indexed deployer, bytes32 indexed salt);
+    event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
     event PausedSet(bool indexed paused, address indexed msgSender);
 
     /**
@@ -100,40 +100,40 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
 
     /**
-     * @notice Returns the address of the token manager associated with the given tokenId_.
-     * @param tokenId_ The tokenId_ of the token manager.
+     * @notice Returns the address of the token manager associated with the given tokenId.
+     * @param tokenId The tokenId of the token manager.
      * @return tokenManagerAddress_ The address of the token manager.
      */
-    function tokenManagerAddress(bytes32 tokenId_) external view returns (address tokenManagerAddress_);
+    function tokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
 
     /**
-     * @notice Returns the address of the valid token manager associated with the given tokenId_.
-     * @param tokenId_ The tokenId_ of the token manager.
+     * @notice Returns the address of the valid token manager associated with the given tokenId.
+     * @param tokenId The tokenId of the token manager.
      * @return tokenManagerAddress_ The address of the valid token manager.
      */
-    function validTokenManagerAddress(bytes32 tokenId_) external view returns (address tokenManagerAddress_);
+    function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
 
     /**
-     * @notice Returns the address of the token associated with the given tokenId_.
-     * @param tokenId_ The tokenId_ of the token manager.
+     * @notice Returns the address of the token associated with the given tokenId.
+     * @param tokenId The tokenId of the token manager.
      * @return tokenAddress_ The address of the token.
      */
-    function tokenAddress(bytes32 tokenId_) external view returns (address tokenAddress_);
+    function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
 
     /**
-     * @notice Returns the address of the standardized token associated with the given tokenId_.
-     * @param tokenId_ The tokenId_ of the standardized token.
+     * @notice Returns the address of the standardized token associated with the given tokenId.
+     * @param tokenId The tokenId of the standardized token.
      * @return tokenAddress_ The address of the standardized token.
      */
-    function interchainTokenAddress(bytes32 tokenId_) external view returns (address tokenAddress_);
+    function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
 
     /**
-     * @notice Returns the custom tokenId_ associated with the given operator and salt.
+     * @notice Returns the custom tokenId associated with the given operator and salt.
      * @param operator_ The operator address.
      * @param salt The salt used for token id calculation.
-     * @return tokenId_ The custom tokenId_ associated with the operator and salt.
+     * @return tokenId The custom tokenId associated with the operator and salt.
      */
-    function interchainTokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId_);
+    function interchainTokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId);
 
     /**
      * @notice Deploys a custom token manager contract on a remote chain.
@@ -149,7 +149,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         TokenManagerType tokenManagerType,
         bytes calldata params,
         uint256 gasValue
-    ) external payable returns (bytes32 tokenId_);
+    ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Deploys and registers a standardized token on a remote chain.
@@ -180,7 +180,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress_);
 
     function interchainTransfer(
-        bytes32 tokenId_,
+        bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
@@ -188,7 +188,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     ) external payable;
 
     function sendTokenWithData(
-        bytes32 tokenId_,
+        bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
@@ -197,7 +197,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
 
     /**
      * @notice Initiates an interchain token transfer. Only callable by TokenManagers
-     * @param tokenId_ The tokenId_ of the token to be transmitted.
+     * @param tokenId The tokenId of the token to be transmitted.
      * @param sourceAddress The source address of the token.
      * @param destinationChain The name of the destination chain.
      * @param destinationAddress The destination address on the destination chain.
@@ -205,7 +205,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
      * @param metadata The metadata associated with the transmission.
      */
     function transmitSendToken(
-        bytes32 tokenId_,
+        bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
         bytes memory destinationAddress,
@@ -222,24 +222,24 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
 
     /**
      * @notice Returns the flow limit for a specific token.
-     * @param tokenId_ The tokenId_ of the token.
+     * @param tokenId The tokenId of the token.
      * @return flowLimit_ The flow limit for the token.
      */
-    function flowLimit(bytes32 tokenId_) external view returns (uint256 flowLimit_);
+    function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_);
 
     /**
      * @notice Returns the total amount of outgoing flow for a specific token.
-     * @param tokenId_ The tokenId_ of the token.
+     * @param tokenId The tokenId of the token.
      * @return flowOutAmount_ The total amount of outgoing flow for the token.
      */
-    function flowOutAmount(bytes32 tokenId_) external view returns (uint256 flowOutAmount_);
+    function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_);
 
     /**
      * @notice Returns the total amount of incoming flow for a specific token.
-     * @param tokenId_ The tokenId_ of the token.
+     * @param tokenId The tokenId of the token.
      * @return flowInAmount_ The total amount of incoming flow for the token.
      */
-    function flowInAmount(bytes32 tokenId_) external view returns (uint256 flowInAmount_);
+    function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_);
 
     /**
      * @notice Sets the paused state of the contract.
