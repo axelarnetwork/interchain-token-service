@@ -2185,10 +2185,10 @@ function chainNameHash() external view returns (bytes32)
 function standardizedTokenSalt(bytes32 chainAddressHash_, address deployer, bytes32 salt) external view returns (bytes32)
 ```
 
-### standardizedinterchainTokenId
+### standardizedTokenId
 
 ```solidity
-function standardizedinterchainTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId)
+function standardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId)
 ```
 
 ### interchainTokenAddress
@@ -2215,10 +2215,10 @@ function deployRemoteInterchainToken(string originalChainName, bytes32 salt, add
 function canonicalTokenSalt(bytes32 chainAddressHash_, address tokenAddress) external view returns (bytes32 salt)
 ```
 
-### canonicalinterchainTokenId
+### canonicalTokenId
 
 ```solidity
-function canonicalinterchainTokenId(address tokenAddress) external view returns (bytes32 tokenId)
+function canonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId)
 ```
 
 ### registerCanonicalToken
@@ -3297,10 +3297,10 @@ Getter for the contract id.
 function standardizedTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32)
 ```
 
-### standardizedinterchainTokenId
+### standardizedTokenId
 
 ```solidity
-function standardizedinterchainTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId)
+function standardizedTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId)
 ```
 
 ### interchainTokenAddress
@@ -3333,10 +3333,10 @@ function _deployInterchainToken(bytes32 salt, string destinationChain, string to
 function canonicalTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt)
 ```
 
-### canonicalinterchainTokenId
+### canonicalTokenId
 
 ```solidity
-function canonicalinterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId)
+function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId)
 ```
 
 ### registerCanonicalToken

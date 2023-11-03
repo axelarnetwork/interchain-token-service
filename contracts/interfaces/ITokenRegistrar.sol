@@ -13,7 +13,7 @@ interface ITokenRegistrar {
 
     function standardizedTokenSalt(bytes32 chainAddressHash_, address deployer, bytes32 salt) external view returns (bytes32);
 
-    function standardizedinterchainTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
+    function standardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
 
     function interchainTokenAddress(address deployer, bytes32 salt) external view returns (address tokenAddress);
 
@@ -38,7 +38,7 @@ interface ITokenRegistrar {
 
     function canonicalTokenSalt(bytes32 chainAddressHash_, address tokenAddress) external view returns (bytes32 salt);
 
-    function canonicalinterchainTokenId(address tokenAddress) external view returns (bytes32 tokenId);
+    function canonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
     function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId);
 

@@ -47,12 +47,12 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, chainNameHash_, deployer, salt));
     }
 
-    function standardizedinterchainTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
+    function standardizedTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
         tokenId = service.interchainTokenId(address(this), standardizedTokenSalt(chainNameHash, deployer, salt));
     }
 
     function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
-        tokenAddress = service.interchainTokenAddress(standardizedinterchainTokenId(deployer, salt));
+        tokenAddress = service.interchainTokenAddress(standardizedTokenId(deployer, salt));
     }
 
     function deployInterchainToken(
@@ -156,7 +156,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash_, tokenAddress));
     }
 
-    function canonicalinterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
+    function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
         tokenId = service.interchainTokenId(address(this), canonicalTokenSalt(chainNameHash, tokenAddress));
     }
 
