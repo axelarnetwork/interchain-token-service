@@ -717,16 +717,7 @@ contract InterchainTokenService is
         validTokenManagerAddress(tokenId);
 
         // slither-disable-next-line reentrancy-events
-        emit RemoteInterchainTokenDeploymentInitialized(
-            tokenId,
-            name,
-            symbol,
-            decimals,
-            distributor,
-            operator,
-            destinationChain,
-            gasValue
-        );
+        emit RemoteInterchainTokenDeploymentInitialized(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
 
         bytes memory payload = abi.encode(SELECTOR_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor, operator);
         _callContract(destinationChain, payload, gasValue);
