@@ -18,7 +18,6 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager(address caller, address tokenManager);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
-    error InvalidCanonicalTokenId(bytes32 expectedCanonicalTokenId);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error GatewayToken();
     error TokenManagerDeploymentFailed(bytes error);

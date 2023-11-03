@@ -314,8 +314,8 @@ contract InterchainTokenService is
         bytes32 tokenId = interchainTokenId(msg.sender, salt);
 
         if (bytes(destinationChain).length == 0) {
-            address tokenAddress_;
-            tokenAddress_ = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);
+            address tokenAddress_ = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);
+
             _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(operator, tokenAddress_));
         } else {
             _deployRemoteInterchainToken(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
@@ -525,18 +525,19 @@ contract InterchainTokenService is
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER || messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA) {
             address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
-            _processReceiveTokenPayload(expressExecutor, sourceChain, payload, messageType);
 
-            if (expressExecutor != address(0))
+            _processInterchainTransferPayload(expressExecutor, sourceChain, payload, messageType);
+
+            if (expressExecutor != address(0)) {
                 emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
-
-            return;
+            }
+        } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
+            _processDeployTokenManagerPayload(payload);
+        } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
+            _processDeployInterchainTokenPayload(payload);
+        } else {
+            revert InvalidMessageType(messageType);
         }
-
-        if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) return _processDeployTokenManagerPayload(payload);
-        if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) return _processDeployInterchainTokenPayload(payload);
-
-        revert InvalidMessageType(messageType);
     }
 
     function contractCallWithTokenValue(
@@ -576,7 +577,7 @@ contract InterchainTokenService is
      * @param sourceChain The chain where the transaction originates from
      * @param payload The encoded data payload to be processed
      */
-    function _processReceiveTokenPayload(
+    function _processInterchainTransferPayload(
         address expressExecutor,
         string calldata sourceChain,
         bytes calldata payload,
@@ -739,6 +740,7 @@ contract InterchainTokenService is
         emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, distributor, operator, destinationChain);
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor, operator);
+
         _callContract(destinationChain, payload, gasValue);
     }
 
