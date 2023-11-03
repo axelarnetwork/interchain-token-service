@@ -193,7 +193,7 @@ contract InterchainTokenService is
      * @param salt the salt that the deployer uses for the deployment.
      * @return tokenId_ the tokenId_ that the custom TokenManager would get (or has gotten).
      */
-    function tokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId_) {
+    function interchainTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId_) {
         tokenId_ = keccak256(abi.encode(PREFIX_TOKEN_ID, sender, salt));
     }
 
@@ -267,7 +267,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId_) {
         address deployer_ = msg.sender;
-        tokenId_ = tokenId(deployer_, salt);
+        tokenId_ = interchainTokenId(deployer_, salt);
 
         emit CustomTokenIdClaimed(tokenId_, deployer_, salt);
         if (bytes(destinationChain).length == 0) {
@@ -300,7 +300,7 @@ contract InterchainTokenService is
         bytes memory operator,
         uint256 gasValue
     ) external payable whenNotPaused {
-        bytes32 tokenId_ = tokenId(msg.sender, salt);
+        bytes32 tokenId_ = interchainTokenId(msg.sender, salt);
 
         if (bytes(destinationChain).length == 0) {
             address tokenAddress_;

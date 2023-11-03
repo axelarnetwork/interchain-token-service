@@ -133,7 +133,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
      * @param salt The salt used for token id calculation.
      * @return tokenId_ The custom tokenId_ associated with the operator and salt.
      */
-    function tokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId_);
+    function interchainTokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId_);
 
     /**
      * @notice Deploys a custom token manager contract on a remote chain.

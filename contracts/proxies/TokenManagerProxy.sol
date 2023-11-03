@@ -13,7 +13,7 @@ import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 contract TokenManagerProxy is ITokenManagerProxy {
     IInterchainTokenService public immutable interchainTokenService;
     uint256 public immutable implementationType;
-    bytes32 public immutable tokenId;
+    bytes32 public immutable interchainTokenId;
 
     /**
      * @dev Constructs the TokenManagerProxy contract.
@@ -25,7 +25,7 @@ contract TokenManagerProxy is ITokenManagerProxy {
     constructor(address interchainTokenServiceAddress_, uint256 implementationType_, bytes32 tokenId_, bytes memory params) {
         interchainTokenService = IInterchainTokenService(interchainTokenServiceAddress_);
         implementationType = implementationType_;
-        tokenId = tokenId_;
+        interchainTokenId = tokenId_;
         address impl = _tokenManagerImplementation(IInterchainTokenService(interchainTokenServiceAddress_), implementationType_);
 
         (bool success, bytes memory returnData) = impl.delegatecall(abi.encodeWithSelector(TokenManagerProxy.setup.selector, params));

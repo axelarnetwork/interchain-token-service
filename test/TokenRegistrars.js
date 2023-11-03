@@ -54,7 +54,7 @@ describe('Token Registrars', () => {
 
         async function deployToken() {
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
-            tokenId = await tokenRegistrar.canonicalTokenId(token.address);
+            tokenId = await tokenRegistrar.canonicalinterchainTokenId(token.address);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
@@ -130,7 +130,7 @@ describe('Token Registrars', () => {
 
         it('Should register a token', async () => {
             const salt = keccak256('0x');
-            tokenId = await tokenRegistrar.standardizedTokenId(wallet.address, salt);
+            tokenId = await tokenRegistrar.standardizedinterchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenRegistrar.interchainTokenAddress(wallet.address, salt);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
@@ -163,7 +163,7 @@ describe('Token Registrars', () => {
             const mintAmount = 5678;
 
             const salt = keccak256('0x12');
-            tokenId = await tokenRegistrar.standardizedTokenId(wallet.address, salt);
+            tokenId = await tokenRegistrar.standardizedinterchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenRegistrar.interchainTokenAddress(wallet.address, salt);
             let params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
@@ -221,7 +221,7 @@ describe('Token Registrars', () => {
             const gasValue = 1234;
 
             const salt = keccak256('0x1245');
-            tokenId = await tokenRegistrar.standardizedTokenId(wallet.address, salt);
+            tokenId = await tokenRegistrar.standardizedinterchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenRegistrar.interchainTokenAddress(wallet.address, salt);
             let params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);

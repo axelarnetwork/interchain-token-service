@@ -46,7 +46,7 @@ describe('Interchain Token Service Full Flow', () => {
         before(async () => {
             // The below is used to deploy a token, but any ERC20 can be used instead.
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
-            tokenId = await service.canonicalTokenId(token.address);
+            tokenId = await service.canonicalinterchainTokenId(token.address);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
@@ -147,7 +147,7 @@ describe('Interchain Token Service Full Flow', () => {
         const tokenCap = BigInt(1e18);
 
         before(async () => {
-            tokenId = await service.tokenId(wallet.address, salt);
+            tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             token = new Contract(tokenAddress, StandardizedToken.abi, wallet);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -271,7 +271,7 @@ describe('Interchain Token Service Full Flow', () => {
             // The below is used to deploy a token, but any ERC20 that has a mint capability can be used instead.
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
 
-            tokenId = await service.tokenId(wallet.address, salt);
+            tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();

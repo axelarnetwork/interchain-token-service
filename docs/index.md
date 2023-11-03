@@ -254,7 +254,7 @@ The token does not need to exist.
 ### canonicalTokenId
 
 ```solidity
-function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId)
+function canonicalinterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId)
 ```
 
 Calculates the tokenId that would correspond to a canonical link for a given token.
@@ -275,7 +275,7 @@ This will depend on what chain it is called from, unlike custom tokenIds.
 ### tokenId
 
 ```solidity
-function tokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId)
+function interchainTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId)
 ```
 
 Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt.
@@ -1348,7 +1348,7 @@ Returns the address of the standardized token associated with the given tokenId.
 ### canonicalTokenId
 
 ```solidity
-function canonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId)
+function canonicalinterchainTokenId(address tokenAddress) external view returns (bytes32 tokenId)
 ```
 
 Returns the canonical tokenId associated with the given tokenAddress.
@@ -1368,7 +1368,7 @@ Returns the canonical tokenId associated with the given tokenAddress.
 ### tokenId
 
 ```solidity
-function tokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
+function interchainTokenId(address operator, bytes32 salt) external view returns (bytes32 tokenId)
 ```
 
 Returns the custom tokenId associated with the given operator and salt.
@@ -2275,7 +2275,7 @@ Returns the address of the current implementation.
 ### tokenId
 
 ```solidity
-function tokenId() external view returns (bytes32)
+function interchainTokenId() external view returns (bytes32)
 ```
 
 Returns token ID of the token manager.
@@ -4303,7 +4303,7 @@ Must be overridden in the inheriting contract._
 ### \_getTokenId
 
 ```solidity
-function _getTokenId() internal view returns (bytes32 tokenId)
+function _getinterchainTokenId() internal view returns (bytes32 tokenId)
 ```
 
 Gets the token ID from the token manager proxy.

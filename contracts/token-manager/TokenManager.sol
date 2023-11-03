@@ -62,9 +62,9 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @notice A function that returns the token id.
      * @dev This will only work when implementation is called by a proxy, which stores the tokenId as an immutable.
      */
-    function tokenId() public view returns (bytes32) {
+    function interchainTokenId() public view returns (bytes32) {
         // slither-disable-next-line var-read-using-this
-        return this.tokenId();
+        return this.interchainTokenId();
     }
 
     /**
@@ -109,7 +109,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         _addFlowOut(amount);
 
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            tokenId(),
+            interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -136,7 +136,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         _addFlowOut(amount);
         uint32 version = 0;
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            tokenId(),
+            interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -163,7 +163,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
         interchainTokenService.transmitSendToken{ value: msg.value }(
-            tokenId(),
+            interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -225,7 +225,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param flowLimit_ the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
     function setFlowLimit(uint256 flowLimit_) external onlyRole(uint8(Roles.FLOW_LIMITER)) {
-        _setFlowLimit(flowLimit_, tokenId());
+        _setFlowLimit(flowLimit_, interchainTokenId());
     }
 
     /**
