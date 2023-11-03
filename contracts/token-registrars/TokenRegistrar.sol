@@ -203,12 +203,12 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         uint256 amount,
         uint256 gasValue
     ) external payable {
-        if(bytes(destinationChain).length == 0) {
+        if (bytes(destinationChain).length == 0) {
             address tokenAddress = service.interchainTokenAddress(tokenId);
             IStandardizedToken token = IStandardizedToken(tokenAddress);
             token.safeTransfer(destinationAddress.toAddress(), amount);
         } else {
-            service.interchainTransfer{value: gasValue}(tokenId, destinationChain, destinationAddress, amount, gasValue);
+            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, gasValue);
         }
     }
 }

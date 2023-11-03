@@ -488,7 +488,15 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should initialize a remote standardized token deployment', async () => {
-            await (await service.deployTokenManager(salt, '', LOCK_UNLOCK, defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]), 0)).wait();
+            await (
+                await service.deployTokenManager(
+                    salt,
+                    '',
+                    LOCK_UNLOCK,
+                    defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]),
+                    0,
+                )
+            ).wait();
 
             const tokenId = await service.tokenId(wallet.address, salt);
             const payload = defaultAbiCoder.encode(
@@ -826,8 +834,16 @@ describe('Interchain Token Service', () => {
 
         it('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
-            
-            await (await service.deployTokenManager(salt, '', LOCK_UNLOCK, defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]), 0)).wait();
+
+            await (
+                await service.deployTokenManager(
+                    salt,
+                    '',
+                    LOCK_UNLOCK,
+                    defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]),
+                    0,
+                )
+            ).wait();
 
             const tokenId = await service.tokenId(wallet.address, salt);
             const gasValue = 1e6;
@@ -854,8 +870,9 @@ describe('Interchain Token Service', () => {
             const params = '0x1234';
             const type = LOCK_UNLOCK;
 
-            await expect(service.deployTokenManager(salt, destinationChain, type, params, gasValue, { value: gasValue }))
-                .to.be.revertedWithCustomError(service, 'TokenManagerDoesNotExist', [tokenId])
+            await expect(
+                service.deployTokenManager(salt, destinationChain, type, params, gasValue, { value: gasValue }),
+            ).to.be.revertedWithCustomError(service, 'TokenManagerDoesNotExist', [tokenId]);
         });
 
         it('Should revert on remote custom token manager deployment if paused', async () => {
@@ -892,7 +909,15 @@ describe('Interchain Token Service', () => {
         it('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
 
-            await (await service.deployTokenManager(salt, '', LOCK_UNLOCK, defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]), 0)).wait();
+            await (
+                await service.deployTokenManager(
+                    salt,
+                    '',
+                    LOCK_UNLOCK,
+                    defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]),
+                    0,
+                )
+            ).wait();
 
             const tokenId = await service.tokenId(wallet.address, salt);
             const gasValue = 1e6;
@@ -919,8 +944,9 @@ describe('Interchain Token Service', () => {
             const params = '0x1234';
             const type = LOCK_UNLOCK;
 
-            await expect(service.deployTokenManager(salt, destinationChain, type, params, gasValue, { value: gasValue }))
-                .to.be.revertedWithCustomError(service, 'TokenManagerDoesNotExist', [tokenId]);
+            await expect(
+                service.deployTokenManager(salt, destinationChain, type, params, gasValue, { value: gasValue }),
+            ).to.be.revertedWithCustomError(service, 'TokenManagerDoesNotExist', [tokenId]);
         });
 
         it('Should revert on remote custom token manager deployment if paused', async () => {
@@ -944,8 +970,6 @@ describe('Interchain Token Service', () => {
             tx = await service.setPaused(false);
             await tx.wait();
         });
-
-        
     });
 
     describe('Receive Remote Token Manager Deployment', () => {
