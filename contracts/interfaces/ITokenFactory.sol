@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface ITokenRegistrar {
+interface ITokenFactory {
     error ZeroAddress();
     error NotDistributor(address distributor);
     error NotOperator(address operator);
@@ -23,15 +23,13 @@ interface ITokenRegistrar {
         string calldata symbol,
         uint8 decimals,
         uint256 mintAmount,
-        address distributor,
-        address operator
+        address distributor
     ) external payable;
 
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
         address additionalDistributor,
-        address optionalOperator,
         string memory destinationChain,
         uint256 gasValue
     ) external payable;

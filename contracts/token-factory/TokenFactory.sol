@@ -8,12 +8,12 @@ import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/uti
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { ITokenRegistrar } from '../interfaces/ITokenRegistrar.sol';
+import { ITokenFactory } from '../interfaces/ITokenFactory.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
-contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradable {
+contract TokenFactory is ITokenFactory, ITokenManagerType, Multicall, Upgradable {
     using AddressBytes for bytes;
     using AddressBytes for address;
     using SafeTokenTransfer for IInterchainToken;
@@ -69,8 +69,7 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
         string calldata symbol,
         uint8 decimals,
         uint256 mintAmount,
-        address distributor,
-        address operator
+        address distributor
     ) external payable {
         address sender = msg.sender;
         salt = interchainTokenSalt(chainNameHash, sender, salt);
@@ -82,13 +81,18 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
             distributorBytes = distributor.toBytes();
         }
 
-        _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, operator.toBytes(), 0);
+        _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, 0);
 
         if (mintAmount > 0) {
             bytes32 tokenId = service.interchainTokenId(address(this), salt);
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
             token.mint(address(this), mintAmount);
             token.transferDistributorship(distributor);
+
+            ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
+            tokenManager.removeFlowLimiter(address(this));
+            tokenManager.addFlowLimiter(distributor);
+            tokenManager.transferOperatorship(distributor);
         }
     }
 
@@ -96,7 +100,6 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
         string calldata originalChainName,
         bytes32 salt,
         address additionalDistributor,
-        address optionalOperator,
         string memory destinationChain,
         uint256 gasValue
     ) external payable {
@@ -104,7 +107,6 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
         string memory tokenSymbol;
         uint8 tokenDecimals;
         bytes memory distributor = new bytes(0);
-        bytes memory operator = new bytes(0);
 
         {
             bytes32 chainNameHash_;
@@ -118,7 +120,6 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
             bytes32 tokenId = service.interchainTokenId(address(this), salt);
 
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
-            ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
 
             tokenName = token.name();
             tokenSymbol = token.symbol();
@@ -127,14 +128,9 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
                 if (!token.isDistributor(additionalDistributor)) revert NotDistributor(additionalDistributor);
                 distributor = additionalDistributor.toBytes();
             }
-
-            if (optionalOperator != address(0)) {
-                if (!tokenManager.isOperator(optionalOperator)) revert NotOperator(optionalOperator);
-                operator = optionalOperator.toBytes();
-            }
         }
 
-        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, operator, gasValue);
+        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, gasValue);
     }
 
     function _deployInterchainToken(
@@ -144,7 +140,6 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
         string memory tokenSymbol,
         uint8 tokenDecimals,
         bytes memory distributor,
-        bytes memory operator,
         uint256 gasValue
     ) internal {
         // slither-disable-next-line arbitrary-send-eth
@@ -155,7 +150,6 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
             tokenSymbol,
             tokenDecimals,
             distributor,
-            operator,
             gasValue
         );
     }
@@ -193,7 +187,7 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
         string memory tokenSymbol = token.symbol();
         uint8 tokenDecimals = token.decimals();
 
-        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', '', gasValue);
+        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
     }
 
     function interchainTransfer(
