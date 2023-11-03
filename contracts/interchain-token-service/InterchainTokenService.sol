@@ -463,7 +463,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Used to pause the entire service.
+     * @notice Allows the owner to pause/unpause the token service.
      * @param paused what value to set paused to.
      */
     function setPaused(bool paused) external onlyOwner {

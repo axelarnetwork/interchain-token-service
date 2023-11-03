@@ -1,5 +1,5 @@
 'use strict';
-/*
+
 const chai = require('chai');
 const { expect } = chai;
 require('dotenv').config();
@@ -24,7 +24,8 @@ const DISTRIBUTOR_ROLE = 0;
 const MINT_BURN = 0;
 const LOCK_UNLOCK = 2;
 
-describe('Interchain Token Service Full Flow', () => {
+// TODO: Refactor skipped tests
+describe.skip('Interchain Token Service Full Flow', () => {
     let wallet;
     let service, gateway, gasService, tokenManager, tokenId;
     const name = 'tokenName';
@@ -363,4 +364,3 @@ describe('Interchain Token Service Full Flow', () => {
         });
     });
 });
-*/
