@@ -1862,8 +1862,6 @@ describe('Interchain Token Service', () => {
                 const [, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, mintAmount);
                 tokenIds.push(tokenId);
                 tokenManagers.push(tokenManager);
-
-                await tokenManager.addFlowLimiter(service.address).then((tx) => tx.wait());
             }
 
             const flowLimits = new Array(tokenManagers.length).fill(flowLimit);
