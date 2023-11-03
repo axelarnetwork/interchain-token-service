@@ -2,17 +2,18 @@
 
 pragma solidity ^0.8.0;
 
+import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
+
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
-import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
 contract InvalidStandardizedToken is IERC20MintableBurnable, InterchainToken, ERC20Permit, Implementation, Distributable {
-    using AddressBytesUtils for bytes;
+    using AddressBytes for bytes;
 
     string public name;
     string public symbol;
