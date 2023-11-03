@@ -115,7 +115,7 @@ _All of the variables passed here are stored as immutable variables._
 | interchainTokenDeployer\_ | address   | the address of the InterchainTokenDeployer.                                                                       |
 | gateway\_                   | address   | the address of the AxelarGateway.                                                                                   |
 | gasService\_                | address   | the address of the AxelarGasService.                                                                                |
-| interchainAddressTracker\_    | address   | the address of the InterchainAddressTracker.                                                                          |
+| interchainAddressTracker\_  | address   | the address of the InterchainAddressTracker.                                                                        |
 | tokenManagerImplementations | address[] | this need to have exactly 3 implementations in the following order: Lock/Unlock, mint/burn and then liquidity pool. |
 | chainName\_                 | string    | the name of the current chain.                                                                                      |
 
@@ -570,12 +570,12 @@ interchainTransfer that matches the parameters passed here.
 
 #### Parameters
 
-| Name               | Type    | Description                               |
-| ------------------ | ------- | ----------------------------------------- |
-| tokenId            | bytes32 | the tokenId of the TokenManager used.     |
+| Name               | Type    | Description                                        |
+| ------------------ | ------- | -------------------------------------------------- |
+| tokenId            | bytes32 | the tokenId of the TokenManager used.              |
 | destinationAddress | address | the destinationAddress for the interchainTransfer. |
-| amount             | uint256 | the amount of token to give.              |
-| commandId          | bytes32 | the sendHash detected at the sourceChain. |
+| amount             | uint256 | the amount of token to give.                       |
+| commandId          | bytes32 | the sendHash detected at the sourceChain.          |
 
 ### expressReceiveTokenWithData
 
@@ -593,7 +593,7 @@ detected an outgoing interchainTransfer that matches the parameters passed here.
 | tokenId            | bytes32 | the tokenId of the TokenManager used.                                               |
 | sourceChain        | string  | the name of the chain where the call came from.                                     |
 | sourceAddress      | bytes   | the caller of callContractWithInterchainToken.                                      |
-| destinationAddress | address | the destinationAddress for the interchainTransfer.                                           |
+| destinationAddress | address | the destinationAddress for the interchainTransfer.                                  |
 | amount             | uint256 | the amount of token to give.                                                        |
 | data               | bytes   | the data to be passed to destinationAddress after giving them the tokens specified. |
 | commandId          | bytes32 | the sendHash detected at the sourceChain.                                           |
@@ -613,7 +613,7 @@ Transmit a sendTokenWithData for the given tokenId. Only callable by a token man
 | tokenId            | bytes32 | the tokenId of the TokenManager (which must be the msg.sender).                               |
 | sourceAddress      | address | the address where the token is coming from, which will also be used for reimbursement of gas. |
 | destinationChain   | string  | the name of the chain to send tokens to.                                                      |
-| destinationAddress | bytes   | the destinationAddress for the interchainTransfer.                                                     |
+| destinationAddress | bytes   | the destinationAddress for the interchainTransfer.                                            |
 | amount             | uint256 | the amount of token to give.                                                                  |
 | metadata           | bytes   | the data to be passed to the destination.                                                     |
 
@@ -1707,7 +1707,7 @@ Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if 
 | Name               | Type    | Description                                                 |
 | ------------------ | ------- | ----------------------------------------------------------- |
 | tokenId            | bytes32 | the tokenId of the TokenManager used.                       |
-| destinationAddress | address | the destinationAddress for the interchainTransfer.                   |
+| destinationAddress | address | the destinationAddress for the interchainTransfer.          |
 | amount             | uint256 | the amount of token to give.                                |
 | commandId          | bytes32 | the commandId calculated from the event at the sourceChain. |
 
@@ -1726,7 +1726,7 @@ Uses the caller's tokens to fullfill a callContractWithInterchainToken ahead of 
 | tokenId            | bytes32 | the tokenId of the TokenManager used.                                               |
 | sourceChain        | string  | the name of the chain where the call came from.                                     |
 | sourceAddress      | bytes   | the caller of callContractWithInterchainToken.                                      |
-| destinationAddress | address | the destinationAddress for the interchainTransfer.                                           |
+| destinationAddress | address | the destinationAddress for the interchainTransfer.                                  |
 | amount             | uint256 | the amount of token to give.                                                        |
 | data               | bytes   | the data to be passed to destinationAddress after giving them the tokens specified. |
 | commandId          | bytes32 | the commandId calculated from the event at the sourceChain.                         |
@@ -2039,9 +2039,9 @@ Deploys a new instance of the StandardizedTokenProxy contract
 
 #### Return Values
 
-| Name         | Type    | Description                   |
-| ------------ | ------- | ----------------------------- |
-| tokenAddress | address | address of the token.         |
+| Name         | Type    | Description           |
+| ------------ | ------- | --------------------- |
+| tokenAddress | address | address of the token. |
 
 ## ITokenManager
 
@@ -2229,8 +2229,8 @@ Deploys a new instance of the TokenManagerProxy contract
 
 #### Return Values
 
-| Name                | Type    | Description                              |
-| ------------------- | ------- | -----------------------------------------|
+| Name         | Type    | Description                              |
+| ------------ | ------- | ---------------------------------------- |
 | tokenManager | address | the address of the deployed tokenManager |
 
 ## ITokenManagerProxy
@@ -2547,7 +2547,7 @@ _Constructs the InterchainAddressTrackerProxy contract._
 
 | Name                  | Type    | Description                                                            |
 | --------------------- | ------- | ---------------------------------------------------------------------- |
-| implementationAddress | address | Address of the InterchainAddressTracker implementation                   |
+| implementationAddress | address | Address of the InterchainAddressTracker implementation                 |
 | owner                 | address | Address of the owner of the proxy                                      |
 | params                | bytes   | The params to be passed to the \_setup function of the implementation. |
 
@@ -4793,7 +4793,7 @@ _Internal function to set the flow limit_
 #### Parameters
 
 | Name      | Type    | Description                                  |
-| --------- | ------- | ---------------------------------------------|
+| --------- | ------- | -------------------------------------------- |
 | flowLimit | uint256 | The value to set the flow limit to           |
 | tokenId   | bytes32 | The id of the token whose limit is being set |
 
@@ -4875,12 +4875,12 @@ _Adds a flow amount while ensuring it does not exceed the flow limit_
 
 #### Parameters
 
-| Name          | Type    | Description                                 |
-| ------------- | ------- | ------------------------------------------- |
-| flowLimit     | uint256 |                                             |
-| slotToAdd     | uint256 | The slot to add the flow to                 |
-| slotToCompare | uint256 | The slot to compare the flow against        |
-| flowAmount    | uint256 | The flow amount to add                      |
+| Name          | Type    | Description                          |
+| ------------- | ------- | ------------------------------------ |
+| flowLimit     | uint256 |                                      |
+| slotToAdd     | uint256 | The slot to add the flow to          |
+| slotToCompare | uint256 | The slot to compare the flow against |
+| flowAmount    | uint256 | The flow amount to add               |
 
 ### \_addFlowOut
 
@@ -4892,9 +4892,9 @@ _Adds a flow out amount_
 
 #### Parameters
 
-| Name          | Type    | Description                          |
-| ------------- | ------- | ------------------------------------ |
-| flowOutAmount | uint256 | The flow out amount to add           |
+| Name          | Type    | Description                |
+| ------------- | ------- | -------------------------- |
+| flowOutAmount | uint256 | The flow out amount to add |
 
 ### \_addFlowIn
 
@@ -4906,9 +4906,9 @@ _Adds a flow in amount_
 
 #### Parameters
 
-| Name         | Type    | Description                             |
-| ------------ | ------- | --------------------------------------- |
-| flowInAmount | uint256 | The flow in amount to add               |
+| Name         | Type    | Description               |
+| ------------ | ------- | ------------------------- |
+| flowInAmount | uint256 | The flow in amount to add |
 
 ## Implementation
 
@@ -4993,8 +4993,8 @@ Deploys a new instance of the TokenManagerProxy contract
 
 #### Return Values
 
-| Name                | Type    | Description                              |
-| ------------------- | ------- | -----------------------------------------|
+| Name         | Type    | Description                              |
+| ------------ | ------- | ---------------------------------------- |
 | tokenManager | address | the address of the deployed tokenManager |
 
 ## IStandardizedToken
@@ -5026,10 +5026,6 @@ _This should be hidden by the proxy._
 | ------ | ----- | ------------------------------------------- |
 | params | bytes | the data to be used for the initialization. |
 
-## IStandardizedTokenProxy
-
-_Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy._
-
 ### WrongImplementation
 
 ```solidity
@@ -5046,7 +5042,7 @@ Returns the contract id, which a proxy can check to ensure no false implementati
 
 ## StandardizedTokenProxy
 
-_Proxy contract for StandardizedToken contracts. Inherits from FixedProxy and implements IStandardizedTokenProxy._
+\_Proxy contract for StandardizedToken contracts. Inherits from FixedProxy.
 
 ### contractId
 
@@ -5134,6 +5130,6 @@ Deploys a new instance of the StandardizedTokenProxy contract
 
 #### Return Values
 
-| Name         | Type    | Description                   |
-| ------------ | ------- | ----------------------------- |
-| tokenAddress | address | address of the token.         |
+| Name         | Type    | Description           |
+| ------------ | ------- | --------------------- |
+| tokenAddress | address | address of the token. |
