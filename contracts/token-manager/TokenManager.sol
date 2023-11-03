@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.0;
 
+import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
+
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 import { Operatable } from '../utils/Operatable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
-import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { Implementation } from '../utils/Implementation.sol';
 
 /**
@@ -15,7 +16,7 @@ import { Implementation } from '../utils/Implementation.sol';
  * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
  */
 abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
-    using AddressBytesUtils for bytes;
+    using AddressBytes for bytes;
 
     IInterchainTokenService public immutable interchainTokenService;
 
