@@ -119,6 +119,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
                 if (!token.isDistributor(additionalDistributor)) revert NotDistributor(additionalDistributor);
                 distributor = additionalDistributor.toBytes();
             }
+
             if (optionalOperator != address(0)) {
                 if (!tokenManager.isOperator(optionalOperator)) revert NotOperator(optionalOperator);
                 operator = optionalOperator.toBytes();
@@ -201,7 +202,6 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata metadata,
         uint256 gasValue
     ) external payable {
         if (bytes(destinationChain).length == 0) {
@@ -210,7 +210,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             token.safeTransfer(destinationAddress.toAddress(), amount);
         } else {
             // slither-disable-next-line arbitrary-send-eth
-            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, metadata);
+            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, new bytes(0));
         }
     }
 
@@ -219,7 +219,6 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata metadata,
         uint256 gasValue
     ) external payable {
         address tokenAddress = service.interchainTokenAddress(tokenId);
@@ -232,7 +231,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             if (!token.approve(address(service), amount)) revert NotApproved(tokenAddress);
 
             // slither-disable-next-line arbitrary-send-eth
-            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, metadata);
+            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, new bytes(0));
         }
     }
 }

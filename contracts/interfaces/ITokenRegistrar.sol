@@ -54,7 +54,6 @@ interface ITokenRegistrar {
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata metadata,
         uint256 gasValue
     ) external payable;
 
@@ -63,7 +62,6 @@ interface ITokenRegistrar {
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata metadata,
         uint256 gasValue
     ) external payable;
 }
