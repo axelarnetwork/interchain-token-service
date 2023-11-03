@@ -8,8 +8,8 @@ import { Proxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgrada
  * @title StandardizedTokenRegistrarProxy
  * @dev Proxy contract for interchain token service contracts. Inherits from the Proxy contract.
  */
-contract StandardizedTokenRegistrarProxy is Proxy {
-    bytes32 private constant CONTRACT_ID = keccak256('standardized-token-registrar');
+contract TokenRegistrarProxy is Proxy {
+    bytes32 private constant CONTRACT_ID = keccak256('token-registrar');
 
     /**
      * @dev Constructs the InterchainTokenServiceProxy contract.
