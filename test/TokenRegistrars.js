@@ -96,7 +96,27 @@ describe('Token Registrars', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
-        it('Should transfer some tokens through the registrar as the deployer', async () => {
+        it('Should transfer some tokens to the registrar', async () => {
+            const amount = 123456;
+
+            await deployToken();
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+
+            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
+
+            await token.approve(tokenRegistrar.address, amount).then((tx) => tx.wait());
+
+            await expect(tokenRegistrar.tokenTransferFrom(tokenId, amount))
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, tokenRegistrar.address, amount);
+        });
+
+        it('Should approve some tokens from the registrar to the token manager', async () => {
+            const amount = 123456;
+
             await deployToken();
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
@@ -107,18 +127,56 @@ describe('Token Registrars', () => {
 
             tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
 
-            // TODO: fix test
-            // await token.approve(tokenRegistrar.address, amount).then((tx) => tx.wait());
+            await expect(tokenRegistrar.tokenApprove(tokenId, amount))
+                .to.emit(token, 'Approval')
+                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount);
+        });
 
-            // await expect(
-            //     tokenRegistrar.interchainTransferFrom(tokenId, '', arrayify(wallet.address), amount, 0),
-            // )
-            //     // .to.emit(service, 'InterchainTransfer')
-            //     // .withArgs(tokenId, destinationChain, destinationAddress, amount)
-            //     .to.emit(token, 'Transfer')
-            //     .withArgs(wallet.address, tokenRegistrar.address, amount)
-            //     .to.emit(token, 'Transfer')
-            //     .withArgs(tokenRegistrar.address, wallet.address, amount);
+        it('Should transfer some tokens through the registrar as the deployer', async () => {
+            const amount = 123456;
+            const destinationAddress = '0x57689403';
+            const gasValue = 45960;
+
+            await deployToken();
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+
+            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
+
+            await token.approve(tokenRegistrar.address, amount).then((tx) => tx.wait());
+
+            tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
+
+            const txs = [];
+
+            txs.push(await tokenRegistrar.populateTransaction.tokenTransferFrom(tokenId, amount));
+            txs.push(await tokenRegistrar.populateTransaction.tokenApprove(tokenId, amount));
+            txs.push(
+                await tokenRegistrar.populateTransaction.interchainTransfer(
+                    tokenId,
+                    destinationChain,
+                    destinationAddress,
+                    amount,
+                    gasValue,
+                ),
+            );
+
+            await expect(
+                tokenRegistrar.multicall(
+                    txs.map((tx) => tx.data),
+                    { value: gasValue },
+                ),
+            )
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, tokenRegistrar.address, amount)
+                .and.to.emit(token, 'Approval')
+                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount)
+                .and.to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, destinationChain, destinationAddress, amount);
         });
     });
 
