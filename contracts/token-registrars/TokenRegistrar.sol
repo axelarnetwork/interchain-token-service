@@ -187,7 +187,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             token = IStandardizedToken(service.tokenAddress(tokenId));
         }
 
-        // The 3 lines below will revert if the token manager does not exist.
+        // The 3 lines below will revert if the token does not exist.
         string memory tokenName = token.name();
         string memory tokenSymbol = token.symbol();
         uint8 tokenDecimals = token.decimals();
