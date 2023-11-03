@@ -1056,7 +1056,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'TokenSent')
+                    .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount);
             });
         }
@@ -1187,7 +1187,7 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
-                .and.to.emit(service, 'TokenReceived')
+                .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(tokenId, sourceChain, hexlify(wallet.address), destAddress, amount);
         });
 
@@ -1203,7 +1203,7 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, destAddress, amount)
-                .and.to.emit(service, 'TokenReceived')
+                .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(tokenId, sourceChain, hexlify(wallet.address), destAddress, amount);
         });
 
@@ -1220,7 +1220,7 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
-                .and.to.emit(service, 'TokenReceived')
+                .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(tokenId, sourceChain, hexlify(wallet.address), destAddress, amount - 10);
         });
     });
@@ -1259,7 +1259,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'TokenSentWithData')
+                    .to.emit(service, 'InterchainTransferWithData')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, data);
             });
         }
@@ -1286,7 +1286,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
-                    .to.emit(service, 'TokenSentWithData')
+                    .to.emit(service, 'InterchainTransferWithData')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, '0x');
             });
         }
@@ -1312,7 +1312,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
-                    .to.emit(service, 'TokenSentWithData')
+                    .to.emit(service, 'InterchainTransferWithData')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, data);
             });
         }
@@ -1359,7 +1359,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenManager.address, destAddress, amount)
                 .to.emit(token, 'Transfer')
                 .withArgs(destAddress, wallet.address, amount)
-                .and.to.emit(service, 'TokenReceivedWithData')
+                .and.to.emit(service, 'InterchainTransferReceivedWithData')
                 .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount)
                 .and.to.emit(executable, 'MessageReceived')
                 .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
@@ -1383,7 +1383,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(AddressZero, destAddress, amount)
                 .to.emit(token, 'Transfer')
                 .withArgs(destAddress, wallet.address, amount)
-                .and.to.emit(service, 'TokenReceivedWithData')
+                .and.to.emit(service, 'InterchainTransferReceivedWithData')
                 .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount)
                 .and.to.emit(executable, 'MessageReceived')
                 .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
@@ -1407,7 +1407,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenManager.address, destAddress, amount)
                 .to.emit(token, 'Transfer')
                 .withArgs(destAddress, wallet.address, amount - 10)
-                .and.to.emit(service, 'TokenReceivedWithData')
+                .and.to.emit(service, 'InterchainTransferReceivedWithData')
                 .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount - 10)
                 .and.to.emit(executable, 'MessageReceived')
                 .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount - 10);
@@ -1445,7 +1445,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'TokenSent')
+                    .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount);
             });
 
@@ -1479,7 +1479,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, spender.address)
-                    .to.emit(service, 'TokenSent')
+                    .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount);
             });
         }
@@ -1510,7 +1510,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, spender.address)
-                .to.emit(service, 'TokenSent')
+                .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destinationChain, destAddress, sendAmount);
         });
     });
@@ -1551,7 +1551,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'TokenSentWithData')
+                    .to.emit(service, 'InterchainTransferWithData')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, data);
             });
         }

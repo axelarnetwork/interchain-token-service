@@ -32,7 +32,7 @@ interface IMockAxelarGateway {
     |* Events *|
     \**********/
 
-    event TokenSent(address indexed sender, string destinationChain, string destinationAddress, string symbol, uint256 amount);
+    event InterchainTransfer(address indexed sender, string destinationChain, string destinationAddress, string symbol, uint256 amount);
 
     event ContractCall(
         address indexed sender,

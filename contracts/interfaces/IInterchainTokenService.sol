@@ -28,8 +28,8 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error UntrustedChain(string chainName);
     error InvalidExpressMessageType(uint256 messageType);
 
-    event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
-    event TokenSentWithData(
+    event InterchainTransfer(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
+    event InterchainTransferWithData(
         bytes32 indexed tokenId,
         string destinationChain,
         bytes destinationAddress,
@@ -37,14 +37,14 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         address indexed sourceAddress,
         bytes data
     );
-    event TokenReceived(
+    event InterchainTransferReceived(
         bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,
         address indexed destinationAddress,
         uint256 indexed amount
     );
-    event TokenReceivedWithData(
+    event InterchainTransferReceivedWithData(
         bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,

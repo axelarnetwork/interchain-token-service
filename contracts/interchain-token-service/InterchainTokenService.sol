@@ -609,7 +609,7 @@ contract InterchainTokenService is
             (, , , , , data) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256, bytes));
 
             // slither-disable-next-line reentrancy-events
-            emit TokenReceivedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
+            emit InterchainTransferReceivedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
 
             bytes32 result = IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(
                 sourceChain,
@@ -623,7 +623,7 @@ contract InterchainTokenService is
             if (result != EXECUTE_SUCCESS) revert ExecuteWithInterchainTokenFailed(destinationAddress);
         } else {
             // slither-disable-next-line reentrancy-events
-            emit TokenReceived(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
+            emit InterchainTransferReceived(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
         }
     }
 
@@ -854,7 +854,7 @@ contract InterchainTokenService is
         bytes memory payload;
         if (metadata.length < 4) {
             // slither-disable-next-line reentrancy-events
-            emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
+            emit InterchainTransfer(tokenId, destinationChain, destinationAddress, amount);
 
             payload = abi.encode(MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress.toBytes(), destinationAddress, amount);
 
@@ -866,7 +866,7 @@ contract InterchainTokenService is
         if (version > 0) revert InvalidMetadataVersion(version);
 
         // slither-disable-next-line reentrancy-events
-        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
+        emit InterchainTransferWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
 
         payload = abi.encode(MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA, tokenId, sourceAddress.toBytes(), destinationAddress, amount, metadata);
 

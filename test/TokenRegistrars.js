@@ -113,7 +113,7 @@ describe('Token Registrars', () => {
             // await expect(
             //     tokenRegistrar.interchainTransferFrom(tokenId, '', arrayify(wallet.address), amount, 0),
             // )
-            //     // .to.emit(service, 'TokenSent')
+            //     // .to.emit(service, 'InterchainTransfer')
             //     // .withArgs(tokenId, destinationChain, destinationAddress, amount)
             //     .to.emit(token, 'Transfer')
             //     .withArgs(wallet.address, tokenRegistrar.address, amount)

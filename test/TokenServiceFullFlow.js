@@ -111,7 +111,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(service.address, destChain, service.address, payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                .to.emit(service, 'TokenSent')
+                .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
 
@@ -231,7 +231,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(service.address, destChain, service.address, payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                .to.emit(service, 'TokenSent')
+                .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
 
@@ -359,7 +359,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(service.address, destChain, service.address, payloadHash, payload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                .to.emit(service, 'TokenSent')
+                .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
     });

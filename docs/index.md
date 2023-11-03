@@ -562,10 +562,10 @@ function expressExecuteWithToken(bytes32, string, string, bytes, string, uint256
 function executeWithToken(bytes32, string, string, bytes, string, uint256) external pure
 ```
 
-### _processReceiveTokenPayload
+### _processInterchainTransferPayload
 
 ```solidity
-function _processReceiveTokenPayload(address expressExecutor, string sourceChain, bytes payload, uint256 messageType) internal
+function _processInterchainTransferPayload(address expressExecutor, string sourceChain, bytes payload, uint256 messageType) internal
 ```
 
 Processes the payload data for a send token call
@@ -1251,28 +1251,28 @@ error UntrustedChain(string chainName)
 error InvalidExpressMessageType(uint256 messageType)
 ```
 
-### TokenSent
+### InterchainTransfer
 
 ```solidity
-event TokenSent(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount)
+event InterchainTransfer(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount)
 ```
 
-### TokenSentWithData
+### InterchainTransferWithData
 
 ```solidity
-event TokenSentWithData(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, address sourceAddress, bytes data)
+event InterchainTransferWithData(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, address sourceAddress, bytes data)
 ```
 
-### TokenReceived
+### InterchainTransferReceived
 
 ```solidity
-event TokenReceived(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
+event InterchainTransferReceived(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
 ```
 
-### TokenReceivedWithData
+### InterchainTransferReceivedWithData
 
 ```solidity
-event TokenReceivedWithData(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
+event InterchainTransferReceivedWithData(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
 ```
 
 ### TokenManagerDeploymentStarted
@@ -4898,10 +4898,10 @@ error InvalidSetMintLimitsParams()
 error ExceedMintLimit(string symbol)
 ```
 
-### TokenSent
+### InterchainTransfer
 
 ```solidity
-event TokenSent(address sender, string destinationChain, string destinationAddress, string symbol, uint256 amount)
+event InterchainTransfer(address sender, string destinationChain, string destinationAddress, string symbol, uint256 amount)
 ```
 
 ### ContractCall
