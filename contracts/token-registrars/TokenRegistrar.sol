@@ -214,24 +214,24 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         }
     }
 
-    function interchainTransferFrom(
+    function tokenTransferFrom(
         bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        uint256 gasValue
+        uint256 amount
     ) external payable {
-        address tokenAddress = service.interchainTokenAddress(tokenId);
+        address tokenAddress = service.tokenAddress(tokenId);
         IStandardizedToken token = IStandardizedToken(tokenAddress);
 
-        if (bytes(destinationChain).length == 0) {
-            token.safeTransferFrom(msg.sender, destinationAddress.toAddress(), amount);
-        } else {
-            token.safeTransferFrom(msg.sender, address(this), amount);
-            if (!token.approve(address(service), amount)) revert NotApproved(tokenAddress);
+        token.safeTransferFrom(msg.sender, address(this), amount);
+    }
 
-            // slither-disable-next-line arbitrary-send-eth
-            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, new bytes(0));
-        }
+    function tokenApprove(
+        bytes32 tokenId,
+        uint256 amount
+    ) external payable {
+        address tokenAddress = service.tokenAddress(tokenId);
+        IStandardizedToken token = IStandardizedToken(tokenAddress);
+        address tokenManager = service.tokenManagerAddress(tokenId);
+
+        token.safeCall(abi.encodeWithSelector(token.approve.selector, tokenManager, amount));
     }
 }
