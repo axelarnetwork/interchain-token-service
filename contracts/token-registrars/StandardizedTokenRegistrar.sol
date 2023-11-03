@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import { SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
+import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
@@ -13,11 +14,9 @@ import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 
-import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
-
 contract StandardizedTokenRegistrar is IStandardizedTokenRegistrar, ITokenManagerType, Multicall, Upgradable {
-    using AddressBytesUtils for bytes;
-    using AddressBytesUtils for address;
+    using AddressBytes for bytes;
+    using AddressBytes for address;
     using SafeTokenTransfer for IStandardizedToken;
 
     IInterchainTokenService public immutable service;
