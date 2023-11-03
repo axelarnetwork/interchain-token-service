@@ -20,6 +20,8 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
     using SafeTokenTransferFrom for IStandardizedToken;
     using SafeTokenCall for IStandardizedToken;
 
+    error NotApproved(address tokenAddress);
+
     IInterchainTokenService public immutable service;
     bytes32 public immutable chainNameHash;
 
@@ -207,6 +209,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             IStandardizedToken token = IStandardizedToken(tokenAddress);
             token.safeTransfer(destinationAddress.toAddress(), amount);
         } else {
+            // slither-disable-next-line arbitrary-send-eth
             service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, metadata);
         }
     }
@@ -226,7 +229,9 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             token.safeTransferFrom(msg.sender, destinationAddress.toAddress(), amount);
         } else {
             token.safeTransferFrom(msg.sender, address(this), amount);
-            token.approve(address(service), amount);
+            if (!token.approve(address(service), amount)) revert NotApproved(tokenAddress);
+
+            // slither-disable-next-line arbitrary-send-eth
             service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, metadata);
         }
     }
