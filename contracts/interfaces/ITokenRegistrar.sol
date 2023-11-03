@@ -48,4 +48,22 @@ interface ITokenRegistrar {
         string calldata destinationChain,
         uint256 gasValue
     ) external payable;
+
+    function interchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata,
+        uint256 gasValue
+    ) external payable;
+
+    function interchainTransferFrom(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata,
+        uint256 gasValue
+    ) external payable;
 }

@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
+import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
-
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
@@ -13,11 +13,9 @@ import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
 
-import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
-
 contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgradable {
-    using AddressBytesUtils for bytes;
-    using AddressBytesUtils for address;
+    using AddressBytes for bytes;
+    using AddressBytes for address;
     using SafeTokenTransfer for IStandardizedToken;
     using SafeTokenTransferFrom for IStandardizedToken;
     using SafeTokenCall for IStandardizedToken;
@@ -201,6 +199,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
+        bytes calldata metadata,
         uint256 gasValue
     ) external payable {
         if (bytes(destinationChain).length == 0) {
@@ -208,7 +207,27 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             IStandardizedToken token = IStandardizedToken(tokenAddress);
             token.safeTransfer(destinationAddress.toAddress(), amount);
         } else {
-            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, gasValue);
+            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, metadata);
+        }
+    }
+
+    function interchainTransferFrom(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata,
+        uint256 gasValue
+    ) external payable {
+        address tokenAddress = service.interchainTokenAddress(tokenId);
+        IStandardizedToken token = IStandardizedToken(tokenAddress);
+
+        if (bytes(destinationChain).length == 0) {
+            token.safeTransferFrom(msg.sender, destinationAddress.toAddress(), amount);
+        } else {
+            token.safeTransferFrom(msg.sender, address(this), amount);
+            token.approve(address(service), amount);
+            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, metadata);
         }
     }
 }

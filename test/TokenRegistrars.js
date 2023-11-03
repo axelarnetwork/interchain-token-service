@@ -96,7 +96,7 @@ describe('Token Registrsrs', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
-        it('Should transfer some tokens though the registrar as the deployer', async () => {
+        it('Should transfer some tokens through the registrar as the deployer', async () => {
             const destinationAddress = '0x659703';
             const amount = 1234;
             const gasValue = 1234;
@@ -114,7 +114,7 @@ describe('Token Registrsrs', () => {
             await (await token.approve(tokenRegistrar.address, amount)).wait();
 
             await expect(
-                tokenRegistrar.transferCanonicalToken(token.address, destinationChain, destinationAddress, amount, gasValue, {
+                tokenRegistrar.interchainTransferFrom(tokenId, destinationChain, destinationAddress, amount, '0x', gasValue, {
                     value: gasValue,
                 }),
             )
