@@ -15,9 +15,9 @@ const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenM
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
-const SELECTOR_RECEIVE_TOKEN = 1;
-const SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
-const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
+const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 1;
+const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
+const messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const DISTRIBUTOR_ROLE = 0;
 
@@ -68,7 +68,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
+                [messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
@@ -96,7 +96,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 
@@ -187,7 +187,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
-                [SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address],
+                [messageType_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address],
             );
             const tx = service.multicall(data, { value });
 
@@ -220,7 +220,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 
@@ -295,7 +295,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
+                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
@@ -348,7 +348,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                [SELECTOR_RECEIVE_TOKEN, tokenId, hexlify(wallet.address), destAddress, amount],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount],
             );
             const payloadHash = keccak256(payload);
 

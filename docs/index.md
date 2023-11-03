@@ -533,7 +533,7 @@ function _sanitizeTokenManagerImplementation(address[] tokenManagerImplementatio
 function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external
 ```
 
-Executes operations based on the payload and selector.
+Executes operations based on the payload and messageType.
 
 #### Parameters
 
@@ -565,7 +565,7 @@ function executeWithToken(bytes32, string, string, bytes, string, uint256) exter
 ### _processReceiveTokenPayload
 
 ```solidity
-function _processReceiveTokenPayload(address expressExecutor, string sourceChain, bytes payload, uint256 selector) internal
+function _processReceiveTokenPayload(address expressExecutor, string sourceChain, bytes payload, uint256 messageType) internal
 ```
 
 Processes the payload data for a send token call
@@ -577,7 +577,7 @@ Processes the payload data for a send token call
 | expressExecutor | address |  |
 | sourceChain | string | The chain where the transaction originates from |
 | payload | bytes | The encoded data payload to be processed |
-| selector | uint256 |  |
+| messageType | uint256 |  |
 
 ### _processDeployTokenManagerPayload
 
@@ -1221,10 +1221,10 @@ error TokenManagerDeploymentFailed(bytes error)
 error InterchainTokenDeploymentFailed(bytes error)
 ```
 
-### InvalidSelector
+### InvalidMessageType
 
 ```solidity
-error InvalidSelector(uint256 selector)
+error InvalidMessageType(uint256 messageType)
 ```
 
 ### InvalidMetadataVersion
@@ -1245,10 +1245,10 @@ error ExecuteWithTokenNotSupported()
 error UntrustedChain(string chainName)
 ```
 
-### InvalidExpressSelector
+### InvalidExpressMessageType
 
 ```solidity
-error InvalidExpressSelector(uint256 selector)
+error InvalidExpressMessageType(uint256 messageType)
 ```
 
 ### TokenSent
