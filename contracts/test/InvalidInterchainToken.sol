@@ -7,12 +7,12 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
-import { InterchainToken } from '../interchain-token/InterchainToken.sol';
+import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
-contract InvalidStandardizedToken is IERC20MintableBurnable, InterchainToken, ERC20Permit, Implementation, Distributable {
+contract InvalidInterchainToken is IERC20MintableBurnable, InterchainTokenBase, ERC20Permit, Implementation, Distributable {
     using AddressBytes for bytes;
 
     string public name;
@@ -20,7 +20,7 @@ contract InvalidStandardizedToken is IERC20MintableBurnable, InterchainToken, ER
     uint8 public decimals;
     address internal tokenManager_;
 
-    bytes32 private constant CONTRACT_ID = keccak256('invalid-standardized-token');
+    bytes32 private constant CONTRACT_ID = keccak256('invalid-interchain-token');
 
     /**
      * @notice Getter for the contract id.

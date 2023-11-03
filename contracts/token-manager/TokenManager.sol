@@ -80,7 +80,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
 
         /**
          * @dev Specifying an empty operator will default to the service being the operator. This makes it easy to deploy
-         * remote standardized tokens without knowing anything about the service address at the destination.
+         * remote interchain tokens without knowing anything about the service address at the destination.
          */
         if (operatorBytes.length == 0) {
             operator = address(interchainTokenService);

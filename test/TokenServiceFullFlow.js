@@ -8,7 +8,7 @@ const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256, hexlify } = ethers.utils;
 const { Contract, Wallet } = ethers;
 
-const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
+const InterchainToken = require('../artifacts/contracts/token-implementations/InterchainToken.sol/InterchainToken.json');
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
 const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
 
@@ -47,7 +47,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
         before(async () => {
             // The below is used to deploy a token, but any ERC20 can be used instead.
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
-            tokenId = await service.canonicalTokenId(token.address);
+            tokenId = await service.canonicalInterchainTokenId(token.address);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
@@ -55,12 +55,12 @@ describe.skip('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const tx1 = await service.populateTransaction.registerCanonicalToken(token.address);
+            const tx1 = await service.populateTransaction.registerCanonicalInterchainToken(token.address);
             const data = [tx1.data];
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await service.populateTransaction.deployRemoteCanonicalToken(tokenId, otherChains[i], gasValues[i]);
+                const tx = await service.populateTransaction.deployRemoteCanonicalInterchainToken(tokenId, otherChains[i], gasValues[i]);
                 data.push(tx.data);
                 value += gasValues[i];
             }
@@ -115,7 +115,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
 
-        // For this test the token must be a standardized token (or a distributable token in general)
+        // For this test the token must be a interchain token (or a distributable token in general)
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
@@ -140,7 +140,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
         });
     });
 
-    describe('Full standardized token registration, remote deployment and token send', async () => {
+    describe('Full interchain token registration, remote deployment and token send', async () => {
         let token;
         let tokenId;
         const salt = getRandomBytes32();
@@ -150,13 +150,13 @@ describe.skip('Interchain Token Service Full Flow', () => {
         before(async () => {
             tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
-            token = new Contract(tokenAddress, StandardizedToken.abi, wallet);
+            token = new Contract(tokenAddress, InterchainToken.abi, wallet);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const tx1 = await service.populateTransaction.deployAndRegisterStandardizedToken(
+            const tx1 = await service.populateTransaction.deployAndRegisterInterchainToken(
                 salt,
                 name,
                 symbol,
@@ -235,7 +235,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
 
-        // For this test the token must be a standardized token (or a distributable token in general)
+        // For this test the token must be a interchain token (or a distributable token in general)
         // TODO no token is deployed so how will mint and burn work?
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
@@ -315,7 +315,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
         });
 
-        // For this test the token must be a standardized token (or a distributable token in general)
+        // For this test the token must be a interchain token (or a distributable token in general)
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;

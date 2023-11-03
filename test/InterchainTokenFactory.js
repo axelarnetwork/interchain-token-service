@@ -12,7 +12,7 @@ const {
 } = ethers;
 
 const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
-const IStandardizedToken = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
+const IInterchainToken = require('../artifacts/contracts/interfaces/IInterchainToken.sol/IInterchainToken.json');
 
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32 } = require('./utils');
@@ -28,9 +28,9 @@ const DISTRIBUTOR_ROLE = 0;
 const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
 
-describe('Token Registrars', () => {
+describe('InterchainTokenFactory', () => {
     let wallet;
-    let service, gateway, gasService, tokenRegistrar;
+    let service, gateway, gasService, tokenFactory;
     const chainName = 'Test';
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -42,19 +42,19 @@ describe('Token Registrars', () => {
         wallet = wallets[0];
         [service, gateway, gasService] = await deployAll(wallet, chainName, [destinationChain]);
 
-        tokenRegistrar = await deployContract(wallet, 'TokenRegistrar', [service.address]);
-        const proxy = await deployContract(wallet, 'TokenRegistrarProxy', [tokenRegistrar.address, wallet.address]);
-        const factory = await ethers.getContractFactory('TokenRegistrar', wallet);
-        tokenRegistrar = factory.attach(proxy.address);
+        tokenFactory = await deployContract(wallet, 'InterchainTokenFactory', [service.address]);
+        const proxy = await deployContract(wallet, 'InterchainTokenFactoryProxy', [tokenFactory.address, wallet.address]);
+        const factory = await ethers.getContractFactory('InterchainTokenFactory', wallet);
+        tokenFactory = factory.attach(proxy.address);
     });
 
-    describe('Canonical Token Registrar', async () => {
+    describe('Canonical Interchain Token Factory', async () => {
         let token, tokenId, tokenManagerAddress;
         const tokenCap = BigInt(1e18);
 
         async function deployToken() {
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
-            tokenId = await tokenRegistrar.canonicalTokenId(token.address);
+            tokenId = await tokenFactory.canonicalInterchainTokenId(token.address);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
@@ -65,12 +65,12 @@ describe('Token Registrars', () => {
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
 
-            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
         });
 
-        it('Should initiate a remote standardized token deployment', async () => {
+        it('Should initiate a remote interchain token deployment', async () => {
             const gasValue = 1234;
 
             await deployToken();
@@ -81,12 +81,14 @@ describe('Token Registrars', () => {
                 [MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x'],
             );
 
-            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
             await expect(
-                tokenRegistrar.deployRemoteCanonicalToken(chainName, token.address, destinationChain, gasValue, { value: gasValue }),
+                tokenFactory.deployRemoteCanonicalInterchainToken(chainName, token.address, destinationChain, gasValue, {
+                    value: gasValue,
+                }),
             )
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', '0x', destinationChain)
@@ -96,43 +98,43 @@ describe('Token Registrars', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
-        it('Should transfer some tokens to the registrar', async () => {
+        it('Should transfer some tokens to the factory', async () => {
             const amount = 123456;
 
             await deployToken();
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
 
-            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
-            await token.approve(tokenRegistrar.address, amount).then((tx) => tx.wait());
+            await token.approve(tokenFactory.address, amount).then((tx) => tx.wait());
 
-            await expect(tokenRegistrar.tokenTransferFrom(tokenId, amount))
+            await expect(tokenFactory.tokenTransferFrom(tokenId, amount))
                 .to.emit(token, 'Transfer')
-                .withArgs(wallet.address, tokenRegistrar.address, amount);
+                .withArgs(wallet.address, tokenFactory.address, amount);
         });
 
-        it('Should approve some tokens from the registrar to the token manager', async () => {
+        it('Should approve some tokens from the factory to the token manager', async () => {
             const amount = 123456;
 
             await deployToken();
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
 
-            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
             tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
 
-            await expect(tokenRegistrar.tokenApprove(tokenId, amount))
+            await expect(tokenFactory.tokenApprove(tokenId, amount))
                 .to.emit(token, 'Approval')
-                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount);
+                .withArgs(tokenFactory.address, tokenManagerAddress, amount);
         });
 
-        it('Should transfer some tokens through the registrar as the deployer', async () => {
+        it('Should transfer some tokens through the factory as the deployer', async () => {
             const amount = 123456;
             const destinationAddress = '0x57689403';
             const gasValue = 45960;
@@ -141,46 +143,40 @@ describe('Token Registrars', () => {
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
 
-            await expect(tokenRegistrar.registerCanonicalToken(token.address))
+            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
-            await token.approve(tokenRegistrar.address, amount).then((tx) => tx.wait());
+            await token.approve(tokenFactory.address, amount).then((tx) => tx.wait());
 
             tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
 
             const txs = [];
 
-            txs.push(await tokenRegistrar.populateTransaction.tokenTransferFrom(tokenId, amount));
-            txs.push(await tokenRegistrar.populateTransaction.tokenApprove(tokenId, amount));
+            txs.push(await tokenFactory.populateTransaction.tokenTransferFrom(tokenId, amount));
+            txs.push(await tokenFactory.populateTransaction.tokenApprove(tokenId, amount));
             txs.push(
-                await tokenRegistrar.populateTransaction.interchainTransfer(
-                    tokenId,
-                    destinationChain,
-                    destinationAddress,
-                    amount,
-                    gasValue,
-                ),
+                await tokenFactory.populateTransaction.interchainTransfer(tokenId, destinationChain, destinationAddress, amount, gasValue),
             );
 
             await expect(
-                tokenRegistrar.multicall(
+                tokenFactory.multicall(
                     txs.map((tx) => tx.data),
                     { value: gasValue },
                 ),
             )
                 .to.emit(token, 'Transfer')
-                .withArgs(wallet.address, tokenRegistrar.address, amount)
+                .withArgs(wallet.address, tokenFactory.address, amount)
                 .and.to.emit(token, 'Approval')
-                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount)
+                .withArgs(tokenFactory.address, tokenManagerAddress, amount)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(tokenRegistrar.address, tokenManagerAddress, amount)
+                .withArgs(tokenFactory.address, tokenManagerAddress, amount)
                 .and.to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destinationChain, destinationAddress, amount);
         });
     });
 
-    describe('Standardized Token Registrar', async () => {
+    describe('Interchain Token Factory', async () => {
         let tokenId;
         const mintAmount = 1234;
         const distributor = new Wallet(getRandomBytes32()).address;
@@ -188,56 +184,56 @@ describe('Token Registrars', () => {
 
         it('Should register a token', async () => {
             const salt = keccak256('0x');
-            tokenId = await tokenRegistrar.standardizedTokenId(wallet.address, salt);
-            const tokenAddress = await tokenRegistrar.interchainTokenAddress(wallet.address, salt);
+            tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
+            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
-            const token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
+            const token = new Contract(tokenAddress, IInterchainToken.abi, wallet);
 
-            await expect(tokenRegistrar.deployInterchainToken(salt, name, symbol, decimals, mintAmount, distributor, operator))
+            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, distributor, operator))
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, tokenRegistrar.address, name, symbol, decimals)
+                .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, tokenRegistrar.address, mintAmount)
+                .withArgs(AddressZero, tokenFactory.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
                 .withArgs(operator, (1 << OPERATOR_ROLE) | (1 << FLOW_LIMITER_ROLE))
                 .and.to.emit(token, 'RolesAdded')
                 .withArgs(distributor, 1 << DISTRIBUTOR_ROLE)
                 .and.to.emit(token, 'RolesRemoved')
-                .withArgs(tokenRegistrar.address, 1 << DISTRIBUTOR_ROLE);
+                .withArgs(tokenFactory.address, 1 << DISTRIBUTOR_ROLE);
 
-            await expect(tokenRegistrar.interchainTransfer(tokenId, '', distributor, mintAmount, 0))
+            await expect(tokenFactory.interchainTransfer(tokenId, '', distributor, mintAmount, 0))
                 .to.emit(token, 'Transfer')
-                .withArgs(tokenRegistrar.address, distributor, mintAmount);
+                .withArgs(tokenFactory.address, distributor, mintAmount);
 
-            expect(await token.balanceOf(tokenRegistrar.address)).to.equal(0);
+            expect(await token.balanceOf(tokenFactory.address)).to.equal(0);
             expect(await token.balanceOf(distributor)).to.equal(mintAmount);
         });
 
-        it('Should initiate a remote standardized token deployment with the same distributor', async () => {
+        it('Should initiate a remote interchain token deployment with the same distributor', async () => {
             const gasValue = 1234;
             const mintAmount = 5678;
 
             const salt = keccak256('0x12');
-            tokenId = await tokenRegistrar.standardizedTokenId(wallet.address, salt);
-            const tokenAddress = await tokenRegistrar.interchainTokenAddress(wallet.address, salt);
+            tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
+            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
             let params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
-            const token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
+            const token = new Contract(tokenAddress, IInterchainToken.abi, wallet);
 
-            await expect(tokenRegistrar.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address, wallet.address))
+            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address, wallet.address))
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, tokenRegistrar.address, name, symbol, decimals)
+                .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, tokenRegistrar.address, mintAmount)
+                .withArgs(AddressZero, tokenFactory.address, mintAmount)
                 .and.to.emit(token, 'RolesAdded')
                 .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
                 .and.to.emit(token, 'RolesRemoved')
-                .withArgs(tokenRegistrar.address, 1 << DISTRIBUTOR_ROLE);
+                .withArgs(tokenFactory.address, 1 << DISTRIBUTOR_ROLE);
 
             params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
@@ -254,7 +250,7 @@ describe('Token Registrars', () => {
             );
 
             await expect(
-                tokenRegistrar.deployRemoteInterchainToken(chainName, salt, wallet.address, wallet.address, destinationChain, gasValue, {
+                tokenFactory.deployRemoteInterchainToken(chainName, salt, wallet.address, wallet.address, destinationChain, gasValue, {
                     value: gasValue,
                 }),
             )
@@ -266,27 +262,27 @@ describe('Token Registrars', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
-        it('Should initiate a remote standardized token deployment without the same distributor', async () => {
+        it('Should initiate a remote interchain token deployment without the same distributor', async () => {
             const gasValue = 1234;
 
             const salt = keccak256('0x1245');
-            tokenId = await tokenRegistrar.standardizedTokenId(wallet.address, salt);
-            const tokenAddress = await tokenRegistrar.interchainTokenAddress(wallet.address, salt);
+            tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
+            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
             let params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
             const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
-            const token = new Contract(tokenAddress, IStandardizedToken.abi, wallet);
+            const token = new Contract(tokenAddress, IInterchainToken.abi, wallet);
 
-            await expect(tokenRegistrar.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address, wallet.address))
+            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address, wallet.address))
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, tokenRegistrar.address, name, symbol, decimals)
+                .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, tokenRegistrar.address, mintAmount)
+                .withArgs(AddressZero, tokenFactory.address, mintAmount)
                 .and.to.emit(token, 'RolesAdded')
                 .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
                 .and.to.emit(token, 'RolesRemoved')
-                .withArgs(tokenRegistrar.address, 1 << DISTRIBUTOR_ROLE);
+                .withArgs(tokenFactory.address, 1 << DISTRIBUTOR_ROLE);
 
             params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
@@ -295,7 +291,7 @@ describe('Token Registrars', () => {
             );
 
             await expect(
-                tokenRegistrar.deployRemoteInterchainToken(chainName, salt, AddressZero, wallet.address, destinationChain, gasValue, {
+                tokenFactory.deployRemoteInterchainToken(chainName, salt, AddressZero, wallet.address, destinationChain, gasValue, {
                     value: gasValue,
                 }),
             )

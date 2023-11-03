@@ -5,20 +5,20 @@ pragma solidity ^0.8.0;
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 
 import { IImplementation } from '../interfaces/IImplementation.sol';
-import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
+import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
-import { InterchainToken } from '../interchain-token/InterchainToken.sol';
+import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
 import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
 /**
- * @title StandardizedToken
- * @notice This contract implements a standardized token which extends InterchainToken functionality.
+ * @title InterchainToken
+ * @notice This contract implements a interchain token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Distributable, IStandardizedToken {
+contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Distributable, IInterchainToken {
     using AddressBytes for bytes;
 
     string public name;
@@ -26,7 +26,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
     uint8 public decimals;
     address internal tokenManager_;
 
-    bytes32 private constant CONTRACT_ID = keccak256('standardized-token');
+    bytes32 private constant CONTRACT_ID = keccak256('interchain-token');
 
     /**
      * @notice Getter for the contract id.
@@ -39,7 +39,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract
      */
-    function tokenManager() public view override(InterchainToken, IStandardizedToken) returns (ITokenManager) {
+    function tokenManager() public view override(InterchainTokenBase, IInterchainToken) returns (ITokenManager) {
         return ITokenManager(tokenManager_);
     }
 
@@ -48,7 +48,7 @@ contract StandardizedToken is InterchainToken, ERC20Permit, Implementation, Dist
      * @param params The setup parameters in bytes
      * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo
      */
-    function setup(bytes calldata params) external override(IImplementation, IStandardizedToken) onlyProxy {
+    function setup(bytes calldata params) external override(IImplementation, IInterchainToken) onlyProxy {
         address distributor_;
         address tokenManagerAddress;
         string memory tokenName;
