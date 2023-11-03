@@ -46,28 +46,37 @@ contract InterchainTokenService is
     using AddressBytes for address;
     using SafeTokenTransferFrom for IERC20;
 
-    address internal immutable implementationLockUnlock;
-    address internal immutable implementationMintBurn;
-    address internal immutable implementationMintBurnFrom;
-    address internal immutable implementationLockUnlockFee;
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
-    IInterchainAddressTracker public immutable interchainAddressTracker;
-    address public immutable tokenManagerDeployer;
-    address public immutable interchainTokenDeployer;
     bytes32 public immutable chainNameHash;
+
+    address public immutable interchainTokenDeployer;
+    address public immutable tokenManagerDeployer;
+
+    /**
+     * @dev Token manager implementation addresses
+     */
+    address internal immutable implementationLockUnlock;
+    address internal immutable implementationLockUnlockFee;
+    address internal immutable implementationMintBurn;
+    address internal immutable implementationMintBurnFrom;
+
+    IInterchainAddressTracker public immutable interchainAddressTracker;
 
     bytes32 internal constant PREFIX_TOKEN_ID = keccak256('its-custom-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
 
-    uint256 private constant SELECTOR_RECEIVE_TOKEN = 1;
-    uint256 private constant SELECTOR_RECEIVE_TOKEN_WITH_DATA = 2;
-    uint256 private constant SELECTOR_DEPLOY_TOKEN_MANAGER = 3;
-    uint256 private constant SELECTOR_DEPLOY_INTERCHAIN_TOKEN = 4;
-
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
     bytes32 private constant EXECUTE_SUCCESS = keccak256('its-execute-success');
     bytes32 private constant EXPRESS_EXECUTE_SUCCESS = keccak256('its-express-execute-success');
+
+    /**
+     * @dev The message types that are sent between InterchainTokenService on different chains.
+     */
+    uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 1;
+    uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 2;
+    uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
+    uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 4;
 
     /**
      * @dev All of the variables passed here are stored as immutable variables.
@@ -75,7 +84,7 @@ contract InterchainTokenService is
      * @param interchainTokenDeployer_ the address of the InterchainTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
-     * @param interchainRouter_ the address of the InterchainAddressTracker.
+     * @param interchainAddressTracker_ the address of the InterchainAddressTracker.
      * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, and Lock-unlock with fee.
      */
     constructor(
@@ -83,11 +92,11 @@ contract InterchainTokenService is
         address interchainTokenDeployer_,
         address gateway_,
         address gasService_,
-        address interchainRouter_,
+        address interchainAddressTracker_,
         address[] memory tokenManagerImplementations
     ) {
         if (
-            interchainRouter_ == address(0) ||
+            interchainAddressTracker_ == address(0) ||
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             interchainTokenDeployer_ == address(0) ||
@@ -95,7 +104,7 @@ contract InterchainTokenService is
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
-        interchainAddressTracker = IInterchainAddressTracker(interchainRouter_);
+        interchainAddressTracker = IInterchainAddressTracker(interchainAddressTracker_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
@@ -106,6 +115,7 @@ contract InterchainTokenService is
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
+
         string memory chainName_ = interchainAddressTracker.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -121,6 +131,7 @@ contract InterchainTokenService is
      */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
         if (!interchainAddressTracker.isTrustedAddress(sourceChain, sourceAddress)) revert NotRemoteService();
+
         _;
     }
 
@@ -187,8 +198,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt.
-     * This will not depend on what chain it is called from, unlike canonical tokenIds.
+     * @notice Calculates the tokenId that would correspond to a link for a given deployer with a specified salt.
      * @param sender the address of the TokenManager deployer.
      * @param salt the salt that the deployer uses for the deployment.
      * @return tokenId the tokenId that the custom TokenManager would get (or has gotten).
@@ -266,10 +276,11 @@ contract InterchainTokenService is
         bytes calldata params,
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
-        address deployer_ = msg.sender;
-        tokenId = interchainTokenId(deployer_, salt);
+        address deployer = msg.sender;
+        tokenId = interchainTokenId(deployer, salt);
 
-        emit CustomTokenIdClaimed(tokenId, deployer_, salt);
+        emit InterchainTokenIdClaimed(tokenId, deployer, salt);
+
         if (bytes(destinationChain).length == 0) {
             _deployTokenManager(tokenId, tokenManagerType, params);
         } else {
@@ -303,8 +314,8 @@ contract InterchainTokenService is
         bytes32 tokenId = interchainTokenId(msg.sender, salt);
 
         if (bytes(destinationChain).length == 0) {
-            address tokenAddress_;
-            tokenAddress_ = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);
+            address tokenAddress_ = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);
+
             _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(operator, tokenAddress_));
         } else {
             _deployRemoteInterchainToken(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
@@ -317,10 +328,10 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload
     ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
-        (uint256 selector, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
+        (uint256 messageType, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
 
-        if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
-            revert InvalidExpressSelector(selector);
+        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER && messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA) {
+            revert InvalidExpressMessageType(messageType);
         }
 
         ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
@@ -333,10 +344,11 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload
     ) external payable whenNotPaused {
-        uint256 selector = abi.decode(payload, (uint256));
-        if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
-            revert InvalidExpressSelector(selector);
+        uint256 messageType = abi.decode(payload, (uint256));
+        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER && messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA) {
+            revert InvalidExpressMessageType(messageType);
         }
+
         if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted();
 
         address expressExecutor = msg.sender;
@@ -356,10 +368,8 @@ contract InterchainTokenService is
      * @param payload the payload of the receive token
      */
     function _expressExecute(string calldata sourceChain, bytes calldata payload) internal {
-        (uint256 selector, bytes32 tokenId, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount) = abi.decode(
-            payload,
-            (uint256, bytes32, bytes, bytes, uint256)
-        );
+        (uint256 messageType, bytes32 tokenId, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount) = abi
+            .decode(payload, (uint256, bytes32, bytes, bytes, uint256));
         address destinationAddress = destinationAddressBytes.toAddress();
 
         IERC20 token;
@@ -370,7 +380,7 @@ contract InterchainTokenService is
 
         token.safeTransferFrom(msg.sender, destinationAddress, amount);
 
-        if (selector == SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
+        if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA) {
             (, , , , , bytes memory data) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256, bytes));
 
             bytes32 result = IInterchainTokenExpressExecutable(destinationAddress).expressExecuteWithInterchainToken(
@@ -403,10 +413,10 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
-        _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
     }
 
-    function sendTokenWithData(
+    function callContractWithInterchainToken(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
@@ -416,7 +426,7 @@ contract InterchainTokenService is
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         uint32 prefix = 0;
-        _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
     }
 
     /*********************\
@@ -424,7 +434,7 @@ contract InterchainTokenService is
     \*********************/
 
     /**
-     * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
+     * @notice Transmit an interchain transfer for the given tokenId. Only callable by a token manager.
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimbursement of gas.
      * @param destinationChain the name of the chain to send tokens to.
@@ -432,7 +442,7 @@ contract InterchainTokenService is
      * @param amount the amount of token to give.
      * @param metadata the data to be passed to the destination.
      */
-    function transmitSendToken(
+    function transmitInterchainTransfer(
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
@@ -440,7 +450,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable onlyTokenManager(tokenId) whenNotPaused {
-        _transmitSendToken(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadata);
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadata);
     }
 
     /*************\
@@ -455,6 +465,7 @@ contract InterchainTokenService is
     function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyRole(uint8(Roles.OPERATOR)) {
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
+
         for (uint256 i; i < length; ++i) {
             ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenIds[i]));
             // slither-disable-next-line calls-loop
@@ -463,12 +474,15 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Used to pause the entire service.
-     * @param paused what value to set paused to.
+     * @notice Allows the owner to pause/unpause the token service.
+     * @param paused whether to pause or unpause.
      */
-    function setPaused(bool paused) external onlyOwner {
-        _setPaused(paused);
-        emit PausedSet(paused, msg.sender);
+    function setPauseStatus(bool paused) external onlyOwner {
+        if (paused) {
+            _pause();
+        } else {
+            _unpause();
+        }
     }
 
     /****************\
@@ -485,12 +499,13 @@ contract InterchainTokenService is
     ) internal pure returns (address implementation_) {
         implementation_ = tokenManagerImplementations[uint256(tokenManagerType)];
         if (implementation_ == address(0)) revert ZeroAddress();
+
         if (ITokenManager(implementation_).implementationType() != uint256(tokenManagerType))
             revert InvalidTokenManagerImplementationType(implementation_);
     }
 
     /**
-     * @notice Executes operations based on the payload and selector.
+     * @notice Executes operations based on the payload and messageType.
      * @param sourceChain The chain where the transaction originates from
      * @param sourceAddress The address of the remote ITS where the transaction originates from
      * @param payload The encoded data payload for the transaction
@@ -505,21 +520,22 @@ contract InterchainTokenService is
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
 
-        uint256 selector = abi.decode(payload, (uint256));
-        if (selector == SELECTOR_RECEIVE_TOKEN || selector == SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
+        uint256 messageType = abi.decode(payload, (uint256));
+        if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER || messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA) {
             address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
-            _processReceiveTokenPayload(expressExecutor, sourceChain, payload, selector);
 
-            if (expressExecutor != address(0))
+            _processInterchainTransferPayload(expressExecutor, sourceChain, payload, messageType);
+
+            if (expressExecutor != address(0)) {
                 emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
-
-            return;
+            }
+        } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
+            _processDeployTokenManagerPayload(payload);
+        } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
+            _processDeployInterchainTokenPayload(payload);
+        } else {
+            revert InvalidMessageType(messageType);
         }
-
-        if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) return _processDeployTokenManagerPayload(payload);
-        if (selector == SELECTOR_DEPLOY_INTERCHAIN_TOKEN) return _processDeployInterchainTokenPayload(payload);
-
-        revert SelectorUnknown(selector);
     }
 
     function contractCallWithTokenValue(
@@ -559,11 +575,11 @@ contract InterchainTokenService is
      * @param sourceChain The chain where the transaction originates from
      * @param payload The encoded data payload to be processed
      */
-    function _processReceiveTokenPayload(
+    function _processInterchainTransferPayload(
         address expressExecutor,
         string calldata sourceChain,
         bytes calldata payload,
-        uint256 selector
+        uint256 messageType
     ) internal {
         bytes32 tokenId;
         bytes memory sourceAddress;
@@ -586,12 +602,12 @@ contract InterchainTokenService is
 
         amount = tokenManager.giveToken(destinationAddress, amount);
 
-        if (selector == SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
+        if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA) {
             bytes memory data;
             (, , , , , data) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256, bytes));
 
             // slither-disable-next-line reentrancy-events
-            emit TokenReceivedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
+            emit InterchainTransferReceivedWithData(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
 
             bytes32 result = IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(
                 sourceChain,
@@ -605,7 +621,7 @@ contract InterchainTokenService is
             if (result != EXECUTE_SUCCESS) revert ExecuteWithInterchainTokenFailed(destinationAddress);
         } else {
             // slither-disable-next-line reentrancy-events
-            emit TokenReceived(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
+            emit InterchainTransferReceived(tokenId, sourceChain, sourceAddress, destinationAddress, amount);
         }
     }
 
@@ -687,9 +703,11 @@ contract InterchainTokenService is
     ) internal {
         // slither-disable-next-line unused-return
         validTokenManagerAddress(tokenId);
-        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
 
-        bytes memory payload = abi.encode(SELECTOR_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
+        emit TokenManagerDeploymentStarted(tokenId, destinationChain, tokenManagerType, params);
+
+        bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
+
         _callContract(destinationChain, payload, gasValue);
     }
 
@@ -717,9 +735,10 @@ contract InterchainTokenService is
         validTokenManagerAddress(tokenId);
 
         // slither-disable-next-line reentrancy-events
-        emit RemoteInterchainTokenDeploymentInitialized(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
+        emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, distributor, operator, destinationChain);
 
-        bytes memory payload = abi.encode(SELECTOR_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor, operator);
+        bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor, operator);
+
         _callContract(destinationChain, payload, gasValue);
     }
 
@@ -814,15 +833,15 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
+     * @notice Transmit a callContractWithInterchainToken for the given tokenId. Only callable by a token manager.
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the destinationAddress for the interchainTransfer.
      * @param amount the amount of token to give.
-     * @param metadata the data to be passed to the destiantion.
+     * @param metadata the data to be passed to the destination.
      */
-    function _transmitSendToken(
+    function _transmitInterchainTransfer(
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
@@ -833,9 +852,9 @@ contract InterchainTokenService is
         bytes memory payload;
         if (metadata.length < 4) {
             // slither-disable-next-line reentrancy-events
-            emit TokenSent(tokenId, destinationChain, destinationAddress, amount);
+            emit InterchainTransfer(tokenId, destinationChain, destinationAddress, amount);
 
-            payload = abi.encode(SELECTOR_RECEIVE_TOKEN, tokenId, sourceAddress.toBytes(), destinationAddress, amount);
+            payload = abi.encode(MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress.toBytes(), destinationAddress, amount);
 
             _callContract(destinationChain, payload, msg.value);
             return;
@@ -845,9 +864,16 @@ contract InterchainTokenService is
         if (version > 0) revert InvalidMetadataVersion(version);
 
         // slither-disable-next-line reentrancy-events
-        emit TokenSentWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
+        emit InterchainTransferWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
 
-        payload = abi.encode(SELECTOR_RECEIVE_TOKEN_WITH_DATA, tokenId, sourceAddress.toBytes(), destinationAddress, amount, metadata);
+        payload = abi.encode(
+            MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA,
+            tokenId,
+            sourceAddress.toBytes(),
+            destinationAddress,
+            amount,
+            metadata
+        );
 
         _callContract(destinationChain, payload, msg.value);
     }

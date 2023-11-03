@@ -18,19 +18,18 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager(address caller, address tokenManager);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
-    error InvalidCanonicalTokenId(bytes32 expectedCanonicalTokenId);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error GatewayToken();
     error TokenManagerDeploymentFailed(bytes error);
     error InterchainTokenDeploymentFailed(bytes error);
-    error SelectorUnknown(uint256 selector);
+    error InvalidMessageType(uint256 messageType);
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
     error UntrustedChain(string chainName);
-    error InvalidExpressSelector(uint256 selector);
+    error InvalidExpressMessageType(uint256 messageType);
 
-    event TokenSent(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
-    event TokenSentWithData(
+    event InterchainTransfer(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
+    event InterchainTransferWithData(
         bytes32 indexed tokenId,
         string destinationChain,
         bytes destinationAddress,
@@ -38,36 +37,34 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         address indexed sourceAddress,
         bytes data
     );
-    event TokenReceived(
+    event InterchainTransferReceived(
         bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,
         address indexed destinationAddress,
         uint256 indexed amount
     );
-    event TokenReceivedWithData(
+    event InterchainTransferReceivedWithData(
         bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,
         address indexed destinationAddress,
         uint256 indexed amount
     );
-    event RemoteTokenManagerDeploymentInitialized(
+    event TokenManagerDeploymentStarted(
         bytes32 indexed tokenId,
         string destinationChain,
-        uint256 indexed gasValue,
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
-    event RemoteInterchainTokenDeploymentInitialized(
+    event InterchainTokenDeploymentStarted(
         bytes32 indexed tokenId,
         string tokenName,
         string tokenSymbol,
         uint8 tokenDecimals,
         bytes distributor,
         bytes operator,
-        string destinationChain,
-        uint256 indexed gasValue
+        string destinationChain
     );
     event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
     event InterchainTokenDeployed(
@@ -78,8 +75,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         string symbol,
         uint8 decimals
     );
-    event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
-    event PausedSet(bool indexed paused, address indexed msgSender);
+    event InterchainTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
 
     /**
      * @notice Returns the address of the interchain router contract.
@@ -187,7 +183,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         bytes calldata metadata
     ) external payable;
 
-    function sendTokenWithData(
+    function callContractWithInterchainToken(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
@@ -204,7 +200,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
      * @param amount The amount of tokens to transmit.
      * @param metadata The metadata associated with the transmission.
      */
-    function transmitSendToken(
+    function transmitInterchainTransfer(
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
@@ -242,8 +238,8 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_);
 
     /**
-     * @notice Sets the paused state of the contract.
-     * @param paused The boolean value indicating whether the contract is paused or not.
+     * @notice Allows the owner to pause/unpause the token service.
+     * @param paused whether to pause or unpause.
      */
-    function setPaused(bool paused) external;
+    function setPauseStatus(bool paused) external;
 }
