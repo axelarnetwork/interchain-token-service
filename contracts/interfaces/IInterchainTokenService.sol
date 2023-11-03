@@ -76,7 +76,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         string symbol,
         uint8 decimals
     );
-    event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
+    event InterchainTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
 
     /**
      * @notice Returns the address of the interchain router contract.

@@ -279,7 +279,7 @@ contract InterchainTokenService is
         address deployer = msg.sender;
         tokenId = interchainTokenId(deployer, salt);
 
-        emit CustomTokenIdClaimed(tokenId, deployer, salt);
+        emit InterchainTokenIdClaimed(tokenId, deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
             _deployTokenManager(tokenId, tokenManagerType, params);

@@ -1299,10 +1299,10 @@ event TokenManagerDeployed(bytes32 tokenId, address tokenManager, enum ITokenMan
 event InterchainTokenDeployed(bytes32 tokenId, address tokenAddress, address distributor, string name, string symbol, uint8 decimals)
 ```
 
-### CustomTokenIdClaimed
+### InterchainTokenIdClaimed
 
 ```solidity
-event CustomTokenIdClaimed(bytes32 tokenId, address deployer, bytes32 salt)
+event InterchainTokenIdClaimed(bytes32 tokenId, address deployer, bytes32 salt)
 ```
 
 ### PausedSet
