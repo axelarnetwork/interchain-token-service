@@ -22,7 +22,7 @@ async function deployAddressTracker(wallet, chainName, interchainTokenServiceAdd
 }
 
 async function deployMockGateway(wallet) {
-    const gateway = await deployContract(wallet, 'MockAxelarGateway');
+    const gateway = await deployContract(wallet, 'MockGateway');
     return gateway;
 }
 

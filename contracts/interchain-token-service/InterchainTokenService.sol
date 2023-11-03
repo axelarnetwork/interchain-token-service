@@ -9,6 +9,7 @@ import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
@@ -22,7 +23,6 @@ import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainToke
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IERC20Named } from '../interfaces/IERC20Named.sol';
 
-import { AddressBytesUtils } from '../libraries/AddressBytesUtils.sol';
 import { Operatable } from '../utils/Operatable.sol';
 
 /**
@@ -42,8 +42,8 @@ contract InterchainTokenService is
 {
     using StringToBytes32 for string;
     using Bytes32ToString for bytes32;
-    using AddressBytesUtils for bytes;
-    using AddressBytesUtils for address;
+    using AddressBytes for bytes;
+    using AddressBytes for address;
     using SafeTokenTransferFrom for IERC20;
 
     address internal immutable implementationLockUnlock;
