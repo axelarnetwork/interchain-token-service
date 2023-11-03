@@ -214,20 +214,14 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         }
     }
 
-    function tokenTransferFrom(
-        bytes32 tokenId,
-        uint256 amount
-    ) external payable {
+    function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.tokenAddress(tokenId);
         IStandardizedToken token = IStandardizedToken(tokenAddress);
 
         token.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function tokenApprove(
-        bytes32 tokenId,
-        uint256 amount
-    ) external payable {
+    function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.tokenAddress(tokenId);
         IStandardizedToken token = IStandardizedToken(tokenAddress);
         address tokenManager = service.tokenManagerAddress(tokenId);

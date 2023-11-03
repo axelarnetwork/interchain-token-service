@@ -57,13 +57,7 @@ interface ITokenRegistrar {
         uint256 gasValue
     ) external payable;
 
-    function tokenTransferFrom(
-        bytes32 tokenId,
-        uint256 amount
-    ) external payable;
+    function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable;
 
-    function tokenApprove(
-        bytes32 tokenId,
-        uint256 amount
-    ) external payable;
+    function tokenApprove(bytes32 tokenId, uint256 amount) external payable;
 }
