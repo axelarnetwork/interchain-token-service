@@ -403,10 +403,10 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
-        _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
     }
 
-    function sendTokenWithData(
+    function callContractWithInterchainToken(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
@@ -416,7 +416,7 @@ contract InterchainTokenService is
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
         uint32 prefix = 0;
-        _transmitSendToken(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
     }
 
     /*********************\
@@ -424,7 +424,7 @@ contract InterchainTokenService is
     \*********************/
 
     /**
-     * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
+     * @notice Transmit an interchain transfer for the given tokenId. Only callable by a token manager.
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimbursement of gas.
      * @param destinationChain the name of the chain to send tokens to.
@@ -432,7 +432,7 @@ contract InterchainTokenService is
      * @param amount the amount of token to give.
      * @param metadata the data to be passed to the destination.
      */
-    function transmitSendToken(
+    function transmitInterchainTransfer(
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
@@ -440,7 +440,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable onlyTokenManager(tokenId) whenNotPaused {
-        _transmitSendToken(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadata);
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadata);
     }
 
     /*************\
@@ -455,6 +455,7 @@ contract InterchainTokenService is
     function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external onlyRole(uint8(Roles.OPERATOR)) {
         uint256 length = tokenIds.length;
         if (length != flowLimits.length) revert LengthMismatch();
+
         for (uint256 i; i < length; ++i) {
             ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenIds[i]));
             // slither-disable-next-line calls-loop
@@ -464,11 +465,14 @@ contract InterchainTokenService is
 
     /**
      * @notice Allows the owner to pause/unpause the token service.
-     * @param paused what value to set paused to.
+     * @param paused whether to pause or unpause.
      */
-    function setPaused(bool paused) external onlyOwner {
-        _setPaused(paused);
-        emit PausedSet(paused, msg.sender);
+    function setPauseStatus(bool paused) external onlyOwner {
+        if (paused) {
+            _pause();
+        } else {
+            _unpause();
+        }
     }
 
     /****************\
@@ -485,6 +489,7 @@ contract InterchainTokenService is
     ) internal pure returns (address implementation_) {
         implementation_ = tokenManagerImplementations[uint256(tokenManagerType)];
         if (implementation_ == address(0)) revert ZeroAddress();
+
         if (ITokenManager(implementation_).implementationType() != uint256(tokenManagerType))
             revert InvalidTokenManagerImplementationType(implementation_);
     }
@@ -814,7 +819,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
+     * @notice Transmit a callContractWithInterchainToken for the given tokenId. Only callable by a token manager.
      * @param tokenId the tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress the address where the token is coming from, which will also be used for reimburment of gas.
      * @param destinationChain the name of the chain to send tokens to.
@@ -822,7 +827,7 @@ contract InterchainTokenService is
      * @param amount the amount of token to give.
      * @param metadata the data to be passed to the destiantion.
      */
-    function _transmitSendToken(
+    function _transmitInterchainTransfer(
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,

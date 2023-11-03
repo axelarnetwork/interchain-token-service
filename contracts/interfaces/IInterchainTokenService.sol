@@ -79,7 +79,6 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         uint8 decimals
     );
     event CustomTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
-    event PausedSet(bool indexed paused, address indexed msgSender);
 
     /**
      * @notice Returns the address of the interchain router contract.
@@ -187,7 +186,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         bytes calldata metadata
     ) external payable;
 
-    function sendTokenWithData(
+    function callContractWithInterchainToken(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
@@ -204,7 +203,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
      * @param amount The amount of tokens to transmit.
      * @param metadata The metadata associated with the transmission.
      */
-    function transmitSendToken(
+    function transmitInterchainTransfer(
         bytes32 tokenId,
         address sourceAddress,
         string calldata destinationChain,
@@ -242,8 +241,8 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_);
 
     /**
-     * @notice Sets the paused state of the contract.
-     * @param paused The boolean value indicating whether the contract is paused or not.
+     * @notice Allows the owner to pause/unpause the token service.
+     * @param paused whether to pause or unpause.
      */
-    function setPaused(bool paused) external;
+    function setPauseStatus(bool paused) external;
 }

@@ -382,7 +382,7 @@ describe('Interchain Token Service', () => {
         let txPaused;
 
         beforeEach(async () => {
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -411,7 +411,7 @@ describe('Interchain Token Service', () => {
         it('Should revert when registering a standardized token when service is paused', async () => {
             const salt = getRandomBytes32();
 
-            txPaused = await service.setPaused(true);
+            txPaused = await service.setPauseStatus(true);
             await txPaused.wait();
 
             await expectRevert(
@@ -431,7 +431,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -483,7 +483,7 @@ describe('Interchain Token Service', () => {
         let txPaused;
 
         beforeEach(async () => {
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -527,7 +527,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote standardized token deployment if paused', async () => {
-            let tx = await service.setPaused(true);
+            let tx = await service.setPauseStatus(true);
             await tx.wait();
 
             await expectRevert(
@@ -550,7 +550,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            tx = await service.setPaused(false);
+            tx = await service.setPauseStatus(false);
             await tx.wait();
         });
     });
@@ -567,7 +567,7 @@ describe('Interchain Token Service', () => {
         });
 
         beforeEach(async () => {
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -676,7 +676,7 @@ describe('Interchain Token Service', () => {
         let txPaused;
 
         beforeEach(async () => {
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -805,7 +805,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert when deploying a custom token manager if paused', async () => {
-            let tx2 = await service.setPaused(true);
+            let tx2 = await service.setPauseStatus(true);
             await tx2.wait();
 
             const tokenName = 'Token Name';
@@ -819,7 +819,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert((gasOptions) => service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0, gasOptions), service, 'Pause');
 
-            tx2 = await service.setPaused(false);
+            tx2 = await service.setPauseStatus(false);
             await tx2.wait();
         });
     });
@@ -828,7 +828,7 @@ describe('Interchain Token Service', () => {
         let txPaused;
 
         beforeEach(async () => {
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -876,7 +876,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote custom token manager deployment if paused', async () => {
-            let tx = await service.setPaused(true);
+            let tx = await service.setPauseStatus(true);
             await tx.wait();
 
             const salt = getRandomBytes32();
@@ -893,7 +893,7 @@ describe('Interchain Token Service', () => {
                 service,
                 'Pause',
             );
-            tx = await service.setPaused(false);
+            tx = await service.setPauseStatus(false);
             await tx.wait();
         });
     });
@@ -902,7 +902,7 @@ describe('Interchain Token Service', () => {
         let txPaused;
 
         beforeEach(async () => {
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -950,7 +950,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote custom token manager deployment if paused', async () => {
-            let tx = await service.setPaused(true);
+            let tx = await service.setPauseStatus(true);
             await tx.wait();
 
             const salt = getRandomBytes32();
@@ -967,7 +967,7 @@ describe('Interchain Token Service', () => {
                 service,
                 'Pause',
             );
-            tx = await service.setPaused(false);
+            tx = await service.setPauseStatus(false);
             await tx.wait();
         });
     });
@@ -1064,7 +1064,7 @@ describe('Interchain Token Service', () => {
         it(`Should revert on initiate interchain token transfer when service is paused`, async () => {
             const [, tokenManager] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
 
-            let txPaused = await service.setPaused(true);
+            let txPaused = await service.setPauseStatus(true);
             await txPaused.wait();
 
             await expectRevert(
@@ -1074,7 +1074,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -1083,7 +1083,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.transmitSendToken(tokenId, tokenManager.address, destinationChain, destAddress, amount, '0x', {
+                    service.transmitInterchainTransfer(tokenId, tokenManager.address, destinationChain, destAddress, amount, '0x', {
                         ...gasOptions,
                         value: gasValue,
                     }),
@@ -1132,7 +1132,7 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            let txPaused = await service.setPaused(true);
+            let txPaused = await service.setPauseStatus(true);
             await txPaused.wait();
 
             await expectRevert(
@@ -1141,7 +1141,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            txPaused = await service.setPaused(false);
+            txPaused = await service.setPauseStatus(false);
             await txPaused.wait();
         });
 
@@ -1292,7 +1292,7 @@ describe('Interchain Token Service', () => {
         }
 
         for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee']) {
-            it(`Should be able to initiate an interchain token transfer via the sendTokenWithData function on the service [${type}]`, async () => {
+            it(`Should be able to initiate an interchain token transfer via the callContractWithInterchainToken function on the service [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
                 const payload = defaultAbiCoder.encode(
@@ -1307,7 +1307,7 @@ describe('Interchain Token Service', () => {
                     transferToAddress = tokenManager.address;
                 }
 
-                await expect(service.sendTokenWithData(tokenId, destinationChain, destAddress, amount, data))
+                await expect(service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')

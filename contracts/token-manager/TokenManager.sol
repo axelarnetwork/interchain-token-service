@@ -108,7 +108,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
 
-        interchainTokenService.transmitSendToken{ value: msg.value }(
+        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
             interchainTokenId(),
             sender,
             destinationChain,
@@ -135,7 +135,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
         uint32 version = 0;
-        interchainTokenService.transmitSendToken{ value: msg.value }(
+        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
             interchainTokenId(),
             sender,
             destinationChain,
@@ -162,7 +162,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     ) external payable virtual onlyToken {
         amount = _takeToken(sender, amount);
         _addFlowOut(amount);
-        interchainTokenService.transmitSendToken{ value: msg.value }(
+        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
             interchainTokenId(),
             sender,
             destinationChain,

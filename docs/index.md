@@ -461,19 +461,19 @@ Transfer a token interchain.
 | amount | uint256 | the amount of token to give. |
 | metadata | bytes | the data to be passed to the destination. If provided with a bytes4(0) prefix, it'll execute the destination contract. |
 
-### sendTokenWithData
+### callContractWithInterchainToken
 
 ```solidity
-function sendTokenWithData(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable
+function callContractWithInterchainToken(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable
 ```
 
-### transmitSendToken
+### transmitInterchainTransfer
 
 ```solidity
-function transmitSendToken(bytes32 tokenId, address sourceAddress, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
+function transmitInterchainTransfer(bytes32 tokenId, address sourceAddress, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
 ```
 
-Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
+Transmit a callContractWithInterchainToken for the given tokenId. Only callable by a token manager.
 
 #### Parameters
 
@@ -501,10 +501,10 @@ Used to set a flow limit for a token manager that has the service as its operato
 | tokenIds | bytes32[] | an array of the token Ids of the tokenManagers to set the flow limit of. |
 | flowLimits | uint256[] | the flowLimits to set |
 
-### setPaused
+### setPauseStatus
 
 ```solidity
-function setPaused(bool paused) external
+function setPauseStatus(bool paused) external
 ```
 
 Used to pause the entire service.
@@ -728,13 +728,13 @@ Deploys a interchain token.
 function _decodeMetadata(bytes metadata) internal pure returns (uint32 version, bytes data)
 ```
 
-### _transmitSendToken
+### _transmitInterchainTransfer
 
 ```solidity
-function _transmitSendToken(bytes32 tokenId, address sourceAddress, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) internal
+function _transmitInterchainTransfer(bytes32 tokenId, address sourceAddress, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) internal
 ```
 
-Transmit a sendTokenWithData for the given tokenId. Only callable by a token manager.
+Transmit a callContractWithInterchainToken for the given tokenId. Only callable by a token manager.
 
 #### Parameters
 
@@ -1519,16 +1519,16 @@ Returns the implementation address for a given token manager type.
 function interchainTransfer(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
 ```
 
-### sendTokenWithData
+### callContractWithInterchainToken
 
 ```solidity
-function sendTokenWithData(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable
+function callContractWithInterchainToken(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable
 ```
 
-### transmitSendToken
+### transmitInterchainTransfer
 
 ```solidity
-function transmitSendToken(bytes32 tokenId, address sourceAddress, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
+function transmitInterchainTransfer(bytes32 tokenId, address sourceAddress, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
 ```
 
 Initiates an interchain token transfer. Only callable by TokenManagers
@@ -1619,10 +1619,10 @@ Returns the total amount of incoming flow for a specific token.
 | ---- | ---- | ----------- |
 | flowInAmount_ | uint256 | The total amount of incoming flow for the token. |
 
-### setPaused
+### setPauseStatus
 
 ```solidity
-function setPaused(bool paused) external
+function setPauseStatus(bool paused) external
 ```
 
 Sets the paused state of the contract.
