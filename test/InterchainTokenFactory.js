@@ -28,7 +28,7 @@ const DISTRIBUTOR_ROLE = 0;
 const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
 
-describe('Token Registrars', () => {
+describe('InterchainTokenFactory', () => {
     let wallet;
     let service, gateway, gasService, tokenFactory;
     const chainName = 'Test';
@@ -42,13 +42,13 @@ describe('Token Registrars', () => {
         wallet = wallets[0];
         [service, gateway, gasService] = await deployAll(wallet, chainName, [destinationChain]);
 
-        tokenFactory = await deployContract(wallet, 'TokenFactory', [service.address]);
-        const proxy = await deployContract(wallet, 'TokenRegistrarProxy', [tokenFactory.address, wallet.address]);
-        const factory = await ethers.getContractFactory('TokenFactory', wallet);
+        tokenFactory = await deployContract(wallet, 'InterchainTokenFactory', [service.address]);
+        const proxy = await deployContract(wallet, 'InterchainTokenFactoryProxy', [tokenFactory.address, wallet.address]);
+        const factory = await ethers.getContractFactory('InterchainTokenFactory', wallet);
         tokenFactory = factory.attach(proxy.address);
     });
 
-    describe('Canonical Token Registrar', async () => {
+    describe('Canonical Interchain Token Factory', async () => {
         let token, tokenId, tokenManagerAddress;
         const tokenCap = BigInt(1e18);
 
@@ -176,7 +176,7 @@ describe('Token Registrars', () => {
         });
     });
 
-    describe('Interchain Token Registrar', async () => {
+    describe('Interchain Token Factory', async () => {
         let tokenId;
         const mintAmount = 1234;
         const distributor = new Wallet(getRandomBytes32()).address;

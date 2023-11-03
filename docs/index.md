@@ -2605,7 +2605,7 @@ enum TokenManagerType {
 }
 ```
 
-## ITokenRegistrar
+## IInterchainTokenFactory
 
 ### ZeroAddress
 
@@ -2709,7 +2709,7 @@ function interchainTransfer(bytes32 tokenId, string destinationChain, bytes dest
 function interchainTransferFrom(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, uint256 gasValue) external payable
 ```
 
-## CanonicalInterchainTokenRegistrarProxy
+## CanonicalInterchainInterchainTokenFactoryProxy
 
 _Proxy contract for interchain token service contracts. Inherits from the Proxy contract._
 
@@ -2913,7 +2913,7 @@ fallback() external payable virtual
 
 _Fallback function. Delegates the call to the token manager contract._
 
-## TokenRegistrarProxy
+## InterchainTokenFactoryProxy
 
 _Proxy contract for interchain token service contracts. Inherits from the Proxy contract._
 
@@ -4829,10 +4829,10 @@ bytes32 chainNameHash
 bytes32 PREFIX_CANONICAL_TOKEN_SALT
 ```
 
-### PREFIX_STANDARDIZED_TOKEN_SALT
+### PREFIX_INTERCHAIN_TOKEN_SALT
 
 ```solidity
-bytes32 PREFIX_STANDARDIZED_TOKEN_SALT
+bytes32 PREFIX_INTERCHAIN_TOKEN_SALT
 ```
 
 ### constructor

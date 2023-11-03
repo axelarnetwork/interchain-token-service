@@ -8,12 +8,12 @@ import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/uti
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { ITokenRegistrar } from '../interfaces/ITokenRegistrar.sol';
+import { IInterchainTokenFactory } from '../interfaces/IInterchainTokenFactory.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
-contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradable {
+contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, Multicall, Upgradable {
     using AddressBytes for bytes;
     using AddressBytes for address;
     using SafeTokenTransfer for IInterchainToken;
@@ -25,9 +25,9 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
     IInterchainTokenService public immutable service;
     bytes32 public immutable chainNameHash;
 
-    bytes32 private constant CONTRACT_ID = keccak256('token-factory');
+    bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
-    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_SALT = keccak256('interchain-token-salt');
+    bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
 
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
@@ -44,7 +44,7 @@ contract TokenFactory is ITokenRegistrar, ITokenManagerType, Multicall, Upgradab
     }
 
     function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32) {
-        return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, chainNameHash_, deployer, salt));
+        return keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, chainNameHash_, deployer, salt));
     }
 
     function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt) {

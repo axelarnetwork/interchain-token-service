@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface ITokenRegistrar {
+interface IInterchainTokenFactory {
     error ZeroAddress();
     error NotDistributor(address distributor);
     error NotOperator(address operator);
