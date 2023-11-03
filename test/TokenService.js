@@ -1158,7 +1158,7 @@ describe('Interchain Token Service', () => {
             await expectRevert(
                 (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
                 service,
-                'SelectorUnknown',
+                'InvalidSelector',
                 [INVALID_SELECTOR],
             );
         });

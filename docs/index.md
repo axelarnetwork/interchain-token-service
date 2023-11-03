@@ -1221,10 +1221,10 @@ error TokenManagerDeploymentFailed(bytes error)
 error InterchainTokenDeploymentFailed(bytes error)
 ```
 
-### SelectorUnknown
+### InvalidSelector
 
 ```solidity
-error SelectorUnknown(uint256 selector)
+error InvalidSelector(uint256 selector)
 ```
 
 ### InvalidMetadataVersion

@@ -46,16 +46,22 @@ contract InterchainTokenService is
     using AddressBytes for address;
     using SafeTokenTransferFrom for IERC20;
 
-    address internal immutable implementationLockUnlock;
-    address internal immutable implementationMintBurn;
-    address internal immutable implementationMintBurnFrom;
-    address internal immutable implementationLockUnlockFee;
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
-    IInterchainAddressTracker public immutable interchainAddressTracker;
-    address public immutable tokenManagerDeployer;
-    address public immutable interchainTokenDeployer;
     bytes32 public immutable chainNameHash;
+
+    address public immutable interchainTokenDeployer;
+    address public immutable tokenManagerDeployer;
+
+    /**
+     * @dev Token manager implementation addresses
+     */
+    address internal immutable implementationLockUnlock;
+    address internal immutable implementationLockUnlockFee;
+    address internal immutable implementationMintBurn;
+    address internal immutable implementationMintBurnFrom;
+
+    IInterchainAddressTracker public immutable interchainAddressTracker;
 
     bytes32 internal constant PREFIX_TOKEN_ID = keccak256('its-custom-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
@@ -270,6 +276,7 @@ contract InterchainTokenService is
         tokenId = interchainTokenId(deployer_, salt);
 
         emit CustomTokenIdClaimed(tokenId, deployer_, salt);
+
         if (bytes(destinationChain).length == 0) {
             _deployTokenManager(tokenId, tokenManagerType, params);
         } else {
@@ -337,6 +344,7 @@ contract InterchainTokenService is
         if (selector != SELECTOR_RECEIVE_TOKEN && selector != SELECTOR_RECEIVE_TOKEN_WITH_DATA) {
             revert InvalidExpressSelector(selector);
         }
+
         if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted();
 
         address expressExecutor = msg.sender;
@@ -524,7 +532,7 @@ contract InterchainTokenService is
         if (selector == SELECTOR_DEPLOY_TOKEN_MANAGER) return _processDeployTokenManagerPayload(payload);
         if (selector == SELECTOR_DEPLOY_INTERCHAIN_TOKEN) return _processDeployInterchainTokenPayload(payload);
 
-        revert SelectorUnknown(selector);
+        revert InvalidSelector(selector);
     }
 
     function contractCallWithTokenValue(
@@ -825,7 +833,7 @@ contract InterchainTokenService is
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the destinationAddress for the interchainTransfer.
      * @param amount the amount of token to give.
-     * @param metadata the data to be passed to the destiantion.
+     * @param metadata the data to be passed to the destination.
      */
     function _transmitInterchainTransfer(
         bytes32 tokenId,

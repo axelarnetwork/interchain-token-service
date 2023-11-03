@@ -23,7 +23,7 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     error GatewayToken();
     error TokenManagerDeploymentFailed(bytes error);
     error InterchainTokenDeploymentFailed(bytes error);
-    error SelectorUnknown(uint256 selector);
+    error InvalidSelector(uint256 selector);
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
     error UntrustedChain(string chainName);
