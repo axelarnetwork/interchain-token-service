@@ -133,40 +133,9 @@ async function main(folders: string[], subDir?: string) {
                 export default ${abiJsonFile} as const;
                 `;
 
-            const indexFile = `
-                import { Chain } from "viem";
-    
-                import { PublicContractClient } from "../../client/PublicContractClient";
-                import ABI_FILE from "./${folderName}.abi";
-                
-                export * from "./${folderName}.args";
-    
-                export const ${constantName}_ABI = ABI_FILE.abi;
-    
-                export class ${contractName}Client extends PublicContractClient<
-                    typeof ABI_FILE.abi
-                > {
-                    static ABI = ABI_FILE.abi;
-                    static contractName = ABI_FILE.contractName;
-    
-                    constructor(options: { chain: Chain; address: \`0x\${string}\` }) {
-                    super({
-                        abi: ${constantName}_ABI,
-                        address: options.address,
-                        chain: options.chain,
-                    });
-                    }
-                }
-                `;
-
-            await $`mkdir -p ${basePath} && touch ${basePath}/index.ts`;
+            await $`mkdir -p ${basePath}`;
 
             const files = [
-                {
-                    name: 'index.ts',
-                    content: indexFile,
-                    parser: 'babel-ts',
-                },
                 {
                     name: `${folderName}.abi.ts`,
                     content: abiFile,

@@ -58,6 +58,7 @@
     "interfaces",
     "docs",
     "scripts",
+    "typescript",
     "DESIGN.md",
     "README.md",
     "hardhat.config.js"
