@@ -9,7 +9,7 @@ const { defaultAbiCoder, solidityPack, keccak256, toUtf8Bytes, hexlify } = ether
 const { Contract, Wallet } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const TokenManager = require('../artifacts/contracts/token-manager/TokenManager.sol/TokenManager.json');
-const Token = require('../artifacts/contracts/interfaces/IStandardizedToken.sol/IStandardizedToken.json');
+const Token = require('../artifacts/contracts/interfaces/IInterchainToken.sol/IInterchainToken.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const { getRandomBytes32, expectRevert } = require('./utils');
@@ -133,7 +133,7 @@ describe('Interchain Token Service', () => {
         let gateway;
         let gasService;
         let tokenManagerDeployer;
-        let standardizedToken;
+        let interchainToken;
         let interchainTokenDeployer;
         let interchainTokenServiceAddress;
         let interchainAddressTracker;
@@ -149,8 +149,8 @@ describe('Interchain Token Service', () => {
             gateway = await deployMockGateway(wallet);
             gasService = await deployGasService(wallet);
             tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-            standardizedToken = await deployContract(wallet, 'StandardizedToken');
-            interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [standardizedToken.address]);
+            interchainToken = await deployContract(wallet, 'InterchainToken');
+            interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
             interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
             interchainAddressTracker = await deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName);
             tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
@@ -216,7 +216,7 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should revert on invalid standardized token deployer', async () => {
+        it('Should revert on invalid interchain token deployer', async () => {
             await expectRevert(
                 (gasOptions) =>
                     deployInterchainTokenService(
@@ -375,7 +375,7 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe('Deploy and Register Standardized Token', () => {
+    describe('Deploy and Register Interchain Token', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
@@ -386,7 +386,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
-        it('Should register a standardized token', async () => {
+        it('Should register a interchain token', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
@@ -408,7 +408,7 @@ describe('Interchain Token Service', () => {
             console.log(await token.name());
         });
 
-        it('Should revert when registering a standardized token when service is paused', async () => {
+        it('Should revert when registering a interchain token when service is paused', async () => {
             const salt = getRandomBytes32();
 
             txPaused = await service.setPauseStatus(true);
@@ -435,7 +435,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
-        it('Should revert when registering a standardized token as a lock/unlock for a second time', async () => {
+        it('Should revert when registering a interchain token as a lock/unlock for a second time', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
@@ -472,7 +472,7 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe('Deploy and Register remote Standardized Token', () => {
+    describe('Deploy and Register remote Interchain Token', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
@@ -487,7 +487,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
-        it('Should initialize a remote standardized token deployment', async () => {
+        it('Should initialize a remote interchain token deployment', async () => {
             await (
                 await service.deployTokenManager(
                     salt,
@@ -534,7 +534,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
-        it('Should revert on remote standardized token deployment if paused', async () => {
+        it('Should revert on remote interchain token deployment if paused', async () => {
             let tx = await service.setPauseStatus(true);
             await tx.wait();
 
@@ -563,7 +563,7 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe('Receive Remote Standardized Token Deployment', () => {
+    describe('Receive Remote Interchain Token Deployment', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
@@ -579,7 +579,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
-        it('Should revert on receiving a remote standardized token depoloyment if not approved by the gateway', async () => {
+        it('Should revert on receiving a remote interchain token depoloyment if not approved by the gateway', async () => {
             const tokenId = getRandomBytes32();
             const distributor = wallet.address;
             const operator = wallet.address;
@@ -604,7 +604,7 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should be able to receive a remote standardized token depoloyment with a lock/unlock token manager', async () => {
+        it('Should be able to receive a remote interchain token depoloyment with a lock/unlock token manager', async () => {
             const tokenId = getRandomBytes32();
             const distributor = wallet.address;
             const operator = wallet.address;
@@ -636,7 +636,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
         });
 
-        it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager', async () => {
+        it('Should be able to receive a remote interchain token depoloyment with a mint/burn token manager', async () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const distributor = '0x';
@@ -667,7 +667,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
         });
 
-        it('Should be able to receive a remote standardized token depoloyment with a mint/burn token manager with empty distributor and operator', async () => {
+        it('Should be able to receive a remote interchain token depoloyment with a mint/burn token manager with empty distributor and operator', async () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const distributor = '0x';
@@ -938,7 +938,7 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe('Initialize remote standardized token and manager deployment', () => {
+    describe('Initialize remote interchain token and manager deployment', () => {
         let txPaused;
 
         beforeEach(async () => {

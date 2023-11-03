@@ -12,8 +12,8 @@ const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils'
 const { deployContract } = require('../scripts/deploy');
 
 const ImplemenationTest = require('../artifacts/contracts/test/utils/ImplementationTest.sol/ImplementationTest.json');
-const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
-const StandardizedTokenProxy = require('../artifacts/contracts/proxies/StandardizedTokenProxy.sol/StandardizedTokenProxy.json');
+const InterchainToken = require('../artifacts/contracts/token-implementations/InterchainToken.sol/InterchainToken.json');
+const InterchainTokenProxy = require('../artifacts/contracts/proxies/InterchainTokenProxy.sol/InterchainTokenProxy.json');
 
 let ownerWallet, otherWallet;
 
@@ -264,7 +264,7 @@ describe('Implementation', () => {
 });
 
 describe('InterchainTokenDeployer', () => {
-    let standardizedToken, interchainTokenDeployer;
+    let interchainToken, interchainTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -272,8 +272,8 @@ describe('InterchainTokenDeployer', () => {
     const DISTRIBUTOR_ROLE = 0;
 
     before(async () => {
-        standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');
-        interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [standardizedToken.address]);
+        interchainToken = await deployContract(ownerWallet, 'InterchainToken');
+        interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [interchainToken.address]);
     });
 
     it('Should revert on deployment with invalid implementation address', async () => {
@@ -289,8 +289,8 @@ describe('InterchainTokenDeployer', () => {
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
-        const token = new Contract(tokenAddress, StandardizedToken.abi, ownerWallet);
-        const tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, ownerWallet);
+        const token = new Contract(tokenAddress, InterchainToken.abi, ownerWallet);
+        const tokenProxy = new Contract(tokenAddress, InterchainTokenProxy.abi, ownerWallet);
 
         await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals))
             .and.to.emit(token, 'RolesAdded')
@@ -298,7 +298,7 @@ describe('InterchainTokenDeployer', () => {
             .to.emit(token, 'RolesAdded')
             .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE);
 
-        expect(await tokenProxy.implementation()).to.equal(standardizedToken.address);
+        expect(await tokenProxy.implementation()).to.equal(interchainToken.address);
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);

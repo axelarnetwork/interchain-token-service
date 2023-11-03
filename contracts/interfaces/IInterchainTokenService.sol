@@ -90,8 +90,8 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function tokenManagerDeployer() external view returns (address tokenManagerDeployerAddress);
 
     /**
-     * @notice Returns the address of the standardized token deployer contract.
-     * @return interchainTokenDeployerAddress The address of the standardized token deployer contract.
+     * @notice Returns the address of the interchain token deployer contract.
+     * @return interchainTokenDeployerAddress The address of the interchain token deployer contract.
      */
     function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
 
@@ -117,9 +117,9 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
 
     /**
-     * @notice Returns the address of the standardized token associated with the given tokenId.
-     * @param tokenId The tokenId of the standardized token.
-     * @return tokenAddress_ The address of the standardized token.
+     * @notice Returns the address of the interchain token associated with the given tokenId.
+     * @param tokenId The tokenId of the interchain token.
+     * @return tokenAddress_ The address of the interchain token.
      */
     function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
 
@@ -148,12 +148,12 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     ) external payable returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys and registers a standardized token on a remote chain.
+     * @notice Deploys and registers a interchain token on a remote chain.
      * @param salt The salt used for token deployment.
      * @param destinationChain The name of the destination chain. Use '' for this chain.
-     * @param name The name of the standardized tokens.
-     * @param symbol The symbol of the standardized tokens.
-     * @param decimals The number of decimals for the standardized tokens.
+     * @param name The name of the interchain tokens.
+     * @param symbol The symbol of the interchain tokens.
+     * @param decimals The number of decimals for the interchain tokens.
      * @param distributor The distributor data for mint/burn operations.
      * @param gasValue The gas value for deployment.
      */

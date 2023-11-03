@@ -5,11 +5,11 @@ pragma solidity ^0.8.0;
 import { Proxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Proxy.sol';
 
 /**
- * @title CanonicalTokenRegistrarProxy
+ * @title CanonicalInterchainTokenRegistrarProxy
  * @dev Proxy contract for interchain token service contracts. Inherits from the Proxy contract.
  */
-contract CanonicalTokenRegistrarProxy is Proxy {
-    bytes32 private constant CONTRACT_ID = keccak256('canonical-token-registrar');
+contract CanonicalInterchainTokenRegistrarProxy is Proxy {
+    bytes32 private constant CONTRACT_ID = keccak256('canonical-token-factory');
 
     /**
      * @dev Constructs the InterchainTokenServiceProxy contract.

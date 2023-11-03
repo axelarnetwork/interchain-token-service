@@ -78,8 +78,8 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
     const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
     const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-    const standardizedToken = await deployContract(wallet, 'StandardizedToken');
-    const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [standardizedToken.address]);
+    const interchainToken = await deployContract(wallet, 'InterchainToken');
+    const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const interchainAddressTracker = await deployAddressTracker(wallet, chainName, interchainTokenServiceAddress, evmChains);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
+import { IInterchainTokenBase } from '../interfaces/IInterchainTokenBase.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { ERC20 } from '../token-implementations/ERC20.sol';
 
@@ -11,7 +11,7 @@ import { ERC20 } from '../token-implementations/ERC20.sol';
  * @notice The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
  * that can be used to create approvals, and that `allowance` is a mapping.
  */
-abstract contract InterchainToken is IInterchainToken, ERC20 {
+abstract contract InterchainTokenBase is IInterchainTokenBase, ERC20 {
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwritten.
