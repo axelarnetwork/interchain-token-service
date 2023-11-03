@@ -84,7 +84,7 @@ contract InterchainTokenService is
      * @param interchainTokenDeployer_ the address of the InterchainTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
-     * @param interchainRouter_ the address of the InterchainAddressTracker.
+     * @param interchainAddressTracker_ the address of the InterchainAddressTracker.
      * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, and Lock-unlock with fee.
      */
     constructor(
@@ -92,11 +92,11 @@ contract InterchainTokenService is
         address interchainTokenDeployer_,
         address gateway_,
         address gasService_,
-        address interchainRouter_,
+        address interchainAddressTracker_,
         address[] memory tokenManagerImplementations
     ) {
         if (
-            interchainRouter_ == address(0) ||
+            interchainAddressTracker_ == address(0) ||
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             interchainTokenDeployer_ == address(0) ||
@@ -104,7 +104,7 @@ contract InterchainTokenService is
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
-        interchainAddressTracker = IInterchainAddressTracker(interchainRouter_);
+        interchainAddressTracker = IInterchainAddressTracker(interchainAddressTracker_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
@@ -115,6 +115,7 @@ contract InterchainTokenService is
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
+
         string memory chainName_ = interchainAddressTracker.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
@@ -130,6 +131,7 @@ contract InterchainTokenService is
      */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
         if (!interchainAddressTracker.isTrustedAddress(sourceChain, sourceAddress)) revert NotRemoteService();
+
         _;
     }
 
@@ -196,8 +198,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Calculates the tokenId that would correspond to a custom link for a given deployer with a specified salt.
-     * This will not depend on what chain it is called from, unlike canonical tokenIds.
+     * @notice Calculates the tokenId that would correspond to a link for a given deployer with a specified salt.
      * @param sender the address of the TokenManager deployer.
      * @param salt the salt that the deployer uses for the deployment.
      * @return tokenId the tokenId that the custom TokenManager would get (or has gotten).
@@ -275,10 +276,10 @@ contract InterchainTokenService is
         bytes calldata params,
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
-        address deployer_ = msg.sender;
-        tokenId = interchainTokenId(deployer_, salt);
+        address deployer = msg.sender;
+        tokenId = interchainTokenId(deployer, salt);
 
-        emit CustomTokenIdClaimed(tokenId, deployer_, salt);
+        emit CustomTokenIdClaimed(tokenId, deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
             _deployTokenManager(tokenId, tokenManagerType, params);
@@ -703,9 +704,11 @@ contract InterchainTokenService is
     ) internal {
         // slither-disable-next-line unused-return
         validTokenManagerAddress(tokenId);
-        emit RemoteTokenManagerDeploymentInitialized(tokenId, destinationChain, gasValue, tokenManagerType, params);
+
+        emit TokenManagerDeploymentStarted(tokenId, destinationChain, tokenManagerType, params);
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
+
         _callContract(destinationChain, payload, gasValue);
     }
 
@@ -733,7 +736,7 @@ contract InterchainTokenService is
         validTokenManagerAddress(tokenId);
 
         // slither-disable-next-line reentrancy-events
-        emit RemoteInterchainTokenDeploymentInitialized(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
+        emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, distributor, operator, destinationChain);
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor, operator);
         _callContract(destinationChain, payload, gasValue);

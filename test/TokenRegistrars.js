@@ -88,8 +88,8 @@ describe('Token Registrars', () => {
             await expect(
                 tokenRegistrar.deployRemoteCanonicalToken(chainName, token.address, destinationChain, gasValue, { value: gasValue }),
             )
-                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
-                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', destinationChain, gasValue)
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -200,7 +200,7 @@ describe('Token Registrars', () => {
                     value: gasValue,
                 }),
             )
-                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(
                     tokenId,
                     name,
@@ -209,7 +209,6 @@ describe('Token Registrars', () => {
                     wallet.address.toLowerCase(),
                     wallet.address.toLowerCase(),
                     destinationChain,
-                    gasValue,
                 )
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
@@ -250,8 +249,8 @@ describe('Token Registrars', () => {
                     value: gasValue,
                 }),
             )
-                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
-                .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address.toLowerCase(), destinationChain, gasValue)
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', wallet.address.toLowerCase(), destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')

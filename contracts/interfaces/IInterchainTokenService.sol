@@ -52,22 +52,20 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         address indexed destinationAddress,
         uint256 indexed amount
     );
-    event RemoteTokenManagerDeploymentInitialized(
+    event TokenManagerDeploymentStarted(
         bytes32 indexed tokenId,
         string destinationChain,
-        uint256 indexed gasValue,
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
-    event RemoteInterchainTokenDeploymentInitialized(
+    event InterchainTokenDeploymentStarted(
         bytes32 indexed tokenId,
         string tokenName,
         string tokenSymbol,
         uint8 tokenDecimals,
         bytes distributor,
         bytes operator,
-        string destinationChain,
-        uint256 indexed gasValue
+        string destinationChain
     );
     event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
     event InterchainTokenDeployed(

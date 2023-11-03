@@ -518,8 +518,8 @@ describe('Interchain Token Service', () => {
                     },
                 ),
             )
-                .to.emit(service, 'RemoteInterchainTokenDeploymentInitialized')
-                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator, destinationChain, gasValue)
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator, destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -855,8 +855,8 @@ describe('Interchain Token Service', () => {
             );
 
             await expect(service.deployTokenManager(salt, destinationChain, type, params, gasValue, { value: gasValue }))
-                .to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
-                .withArgs(tokenId, destinationChain, gasValue, type, params)
+                .to.emit(service, 'TokenManagerDeploymentStarted')
+                .withArgs(tokenId, destinationChain, type, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -929,8 +929,8 @@ describe('Interchain Token Service', () => {
             );
 
             await expect(service.deployTokenManager(salt, destinationChain, type, params, gasValue, { value: gasValue }))
-                .to.emit(service, 'RemoteTokenManagerDeploymentInitialized')
-                .withArgs(tokenId, destinationChain, gasValue, type, params)
+                .to.emit(service, 'TokenManagerDeploymentStarted')
+                .withArgs(tokenId, destinationChain, type, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')

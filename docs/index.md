@@ -1275,16 +1275,16 @@ event TokenReceived(bytes32 tokenId, string sourceChain, bytes sourceAddress, ad
 event TokenReceivedWithData(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
 ```
 
-### RemoteTokenManagerDeploymentInitialized
+### TokenManagerDeploymentStarted
 
 ```solidity
-event RemoteTokenManagerDeploymentInitialized(bytes32 tokenId, string destinationChain, uint256 gasValue, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params)
+event TokenManagerDeploymentStarted(bytes32 tokenId, string destinationChain, uint256 gasValue, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params)
 ```
 
-### RemoteInterchainTokenDeploymentInitialized
+### InterchainTokenDeploymentStarted
 
 ```solidity
-event RemoteInterchainTokenDeploymentInitialized(bytes32 tokenId, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue)
+event InterchainTokenDeploymentStarted(bytes32 tokenId, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes distributor, bytes operator, string destinationChain, uint256 gasValue)
 ```
 
 ### TokenManagerDeployed
