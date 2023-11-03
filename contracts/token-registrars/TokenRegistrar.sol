@@ -48,7 +48,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
     }
 
     function standardizedTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = service.tokenId(address(this), standardizedTokenSalt(chainNameHash, deployer, salt));
+        tokenId = service.interchainTokenId(address(this), standardizedTokenSalt(chainNameHash, deployer, salt));
     }
 
     function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
@@ -77,7 +77,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, operator.toBytes(), 0);
 
         if (mintAmount > 0) {
-            bytes32 tokenId = service.tokenId(address(this), salt);
+            bytes32 tokenId = service.interchainTokenId(address(this), salt);
             IStandardizedToken token = IStandardizedToken(service.interchainTokenAddress(tokenId));
             token.mint(address(this), mintAmount);
             token.transferDistributorship(distributor);
@@ -107,7 +107,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             }
             address sender = msg.sender;
             salt = standardizedTokenSalt(chainNameHash_, sender, salt);
-            bytes32 tokenId = service.tokenId(address(this), salt);
+            bytes32 tokenId = service.interchainTokenId(address(this), salt);
 
             IStandardizedToken token = IStandardizedToken(service.interchainTokenAddress(tokenId));
             ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
@@ -157,7 +157,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
     }
 
     function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = service.tokenId(address(this), canonicalTokenSalt(chainNameHash, tokenAddress));
+        tokenId = service.interchainTokenId(address(this), canonicalTokenSalt(chainNameHash, tokenAddress));
     }
 
     function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId) {
@@ -184,7 +184,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             }
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
             salt = canonicalTokenSalt(chainNameHash_, originalTokenAddress);
-            bytes32 tokenId = service.tokenId(address(this), salt);
+            bytes32 tokenId = service.interchainTokenId(address(this), salt);
             token = IStandardizedToken(service.tokenAddress(tokenId));
         }
 

@@ -24,7 +24,7 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     /**
      * @notice A function that returns the token id.
      */
-    function tokenId() external view returns (bytes32);
+    function interchainTokenId() external view returns (bytes32);
 
     /**
      * @notice A function that should return the address of the token.
