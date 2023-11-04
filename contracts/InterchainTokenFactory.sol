@@ -89,7 +89,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
             ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
             tokenManager.removeFlowLimiter(address(this));
-            tokenManager.addFlowLimiter(distributor);
+            if(distributor != address(0)) tokenManager.addFlowLimiter(distributor);
             tokenManager.transferOperatorship(distributor);
         }
     }
