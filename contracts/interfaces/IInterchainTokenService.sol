@@ -71,7 +71,6 @@ interface IInterchainTokenService is
         string tokenSymbol,
         uint8 tokenDecimals,
         bytes distributor,
-        bytes operator,
         string destinationChain
     );
     event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
@@ -172,7 +171,6 @@ interface IInterchainTokenService is
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory operator,
         uint256 gasValue
     ) external payable;
 

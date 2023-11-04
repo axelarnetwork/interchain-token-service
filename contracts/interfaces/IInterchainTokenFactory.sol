@@ -23,15 +23,13 @@ interface IInterchainTokenFactory {
         string calldata symbol,
         uint8 decimals,
         uint256 mintAmount,
-        address distributor,
-        address operator
+        address distributor
     ) external payable;
 
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
         address additionalDistributor,
-        address optionalOperator,
         string memory destinationChain,
         uint256 gasValue
     ) external payable;

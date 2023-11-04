@@ -307,7 +307,6 @@ contract InterchainTokenService is
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory operator,
         uint256 gasValue
     ) external payable whenNotPaused {
         bytes32 tokenId = interchainTokenId(msg.sender, salt);
@@ -315,9 +314,9 @@ contract InterchainTokenService is
         if (bytes(destinationChain).length == 0) {
             address tokenAddress_ = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);
 
-            _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(operator, tokenAddress_));
+            _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(distributor, tokenAddress_));
         } else {
-            _deployRemoteInterchainToken(tokenId, name, symbol, decimals, distributor, operator, destinationChain, gasValue);
+            _deployRemoteInterchainToken(tokenId, name, symbol, decimals, distributor, destinationChain, gasValue);
         }
     }
 
@@ -642,20 +641,15 @@ contract InterchainTokenService is
      * @param payload The encoded data payload to be processed
      */
     function _processDeployInterchainTokenPayload(bytes calldata payload) internal {
-        (
-            ,
-            bytes32 tokenId,
-            string memory name,
-            string memory symbol,
-            uint8 decimals,
-            bytes memory distributorBytes,
-            bytes memory operatorBytes
-        ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
+        (, bytes32 tokenId, string memory name, string memory symbol, uint8 decimals, bytes memory distributorBytes) = abi.decode(
+            payload,
+            (uint256, bytes32, string, string, uint8, bytes)
+        );
         address tokenAddress_;
 
         tokenAddress_ = _deployInterchainToken(tokenId, distributorBytes, name, symbol, decimals);
 
-        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(operatorBytes, tokenAddress_));
+        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(distributorBytes, tokenAddress_));
     }
 
     /**
@@ -722,7 +716,6 @@ contract InterchainTokenService is
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory operator,
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
@@ -730,9 +723,9 @@ contract InterchainTokenService is
         validTokenManagerAddress(tokenId);
 
         // slither-disable-next-line reentrancy-events
-        emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, distributor, operator, destinationChain);
+        emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, distributor, destinationChain);
 
-        bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor, operator);
+        bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor);
 
         _callContract(destinationChain, payload, gasValue);
     }
