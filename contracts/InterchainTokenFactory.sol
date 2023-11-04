@@ -20,8 +20,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     using SafeTokenTransferFrom for IInterchainToken;
     using SafeTokenCall for IInterchainToken;
 
-    error NotApproved(address tokenAddress);
-
     IInterchainTokenService public immutable service;
     bytes32 public immutable chainNameHash;
 

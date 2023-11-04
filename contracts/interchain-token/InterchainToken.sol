@@ -49,10 +49,10 @@ contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Di
      * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo
      */
     function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
-        address distributor_;
+        address distributor;
         address tokenManagerAddress;
         string memory tokenName;
-        (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
+        (tokenManagerAddress, distributor, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
 
         if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();
@@ -60,8 +60,9 @@ contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Di
         tokenManager_ = tokenManagerAddress;
         name = tokenName;
 
-        if (distributor_ != address(0)) _addDistributor(distributor_);
+        if (distributor != address(0)) _addDistributor(distributor);
         _addDistributor(tokenManagerAddress);
+
         _setNameHash(tokenName);
     }
 

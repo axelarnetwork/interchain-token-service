@@ -14,9 +14,9 @@ const {
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32 } = require('./utils');
 
-// const MESSAGE_TYPE_SEND_TOKEN_WITH_DATA = 2;
+// const MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 1;
+const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
 // const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
-const MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const LOCK_UNLOCK = 2;
 const MINT_BURN = 0;
@@ -75,7 +75,7 @@ describe('InterchainTokenFactory', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x'],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x', '0x'],
             );
 
             await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
@@ -236,7 +236,7 @@ describe('InterchainTokenFactory', () => {
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
                     tokenId,
                     name,
                     symbol,
@@ -284,7 +284,7 @@ describe('InterchainTokenFactory', () => {
             params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', wallet.address],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x', wallet.address],
             );
 
             await expect(

@@ -24,11 +24,11 @@ const {
     deployTokenManagerImplementations,
 } = require('../scripts/deploy');
 
-const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 1;
-const MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 2;
+const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
+const MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 1;
+const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
-const MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
-const INVALID_MESSAGE_TYPE = 5;
+const INVALID_MESSAGE_TYPE = 4;
 
 const MINT_BURN = 0;
 const MINT_BURN_FROM = 1;
@@ -502,7 +502,7 @@ describe('Interchain Token Service', () => {
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
                     tokenId,
                     tokenName,
                     tokenSymbol,
@@ -587,7 +587,7 @@ describe('Interchain Token Service', () => {
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
                     tokenId,
                     tokenName,
                     tokenSymbol,
@@ -615,7 +615,7 @@ describe('Interchain Token Service', () => {
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
                     tokenId,
                     tokenName,
                     tokenSymbol,
@@ -646,7 +646,7 @@ describe('Interchain Token Service', () => {
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
                     tokenId,
                     tokenName,
                     tokenSymbol,
@@ -677,7 +677,7 @@ describe('Interchain Token Service', () => {
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
+                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
                     tokenId,
                     tokenName,
                     tokenSymbol,
