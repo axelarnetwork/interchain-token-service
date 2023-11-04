@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenTransfer, SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 
-import { ITokenManagerLockUnlock } from '../../interfaces/ITokenManagerLockUnlock.sol';
-import { TokenManager } from '../TokenManager.sol';
+import { ITokenManagerLockUnlock } from '..//interfaces/ITokenManagerLockUnlock.sol';
+import { TokenManager } from './TokenManager.sol';
 
 /**
  * @title TokenManagerLockUnlock

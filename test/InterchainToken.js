@@ -3,15 +3,12 @@
 const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
-    Contract,
+    getContractAt,
     utils: { keccak256, toUtf8Bytes },
 } = ethers;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, getGasOptions } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
-
-const InterchainToken = require('../artifacts/contracts/token-implementations/InterchainToken.sol/InterchainToken.json');
-const InterchainTokenProxy = require('../artifacts/contracts/proxies/InterchainTokenProxy.sol/InterchainTokenProxy.json');
 
 describe('InterchainToken', () => {
     let interchainToken, interchainTokenDeployer;
@@ -37,8 +34,8 @@ describe('InterchainToken', () => {
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
-        token = new Contract(tokenAddress, InterchainToken.abi, owner);
-        tokenProxy = new Contract(tokenAddress, InterchainTokenProxy.abi, owner);
+        token = await getContractAt('InterchainToken', tokenAddress, owner);
+        tokenProxy = await getContractAt('InterchainTokenProxy', tokenAddress, owner);
 
         await interchainTokenDeployer
             .deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals)
@@ -78,7 +75,7 @@ describe('InterchainToken', () => {
     describe('Interchain Token', () => {
         it('revert on setup if not called by the proxy', async () => {
             const implementationAddress = await tokenProxy.implementation();
-            const implementation = new Contract(implementationAddress, InterchainToken.abi, owner);
+            const implementation = await getContractAt('InterchainToken', implementationAddress, owner);
 
             const params = '0x';
             await expectRevert((gasOptions) => implementation.setup(params, gasOptions), token, 'NotProxy');

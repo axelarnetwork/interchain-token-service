@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 
-import { IERC20BurnableFrom } from '../../interfaces/IERC20BurnableFrom.sol';
+import { IERC20BurnableFrom } from '../interfaces/IERC20BurnableFrom.sol';
 import { TokenManagerMintBurn } from './TokenManagerMintBurn.sol';
 
 /**

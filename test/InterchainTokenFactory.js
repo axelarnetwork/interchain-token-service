@@ -6,13 +6,10 @@ require('dotenv').config();
 const { ethers } = require('hardhat');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 const {
-    Contract,
+    getContractAt,
     Wallet,
     constants: { AddressZero },
 } = ethers;
-
-const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
-const IInterchainToken = require('../artifacts/contracts/interfaces/IInterchainToken.sol/IInterchainToken.json');
 
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32 } = require('./utils');
@@ -187,8 +184,8 @@ describe('InterchainTokenFactory', () => {
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
-            const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
-            const token = new Contract(tokenAddress, IInterchainToken.abi, wallet);
+            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+            const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
             await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, distributor, operator))
                 .to.emit(service, 'InterchainTokenDeployed')
@@ -220,8 +217,8 @@ describe('InterchainTokenFactory', () => {
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
             let params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
-            const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
-            const token = new Contract(tokenAddress, IInterchainToken.abi, wallet);
+            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+            const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
             await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address, wallet.address))
                 .to.emit(service, 'InterchainTokenDeployed')
@@ -269,8 +266,8 @@ describe('InterchainTokenFactory', () => {
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
             let params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
-            const tokenManager = new Contract(await service.tokenManagerAddress(tokenId), ITokenManager.abi, wallet);
-            const token = new Contract(tokenAddress, IInterchainToken.abi, wallet);
+            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+            const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
             await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address, wallet.address))
                 .to.emit(service, 'InterchainTokenDeployed')

@@ -15,15 +15,15 @@ import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/uti
 import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
 import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
 
-import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
-import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
-import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecutable.sol';
-import { IInterchainTokenExpressExecutable } from '../interfaces/IInterchainTokenExpressExecutable.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { IERC20Named } from '../interfaces/IERC20Named.sol';
+import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
+import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
+import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.sol';
+import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
+import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
+import { ITokenManager } from './interfaces/ITokenManager.sol';
+import { IERC20Named } from './interfaces/IERC20Named.sol';
 
-import { Operatable } from '../utils/Operatable.sol';
+import { Operatable } from './utils/Operatable.sol';
 
 /**
  * @title The Interchain Token Service

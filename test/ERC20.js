@@ -3,14 +3,12 @@
 const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
-    Contract,
     constants: { MaxUint256, AddressZero },
+    getContractAt,
 } = ethers;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
-
-const InterchainToken = require('../artifacts/contracts/token-implementations/InterchainToken.sol/InterchainToken.json');
 
 describe('ERC20', () => {
     let interchainToken, interchainTokenDeployer;
@@ -35,8 +33,7 @@ describe('ERC20', () => {
         const salt = getRandomBytes32();
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
-
-        token = new Contract(tokenAddress, InterchainToken.abi, owner);
+        token = await getContractAt('InterchainToken', tokenAddress, owner);
 
         await interchainTokenDeployer
             .deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals)

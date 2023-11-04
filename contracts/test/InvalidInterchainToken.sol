@@ -8,7 +8,7 @@ import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
-import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
+import { ERC20Permit } from '../interchain-token/ERC20Permit.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 

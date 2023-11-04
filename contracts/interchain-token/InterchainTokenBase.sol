@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 
 import { IInterchainTokenBase } from '../interfaces/IInterchainTokenBase.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { ERC20 } from '../token-implementations/ERC20.sol';
+
+import { ERC20 } from './ERC20.sol';
 
 /**
  * @title An example implementation of the IInterchainToken.

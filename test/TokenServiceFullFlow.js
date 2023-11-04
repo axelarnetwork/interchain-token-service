@@ -6,11 +6,7 @@ require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256, hexlify } = ethers.utils;
-const { Contract, Wallet } = ethers;
-
-const InterchainToken = require('../artifacts/contracts/token-implementations/InterchainToken.sol/InterchainToken.json');
-const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
-const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
+const { getContractAt, Wallet } = ethers;
 
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
@@ -51,7 +47,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
-            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
@@ -150,9 +146,9 @@ describe.skip('Interchain Token Service Full Flow', () => {
         before(async () => {
             tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
-            token = new Contract(tokenAddress, InterchainToken.abi, wallet);
+            token = await getContractAt('InterchainToken', tokenAddress, wallet);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
@@ -276,12 +272,12 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
-            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
             const implAddress = await service.tokenManagerImplementation(MINT_BURN);
-            const impl = new Contract(implAddress, ITokenManagerMintBurn.abi, wallet);
+            const impl = await getContractAt('TokenManagerMintBurn', implAddress, wallet);
             const params = await impl.params(wallet.address, token.address);
             const tx1 = await service.populateTransaction.deployCustomTokenManager(salt, MINT_BURN, params);
             const data = [tx1.data];
