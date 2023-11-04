@@ -45,12 +45,12 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const create3DeployerFactory = await ethers.getContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet);
         const create3Deployer = await create3DeployerFactory.deploy().then((d) => d.deployed());
         const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-        const standardizedToken = await deployContract(wallet, 'StandardizedToken');
+        const interchainToken = await deployContract(wallet, 'InterchainToken');
 
         gateway = await deployMockGateway(wallet);
         gasService = await deployGasService(wallet);
         tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-        interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [standardizedToken.address]);
+        interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
         remoteAddressValidator = await deployRemoteAddressValidator(wallet, 'Test', interchainTokenServiceAddress);
         tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
 
