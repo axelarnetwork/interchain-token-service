@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface ITokenRegistrar {
+interface IInterchainTokenFactory {
     error ZeroAddress();
     error NotDistributor(address distributor);
     error NotOperator(address operator);
@@ -11,9 +11,9 @@ interface ITokenRegistrar {
 
     function chainNameHash() external view returns (bytes32);
 
-    function standardizedTokenSalt(bytes32 chainAddressHash_, address deployer, bytes32 salt) external view returns (bytes32);
+    function interchainTokenSalt(bytes32 chainAddressHash_, address deployer, bytes32 salt) external view returns (bytes32);
 
-    function standardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
+    function interchainTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
 
     function interchainTokenAddress(address deployer, bytes32 salt) external view returns (address tokenAddress);
 
@@ -23,26 +23,24 @@ interface ITokenRegistrar {
         string calldata symbol,
         uint8 decimals,
         uint256 mintAmount,
-        address distributor,
-        address operator
+        address distributor
     ) external payable;
 
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
         address additionalDistributor,
-        address optionalOperator,
         string memory destinationChain,
         uint256 gasValue
     ) external payable;
 
-    function canonicalTokenSalt(bytes32 chainAddressHash_, address tokenAddress) external view returns (bytes32 salt);
+    function canonicalInterchainTokenSalt(bytes32 chainAddressHash_, address tokenAddress) external view returns (bytes32 salt);
 
-    function canonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId);
+    function canonicalInterchainTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
-    function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId);
+    function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId);
 
-    function deployRemoteCanonicalToken(
+    function deployRemoteCanonicalInterchainToken(
         string calldata originalChainName,
         address originalAddress,
         string calldata destinationChain,

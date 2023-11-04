@@ -9,8 +9,16 @@ import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidi
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
+import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 
-interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExecutable, IPausable, IMulticall, IContractIdentifier {
+interface IInterchainTokenService is
+    ITokenManagerType,
+    ITokenManagerImplementation,
+    IAxelarValuedExpressExecutable,
+    IPausable,
+    IMulticall,
+    IContractIdentifier
+{
     error ZeroAddress();
     error LengthMismatch();
     error InvalidTokenManagerImplementationType(address implementation);
@@ -63,7 +71,6 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         string tokenSymbol,
         uint8 tokenDecimals,
         bytes distributor,
-        bytes operator,
         string destinationChain
     );
     event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
@@ -90,8 +97,8 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function tokenManagerDeployer() external view returns (address tokenManagerDeployerAddress);
 
     /**
-     * @notice Returns the address of the standardized token deployer contract.
-     * @return interchainTokenDeployerAddress The address of the standardized token deployer contract.
+     * @notice Returns the address of the interchain token deployer contract.
+     * @return interchainTokenDeployerAddress The address of the interchain token deployer contract.
      */
     function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
 
@@ -117,9 +124,9 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
 
     /**
-     * @notice Returns the address of the standardized token associated with the given tokenId.
-     * @param tokenId The tokenId of the standardized token.
-     * @return tokenAddress_ The address of the standardized token.
+     * @notice Returns the address of the interchain token associated with the given tokenId.
+     * @param tokenId The tokenId of the interchain token.
+     * @return tokenAddress_ The address of the interchain token.
      */
     function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
 
@@ -148,12 +155,12 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
     ) external payable returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys and registers a standardized token on a remote chain.
+     * @notice Deploys and registers a interchain token on a remote chain.
      * @param salt The salt used for token deployment.
      * @param destinationChain The name of the destination chain. Use '' for this chain.
-     * @param name The name of the standardized tokens.
-     * @param symbol The symbol of the standardized tokens.
-     * @param decimals The number of decimals for the standardized tokens.
+     * @param name The name of the interchain tokens.
+     * @param symbol The symbol of the interchain tokens.
+     * @param decimals The number of decimals for the interchain tokens.
      * @param distributor The distributor data for mint/burn operations.
      * @param gasValue The gas value for deployment.
      */
@@ -164,16 +171,8 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         string memory symbol,
         uint8 decimals,
         bytes memory distributor,
-        bytes memory operator,
         uint256 gasValue
     ) external payable;
-
-    /**
-     * @notice Returns the implementation address for a given token manager type.
-     * @param tokenManagerType The type of token manager.
-     * @return tokenManagerAddress_ The address of the token manager implementation.
-     */
-    function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress_);
 
     function interchainTransfer(
         bytes32 tokenId,

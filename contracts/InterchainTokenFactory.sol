@@ -7,27 +7,25 @@ import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
-import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { ITokenRegistrar } from '../interfaces/ITokenRegistrar.sol';
-import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { IStandardizedToken } from '../interfaces/IStandardizedToken.sol';
+import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
+import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
+import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
+import { ITokenManager } from './interfaces/ITokenManager.sol';
+import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 
-contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgradable {
+contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, Multicall, Upgradable {
     using AddressBytes for bytes;
     using AddressBytes for address;
-    using SafeTokenTransfer for IStandardizedToken;
-    using SafeTokenTransferFrom for IStandardizedToken;
-    using SafeTokenCall for IStandardizedToken;
-
-    error NotApproved(address tokenAddress);
+    using SafeTokenTransfer for IInterchainToken;
+    using SafeTokenTransferFrom for IInterchainToken;
+    using SafeTokenCall for IInterchainToken;
 
     IInterchainTokenService public immutable service;
     bytes32 public immutable chainNameHash;
 
-    bytes32 private constant CONTRACT_ID = keccak256('token-registrar');
+    bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
-    bytes32 internal constant PREFIX_STANDARDIZED_TOKEN_SALT = keccak256('standardized-token-salt');
+    bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
 
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
@@ -43,16 +41,24 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         return CONTRACT_ID;
     }
 
-    function standardizedTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32) {
-        return keccak256(abi.encode(PREFIX_STANDARDIZED_TOKEN_SALT, chainNameHash_, deployer, salt));
+    function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32) {
+        return keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, chainNameHash_, deployer, salt));
     }
 
-    function standardizedTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = service.interchainTokenId(address(this), standardizedTokenSalt(chainNameHash, deployer, salt));
+    function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt) {
+        salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash_, tokenAddress));
+    }
+
+    function interchainTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
+        tokenId = service.interchainTokenId(address(this), interchainTokenSalt(chainNameHash, deployer, salt));
+    }
+
+    function canonicalInterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
+        tokenId = service.interchainTokenId(address(this), canonicalInterchainTokenSalt(chainNameHash, tokenAddress));
     }
 
     function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
-        tokenAddress = service.interchainTokenAddress(standardizedTokenId(deployer, salt));
+        tokenAddress = service.interchainTokenAddress(interchainTokenId(deployer, salt));
     }
 
     function deployInterchainToken(
@@ -61,11 +67,10 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         string calldata symbol,
         uint8 decimals,
         uint256 mintAmount,
-        address distributor,
-        address operator
+        address distributor
     ) external payable {
         address sender = msg.sender;
-        salt = standardizedTokenSalt(chainNameHash, sender, salt);
+        salt = interchainTokenSalt(chainNameHash, sender, salt);
         bytes memory distributorBytes;
 
         if (mintAmount > 0) {
@@ -74,13 +79,18 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             distributorBytes = distributor.toBytes();
         }
 
-        _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, operator.toBytes(), 0);
+        _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, 0);
 
         if (mintAmount > 0) {
             bytes32 tokenId = service.interchainTokenId(address(this), salt);
-            IStandardizedToken token = IStandardizedToken(service.interchainTokenAddress(tokenId));
+            IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
             token.mint(address(this), mintAmount);
             token.transferDistributorship(distributor);
+
+            ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
+            tokenManager.removeFlowLimiter(address(this));
+            if (distributor != address(0)) tokenManager.addFlowLimiter(distributor);
+            tokenManager.transferOperatorship(distributor);
         }
     }
 
@@ -88,7 +98,6 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         string calldata originalChainName,
         bytes32 salt,
         address additionalDistributor,
-        address optionalOperator,
         string memory destinationChain,
         uint256 gasValue
     ) external payable {
@@ -96,7 +105,6 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         string memory tokenSymbol;
         uint8 tokenDecimals;
         bytes memory distributor = new bytes(0);
-        bytes memory operator = new bytes(0);
 
         {
             bytes32 chainNameHash_;
@@ -106,11 +114,10 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
                 chainNameHash_ = keccak256(bytes(originalChainName));
             }
             address sender = msg.sender;
-            salt = standardizedTokenSalt(chainNameHash_, sender, salt);
+            salt = interchainTokenSalt(chainNameHash_, sender, salt);
             bytes32 tokenId = service.interchainTokenId(address(this), salt);
 
-            IStandardizedToken token = IStandardizedToken(service.interchainTokenAddress(tokenId));
-            ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
+            IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
 
             tokenName = token.name();
             tokenSymbol = token.symbol();
@@ -119,14 +126,9 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
                 if (!token.isDistributor(additionalDistributor)) revert NotDistributor(additionalDistributor);
                 distributor = additionalDistributor.toBytes();
             }
-
-            if (optionalOperator != address(0)) {
-                if (!tokenManager.isOperator(optionalOperator)) revert NotOperator(optionalOperator);
-                operator = optionalOperator.toBytes();
-            }
         }
 
-        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, operator, gasValue);
+        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, gasValue);
     }
 
     function _deployInterchainToken(
@@ -136,7 +138,6 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         string memory tokenSymbol,
         uint8 tokenDecimals,
         bytes memory distributor,
-        bytes memory operator,
         uint256 gasValue
     ) internal {
         // slither-disable-next-line arbitrary-send-eth
@@ -147,33 +148,24 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
             tokenSymbol,
             tokenDecimals,
             distributor,
-            operator,
             gasValue
         );
     }
 
-    function canonicalTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash_, tokenAddress));
-    }
-
-    function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = service.interchainTokenId(address(this), canonicalTokenSalt(chainNameHash, tokenAddress));
-    }
-
-    function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId) {
+    function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
-        bytes32 salt = canonicalTokenSalt(chainNameHash, tokenAddress);
+        bytes32 salt = canonicalInterchainTokenSalt(chainNameHash, tokenAddress);
         tokenId = service.deployTokenManager(salt, '', TokenManagerType.LOCK_UNLOCK, params, 0);
     }
 
-    function deployRemoteCanonicalToken(
+    function deployRemoteCanonicalInterchainToken(
         string calldata originalChain,
         address originalTokenAddress,
         string calldata destinationChain,
         uint256 gasValue
     ) external payable {
         bytes32 salt;
-        IStandardizedToken token;
+        IInterchainToken token;
 
         {
             bytes32 chainNameHash_;
@@ -183,9 +175,9 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
                 chainNameHash_ = keccak256(bytes(originalChain));
             }
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
-            salt = canonicalTokenSalt(chainNameHash_, originalTokenAddress);
+            salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);
             bytes32 tokenId = service.interchainTokenId(address(this), salt);
-            token = IStandardizedToken(service.tokenAddress(tokenId));
+            token = IInterchainToken(service.tokenAddress(tokenId));
         }
 
         // The 3 lines below will revert if the token does not exist.
@@ -193,8 +185,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
         string memory tokenSymbol = token.symbol();
         uint8 tokenDecimals = token.decimals();
 
-        // slither-disable-next-line arbitrary-send-eth
-        service.deployInterchainToken{ value: gasValue }(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', '', gasValue);
+        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
     }
 
     function interchainTransfer(
@@ -206,7 +197,7 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
     ) external payable {
         if (bytes(destinationChain).length == 0) {
             address tokenAddress = service.interchainTokenAddress(tokenId);
-            IStandardizedToken token = IStandardizedToken(tokenAddress);
+            IInterchainToken token = IInterchainToken(tokenAddress);
             token.safeTransfer(destinationAddress.toAddress(), amount);
         } else {
             // slither-disable-next-line arbitrary-send-eth
@@ -216,14 +207,14 @@ contract TokenRegistrar is ITokenRegistrar, ITokenManagerType, Multicall, Upgrad
 
     function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.tokenAddress(tokenId);
-        IStandardizedToken token = IStandardizedToken(tokenAddress);
+        IInterchainToken token = IInterchainToken(tokenAddress);
 
         token.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.tokenAddress(tokenId);
-        IStandardizedToken token = IStandardizedToken(tokenAddress);
+        IInterchainToken token = IInterchainToken(tokenAddress);
         address tokenManager = service.tokenManagerAddress(tokenId);
 
         token.safeCall(abi.encodeWithSelector(token.approve.selector, tokenManager, amount));

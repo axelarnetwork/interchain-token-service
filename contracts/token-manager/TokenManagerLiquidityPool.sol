@@ -6,8 +6,8 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
-import { ITokenManagerLiquidityPool } from '../../interfaces/ITokenManagerLiquidityPool.sol';
-import { TokenManager } from '../TokenManager.sol';
+import { ITokenManagerLiquidityPool } from '../interfaces/ITokenManagerLiquidityPool.sol';
+import { TokenManager } from './TokenManager.sol';
 
 /**
  * @title TokenManagerLiquidityPool

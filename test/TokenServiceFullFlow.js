@@ -2,22 +2,17 @@
 
 const chai = require('chai');
 const { expect } = chai;
-require('dotenv').config();
 const { ethers } = require('hardhat');
 const { AddressZero } = ethers.constants;
 const { defaultAbiCoder, keccak256, hexlify } = ethers.utils;
-const { Contract, Wallet } = ethers;
-
-const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
-const ITokenManager = require('../artifacts/contracts/interfaces/ITokenManager.sol/ITokenManager.json');
-const ITokenManagerMintBurn = require('../artifacts/contracts/interfaces/ITokenManagerMintBurn.sol/ITokenManagerMintBurn.json');
+const { getContractAt, Wallet } = ethers;
 
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
-const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 1;
+const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
+const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
-const MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
 
 const DISTRIBUTOR_ROLE = 0;
 
@@ -47,20 +42,20 @@ describe.skip('Interchain Token Service Full Flow', () => {
         before(async () => {
             // The below is used to deploy a token, but any ERC20 can be used instead.
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
-            tokenId = await service.canonicalTokenId(token.address);
+            tokenId = await service.canonicalInterchainTokenId(token.address);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
-            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const tx1 = await service.populateTransaction.registerCanonicalToken(token.address);
+            const tx1 = await service.populateTransaction.registerCanonicalInterchainToken(token.address);
             const data = [tx1.data];
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await service.populateTransaction.deployRemoteCanonicalToken(tokenId, otherChains[i], gasValues[i]);
+                const tx = await service.populateTransaction.deployRemoteCanonicalInterchainToken(tokenId, otherChains[i], gasValues[i]);
                 data.push(tx.data);
                 value += gasValues[i];
             }
@@ -68,7 +63,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await expect(service.multicall(data, { value }))
@@ -115,7 +110,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
 
-        // For this test the token must be a standardized token (or a distributable token in general)
+        // For this test the token must be a interchain token (or a distributable token in general)
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
@@ -140,7 +135,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
         });
     });
 
-    describe('Full standardized token registration, remote deployment and token send', async () => {
+    describe('Full interchain token registration, remote deployment and token send', async () => {
         let token;
         let tokenId;
         const salt = getRandomBytes32();
@@ -150,13 +145,13 @@ describe.skip('Interchain Token Service Full Flow', () => {
         before(async () => {
             tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
-            token = new Contract(tokenAddress, StandardizedToken.abi, wallet);
+            token = await getContractAt('InterchainToken', tokenAddress, wallet);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const tx1 = await service.populateTransaction.deployAndRegisterStandardizedToken(
+            const tx1 = await service.populateTransaction.deployAndRegisterInterchainToken(
                 salt,
                 name,
                 symbol,
@@ -187,7 +182,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address],
             );
             const tx = service.multicall(data, { value });
 
@@ -235,7 +230,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(tokenId, destChain, destAddress, amount);
         });
 
-        // For this test the token must be a standardized token (or a distributable token in general)
+        // For this test the token must be a interchain token (or a distributable token in general)
         // TODO no token is deployed so how will mint and burn work?
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
@@ -276,12 +271,12 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
-            tokenManager = new Contract(tokenManagerAddress, ITokenManager.abi, wallet);
+            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
             const implAddress = await service.tokenManagerImplementation(MINT_BURN);
-            const impl = new Contract(implAddress, ITokenManagerMintBurn.abi, wallet);
+            const impl = await getContractAt('TokenManagerMintBurn', implAddress, wallet);
             const params = await impl.params(wallet.address, token.address);
             const tx1 = await service.populateTransaction.deployCustomTokenManager(salt, MINT_BURN, params);
             const data = [tx1.data];
@@ -315,7 +310,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
         });
 
-        // For this test the token must be a standardized token (or a distributable token in general)
+        // For this test the token must be a interchain token (or a distributable token in general)
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;

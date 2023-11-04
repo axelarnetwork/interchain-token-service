@@ -370,7 +370,7 @@ bytes32 chainNameHash
 address interchainTokenDeployer
 ```
 
-Returns the address of the standardized token deployer contract.
+Returns the address of the interchain token deployer contract.
 
 #### Return Values
 
@@ -1487,7 +1487,7 @@ A different implementation could have `metadata` that tells this function which 
 
 ## IInterchainTokenDeployer
 
-This contract is used to deploy new instances of the StandardizedTokenProxy contract.
+This contract is used to deploy new instances of the InterchainTokenProxy contract.
 
 ### AddressZero
 
@@ -1507,7 +1507,7 @@ error TokenDeploymentFailed()
 function implementationAddress() external view returns (address)
 ```
 
-Returns the standardized token implementation address
+Returns the interchain token implementation address
 
 ### deployedAddress
 
@@ -1515,7 +1515,7 @@ Returns the standardized token implementation address
 function deployedAddress(bytes32 salt) external view returns (address tokenAddress)
 ```
 
-Returns the standardized token deployment address.
+Returns the interchain token deployment address.
 
 #### Return Values
 
@@ -1529,7 +1529,7 @@ Returns the standardized token deployment address.
 function deployInterchainToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals) external payable returns (address tokenAddress)
 ```
 
-Deploys a new instance of the StandardizedTokenProxy contract
+Deploys a new instance of the InterchainTokenProxy contract
 
 #### Parameters
 
@@ -1784,13 +1784,13 @@ Returns the address of the token manager deployer contract.
 function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress)
 ```
 
-Returns the address of the standardized token deployer contract.
+Returns the address of the interchain token deployer contract.
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| interchainTokenDeployerAddress | address | The address of the standardized token deployer contract. |
+| interchainTokenDeployerAddress | address | The address of the interchain token deployer contract. |
 
 ### tokenManagerAddress
 
@@ -1858,19 +1858,19 @@ Returns the address of the token associated with the given tokenId.
 function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress_)
 ```
 
-Returns the address of the standardized token associated with the given tokenId.
+Returns the address of the interchain token associated with the given tokenId.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the standardized token. |
+| tokenId | bytes32 | The tokenId of the interchain token. |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenAddress_ | address | The address of the standardized token. |
+| tokenAddress_ | address | The address of the interchain token. |
 
 ### interchainTokenId
 
@@ -1917,7 +1917,7 @@ Deploys a custom token manager contract on a remote chain.
 function deployInterchainToken(bytes32 salt, string destinationChain, string name, string symbol, uint8 decimals, bytes distributor, bytes operator, uint256 gasValue) external payable
 ```
 
-Deploys and registers a standardized token on a remote chain.
+Deploys and registers a interchain token on a remote chain.
 
 #### Parameters
 
@@ -1925,9 +1925,9 @@ Deploys and registers a standardized token on a remote chain.
 | ---- | ---- | ----------- |
 | salt | bytes32 | The salt used for token deployment. |
 | destinationChain | string | The name of the destination chain. Use '' for this chain. |
-| name | string | The name of the standardized tokens. |
-| symbol | string | The symbol of the standardized tokens. |
-| decimals | uint8 | The number of decimals for the standardized tokens. |
+| name | string | The name of the interchain tokens. |
+| symbol | string | The symbol of the interchain tokens. |
+| decimals | uint8 | The number of decimals for the interchain tokens. |
 | distributor | bytes | The distributor data for mint/burn operations. |
 | operator | bytes |  |
 | gasValue | uint256 | The gas value for deployment. |
@@ -2130,9 +2130,9 @@ Query if an address is a operator
 | ---- | ---- | ----------- |
 | addr | address | the address to query for |
 
-## IStandardizedToken
+## IInterchainToken
 
-This contract implements a standardized token which extends InterchainToken functionality.
+This contract implements a interchain token which extends InterchainToken functionality.
 This contract also inherits Distributable and Implementation logic.
 
 ### TokenManagerAddressZero
@@ -2605,7 +2605,7 @@ enum TokenManagerType {
 }
 ```
 
-## ITokenRegistrar
+## IInterchainTokenFactory
 
 ### ZeroAddress
 
@@ -2643,16 +2643,16 @@ error ApproveFailed()
 function chainNameHash() external view returns (bytes32)
 ```
 
-### standardizedTokenSalt
+### interchainTokenSalt
 
 ```solidity
-function standardizedTokenSalt(bytes32 chainAddressHash_, address deployer, bytes32 salt) external view returns (bytes32)
+function interchainTokenSalt(bytes32 chainAddressHash_, address deployer, bytes32 salt) external view returns (bytes32)
 ```
 
-### standardizedTokenId
+### interchainTokenId
 
 ```solidity
-function standardizedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId)
+function interchainTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId)
 ```
 
 ### interchainTokenAddress
@@ -2673,28 +2673,28 @@ function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 d
 function deployRemoteInterchainToken(string originalChainName, bytes32 salt, address additionalDistributor, address optionalOperator, string destinationChain, uint256 gasValue) external payable
 ```
 
-### canonicalTokenSalt
+### canonicalInterchainTokenSalt
 
 ```solidity
-function canonicalTokenSalt(bytes32 chainAddressHash_, address tokenAddress) external view returns (bytes32 salt)
+function canonicalInterchainTokenSalt(bytes32 chainAddressHash_, address tokenAddress) external view returns (bytes32 salt)
 ```
 
-### canonicalTokenId
+### canonicalInterchainTokenId
 
 ```solidity
-function canonicalTokenId(address tokenAddress) external view returns (bytes32 tokenId)
+function canonicalInterchainTokenId(address tokenAddress) external view returns (bytes32 tokenId)
 ```
 
-### registerCanonicalToken
+### registerCanonicalInterchainToken
 
 ```solidity
-function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId)
+function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId)
 ```
 
-### deployRemoteCanonicalToken
+### deployRemoteCanonicalInterchainToken
 
 ```solidity
-function deployRemoteCanonicalToken(string originalChainName, address originalAddress, string destinationChain, uint256 gasValue) external payable
+function deployRemoteCanonicalInterchainToken(string originalChainName, address originalAddress, string destinationChain, uint256 gasValue) external payable
 ```
 
 ### interchainTransfer
@@ -2709,7 +2709,7 @@ function interchainTransfer(bytes32 tokenId, string destinationChain, bytes dest
 function interchainTransferFrom(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, uint256 gasValue) external payable
 ```
 
-## CanonicalTokenRegistrarProxy
+## CanonicalInterchainInterchainTokenFactoryProxy
 
 _Proxy contract for interchain token service contracts. Inherits from the Proxy contract._
 
@@ -2776,9 +2776,9 @@ _Override for the 'contractId' function in FinalProxy. Returns a unique identifi
 | ---- | ---- | ----------- |
 | [0] | bytes32 | bytes32 identifier for this contract |
 
-## StandardizedTokenProxy
+## InterchainTokenProxy
 
-_Proxy contract for StandardizedToken contracts. Inherits from FixedProxy._
+_Proxy contract for InterchainToken contracts. Inherits from FixedProxy._
 
 ### constructor
 
@@ -2786,14 +2786,14 @@ _Proxy contract for StandardizedToken contracts. Inherits from FixedProxy._
 constructor(address implementationAddress, bytes params) public
 ```
 
-_Constructs the StandardizedTokenProxy contract._
+_Constructs the InterchainTokenProxy contract._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| implementationAddress | address | Address of the StandardizedToken implementation |
-| params | bytes | Initialization parameters for the StandardizedToken contract |
+| implementationAddress | address | Address of the InterchainToken implementation |
+| params | bytes | Initialization parameters for the InterchainToken contract |
 
 ### contractId
 
@@ -2913,7 +2913,7 @@ fallback() external payable virtual
 
 _Fallback function. Delegates the call to the token manager contract._
 
-## TokenRegistrarProxy
+## InterchainTokenFactoryProxy
 
 _Proxy contract for interchain token service contracts. Inherits from the Proxy contract._
 
@@ -3221,7 +3221,7 @@ function burn(address account, uint256 amount) external
 function setTokenManager(contract ITokenManager tokenManagerAddress) external
 ```
 
-## InvalidStandardizedToken
+## InvalidInterchainToken
 
 ### name
 
@@ -3872,9 +3872,9 @@ to spend tokens on their behalf via a signed message._
 | r | bytes32 | Half of the ECDSA signature pair |
 | s | bytes32 | Half of the ECDSA signature pair |
 
-## StandardizedToken
+## InterchainToken
 
-This contract implements a standardized token which extends InterchainToken functionality.
+This contract implements a interchain token which extends InterchainToken functionality.
 This contract also inherits Distributable and Implementation logic.
 
 ### name
@@ -4803,7 +4803,7 @@ _Burns the specified amount of tokens from a particular address._
 | ---- | ---- | ----------- |
 | [0] | uint256 | uint Amount of tokens burned |
 
-## TokenRegistrar
+## TokenFactory
 
 ### NotApproved
 
@@ -4829,10 +4829,10 @@ bytes32 chainNameHash
 bytes32 PREFIX_CANONICAL_TOKEN_SALT
 ```
 
-### PREFIX_STANDARDIZED_TOKEN_SALT
+### PREFIX_INTERCHAIN_TOKEN_SALT
 
 ```solidity
-bytes32 PREFIX_STANDARDIZED_TOKEN_SALT
+bytes32 PREFIX_INTERCHAIN_TOKEN_SALT
 ```
 
 ### constructor
@@ -4849,16 +4849,16 @@ function contractId() external pure returns (bytes32)
 
 Getter for the contract id.
 
-### standardizedTokenSalt
+### interchainTokenSalt
 
 ```solidity
-function standardizedTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32)
+function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32)
 ```
 
-### standardizedTokenId
+### interchainTokenId
 
 ```solidity
-function standardizedTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId)
+function interchainTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId)
 ```
 
 ### interchainTokenAddress
@@ -4885,28 +4885,28 @@ function deployRemoteInterchainToken(string originalChainName, bytes32 salt, add
 function _deployInterchainToken(bytes32 salt, string destinationChain, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes distributor, bytes operator, uint256 gasValue) internal
 ```
 
-### canonicalTokenSalt
+### canonicalInterchainTokenSalt
 
 ```solidity
-function canonicalTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt)
+function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt)
 ```
 
-### canonicalTokenId
+### canonicalInterchainTokenId
 
 ```solidity
-function canonicalTokenId(address tokenAddress) public view returns (bytes32 tokenId)
+function canonicalInterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId)
 ```
 
-### registerCanonicalToken
+### registerCanonicalInterchainToken
 
 ```solidity
-function registerCanonicalToken(address tokenAddress) external payable returns (bytes32 tokenId)
+function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId)
 ```
 
-### deployRemoteCanonicalToken
+### deployRemoteCanonicalInterchainToken
 
 ```solidity
-function deployRemoteCanonicalToken(string originalChain, address originalTokenAddress, string destinationChain, uint256 gasValue) external payable
+function deployRemoteCanonicalInterchainToken(string originalChain, address originalTokenAddress, string destinationChain, uint256 gasValue) external payable
 ```
 
 ### interchainTransfer
@@ -5194,7 +5194,7 @@ Reverts if the caller is the current contract (i.e., the implementation contract
 
 ## InterchainTokenDeployer
 
-This contract is used to deploy new instances of the StandardizedTokenProxy contract.
+This contract is used to deploy new instances of the InterchainTokenProxy contract.
 
 ### implementationAddress
 
@@ -5202,7 +5202,7 @@ This contract is used to deploy new instances of the StandardizedTokenProxy cont
 address implementationAddress
 ```
 
-Returns the standardized token implementation address
+Returns the interchain token implementation address
 
 ### constructor
 
@@ -5216,7 +5216,7 @@ Constructor for the InterchainTokenDeployer contract
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| implementationAddress_ | address | Address of the StandardizedToken contract |
+| implementationAddress_ | address | Address of the InterchainToken contract |
 
 ### deployInterchainToken
 
@@ -5224,7 +5224,7 @@ Constructor for the InterchainTokenDeployer contract
 function deployInterchainToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals) external payable returns (address tokenAddress)
 ```
 
-Deploys a new instance of the StandardizedTokenProxy contract
+Deploys a new instance of the InterchainTokenProxy contract
 
 #### Parameters
 
@@ -5249,7 +5249,7 @@ Deploys a new instance of the StandardizedTokenProxy contract
 function deployedAddress(bytes32 salt) external view returns (address tokenAddress)
 ```
 
-Returns the standardized token deployment address.
+Returns the interchain token deployment address.
 
 #### Return Values
 

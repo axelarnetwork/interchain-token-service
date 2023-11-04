@@ -3,13 +3,14 @@
 pragma solidity ^0.8.0;
 
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
+import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
+import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 import { Operatable } from '../utils/Operatable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
-import { Implementation } from '../utils/Implementation.sol';
 
 /**
  * @title The main functionality of TokenManagers.
@@ -19,6 +20,8 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     using AddressBytes for bytes;
 
     IInterchainTokenService public immutable interchainTokenService;
+
+    bytes32 private constant CONTRACT_ID = keccak256('token-manager');
 
     // uint256(keccak256('token-address')) - 1
     uint256 internal constant TOKEN_ADDRESS_SLOT = 0xc4e632779a6a7838736dd7e5e6a0eadf171dd37dfb6230720e265576dfcf42ba;
@@ -50,6 +53,13 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
+     * @notice Getter for the contract id.
+     */
+    function contractId() external pure override returns (bytes32) {
+        return CONTRACT_ID;
+    }
+
+    /**
      * @dev Reads the stored token address from the predetermined storage slot
      * @return tokenAddress_ The address of the token
      */
@@ -74,13 +84,13 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * on the type of TokenManager used but the first 32 bytes are reserved for the address of the operator,
      * stored as bytes (to be compatible with non-EVM chains)
      */
-    function setup(bytes calldata params) external override onlyProxy {
+    function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
         bytes memory operatorBytes = abi.decode(params, (bytes));
         address operator;
 
         /**
          * @dev Specifying an empty operator will default to the service being the operator. This makes it easy to deploy
-         * remote standardized tokens without knowing anything about the service address at the destination.
+         * remote interchain tokens without knowing anything about the service address at the destination.
          */
         if (operatorBytes.length == 0) {
             operator = address(interchainTokenService);
@@ -220,8 +230,6 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     function addFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
         if (flowLimiter == address(0)) revert ZeroAddress();
 
-        if (hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert AlreadyFlowLimiter(flowLimiter);
-
         _addRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
     }
 
@@ -231,8 +239,6 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      */
     function removeFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
         if (flowLimiter == address(0)) revert ZeroAddress();
-
-        if (!hasRole(flowLimiter, uint8(Roles.FLOW_LIMITER))) revert NotFlowLimiter(flowLimiter);
 
         _removeRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
     }

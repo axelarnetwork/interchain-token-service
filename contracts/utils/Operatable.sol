@@ -2,9 +2,10 @@
 
 pragma solidity ^0.8.0;
 
+import { RolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/RolesBase.sol';
+
 import { IOperatable } from '../interfaces/IOperatable.sol';
 
-import { RolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/RolesBase.sol';
 import { RolesConstants } from './RolesConstants.sol';
 
 /**
@@ -16,28 +17,28 @@ import { RolesConstants } from './RolesConstants.sol';
 contract Operatable is IOperatable, RolesBase, RolesConstants {
     /**
      * @dev Internal function that stores the new operator address in the correct storage slot
-     * @param operator_ The address of the new operator
+     * @param operator The address of the new operator
      */
-    function _addOperator(address operator_) internal {
-        _addRole(operator_, uint8(Roles.OPERATOR));
+    function _addOperator(address operator) internal {
+        _addRole(operator, uint8(Roles.OPERATOR));
     }
 
     /**
      * @notice Change the operator of the contract
      * @dev Can only be called by the current operator
-     * @param operator_ The address of the new operator
+     * @param operator The address of the new operator
      */
-    function transferOperatorship(address operator_) external onlyRole(uint8(Roles.OPERATOR)) {
-        _transferRole(msg.sender, operator_, uint8(Roles.OPERATOR));
+    function transferOperatorship(address operator) external onlyRole(uint8(Roles.OPERATOR)) {
+        _transferRole(msg.sender, operator, uint8(Roles.OPERATOR));
     }
 
     /**
      * @notice Proposed a change of the operator of the contract
      * @dev Can only be called by the current operator
-     * @param operator_ The address of the new operator
+     * @param operator The address of the new operator
      */
-    function proposeOperatorship(address operator_) external onlyRole(uint8(Roles.OPERATOR)) {
-        _proposeRole(msg.sender, operator_, uint8(Roles.OPERATOR));
+    function proposeOperatorship(address operator) external onlyRole(uint8(Roles.OPERATOR)) {
+        _proposeRole(msg.sender, operator, uint8(Roles.OPERATOR));
     }
 
     /**
