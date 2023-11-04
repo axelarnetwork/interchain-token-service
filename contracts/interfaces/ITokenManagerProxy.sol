@@ -9,6 +9,8 @@ import { IProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
  * @dev This interface is implemented by the token manager proxy contract.
  */
 interface ITokenManagerProxy is IProxy {
+    error ZeroAddress();
+
     /**
      * @notice Returns implementation type of this token manager
      */
