@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.0;
 
+import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
+
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IOperatable } from './IOperatable.sol';
 import { IFlowLimit } from './IFlowLimit.sol';
-import { IImplementation } from './IImplementation.sol';
 
 /**
  * @title ITokenManager

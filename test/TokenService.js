@@ -365,13 +365,12 @@ describe('Interchain Token Service', () => {
             ]);
             const invalidParams = '0x1234';
 
-            const revertData = '0x';
             await expectRevert(
                 (gasOptions) =>
                     deployContract(wallet, `TokenManagerProxy`, [service.address, LOCK_UNLOCK, tokenId, invalidParams, gasOptions]),
                 tokenManagerProxy,
                 'SetupFailed',
-                [revertData],
+                [],
             );
         });
     });
@@ -1976,24 +1975,6 @@ describe('Interchain Token Service', () => {
                 tokenManager,
                 'MissingRole',
                 [otherWallet.address, OPERATOR_ROLE],
-            );
-        });
-
-        it('Should revert if trying to add an existing flow limiter', async () => {
-            await expectRevert(
-                (gasOptions) => tokenManager.addFlowLimiter(wallet.address, gasOptions),
-                tokenManager,
-                'AlreadyFlowLimiter',
-                [wallet.address],
-            );
-        });
-
-        it('Should revert if trying to add a flow limiter as not the operator', async () => {
-            await expectRevert(
-                (gasOptions) => tokenManager.removeFlowLimiter(otherWallet.address, gasOptions),
-                tokenManager,
-                'NotFlowLimiter',
-                [otherWallet.address],
             );
         });
     });

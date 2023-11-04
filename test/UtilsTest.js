@@ -238,27 +238,6 @@ describe('FlowLimit', async () => {
     });
 });
 
-describe('Implementation', () => {
-    let implementation, proxy;
-
-    before(async () => {
-        implementation = await deployContract(ownerWallet, 'ImplementationTest');
-        proxy = await deployContract(ownerWallet, 'NakedProxy', [implementation.address]);
-        proxy = await getContractAt('ImplementationTest', proxy.address, ownerWallet);
-    });
-
-    it('Should test the implemenation contract', async () => {
-        const val = 123;
-        const params = defaultAbiCoder.encode(['uint256'], [val]);
-
-        await (await proxy.setup(params)).wait();
-
-        expect(await proxy.val()).to.equal(val);
-
-        await expectRevert((gasOptions) => implementation.setup(params, gasOptions), implementation, 'NotProxy');
-    });
-});
-
 describe('InterchainTokenDeployer', () => {
     let interchainToken, interchainTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
@@ -285,8 +264,8 @@ describe('InterchainTokenDeployer', () => {
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
-        const token = await ethers.getContractAt('InterchainToken', tokenAddress, ownerWallet);
-        const tokenProxy = await ethers.getContractAt('InterchainTokenProxy', tokenAddress, ownerWallet);
+        const token = await getContractAt('InterchainToken', tokenAddress, ownerWallet);
+        const tokenProxy = await getContractAt('InterchainTokenProxy', tokenAddress, ownerWallet);
 
         await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals))
             .and.to.emit(token, 'RolesAdded')

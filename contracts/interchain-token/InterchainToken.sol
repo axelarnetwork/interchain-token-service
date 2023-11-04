@@ -3,14 +3,14 @@
 pragma solidity ^0.8.0;
 
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
+import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
+import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
-import { IImplementation } from '../interfaces/IImplementation.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainTokenBase } from './InterchainTokenBase.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
-import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
 /**
@@ -31,7 +31,7 @@ contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Di
     /**
      * @notice Getter for the contract id.
      */
-    function contractId() external pure returns (bytes32) {
+    function contractId() external pure override returns (bytes32) {
         return CONTRACT_ID;
     }
 
@@ -48,7 +48,7 @@ contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Di
      * @param params The setup parameters in bytes
      * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo
      */
-    function setup(bytes calldata params) external override(IImplementation, IInterchainToken) onlyProxy {
+    function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
         address distributor_;
         address tokenManagerAddress;
         string memory tokenName;

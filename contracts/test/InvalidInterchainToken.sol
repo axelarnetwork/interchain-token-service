@@ -3,13 +3,13 @@
 pragma solidity ^0.8.0;
 
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
+import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
 import { ERC20Permit } from '../interchain-token/ERC20Permit.sol';
-import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
 contract InvalidInterchainToken is IERC20MintableBurnable, InterchainTokenBase, ERC20Permit, Implementation, Distributable {
