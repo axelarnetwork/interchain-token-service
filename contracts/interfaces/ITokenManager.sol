@@ -100,6 +100,18 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     function takeToken(address sourceAddress, uint256 amount) external returns (uint256);
 
     /**
+     * @notice This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of the new flow limiter.
+     */
+    function addFlowLimiter(address flowLimiter) external;
+
+    /**
+     * @notice This function removes a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of an existing flow limiter.
+     */
+    function removeFlowLimiter(address flowLimiter) external;
+
+    /**
      * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.
      * @param flowLimit_ the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
      */
