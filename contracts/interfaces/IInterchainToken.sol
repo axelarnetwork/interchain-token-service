@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
+import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
 
 import { IInterchainTokenBase } from './IInterchainTokenBase.sol';
 import { IDistributable } from './IDistributable.sol';
@@ -11,20 +11,11 @@ import { ITokenManager } from './ITokenManager.sol';
 import { IERC20Named } from './IERC20Named.sol';
 
 /**
- * @title InterchainToken
- * @notice This contract implements a interchain token which extends InterchainToken functionality.
- * This contract also inherits Distributable and Implementation logic.
+ * @title IInterchainToken
  */
-interface IInterchainToken is IInterchainTokenBase, IDistributable, IERC20MintableBurnable, IERC20Named, IContractIdentifier {
+interface IInterchainToken is IInterchainTokenBase, IDistributable, IERC20MintableBurnable, IERC20Named, IImplementation {
     error TokenManagerAddressZero();
     error TokenNameEmpty();
-
-    /**
-     * @notice Called by the proxy to setup itself.
-     * @dev This should be hidden by the proxy.
-     * @param params the data to be used for the initialization.
-     */
-    function setup(bytes calldata params) external;
 
     /**
      * @notice Getter for the tokenManager used for this token.

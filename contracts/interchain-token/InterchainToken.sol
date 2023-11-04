@@ -3,14 +3,14 @@
 pragma solidity ^0.8.0;
 
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
+import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
+import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
-import { IImplementation } from '../interfaces/IImplementation.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { InterchainTokenBase } from './InterchainTokenBase.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
-import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
 /**
@@ -31,7 +31,7 @@ contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Di
     /**
      * @notice Getter for the contract id.
      */
-    function contractId() external pure returns (bytes32) {
+    function contractId() external pure override returns (bytes32) {
         return CONTRACT_ID;
     }
 
@@ -48,11 +48,11 @@ contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Di
      * @param params The setup parameters in bytes
      * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo
      */
-    function setup(bytes calldata params) external override(IImplementation, IInterchainToken) onlyProxy {
-        address distributor_;
+    function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
+        address distributor;
         address tokenManagerAddress;
         string memory tokenName;
-        (tokenManagerAddress, distributor_, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
+        (tokenManagerAddress, distributor, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
 
         if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();
@@ -60,8 +60,9 @@ contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Di
         tokenManager_ = tokenManagerAddress;
         name = tokenName;
 
-        if (distributor_ != address(0)) _addDistributor(distributor_);
+        if (distributor != address(0)) _addDistributor(distributor);
         _addDistributor(tokenManagerAddress);
+
         _setNameHash(tokenName);
     }
 

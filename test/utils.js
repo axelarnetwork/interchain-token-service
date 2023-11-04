@@ -1,3 +1,5 @@
+'use strict';
+
 const { ethers, network } = require('hardhat');
 const { expect } = require('chai');
 const { defaultAbiCoder, keccak256 } = ethers.utils;

@@ -2,10 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
 import { FixedProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/FixedProxy.sol';
-
-import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
-import { IImplementation } from '../interfaces/IImplementation.sol';
 
 /**
  * @title InterchainTokenProxy
@@ -20,7 +18,7 @@ contract InterchainTokenProxy is FixedProxy {
      * @param params Initialization parameters for the InterchainToken contract
      */
     constructor(address implementationAddress, bytes memory params) FixedProxy(implementationAddress) {
-        if (IInterchainToken(implementationAddress).contractId() != CONTRACT_ID) revert InvalidImplementation();
+        if (implementationAddress == address(0)) revert InvalidImplementation();
 
         (bool success, ) = implementationAddress.delegatecall(abi.encodeWithSelector(IImplementation.setup.selector, params));
         if (!success) revert SetupFailed();

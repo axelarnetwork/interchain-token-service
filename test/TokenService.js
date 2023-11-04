@@ -2,7 +2,6 @@
 
 const chai = require('chai');
 const { expect } = chai;
-require('dotenv').config();
 const { ethers } = require('hardhat');
 const {
     constants: { MaxUint256, AddressZero },
@@ -24,11 +23,11 @@ const {
     deployTokenManagerImplementations,
 } = require('../scripts/deploy');
 
-const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 1;
-const MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 2;
+const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
+const MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 1;
+const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
-const MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN = 4;
-const INVALID_MESSAGE_TYPE = 5;
+const INVALID_MESSAGE_TYPE = 4;
 
 const MINT_BURN = 0;
 const MINT_BURN_FROM = 1;
@@ -365,13 +364,12 @@ describe('Interchain Token Service', () => {
             ]);
             const invalidParams = '0x1234';
 
-            const revertData = '0x';
             await expectRevert(
                 (gasOptions) =>
                     deployContract(wallet, `TokenManagerProxy`, [service.address, LOCK_UNLOCK, tokenId, invalidParams, gasOptions]),
                 tokenManagerProxy,
                 'SetupFailed',
-                [revertData],
+                [],
             );
         });
     });
@@ -502,15 +500,7 @@ describe('Interchain Token Service', () => {
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             await expect(
                 service.deployInterchainToken(
@@ -587,15 +577,7 @@ describe('Interchain Token Service', () => {
             const commandId = getRandomBytes32();
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
 
             await expectRevert(
@@ -615,15 +597,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -646,15 +620,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -677,15 +643,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -1976,24 +1934,6 @@ describe('Interchain Token Service', () => {
                 tokenManager,
                 'MissingRole',
                 [otherWallet.address, OPERATOR_ROLE],
-            );
-        });
-
-        it('Should revert if trying to add an existing flow limiter', async () => {
-            await expectRevert(
-                (gasOptions) => tokenManager.addFlowLimiter(wallet.address, gasOptions),
-                tokenManager,
-                'AlreadyFlowLimiter',
-                [wallet.address],
-            );
-        });
-
-        it('Should revert if trying to add a flow limiter as not the operator', async () => {
-            await expectRevert(
-                (gasOptions) => tokenManager.removeFlowLimiter(otherWallet.address, gasOptions),
-                tokenManager,
-                'NotFlowLimiter',
-                [otherWallet.address],
             );
         });
     });

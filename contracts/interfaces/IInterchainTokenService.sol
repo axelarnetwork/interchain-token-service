@@ -9,8 +9,16 @@ import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidi
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
+import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 
-interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExecutable, IPausable, IMulticall, IContractIdentifier {
+interface IInterchainTokenService is
+    ITokenManagerType,
+    ITokenManagerImplementation,
+    IAxelarValuedExpressExecutable,
+    IPausable,
+    IMulticall,
+    IContractIdentifier
+{
     error ZeroAddress();
     error LengthMismatch();
     error InvalidTokenManagerImplementationType(address implementation);
@@ -167,13 +175,6 @@ interface IInterchainTokenService is ITokenManagerType, IAxelarValuedExpressExec
         bytes memory operator,
         uint256 gasValue
     ) external payable;
-
-    /**
-     * @notice Returns the implementation address for a given token manager type.
-     * @param tokenManagerType The type of token manager.
-     * @return tokenManagerAddress_ The address of the token manager implementation.
-     */
-    function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress_);
 
     function interchainTransfer(
         bytes32 tokenId,

@@ -21,7 +21,6 @@ import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
-import { IERC20Named } from './interfaces/IERC20Named.sol';
 
 import { Operatable } from './utils/Operatable.sol';
 
@@ -56,14 +55,14 @@ contract InterchainTokenService is
     /**
      * @dev Token manager implementation addresses
      */
-    address internal immutable implementationLockUnlock;
-    address internal immutable implementationLockUnlockFee;
     address internal immutable implementationMintBurn;
     address internal immutable implementationMintBurnFrom;
+    address internal immutable implementationLockUnlock;
+    address internal immutable implementationLockUnlockFee;
 
     IInterchainAddressTracker public immutable interchainAddressTracker;
 
-    bytes32 internal constant PREFIX_TOKEN_ID = keccak256('its-custom-token-id');
+    bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_ID = keccak256('its-interchain-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
 
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
@@ -73,10 +72,10 @@ contract InterchainTokenService is
     /**
      * @dev The message types that are sent between InterchainTokenService on different chains.
      */
-    uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 1;
-    uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 2;
+    uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
+    uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 1;
+    uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
     uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
-    uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 4;
 
     /**
      * @dev All of the variables passed here are stored as immutable variables.
@@ -204,7 +203,7 @@ contract InterchainTokenService is
      * @return tokenId the tokenId that the custom TokenManager would get (or has gotten).
      */
     function interchainTokenId(address sender, bytes32 salt) public pure returns (bytes32 tokenId) {
-        tokenId = keccak256(abi.encode(PREFIX_TOKEN_ID, sender, salt));
+        tokenId = keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_ID, sender, salt));
     }
 
     /**
@@ -650,12 +649,13 @@ contract InterchainTokenService is
             string memory symbol,
             uint8 decimals,
             bytes memory distributorBytes,
-            bytes memory opeatorBytes
+            bytes memory operatorBytes
         ) = abi.decode(payload, (uint256, bytes32, string, string, uint8, bytes, bytes));
         address tokenAddress_;
 
         tokenAddress_ = _deployInterchainToken(tokenId, distributorBytes, name, symbol, decimals);
-        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(opeatorBytes, tokenAddress_));
+
+        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(operatorBytes, tokenAddress_));
     }
 
     /**
@@ -667,6 +667,7 @@ contract InterchainTokenService is
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
         string memory destinationAddress = interchainAddressTracker.trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain(destinationChain);
+
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
                 address(this),
@@ -676,14 +677,8 @@ contract InterchainTokenService is
                 tx.origin
             );
         }
-        gateway.callContract(destinationChain, destinationAddress, payload);
-    }
 
-    function _validateToken(address tokenAddress_) internal view returns (string memory name, string memory symbol, uint8 decimals) {
-        IERC20Named token = IERC20Named(tokenAddress_);
-        name = token.name();
-        symbol = token.symbol();
-        decimals = token.decimals();
+        gateway.callContract(destinationChain, destinationAddress, payload);
     }
 
     /**
