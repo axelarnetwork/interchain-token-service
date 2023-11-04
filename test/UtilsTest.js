@@ -1,12 +1,13 @@
 'use strict';
 
-require('dotenv').config();
 const chai = require('chai');
 const { ethers } = require('hardhat');
+const {
+    Wallet,
+    getContractAt,
+    constants: { AddressZero },
+} = ethers;
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const { Wallet, getContractAt } = ethers;
-const { AddressZero } = ethers.constants;
-const { defaultAbiCoder } = ethers.utils;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
 const { deployContract } = require('../scripts/deploy');

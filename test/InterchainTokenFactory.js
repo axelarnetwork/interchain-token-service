@@ -2,7 +2,6 @@
 
 const chai = require('chai');
 const { expect } = chai;
-require('dotenv').config();
 const { ethers } = require('hardhat');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 const {
