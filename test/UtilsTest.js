@@ -1,19 +1,16 @@
 'use strict';
 
-require('dotenv').config();
 const chai = require('chai');
 const { ethers } = require('hardhat');
+const {
+    Wallet,
+    getContractAt,
+    constants: { AddressZero },
+} = ethers;
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const { Wallet, Contract } = ethers;
-const { AddressZero } = ethers.constants;
-const { defaultAbiCoder } = ethers.utils;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
-
-const ImplemenationTest = require('../artifacts/contracts/test/utils/ImplementationTest.sol/ImplementationTest.json');
-const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
-const StandardizedTokenProxy = require('../artifacts/contracts/proxies/StandardizedTokenProxy.sol/StandardizedTokenProxy.json');
 
 let ownerWallet, otherWallet;
 
@@ -242,29 +239,8 @@ describe('FlowLimit', async () => {
     });
 });
 
-describe('Implementation', () => {
-    let implementation, proxy;
-
-    before(async () => {
-        implementation = await deployContract(ownerWallet, 'ImplementationTest');
-        proxy = await deployContract(ownerWallet, 'NakedProxy', [implementation.address]);
-        proxy = new Contract(proxy.address, ImplemenationTest.abi, ownerWallet);
-    });
-
-    it('Should test the implemenation contract', async () => {
-        const val = 123;
-        const params = defaultAbiCoder.encode(['uint256'], [val]);
-
-        await (await proxy.setup(params)).wait();
-
-        expect(await proxy.val()).to.equal(val);
-
-        await expectRevert((gasOptions) => implementation.setup(params, gasOptions), implementation, 'NotProxy');
-    });
-});
-
 describe('InterchainTokenDeployer', () => {
-    let standardizedToken, interchainTokenDeployer;
+    let interchainToken, interchainTokenDeployer;
     const tokenManager = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -272,8 +248,8 @@ describe('InterchainTokenDeployer', () => {
     const DISTRIBUTOR_ROLE = 0;
 
     before(async () => {
-        standardizedToken = await deployContract(ownerWallet, 'StandardizedToken');
-        interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [standardizedToken.address]);
+        interchainToken = await deployContract(ownerWallet, 'InterchainToken');
+        interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [interchainToken.address]);
     });
 
     it('Should revert on deployment with invalid implementation address', async () => {
@@ -289,8 +265,8 @@ describe('InterchainTokenDeployer', () => {
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
-        const token = new Contract(tokenAddress, StandardizedToken.abi, ownerWallet);
-        const tokenProxy = new Contract(tokenAddress, StandardizedTokenProxy.abi, ownerWallet);
+        const token = await getContractAt('InterchainToken', tokenAddress, ownerWallet);
+        const tokenProxy = await getContractAt('InterchainTokenProxy', tokenAddress, ownerWallet);
 
         await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals))
             .and.to.emit(token, 'RolesAdded')
@@ -298,7 +274,7 @@ describe('InterchainTokenDeployer', () => {
             .to.emit(token, 'RolesAdded')
             .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE);
 
-        expect(await tokenProxy.implementation()).to.equal(standardizedToken.address);
+        expect(await tokenProxy.implementation()).to.equal(interchainToken.address);
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);

@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.0;
 
+import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
+
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { IOperatable } from './IOperatable.sol';
 import { IFlowLimit } from './IFlowLimit.sol';
-import { IImplementation } from './IImplementation.sol';
 
 /**
  * @title ITokenManager
@@ -24,7 +25,7 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     /**
      * @notice A function that returns the token id.
      */
-    function tokenId() external view returns (bytes32);
+    function interchainTokenId() external view returns (bytes32);
 
     /**
      * @notice A function that should return the address of the token.
@@ -97,6 +98,18 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
      * @return the amount of token actually taken, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
      */
     function takeToken(address sourceAddress, uint256 amount) external returns (uint256);
+
+    /**
+     * @notice This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of the new flow limiter.
+     */
+    function addFlowLimiter(address flowLimiter) external;
+
+    /**
+     * @notice This function removes a flow limiter for this TokenManager. Can only be called by the operator.
+     * @param flowLimiter the address of an existing flow limiter.
+     */
+    function removeFlowLimiter(address flowLimiter) external;
 
     /**
      * @notice This function sets the flow limit for this TokenManager. Can only be called by the operator.

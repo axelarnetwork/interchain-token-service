@@ -6,18 +6,18 @@ import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deplo
 
 import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
 
-import { StandardizedTokenProxy } from '../proxies/StandardizedTokenProxy.sol';
+import { InterchainTokenProxy } from '../proxies/InterchainTokenProxy.sol';
 
 /**
  * @title InterchainTokenDeployer
- * @notice This contract is used to deploy new instances of the StandardizedTokenProxy contract.
+ * @notice This contract is used to deploy new instances of the InterchainTokenProxy contract.
  */
 contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
     address public immutable implementationAddress;
 
     /**
      * @notice Constructor for the InterchainTokenDeployer contract
-     * @param implementationAddress_ Address of the StandardizedToken contract
+     * @param implementationAddress_ Address of the InterchainToken contract
      */
     constructor(address implementationAddress_) {
         if (implementationAddress_ == address(0)) revert AddressZero();
@@ -25,7 +25,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
     }
 
     /**
-     * @notice Deploys a new instance of the StandardizedTokenProxy contract
+     * @notice Deploys a new instance of the InterchainTokenProxy contract
      * @param salt The salt used by Create3Deployer
      * @param tokenManager Address of the token manager
      * @param distributor Address of the distributor
@@ -45,7 +45,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
     ) external payable returns (address tokenAddress) {
         bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals);
         // slither-disable-next-line too-many-digits
-        bytes memory bytecode = bytes.concat(type(StandardizedTokenProxy).creationCode, abi.encode(implementationAddress, params));
+        bytes memory bytecode = bytes.concat(type(InterchainTokenProxy).creationCode, abi.encode(implementationAddress, params));
 
         tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();

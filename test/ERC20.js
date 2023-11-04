@@ -3,17 +3,15 @@
 const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
-    Contract,
     constants: { MaxUint256, AddressZero },
+    getContractAt,
 } = ethers;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
-const StandardizedToken = require('../artifacts/contracts/token-implementations/StandardizedToken.sol/StandardizedToken.json');
-
 describe('ERC20', () => {
-    let standardizedToken, interchainTokenDeployer;
+    let interchainToken, interchainTokenDeployer;
 
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -29,14 +27,13 @@ describe('ERC20', () => {
         owner = wallets[0];
         user = wallets[1];
 
-        standardizedToken = await deployContract(owner, 'StandardizedToken');
-        interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [standardizedToken.address]);
+        interchainToken = await deployContract(owner, 'InterchainToken');
+        interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [interchainToken.address]);
 
         const salt = getRandomBytes32();
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
-
-        token = new Contract(tokenAddress, StandardizedToken.abi, owner);
+        token = await getContractAt('InterchainToken', tokenAddress, owner);
 
         await interchainTokenDeployer
             .deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals)
