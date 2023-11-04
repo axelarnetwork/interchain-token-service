@@ -11,7 +11,14 @@ import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/int
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 
-interface IInterchainTokenService is ITokenManagerType, ITokenManagerImplementation, IAxelarValuedExpressExecutable, IPausable, IMulticall, IContractIdentifier {
+interface IInterchainTokenService is
+    ITokenManagerType,
+    ITokenManagerImplementation,
+    IAxelarValuedExpressExecutable,
+    IPausable,
+    IMulticall,
+    IContractIdentifier
+{
     error ZeroAddress();
     error LengthMismatch();
     error InvalidTokenManagerImplementationType(address implementation);

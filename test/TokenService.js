@@ -501,15 +501,7 @@ describe('Interchain Token Service', () => {
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             await expect(
                 service.deployInterchainToken(
@@ -586,15 +578,7 @@ describe('Interchain Token Service', () => {
             const commandId = getRandomBytes32();
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
 
             await expectRevert(
@@ -614,15 +598,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -645,15 +621,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -676,15 +644,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [
-                    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-                    tokenId,
-                    tokenName,
-                    tokenSymbol,
-                    tokenDecimals,
-                    distributor,
-                    operator,
-                ],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
