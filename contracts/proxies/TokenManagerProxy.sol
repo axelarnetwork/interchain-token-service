@@ -31,7 +31,9 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
         interchainTokenService = interchainTokenService_;
         implementationType = implementationType_;
         interchainTokenId = tokenId;
+
         address implementation_ = _tokenManagerImplementation(interchainTokenService_, implementationType_);
+        if (implementation_ == address(0)) revert InvalidImplementation();
 
         (bool success, ) = implementation_.delegatecall(abi.encodeWithSelector(IProxy.setup.selector, params));
         if (!success) revert SetupFailed();

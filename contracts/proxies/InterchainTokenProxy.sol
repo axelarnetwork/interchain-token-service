@@ -18,6 +18,8 @@ contract InterchainTokenProxy is FixedProxy {
      * @param params Initialization parameters for the InterchainToken contract
      */
     constructor(address implementationAddress, bytes memory params) FixedProxy(implementationAddress) {
+        if (implementationAddress == address(0)) revert InvalidImplementation();
+
         (bool success, ) = implementationAddress.delegatecall(abi.encodeWithSelector(IImplementation.setup.selector, params));
         if (!success) revert SetupFailed();
     }
