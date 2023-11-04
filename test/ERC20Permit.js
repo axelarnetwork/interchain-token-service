@@ -3,15 +3,13 @@
 const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
-    Contract,
+    getContractAt,
     utils: { splitSignature },
     constants: { MaxUint256 },
 } = ethers;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, getChainId } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
-
-const InterchainToken = require('../artifacts/contracts/token-implementations/InterchainToken.sol/InterchainToken.json');
 
 describe('ERC20 Permit', () => {
     let interchainToken, interchainTokenDeployer;
@@ -39,7 +37,7 @@ describe('ERC20 Permit', () => {
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
-        token = new Contract(tokenAddress, InterchainToken.abi, owner);
+        token = await getContractAt('InterchainToken', tokenAddress, owner);
 
         await interchainTokenDeployer
             .deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals)

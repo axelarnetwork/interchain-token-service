@@ -4,16 +4,12 @@ require('dotenv').config();
 const chai = require('chai');
 const { ethers } = require('hardhat');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const { Wallet, Contract } = ethers;
+const { Wallet, getContractAt } = ethers;
 const { AddressZero } = ethers.constants;
 const { defaultAbiCoder } = ethers.utils;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
-
-const ImplemenationTest = require('../artifacts/contracts/test/utils/ImplementationTest.sol/ImplementationTest.json');
-const InterchainToken = require('../artifacts/contracts/token-implementations/InterchainToken.sol/InterchainToken.json');
-const InterchainTokenProxy = require('../artifacts/contracts/proxies/InterchainTokenProxy.sol/InterchainTokenProxy.json');
 
 let ownerWallet, otherWallet;
 
@@ -248,7 +244,7 @@ describe('Implementation', () => {
     before(async () => {
         implementation = await deployContract(ownerWallet, 'ImplementationTest');
         proxy = await deployContract(ownerWallet, 'NakedProxy', [implementation.address]);
-        proxy = new Contract(proxy.address, ImplemenationTest.abi, ownerWallet);
+        proxy = await getContractAt('ImplementationTest', proxy.address, ownerWallet);
     });
 
     it('Should test the implemenation contract', async () => {
@@ -289,8 +285,8 @@ describe('InterchainTokenDeployer', () => {
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
-        const token = new Contract(tokenAddress, InterchainToken.abi, ownerWallet);
-        const tokenProxy = new Contract(tokenAddress, InterchainTokenProxy.abi, ownerWallet);
+        const token = await ethers.getContractAt('InterchainToken', tokenAddress, ownerWallet);
+        const tokenProxy = await ethers.getContractAt('InterchainTokenProxy', tokenAddress, ownerWallet);
 
         await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals))
             .and.to.emit(token, 'RolesAdded')

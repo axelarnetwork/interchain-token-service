@@ -7,11 +7,11 @@ import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 
-import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
-import { IInterchainTokenFactory } from '../interfaces/IInterchainTokenFactory.sol';
-import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
+import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
+import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
+import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
+import { ITokenManager } from './interfaces/ITokenManager.sol';
+import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 
 contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, Multicall, Upgradable {
     using AddressBytes for bytes;

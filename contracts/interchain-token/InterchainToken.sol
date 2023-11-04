@@ -8,8 +8,8 @@ import { IImplementation } from '../interfaces/IImplementation.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
-import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
-import { ERC20Permit } from '../token-implementations/ERC20Permit.sol';
+import { InterchainTokenBase } from './InterchainTokenBase.sol';
+import { ERC20Permit } from './ERC20Permit.sol';
 import { Implementation } from '../utils/Implementation.sol';
 import { Distributable } from '../utils/Distributable.sol';
 

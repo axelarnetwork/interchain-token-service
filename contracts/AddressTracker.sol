@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import { Ownable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Ownable.sol';
 import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/InterchainAddressTracker.sol';
 
-import { IAddressTracker } from '../interfaces/IAddressTracker.sol';
+import { IAddressTracker } from './interfaces/IAddressTracker.sol';
 
 contract AddressTracker is IAddressTracker, Ownable, InterchainAddressTracker {
     constructor(
