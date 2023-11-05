@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
 import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
+import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
@@ -16,7 +17,7 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
  * @title The main functionality of TokenManagers.
  * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
  */
-abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
+abstract contract BaseTokenManager is ITokenManager, Operatable, FlowLimit, ReentrancyGuard, Implementation {
     using AddressBytes for bytes;
 
     IInterchainTokenService public immutable interchainTokenService;
@@ -203,7 +204,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param amount the amount of token to give.
      * @return the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
-    function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
+    function giveToken(address destinationAddress, uint256 amount) external onlyService noReEntrancy returns (uint256) {
         // rate limit the incoming amount from source
         _addFlowIn(amount);
         amount = _giveToken(destinationAddress, amount);
@@ -216,7 +217,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @param amount the amount of token to give.
      * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
      */
-    function takeToken(address sourceAddress, uint256 amount) external onlyService returns (uint256) {
+    function takeToken(address sourceAddress, uint256 amount) external onlyService noReEntrancy returns (uint256) {
         amount = _takeToken(sourceAddress, amount);
         // rate limit the outgoing amount to destination
         _addFlowOut(amount);

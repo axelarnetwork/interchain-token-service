@@ -46,7 +46,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
-            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
@@ -147,7 +147,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
@@ -271,7 +271,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
-            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {

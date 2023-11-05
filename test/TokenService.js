@@ -55,7 +55,7 @@ describe('Interchain Token Service', () => {
     ) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
-        const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+        const tokenManager = await getContractAt('TokenManagerLockUnlock', await service.tokenManagerAddress(tokenId), wallet);
 
         const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
@@ -79,7 +79,7 @@ describe('Interchain Token Service', () => {
     ) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
-        const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+        const tokenManager = await getContractAt('TokenManagerLockUnlockFee', await service.tokenManagerAddress(tokenId), wallet);
 
         const token = await deployContract(wallet, 'FeeOnTransferTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
@@ -104,7 +104,7 @@ describe('Interchain Token Service', () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManagerAddress]);
 
-            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+            const tokenManager = await getContractAt('TokenManagerMintBurn', await service.tokenManagerAddress(tokenId), wallet);
 
             if (mintAmount > 0) {
                 await (await token.mint(wallet.address, mintAmount)).wait();
@@ -398,7 +398,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
             const tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
@@ -435,7 +435,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
             const tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
@@ -564,7 +564,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, tokenAddress, distributor, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
         });
@@ -586,7 +586,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
         });
@@ -609,7 +609,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
         });
@@ -651,7 +651,7 @@ describe('Interchain Token Service', () => {
             await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
 
             expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
@@ -674,7 +674,7 @@ describe('Interchain Token Service', () => {
             await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
 
             expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
@@ -699,7 +699,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN_FROM, params);
 
             expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
@@ -729,7 +729,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK_FEE_ON_TRANSFER, params);
 
             expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
@@ -954,7 +954,7 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });
@@ -978,7 +978,7 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });

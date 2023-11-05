@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 
-import { TokenManager } from './TokenManager.sol';
+import { BaseTokenManager } from './BaseTokenManager.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 import { ITokenManagerMintBurn } from '../interfaces/ITokenManagerMintBurn.sol';
 
@@ -15,7 +15,7 @@ import { ITokenManagerMintBurn } from '../interfaces/ITokenManagerMintBurn.sol';
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
+contract TokenManagerMintBurn is BaseTokenManager, ITokenManagerMintBurn {
     using SafeTokenCall for IERC20;
 
     /**
@@ -23,7 +23,7 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
      * of TokenManagerAddressStorage which calls the constructor of TokenManager.
      * @param interchainTokenService_ The address of the interchain token service contract
      */
-    constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
+    constructor(address interchainTokenService_) BaseTokenManager(interchainTokenService_) {}
 
     function implementationType() external pure virtual returns (uint256) {
         return uint256(TokenManagerType.MINT_BURN);

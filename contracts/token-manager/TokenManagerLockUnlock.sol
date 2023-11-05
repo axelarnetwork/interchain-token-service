@@ -6,7 +6,7 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 import { SafeTokenTransfer, SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 
 import { ITokenManagerLockUnlock } from '..//interfaces/ITokenManagerLockUnlock.sol';
-import { TokenManager } from './TokenManager.sol';
+import { BaseTokenManager } from './BaseTokenManager.sol';
 
 /**
  * @title TokenManagerLockUnlock
@@ -14,7 +14,7 @@ import { TokenManager } from './TokenManager.sol';
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
-contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
+contract TokenManagerLockUnlock is BaseTokenManager, ITokenManagerLockUnlock {
     using SafeTokenTransfer for IERC20;
     using SafeTokenTransferFrom for IERC20;
 
@@ -23,7 +23,7 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
      * of TokenManagerAddressStorage which calls the constructor of TokenManager.
      * @param interchainTokenService_ The address of the interchain token service contract
      */
-    constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
+    constructor(address interchainTokenService_) BaseTokenManager(interchainTokenService_) {}
 
     function implementationType() external pure returns (uint256) {
         return uint256(TokenManagerType.LOCK_UNLOCK);

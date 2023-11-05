@@ -182,7 +182,7 @@ describe('InterchainTokenFactory', () => {
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
-            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+            const tokenManager = await getContractAt('BaseTokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
             await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, distributor))
@@ -220,8 +220,8 @@ describe('InterchainTokenFactory', () => {
             const salt = keccak256('0x12');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
-            let params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
-            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
+            const tokenManager = await getContractAt('BaseTokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
             await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address))
@@ -244,7 +244,6 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, wallet.address.toLowerCase()],
@@ -269,8 +268,8 @@ describe('InterchainTokenFactory', () => {
             const salt = keccak256('0x1245');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
-            let params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
-            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
+            const tokenManager = await getContractAt('BaseTokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
             await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address))
@@ -293,7 +292,6 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
