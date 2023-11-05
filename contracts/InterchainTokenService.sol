@@ -20,6 +20,7 @@ import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
 import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
+import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 
 import { Operatable } from './utils/Operatable.sol';
@@ -47,6 +48,7 @@ contract InterchainTokenService is
 
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
+    address public immutable tokenFactory;
     bytes32 public immutable chainNameHash;
 
     address public immutable interchainTokenDeployer;
@@ -92,6 +94,7 @@ contract InterchainTokenService is
         address gateway_,
         address gasService_,
         address interchainAddressTracker_,
+        address interchainTokenFactory_,
         address[] memory tokenManagerImplementations
     ) {
         if (
@@ -99,7 +102,8 @@ contract InterchainTokenService is
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             interchainTokenDeployer_ == address(0) ||
-            gateway_ == address(0)
+            gateway_ == address(0) ||
+            interchainTokenFactory_ == address(0)
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
@@ -107,6 +111,7 @@ contract InterchainTokenService is
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
+        tokenFactory = interchainTokenFactory_;
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
 
@@ -276,6 +281,9 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer = msg.sender;
+        
+        if(deployer == tokenFactory) deployer = address(0);
+
         tokenId = interchainTokenId(deployer, salt);
 
         emit InterchainTokenIdClaimed(tokenId, deployer, salt);
@@ -308,8 +316,12 @@ contract InterchainTokenService is
         uint8 decimals,
         bytes memory distributor,
         uint256 gasValue
-    ) external payable whenNotPaused {
-        bytes32 tokenId = interchainTokenId(msg.sender, salt);
+    ) external payable whenNotPaused {        
+        address deployer = msg.sender;
+
+        if(deployer == tokenFactory) deployer = address(0);
+        
+        bytes32 tokenId = interchainTokenId(deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
             address tokenAddress_ = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);

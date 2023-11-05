@@ -1,6 +1,7 @@
 const { ethers } = require('hardhat');
 const { Contract } = ethers;
 const InterchainTokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
+const InterchainTokenFactoryProxy = require('../artifacts/contracts/proxies/InterchainTokenFactoryProxy.sol/InterchainTokenFactoryProxy.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 
@@ -39,6 +40,7 @@ async function deployInterchainTokenService(
     gatewayAddress,
     gasServiceAddress,
     remoteAddressValidatorAddress,
+    interchainTokenFactoryAddress,
     tokenManagerImplementations,
     deploymentKey,
     operatorAddress = wallet.address,
@@ -49,6 +51,7 @@ async function deployInterchainTokenService(
         gatewayAddress,
         gasServiceAddress,
         remoteAddressValidatorAddress,
+        interchainTokenFactoryAddress,
         tokenManagerImplementations,
     ]);
     const proxy = await create3DeployContract(create3DeployerAddress, wallet, InterchainTokenServiceProxy, deploymentKey, [
@@ -58,6 +61,23 @@ async function deployInterchainTokenService(
     ]);
     const service = new Contract(proxy.address, implementation.interface, wallet);
     return service;
+}
+
+async function deployInterchainTokenFactory(
+    wallet,
+    create3DeployerAddress,
+    interchainTokenServiceAddress,
+    deploymentKey,
+) {
+    const implementation = await deployContract(wallet, 'InterchainTokenFactory', [
+        interchainTokenServiceAddress
+    ]);
+    const proxy = await create3DeployContract(create3DeployerAddress, wallet, InterchainTokenFactoryProxy, deploymentKey, [
+        implementation.address,
+        wallet.address,
+    ]);
+    const factory = new Contract(proxy.address, implementation.interface, wallet);
+    return factory;
 }
 
 async function deployTokenManagerImplementations(wallet, interchainTokenServiceAddress) {
@@ -71,7 +91,7 @@ async function deployTokenManagerImplementations(wallet, interchainTokenServiceA
     return implementations;
 }
 
-async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'interchainTokenService') {
+async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'interchainTokenService', factoryDeploymentKey = deploymentKey + 'Factory') {
     const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
         .deploy()
         .then((d) => d.deployed());
@@ -84,6 +104,8 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
     const interchainAddressTracker = await deployAddressTracker(wallet, chainName, interchainTokenServiceAddress, evmChains);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
 
+    const interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey);
+
     const service = await deployInterchainTokenService(
         wallet,
         create3Deployer.address,
@@ -92,11 +114,13 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
         gateway.address,
         gasService.address,
         interchainAddressTracker.address,
+        interchainTokenFactoryAddress,
         tokenManagerImplementations.map((impl) => impl.address),
         deploymentKey,
     );
 
-    return [service, gateway, gasService];
+    const factory = await deployInterchainTokenFactory(wallet, create3Deployer.address, interchainTokenServiceAddress, factoryDeploymentKey);
+    return [service, gateway, gasService, factory];
 }
 
 module.exports = {

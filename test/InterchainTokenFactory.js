@@ -36,12 +36,7 @@ describe('InterchainTokenFactory', () => {
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
-        [service, gateway, gasService] = await deployAll(wallet, chainName, [destinationChain]);
-
-        tokenFactory = await deployContract(wallet, 'InterchainTokenFactory', [service.address]);
-        const proxy = await deployContract(wallet, 'InterchainTokenFactoryProxy', [tokenFactory.address, wallet.address]);
-        const factory = await ethers.getContractFactory('InterchainTokenFactory', wallet);
-        tokenFactory = factory.attach(proxy.address);
+        [service, gateway, gasService, tokenFactory] = await deployAll(wallet, chainName, [destinationChain]);
     });
 
     describe('Canonical Interchain Token Factory', async () => {

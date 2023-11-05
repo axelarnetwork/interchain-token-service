@@ -50,11 +50,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     function interchainTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = service.interchainTokenId(address(this), interchainTokenSalt(chainNameHash, deployer, salt));
+        tokenId = service.interchainTokenId(address(0), interchainTokenSalt(chainNameHash, deployer, salt));
     }
 
     function canonicalInterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = service.interchainTokenId(address(this), canonicalInterchainTokenSalt(chainNameHash, tokenAddress));
+        tokenId = service.interchainTokenId(address(0), canonicalInterchainTokenSalt(chainNameHash, tokenAddress));
     }
 
     function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
@@ -82,7 +82,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, 0);
 
         if (mintAmount > 0) {
-            bytes32 tokenId = service.interchainTokenId(address(this), salt);
+            bytes32 tokenId = service.interchainTokenId(address(0), salt);
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
             token.mint(address(this), mintAmount);
             token.transferDistributorship(distributor);
@@ -115,7 +115,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             }
             address sender = msg.sender;
             salt = interchainTokenSalt(chainNameHash_, sender, salt);
-            bytes32 tokenId = service.interchainTokenId(address(this), salt);
+            bytes32 tokenId = service.interchainTokenId(address(0), salt);
 
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
 
@@ -176,7 +176,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             }
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
             salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);
-            bytes32 tokenId = service.interchainTokenId(address(this), salt);
+            bytes32 tokenId = service.interchainTokenId(address(0), salt);
             token = IInterchainToken(service.tokenAddress(tokenId));
         }
 
