@@ -467,7 +467,6 @@ contract InterchainTokenService is
         }
     }
 
-
     /**
      * @notice Used to set a trusted address for a chain.
      * @param chain the chain to set the trusted address of.
