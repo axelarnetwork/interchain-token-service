@@ -169,6 +169,8 @@ describe('Interchain Token Service', () => {
                         gasService.address,
                         AddressZero,
                         tokenManagerImplementations.map((impl) => impl.address),
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
