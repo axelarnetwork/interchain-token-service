@@ -1,5 +1,8 @@
 const { ethers } = require('hardhat');
-const { Contract } = ethers;
+const {
+    Contract,
+    utils: { defaultAbiCoder },
+} = ethers;
 const InterchainTokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
@@ -9,16 +12,6 @@ async function deployContract(wallet, contractName, args = []) {
     const contract = await factory.deploy(...args).then((d) => d.deployed());
 
     return contract;
-}
-
-async function deployAddressTracker(wallet, chainName, interchainTokenServiceAddress = '', evmChains = []) {
-    const addressTracker = deployContract(wallet, 'AddressTracker', [
-        wallet.address,
-        chainName,
-        evmChains,
-        evmChains.map(() => interchainTokenServiceAddress),
-    ]);
-    return addressTracker;
 }
 
 async function deployMockGateway(wallet) {
@@ -38,23 +31,29 @@ async function deployInterchainTokenService(
     interchainTokenDeployerAddress,
     gatewayAddress,
     gasServiceAddress,
-    remoteAddressValidatorAddress,
     tokenManagerImplementations,
+    chainName,
+    evmChains = [],
     deploymentKey,
     operatorAddress = wallet.address,
 ) {
+    const interchainTokenServiceAddress = await getCreate3Address(create3DeployerAddress, wallet, deploymentKey);
+
     const implementation = await deployContract(wallet, 'InterchainTokenService', [
         tokenManagerDeployerAddress,
         interchainTokenDeployerAddress,
         gatewayAddress,
         gasServiceAddress,
-        remoteAddressValidatorAddress,
+        chainName,
         tokenManagerImplementations,
     ]);
     const proxy = await create3DeployContract(create3DeployerAddress, wallet, InterchainTokenServiceProxy, deploymentKey, [
         implementation.address,
         wallet.address,
-        operatorAddress,
+        defaultAbiCoder.encode(
+            ['address', 'string', 'string[]', 'string[]'],
+            [operatorAddress, chainName, evmChains, evmChains.map(() => interchainTokenServiceAddress)],
+        ),
     ]);
     const service = new Contract(proxy.address, implementation.interface, wallet);
     return service;
@@ -81,7 +80,6 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
     const interchainToken = await deployContract(wallet, 'InterchainToken');
     const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-    const interchainAddressTracker = await deployAddressTracker(wallet, chainName, interchainTokenServiceAddress, evmChains);
     const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
 
     const service = await deployInterchainTokenService(
@@ -91,8 +89,9 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
         interchainTokenDeployer.address,
         gateway.address,
         gasService.address,
-        interchainAddressTracker.address,
         tokenManagerImplementations.map((impl) => impl.address),
+        chainName,
+        evmChains,
         deploymentKey,
     );
 
@@ -101,7 +100,6 @@ async function deployAll(wallet, chainName, evmChains = [], deploymentKey = 'int
 
 module.exports = {
     deployContract,
-    deployRemoteAddressValidator: deployAddressTracker,
     deployMockGateway,
     deployTokenManagerImplementations,
     deployGasService,
