@@ -2,10 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import { IOwnable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IOwnable.sol';
 import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
 
-interface IAddressTracker is IOwnable, IInterchainAddressTracker {
+interface IAddressTracker is IInterchainAddressTracker {
     /**
      * @dev Sets the trusted address for the specified chain
      * @param chain Chain name to be trusted

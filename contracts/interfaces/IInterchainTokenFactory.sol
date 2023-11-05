@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 interface IInterchainTokenFactory {
     error ZeroAddress();
+    error InvalidChainName();
     error NotDistributor(address distributor);
     error NotOperator(address operator);
     error NonZeroMintAmount();

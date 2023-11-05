@@ -16,11 +16,7 @@ contract InterchainTokenServiceProxy is Proxy {
      * @param implementationAddress Address of the interchain token service implementation
      * @param owner Address of the owner of the proxy
      */
-    constructor(
-        address implementationAddress,
-        address owner,
-        address operator
-    ) Proxy(implementationAddress, owner, abi.encodePacked(operator)) {}
+    constructor(address implementationAddress, address owner, bytes memory setupParams) Proxy(implementationAddress, owner, setupParams) {}
 
     /**
      * @dev Override for the 'contractId' function in FinalProxy. Returns a unique identifier for this contract.

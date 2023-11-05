@@ -32,7 +32,7 @@ Most projects that look to go cross-chain nowadays have more complex needs that 
 
 ## Interchain Address Tracker
 
-We plan to finalize the design of the `InterchainTokenService` but we want to be able to support new chains as they get added to the Axelar Network. For this purpose, the service will ask a separate contract, the [`InterchainAddressTracker`](https://github.com/axelarnetwork/axelar-gmp-sdk-solidity/blob/main/contracts/utils/InterchainAddressTracker.sol) to obtain the destination address for outgoing messages, and for validation of incoming messages.
+`InterchainTokenService` inherits the [`InterchainAddressTracker`](https://github.com/axelarnetwork/axelar-gmp-sdk-solidity/blob/main/contracts/utils/InterchainAddressTracker.sol) to support new chains as they get added to the Axelar Network. It's implemented for obtaining the destination address for outgoing messages, and for validation of incoming messages.
 
 ## Interchain Token
 

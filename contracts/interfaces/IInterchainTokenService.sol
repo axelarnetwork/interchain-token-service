@@ -5,11 +5,11 @@ pragma solidity ^0.8.0;
 import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarValuedExpressExecutable.sol';
 import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
 import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
-import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
+import { IAddressTracker } from './IAddressTracker.sol';
 
 interface IInterchainTokenService is
     ITokenManagerType,
@@ -17,11 +17,11 @@ interface IInterchainTokenService is
     IAxelarValuedExpressExecutable,
     IPausable,
     IMulticall,
-    IContractIdentifier
+    IContractIdentifier,
+    IAddressTracker
 {
-    error ZeroAddress();
-    error LengthMismatch();
     error InvalidTokenManagerImplementationType(address implementation);
+    error InvalidChainName();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager(address caller, address tokenManager);
@@ -33,7 +33,6 @@ interface IInterchainTokenService is
     error InvalidMessageType(uint256 messageType);
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
-    error UntrustedChain(string chainName);
     error InvalidExpressMessageType(uint256 messageType);
 
     event InterchainTransfer(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
@@ -83,12 +82,6 @@ interface IInterchainTokenService is
         uint8 decimals
     );
     event InterchainTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
-
-    /**
-     * @notice Returns the address of the interchain router contract.
-     * @return interchainAddressTracker_ The interchainAddressTracker.
-     */
-    function interchainAddressTracker() external view returns (IInterchainAddressTracker interchainAddressTracker_);
 
     /**
      * @notice Returns the address of the token manager deployer contract.

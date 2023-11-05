@@ -12,8 +12,8 @@ import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/c
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
-import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
 import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
+import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/InterchainAddressTracker.sol';
 
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
@@ -38,6 +38,7 @@ contract InterchainTokenService is
     Multicall,
     Create3Address,
     ExpressExecutorTracker,
+    InterchainAddressTracker,
     IInterchainTokenService
 {
     using StringToBytes32 for string;
@@ -62,8 +63,6 @@ contract InterchainTokenService is
     address internal immutable implementationLockUnlock;
     address internal immutable implementationLockUnlockFee;
 
-    IInterchainAddressTracker public immutable interchainAddressTracker;
-
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_ID = keccak256('its-interchain-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
 
@@ -85,7 +84,7 @@ contract InterchainTokenService is
      * @param interchainTokenDeployer_ the address of the InterchainTokenDeployer.
      * @param gateway_ the address of the AxelarGateway.
      * @param gasService_ the address of the AxelarGasService.
-     * @param interchainAddressTracker_ the address of the InterchainAddressTracker.
+     * @param chainName_ the name of the chain that this contract is deployed on.
      * @param tokenManagerImplementations this needs to have implementations in the order: Mint-burn, Mint-burn from, Lock-unlock, and Lock-unlock with fee.
      */
     constructor(
@@ -93,12 +92,11 @@ contract InterchainTokenService is
         address interchainTokenDeployer_,
         address gateway_,
         address gasService_,
-        address interchainAddressTracker_,
         address interchainTokenFactory_,
+        string memory chainName_,
         address[] memory tokenManagerImplementations
     ) {
         if (
-            interchainAddressTracker_ == address(0) ||
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             interchainTokenDeployer_ == address(0) ||
@@ -107,20 +105,18 @@ contract InterchainTokenService is
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
-        interchainAddressTracker = IInterchainAddressTracker(interchainAddressTracker_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
         tokenFactory = interchainTokenFactory_;
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
+        if (bytes(chainName_).length == 0) revert InvalidChainName();
 
         implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
-
-        string memory chainName_ = interchainAddressTracker.chainName();
         chainNameHash = keccak256(bytes(chainName_));
     }
 
@@ -134,7 +130,7 @@ contract InterchainTokenService is
      * @param sourceAddress the address that the call came from.
      */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
-        if (!interchainAddressTracker.isTrustedAddress(sourceChain, sourceAddress)) revert NotRemoteService();
+        if (!isTrustedAddress(sourceChain, sourceAddress)) revert NotRemoteService();
 
         _;
     }
@@ -484,6 +480,23 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Used to set a trusted address for a chain.
+     * @param chain the chain to set the trusted address of.
+     * @param address_ the address to set as trusted.
+     */
+    function setTrustedAddress(string memory chain, string memory address_) external onlyOwner {
+        _setTrustedAddress(chain, address_);
+    }
+
+    /**
+     * @notice Used to remove a trusted address for a chain.
+     * @param chain the chain to set the trusted address of.
+     */
+    function removeTrustedAddress(string memory chain) external onlyOwner {
+        _removeTrustedAddress(chain);
+    }
+
+    /**
      * @notice Allows the owner to pause/unpause the token service.
      * @param paused whether to pause or unpause.
      */
@@ -500,7 +513,22 @@ contract InterchainTokenService is
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        _addOperator(params.toAddress());
+        (address operator, string memory chainName_, string[] memory trustedChainNames, string[] memory trustedAddresses) = abi.decode(
+            params,
+            (address, string, string[], string[])
+        );
+        uint256 length = trustedChainNames.length;
+
+        if (operator == address(0)) revert ZeroAddress();
+        if (bytes(chainName_).length == 0) revert InvalidChainName();
+        if (length != trustedAddresses.length) revert LengthMismatch();
+
+        _addOperator(operator);
+        _setChainName(chainName_);
+
+        for (uint256 i; i < length; ++i) {
+            _setTrustedAddress(trustedChainNames[i], trustedAddresses[i]);
+        }
     }
 
     function _sanitizeTokenManagerImplementation(
@@ -671,8 +699,8 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction
      */
     function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
-        string memory destinationAddress = interchainAddressTracker.trustedAddress(destinationChain);
-        if (bytes(destinationAddress).length == 0) revert UntrustedChain(destinationChain);
+        string memory destinationAddress = trustedAddress(destinationChain);
+        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(
