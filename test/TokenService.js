@@ -387,7 +387,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const token = await getContractAt('InterchainToken', tokenAddress, wallet);
+            await getContractAt('InterchainToken', tokenAddress, wallet);
         });
 
         it('Should revert when registering a interchain token when service is paused', async () => {
