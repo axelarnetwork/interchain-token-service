@@ -1,0 +1,12 @@
+{
+  "extends": "@tsconfig/strictest",
+  "compilerOptions": {
+    "target": "ES2019",
+    "lib": ["ES2021", "DOM"],
+    "ignoreDeprecations": "5.0",
+    "verbatimModuleSyntax": false,
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "noEmit": true
+  }
+}
