@@ -39,8 +39,8 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Di
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract
      */
-    function tokenManager() public view override(BaseInterchainToken, IInterchainToken) returns (ITokenManager) {
-        return ITokenManager(tokenManager_);
+    function tokenManager() public view override(BaseInterchainToken, IInterchainToken) returns (address) {
+        return tokenManager_;
     }
 
     /**

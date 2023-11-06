@@ -7,7 +7,6 @@ import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 import { IInterchainTokenStandard } from './IInterchainTokenStandard.sol';
 import { IDistributable } from './IDistributable.sol';
 import { IERC20MintableBurnable } from './IERC20MintableBurnable.sol';
-import { ITokenManager } from './ITokenManager.sol';
 import { IERC20Named } from './IERC20Named.sol';
 
 /**
@@ -22,5 +21,5 @@ interface IInterchainToken is IInterchainTokenStandard, IDistributable, IERC20Mi
      * @dev Needs to be overwitten.
      * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
      */
-    function tokenManager() external view returns (ITokenManager tokenManager_);
+    function tokenManager() external view returns (address tokenManager_);
 }

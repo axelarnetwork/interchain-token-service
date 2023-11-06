@@ -33,8 +33,8 @@ contract InvalidInterchainToken is IERC20MintableBurnable, BaseInterchainToken, 
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract
      */
-    function tokenManager() public view override returns (ITokenManager) {
-        return ITokenManager(tokenManager_);
+    function tokenManager() public view override returns (address) {
+        return tokenManager_;
     }
 
     /**
