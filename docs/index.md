@@ -381,109 +381,6 @@ to spend tokens on their behalf via a signed message._
 | r | bytes32 | Half of the ECDSA signature pair |
 | s | bytes32 | Half of the ECDSA signature pair |
 
-## InterchainToken
-
-This contract implements a interchain token which extends InterchainToken functionality.
-This contract also inherits Distributable and Implementation logic.
-
-### name
-
-```solidity
-string name
-```
-
-Getter for the name of the token
-
-### symbol
-
-```solidity
-string symbol
-```
-
-Getter for the symbol of the token
-
-### decimals
-
-```solidity
-uint8 decimals
-```
-
-Getter for the decimals of the token
-
-### tokenManager_
-
-```solidity
-address tokenManager_
-```
-
-### contractId
-
-```solidity
-function contractId() external pure returns (bytes32)
-```
-
-Getter for the contract id.
-
-### tokenManager
-
-```solidity
-function tokenManager() public view returns (address)
-```
-
-Returns the token manager for this token
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address | address The token manager contract |
-
-### setup
-
-```solidity
-function setup(bytes params) external
-```
-
-Setup function to initialize contract parameters
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params | bytes | The setup parameters in bytes The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo |
-
-### mint
-
-```solidity
-function mint(address account, uint256 amount) external
-```
-
-Function to mint new tokens
-Can only be called by the distributor address.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| account | address | The address that will receive the minted tokens |
-| amount | uint256 | The amount of tokens to mint |
-
-### burn
-
-```solidity
-function burn(address account, uint256 amount) external
-```
-
-Function to burn tokens
-Can only be called by the distributor address.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| account | address | The address that will have its tokens burnt |
-| amount | uint256 | The amount of tokens to burn |
-
 ## IDistributable
 
 ### transferDistributorship
@@ -580,34 +477,6 @@ _Can only be called by the distributor address._
 | from | address | The address that will have its tokens burnt |
 | amount | uint256 | The amount of tokens to burn |
 
-## IERC20Named
-
-_Interface of the ERC20 standard as defined in the EIP._
-
-### name
-
-```solidity
-function name() external view returns (string)
-```
-
-Getter for the name of the token
-
-### symbol
-
-```solidity
-function symbol() external view returns (string)
-```
-
-Getter for the symbol of the token
-
-### decimals
-
-```solidity
-function decimals() external view returns (uint8)
-```
-
-Getter for the decimals of the token
-
 ## IFlowLimit
 
 ### FlowLimitExceeded
@@ -663,36 +532,6 @@ Returns the current flow in amount
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | flowInAmount_ | uint256 | The current flow in amount |
-
-## IInterchainToken
-
-### TokenManagerAddressZero
-
-```solidity
-error TokenManagerAddressZero()
-```
-
-### TokenNameEmpty
-
-```solidity
-error TokenNameEmpty()
-```
-
-### tokenManager
-
-```solidity
-function tokenManager() external view returns (address tokenManager_)
-```
-
-Getter for the tokenManager used for this token.
-
-_Needs to be overwitten._
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManager_ | address | the TokenManager called to facilitate cross chain transfers. |
 
 ## IInterchainTokenStandard
 
@@ -1212,6 +1051,167 @@ enum Roles {
   FLOW_LIMITER
 }
 ```
+
+## InterchainToken
+
+This contract implements a interchain token which extends InterchainToken functionality.
+This contract also inherits Distributable and Implementation logic.
+
+### name
+
+```solidity
+string name
+```
+
+Getter for the name of the token
+
+### symbol
+
+```solidity
+string symbol
+```
+
+Getter for the symbol of the token
+
+### decimals
+
+```solidity
+uint8 decimals
+```
+
+Getter for the decimals of the token
+
+### tokenManager_
+
+```solidity
+address tokenManager_
+```
+
+### contractId
+
+```solidity
+function contractId() external pure returns (bytes32)
+```
+
+Getter for the contract id.
+
+### tokenManager
+
+```solidity
+function tokenManager() public view returns (address)
+```
+
+Returns the token manager for this token
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | address | address The token manager contract |
+
+### setup
+
+```solidity
+function setup(bytes params) external
+```
+
+Setup function to initialize contract parameters
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params | bytes | The setup parameters in bytes The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo |
+
+### mint
+
+```solidity
+function mint(address account, uint256 amount) external
+```
+
+Function to mint new tokens
+Can only be called by the distributor address.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| account | address | The address that will receive the minted tokens |
+| amount | uint256 | The amount of tokens to mint |
+
+### burn
+
+```solidity
+function burn(address account, uint256 amount) external
+```
+
+Function to burn tokens
+Can only be called by the distributor address.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| account | address | The address that will have its tokens burnt |
+| amount | uint256 | The amount of tokens to burn |
+
+## IERC20Named
+
+_Interface of the ERC20 standard as defined in the EIP._
+
+### name
+
+```solidity
+function name() external view returns (string)
+```
+
+Getter for the name of the token
+
+### symbol
+
+```solidity
+function symbol() external view returns (string)
+```
+
+Getter for the symbol of the token
+
+### decimals
+
+```solidity
+function decimals() external view returns (uint8)
+```
+
+Getter for the decimals of the token
+
+## IInterchainToken
+
+### TokenManagerAddressZero
+
+```solidity
+error TokenManagerAddressZero()
+```
+
+### TokenNameEmpty
+
+```solidity
+error TokenNameEmpty()
+```
+
+### tokenManager
+
+```solidity
+function tokenManager() external view returns (address tokenManager_)
+```
+
+Getter for the tokenManager used for this token.
+
+_Needs to be overwitten._
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManager_ | address | the TokenManager called to facilitate cross chain transfers. |
 
 ## InterchainTokenFactory
 

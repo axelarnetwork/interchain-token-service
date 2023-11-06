@@ -6,7 +6,6 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol';
 import { ERC20Permit } from '../interchain-token/ERC20Permit.sol';
