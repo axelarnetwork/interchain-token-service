@@ -6,13 +6,12 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
-import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
+import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol';
 import { ERC20Permit } from '../interchain-token/ERC20Permit.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
-contract InvalidInterchainToken is IERC20MintableBurnable, InterchainTokenBase, ERC20Permit, Implementation, Distributable {
+contract InvalidInterchainToken is IERC20MintableBurnable, BaseInterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytes for bytes;
 
     string public name;
@@ -31,10 +30,10 @@ contract InvalidInterchainToken is IERC20MintableBurnable, InterchainTokenBase, 
 
     /**
      * @notice Returns the token manager for this token
-     * @return ITokenManager The token manager contract
+     * @return address The token manager contract
      */
-    function tokenManager() public view override returns (ITokenManager) {
-        return ITokenManager(tokenManager_);
+    function tokenManager() public view override returns (address) {
+        return tokenManager_;
     }
 
     /**
