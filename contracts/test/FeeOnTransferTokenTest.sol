@@ -2,13 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
+import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol';
 import { Distributable } from '../utils/Distributable.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
-contract FeeOnTransferTokenTest is InterchainTokenBase, Distributable, IERC20MintableBurnable {
-    ITokenManager public tokenManager_;
+contract FeeOnTransferTokenTest is BaseInterchainToken, Distributable, IERC20MintableBurnable {
+    address public tokenManager_;
     bool internal tokenManagerRequiresApproval_ = true;
 
     string public name;
@@ -20,10 +19,10 @@ contract FeeOnTransferTokenTest is InterchainTokenBase, Distributable, IERC20Min
         symbol = symbol_;
         decimals = decimals_;
         _addDistributor(msg.sender);
-        tokenManager_ = ITokenManager(tokenManagerAddress);
+        tokenManager_ = tokenManagerAddress;
     }
 
-    function tokenManager() public view override returns (ITokenManager) {
+    function tokenManager() public view override returns (address) {
         return tokenManager_;
     }
 
@@ -35,7 +34,7 @@ contract FeeOnTransferTokenTest is InterchainTokenBase, Distributable, IERC20Min
         bytes calldata /*metadata*/
     ) internal override {
         if (!tokenManagerRequiresApproval_) return;
-        address tokenManagerAddress = address(tokenManager_);
+        address tokenManagerAddress = tokenManager_;
         uint256 allowance_ = allowance[sender][tokenManagerAddress];
         if (allowance_ != UINT256_MAX) {
             if (allowance_ > UINT256_MAX - amount) {
@@ -58,7 +57,7 @@ contract FeeOnTransferTokenTest is InterchainTokenBase, Distributable, IERC20Min
         _burn(account, amount);
     }
 
-    function setTokenManager(ITokenManager tokenManagerAddress) external {
+    function setTokenManager(address tokenManagerAddress) external {
         tokenManager_ = tokenManagerAddress;
     }
 

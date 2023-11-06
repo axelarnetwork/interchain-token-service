@@ -2,19 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import { ITokenManager } from './ITokenManager.sol';
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
-interface IInterchainTokenBase {
-    /**
-     * @notice Getter for the tokenManager used for this token.
-     * @dev Needs to be overwitten.
-     * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
-     */
-    function tokenManager() external view returns (ITokenManager tokenManager_);
-
+interface IInterchainTokenStandard {
     /**
      * @notice Implementation of the interchainTransfer method
      * @dev We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
