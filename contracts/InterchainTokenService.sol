@@ -77,6 +77,10 @@ contract InterchainTokenService is
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
     uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
 
+    /**
+     * @dev Tokens and token managers deployed via the Token Factory contract use a special deployer address.
+     * This removes the dependency on the address the token factory was deployed too to be able to derive the same tokenId.
+     */
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     /**

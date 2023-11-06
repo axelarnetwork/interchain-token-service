@@ -30,7 +30,7 @@ interface IInterchainTokenFactory {
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
-        address additionalDistributor,
+        address distributor,
         string memory destinationChain,
         uint256 gasValue
     ) external payable;
