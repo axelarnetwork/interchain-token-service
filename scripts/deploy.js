@@ -87,7 +87,7 @@ async function deployAll(
     wallet,
     chainName,
     evmChains = [],
-    deploymentKey = 'interchainTokenService',
+    deploymentKey = 'InterchainTokenService',
     factoryDeploymentKey = deploymentKey + 'Factory',
 ) {
     const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)

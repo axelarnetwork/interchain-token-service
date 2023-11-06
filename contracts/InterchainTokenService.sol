@@ -48,7 +48,7 @@ contract InterchainTokenService is
 
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
-    address public immutable tokenFactory;
+    address public immutable interchainTokenFactory;
     bytes32 public immutable chainNameHash;
 
     address public immutable interchainTokenDeployer;
@@ -107,7 +107,7 @@ contract InterchainTokenService is
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
-        tokenFactory = interchainTokenFactory_;
+        interchainTokenFactory = interchainTokenFactory_;
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
         if (bytes(chainName_).length == 0) revert InvalidChainName();
@@ -277,7 +277,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer = msg.sender;
 
-        if (deployer == tokenFactory) deployer = address(0);
+        if (deployer == interchainTokenFactory) deployer = address(0);
 
         tokenId = interchainTokenId(deployer, salt);
 
@@ -314,7 +314,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         address deployer = msg.sender;
 
-        if (deployer == tokenFactory) deployer = address(0);
+        if (deployer == interchainTokenFactory) deployer = address(0);
 
         bytes32 tokenId = interchainTokenId(deployer, salt);
 

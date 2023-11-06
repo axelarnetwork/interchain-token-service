@@ -139,7 +139,7 @@ describe('Interchain Token Service', () => {
         let interchainTokenFactoryAddress;
 
         const chainName = 'Test';
-        const deploymentKey = 'interchainTokenService';
+        const deploymentKey = 'InterchainTokenService';
         const factoryDeploymentKey = 'factoryKey';
 
         before(async () => {
