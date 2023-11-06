@@ -7,7 +7,6 @@ import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { BaseInterchainToken } from './BaseInterchainToken.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
@@ -37,7 +36,7 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Di
 
     /**
      * @notice Returns the token manager for this token
-     * @return ITokenManager The token manager contract
+     * @return address The token manager contract
      */
     function tokenManager() public view override(BaseInterchainToken, IInterchainToken) returns (address) {
         return tokenManager_;
