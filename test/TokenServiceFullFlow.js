@@ -55,7 +55,12 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await factory.populateTransaction.deployRemoteCanonicalInterchainToken(chainName, token.address, otherChains[i], gasValues[i]);
+                const tx = await factory.populateTransaction.deployRemoteCanonicalInterchainToken(
+                    chainName,
+                    token.address,
+                    otherChains[i],
+                    gasValues[i],
+                );
                 data.push(tx.data);
                 value += gasValues[i];
             }
@@ -151,17 +156,9 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            let tx = await factory.populateTransaction.deployInterchainToken(
-                salt,
-                name,
-                symbol,
-                decimals,
-                tokenCap,
-                wallet.address,
-            );
+            let tx = await factory.populateTransaction.deployInterchainToken(salt, name, symbol, decimals, tokenCap, wallet.address);
             const data = [tx.data];
             let value = 0;
-
 
             for (const i in otherChains) {
                 tx = await factory.populateTransaction.deployRemoteInterchainToken(
@@ -174,7 +171,7 @@ describe('Interchain Token Service Full Flow', () => {
                 data.push(tx.data);
                 value += gasValues[i];
             }
-            
+
             // Make the factory transfer the token to the user.
             tx = await factory.populateTransaction.interchainTransfer(tokenId, '', wallet.address, tokenCap, 0);
             data.push(tx.data);
