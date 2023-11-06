@@ -91,7 +91,13 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Transfer tokens from factory contract to the user on remote chains.
             for (const i in otherChains) {
-                tx = await factory.populateTransaction.interchainTransfer(tokenId, otherChains[i], wallet.address, mintAmount, gasValues[i]);
+                tx = await factory.populateTransaction.interchainTransfer(
+                    tokenId,
+                    otherChains[i],
+                    wallet.address,
+                    mintAmount,
+                    gasValues[i],
+                );
                 calls.push(tx.data);
                 value += gasValues[i];
             }
@@ -210,7 +216,13 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Transfer tokens from factory contract to the user on remote chains.
             for (const i in otherChains) {
-                tx = await factory.populateTransaction.interchainTransfer(tokenId, otherChains[i], wallet.address, mintAmount, gasValues[i]);
+                tx = await factory.populateTransaction.interchainTransfer(
+                    tokenId,
+                    otherChains[i],
+                    wallet.address,
+                    mintAmount,
+                    gasValues[i],
+                );
                 calls.push(tx.data);
                 value += gasValues[i];
             }
