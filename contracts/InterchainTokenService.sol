@@ -77,6 +77,8 @@ contract InterchainTokenService is
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
     uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
 
+    address private constant TOKEN_FACTORY_DEPLOYER = address(0);
+
     /**
      * @dev All of the variables passed here are stored as immutable variables.
      * @param tokenManagerDeployer_ the address of the TokenManagerDeployer.
@@ -277,7 +279,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer = msg.sender;
 
-        if (deployer == interchainTokenFactory) deployer = address(0);
+        if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
 
         tokenId = interchainTokenId(deployer, salt);
 
@@ -314,7 +316,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         address deployer = msg.sender;
 
-        if (deployer == interchainTokenFactory) deployer = address(0);
+        if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
 
         bytes32 tokenId = interchainTokenId(deployer, salt);
 
