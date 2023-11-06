@@ -156,7 +156,6 @@ describe('Interchain Token Service', () => {
             tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
         });
 
-
         it('Should revert on invalid interchain token factory', async () => {
             await expectRevert(
                 (gasOptions) =>

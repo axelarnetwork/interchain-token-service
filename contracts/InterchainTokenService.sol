@@ -20,7 +20,6 @@ import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
 import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
-import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 
 import { Operatable } from './utils/Operatable.sol';
@@ -277,8 +276,8 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer = msg.sender;
-        
-        if(deployer == tokenFactory) deployer = address(0);
+
+        if (deployer == tokenFactory) deployer = address(0);
 
         tokenId = interchainTokenId(deployer, salt);
 
@@ -312,11 +311,11 @@ contract InterchainTokenService is
         uint8 decimals,
         bytes memory distributor,
         uint256 gasValue
-    ) external payable whenNotPaused {        
+    ) external payable whenNotPaused {
         address deployer = msg.sender;
 
-        if(deployer == tokenFactory) deployer = address(0);
-        
+        if (deployer == tokenFactory) deployer = address(0);
+
         bytes32 tokenId = interchainTokenId(deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
