@@ -8,7 +8,7 @@ import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
-import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
@@ -45,6 +45,7 @@ contract InterchainTokenService is
     using AddressBytes for bytes;
     using AddressBytes for address;
     using SafeTokenTransferFrom for IERC20;
+    using SafeTokenCall for IERC20;
 
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
@@ -418,8 +419,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable whenNotPaused {
-        ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
-        amount = tokenManager.takeToken(msg.sender, amount);
+        amount = _takeToken(tokenId, amount);
         _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
     }
 
@@ -430,8 +430,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata data
     ) external payable whenNotPaused {
-        ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
-        amount = tokenManager.takeToken(msg.sender, amount);
+        amount = _takeToken(tokenId, amount);
         uint32 prefix = 0;
         _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
     }
@@ -905,5 +904,24 @@ contract InterchainTokenService is
         );
 
         _callContract(destinationChain, payload, msg.value);
+    }
+
+    function _takeToken(bytes32 tokenId, uint256 amount) internal returns (uint256) {
+        ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
+        if(tokenManager.implementationType() == uint256(TokenManagerType.MINT_BURN)) {
+            amount = tokenManager.takeToken(msg.sender, amount);
+        } else {
+            IERC20 token = IERC20(tokenManager.tokenAddress());
+            address addressThis = address(this);
+            
+            uint256 balance = token.balanceOf(address(this));
+            token.safeTransferFrom(msg.sender, addressThis, amount);
+            balance = token.balanceOf(address(this)) - balance;
+            if(balance < amount) amount = balance;
+            
+            token.safeCall(abi.encodeWithSelector(token.approve.selector, tokenManager, amount));
+            amount = tokenManager.takeToken(addressThis, amount);
+        }
+        return amount;
     }
 }

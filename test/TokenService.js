@@ -1238,7 +1238,7 @@ describe('Interchain Token Service', () => {
 
         for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee']) {
             it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service [${type}]`, async () => {
-                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
+                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount, true);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
                 const metadata = '0x00000000';
                 const payload = defaultAbiCoder.encode(
@@ -1246,11 +1246,13 @@ describe('Interchain Token Service', () => {
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
                 );
                 const payloadHash = keccak256(payload);
+                
+                await (await token.approve(service.address, amount)).wait();
 
                 let transferToAddress = AddressZero;
 
-                if (type === 'lockUnlock' || type === 'lockUnlockFee') {
-                    transferToAddress = tokenManager.address;
+                if (type === 'lockUnlock' || type === 'lockUnlockFee' || type === 'mintBurnFrom') {
+                    transferToAddress = service.address;
                 }
 
                 await expect(service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata))

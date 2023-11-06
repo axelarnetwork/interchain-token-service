@@ -118,11 +118,9 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
-            tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
-
             await expect(tokenFactory.tokenApprove(tokenId, amount))
                 .to.emit(token, 'Approval')
-                .withArgs(tokenFactory.address, tokenManagerAddress, amount);
+                .withArgs(tokenFactory.address, service.address, amount);
         });
 
         it('Should transfer some tokens through the factory as the deployer', async () => {
@@ -159,9 +157,13 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(token, 'Transfer')
                 .withArgs(wallet.address, tokenFactory.address, amount)
                 .and.to.emit(token, 'Approval')
-                .withArgs(tokenFactory.address, tokenManagerAddress, amount)
+                .withArgs(tokenFactory.address, service.address, amount)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(tokenFactory.address, tokenManagerAddress, amount)
+                .withArgs(tokenFactory.address, service.address, amount)
+                .and.to.emit(token, 'Approval')
+                .withArgs(service.address, tokenManagerAddress, amount)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(service.address, tokenManagerAddress, amount)
                 .and.to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destinationChain, destinationAddress, amount);
         });

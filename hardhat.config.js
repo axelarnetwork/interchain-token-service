@@ -20,7 +20,7 @@ module.exports = {
             evmVersion: process.env.EVM_VERSION || 'london',
             optimizer: {
                 enabled: true,
-                runs: 10000,
+                runs: 100,
                 details: {
                     peephole: process.env.COVERAGE === undefined,
                     inliner: process.env.COVERAGE === undefined,
