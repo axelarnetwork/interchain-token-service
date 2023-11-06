@@ -185,7 +185,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
             salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);
             bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
-            token = IInterchainToken(service.tokenAddress(tokenId));
+            token = IInterchainToken(service.validTokenAddress(tokenId));
         }
 
         // The 3 lines below will revert if the token does not exist.
@@ -214,7 +214,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable {
-        address tokenAddress = service.tokenAddress(tokenId);
+        address tokenAddress = service.validTokenAddress(tokenId);
         IInterchainToken token = IInterchainToken(tokenAddress);
 
         token.safeTransferFrom(msg.sender, address(this), amount);
@@ -225,7 +225,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * TODO: Move this into a dedicated approve + transfer method to prevent unused approvals to be created that some tokens don't like.
      */
     function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
-        address tokenAddress = service.tokenAddress(tokenId);
+        address tokenAddress = service.validTokenAddress(tokenId);
         IInterchainToken token = IInterchainToken(tokenAddress);
         address tokenManager = service.tokenManagerAddress(tokenId);
 
