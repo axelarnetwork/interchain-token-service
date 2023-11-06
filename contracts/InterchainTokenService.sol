@@ -48,6 +48,7 @@ contract InterchainTokenService is
 
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
+    address public immutable interchainTokenFactory;
     bytes32 public immutable chainNameHash;
 
     address public immutable interchainTokenDeployer;
@@ -76,6 +77,8 @@ contract InterchainTokenService is
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
     uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
 
+    address private constant TOKEN_FACTORY_DEPLOYER = address(0);
+
     /**
      * @dev All of the variables passed here are stored as immutable variables.
      * @param tokenManagerDeployer_ the address of the TokenManagerDeployer.
@@ -90,6 +93,7 @@ contract InterchainTokenService is
         address interchainTokenDeployer_,
         address gateway_,
         address gasService_,
+        address interchainTokenFactory_,
         string memory chainName_,
         address[] memory tokenManagerImplementations
     ) {
@@ -97,22 +101,24 @@ contract InterchainTokenService is
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             interchainTokenDeployer_ == address(0) ||
-            gateway_ == address(0)
+            gateway_ == address(0) ||
+            interchainTokenFactory_ == address(0)
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
+        interchainTokenFactory = interchainTokenFactory_;
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
         if (bytes(chainName_).length == 0) revert InvalidChainName();
+        chainNameHash = keccak256(bytes(chainName_));
 
         implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
-        chainNameHash = keccak256(bytes(chainName_));
     }
 
     /*******\
@@ -272,6 +278,9 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer = msg.sender;
+
+        if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
+
         tokenId = interchainTokenId(deployer, salt);
 
         emit InterchainTokenIdClaimed(tokenId, deployer, salt);
@@ -305,7 +314,11 @@ contract InterchainTokenService is
         bytes memory distributor,
         uint256 gasValue
     ) external payable whenNotPaused {
-        bytes32 tokenId = interchainTokenId(msg.sender, salt);
+        address deployer = msg.sender;
+
+        if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
+
+        bytes32 tokenId = interchainTokenId(deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
             address tokenAddress_ = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);

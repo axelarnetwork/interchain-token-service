@@ -96,6 +96,11 @@ interface IInterchainTokenService is
     function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
 
     /**
+     * @notice Returns hash of the chain name.
+     */
+    function chainNameHash() external view returns (bytes32);
+
+    /**
      * @notice Returns the address of the token manager associated with the given tokenId.
      * @param tokenId The tokenId of the token manager.
      * @return tokenManagerAddress_ The address of the token manager.
