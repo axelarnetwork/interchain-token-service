@@ -184,22 +184,22 @@ contract InterchainTokenService is
     /**
      * @notice Returns the address of the token that an existing tokenManager points to.
      * @param tokenId the tokenId.
-     * @return tokenAddress_ the address of the token.
+     * @return tokenAddress the address of the token.
      */
-    function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress_) {
+    function validTokenAddress(bytes32 tokenId) external view returns (address tokenAddress) {
         address tokenManagerAddress_ = validTokenManagerAddress(tokenId);
-        tokenAddress_ = ITokenManager(tokenManagerAddress_).tokenAddress();
+        tokenAddress = ITokenManager(tokenManagerAddress_).tokenAddress();
     }
 
     /**
      * @notice Returns the address of the interchain token that would be deployed with a given tokenId.
      * The token does not need to exist.
      * @param tokenId the tokenId.
-     * @return tokenAddress_ the address of the interchain token.
+     * @return tokenAddress the address of the interchain token.
      */
-    function interchainTokenAddress(bytes32 tokenId) public view returns (address tokenAddress_) {
+    function interchainTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
         tokenId = _getInterchainTokenSalt(tokenId);
-        tokenAddress_ = _create3Address(tokenId);
+        tokenAddress = _create3Address(tokenId);
     }
 
     /**
@@ -325,9 +325,9 @@ contract InterchainTokenService is
         bytes32 tokenId = interchainTokenId(deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
-            address tokenAddress_ = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);
+            address tokenAddress = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);
 
-            _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(distributor, tokenAddress_));
+            _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(distributor, tokenAddress));
         } else {
             _deployRemoteInterchainToken(tokenId, name, symbol, decimals, distributor, destinationChain, gasValue);
         }
@@ -690,11 +690,11 @@ contract InterchainTokenService is
             payload,
             (uint256, bytes32, string, string, uint8, bytes)
         );
-        address tokenAddress_;
+        address tokenAddress;
 
-        tokenAddress_ = _deployInterchainToken(tokenId, distributorBytes, name, symbol, decimals);
+        tokenAddress = _deployInterchainToken(tokenId, distributorBytes, name, symbol, decimals);
 
-        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(distributorBytes, tokenAddress_));
+        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(distributorBytes, tokenAddress));
     }
 
     /**
@@ -820,7 +820,7 @@ contract InterchainTokenService is
         string memory name,
         string memory symbol,
         uint8 decimals
-    ) internal returns (address tokenAddress_) {
+    ) internal returns (address tokenAddress) {
         bytes32 salt = _getInterchainTokenSalt(tokenId);
         address tokenManagerAddress_ = tokenManagerAddress(tokenId);
 
@@ -844,11 +844,11 @@ contract InterchainTokenService is
         }
 
         assembly {
-            tokenAddress_ := mload(add(returnData, 0x20))
+            tokenAddress := mload(add(returnData, 0x20))
         }
 
         // slither-disable-next-line reentrancy-events
-        emit InterchainTokenDeployed(tokenId, tokenAddress_, distributor, name, symbol, decimals);
+        emit InterchainTokenDeployed(tokenId, tokenAddress, distributor, name, symbol, decimals);
     }
 
     function _decodeMetadata(bytes memory metadata) internal pure returns (uint32 version, bytes memory data) {

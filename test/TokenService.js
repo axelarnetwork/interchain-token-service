@@ -671,7 +671,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const tokenAddress = await service.tokenAddress(tokenId);
+            const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
         });
 
@@ -694,7 +694,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const tokenAddress = await service.tokenAddress(tokenId);
+            const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
         });
 
@@ -719,7 +719,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const tokenAddress = await service.tokenAddress(tokenId);
+            const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
         });
 
@@ -749,7 +749,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const tokenAddress = await service.tokenAddress(tokenId);
+            const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
         });
 
