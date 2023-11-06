@@ -30,11 +30,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).chainName();
 
-        if (bytes(chainName_).length == 0) revert InvalidChainName();
-
-        chainNameHash = keccak256(bytes(chainName_));
+        chainNameHash = service.chainNameHash();
     }
 
     /**

@@ -113,12 +113,13 @@ contract InterchainTokenService is
 
         if (tokenManagerImplementations.length != uint256(type(TokenManagerType).max) + 1) revert LengthMismatch();
         if (bytes(chainName_).length == 0) revert InvalidChainName();
+        _setChainName(chainName_);
+        chainNameHash = keccak256(bytes(chainName_));
 
         implementationMintBurn = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN);
         implementationMintBurnFrom = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.MINT_BURN_FROM);
         implementationLockUnlock = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK);
         implementationLockUnlockFee = _sanitizeTokenManagerImplementation(tokenManagerImplementations, TokenManagerType.LOCK_UNLOCK_FEE);
-        chainNameHash = keccak256(bytes(chainName_));
     }
 
     /*******\
