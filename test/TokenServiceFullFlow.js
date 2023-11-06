@@ -19,19 +19,19 @@ const DISTRIBUTOR_ROLE = 0;
 const MINT_BURN = 0;
 const LOCK_UNLOCK = 2;
 
-// TODO: Refactor skipped tests
-describe.skip('Interchain Token Service Full Flow', () => {
+describe('Interchain Token Service Full Flow', () => {
     let wallet;
-    let service, gateway, gasService, tokenManager, tokenId;
+    let service, gateway, gasService, tokenManager, factory, tokenId;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const otherChains = ['chain 1', 'chain 2'];
     const decimals = 18;
+    const chainName = 'Test';
 
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
-        [service, gateway, gasService] = await deployAll(wallet, 'Test', otherChains);
+        [service, gateway, gasService, factory] = await deployAll(wallet, chainName, otherChains);
     });
 
     describe('Full canonical token registration, remote deployment and token send', async () => {
@@ -42,7 +42,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
         before(async () => {
             // The below is used to deploy a token, but any ERC20 can be used instead.
             token = await deployContract(wallet, 'InterchainTokenTest', [name, symbol, decimals, wallet.address]);
-            tokenId = await service.canonicalInterchainTokenId(token.address);
+            tokenId = await factory.canonicalInterchainTokenId(token.address);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
             await (await token.setTokenManager(tokenManagerAddress)).wait();
@@ -50,33 +50,38 @@ describe.skip('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const tx1 = await service.populateTransaction.registerCanonicalInterchainToken(token.address);
+            const tx1 = await factory.populateTransaction.registerCanonicalInterchainToken(token.address);
             const data = [tx1.data];
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await service.populateTransaction.deployRemoteCanonicalInterchainToken(tokenId, otherChains[i], gasValues[i]);
+                const tx = await factory.populateTransaction.deployRemoteCanonicalInterchainToken(
+                    chainName,
+                    token.address,
+                    otherChains[i],
+                    gasValues[i],
+                );
                 data.push(tx.data);
                 value += gasValues[i];
             }
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, '0x'],
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(service.multicall(data, { value }))
+            await expect(factory.multicall(data, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', otherChains[0])
+                .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[0], service.address, keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, otherChains[0], service.address, keccak256(payload), payload)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, '0x', otherChains[1])
+                .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -143,7 +148,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
         const tokenCap = BigInt(1e18);
 
         before(async () => {
-            tokenId = await service.interchainTokenId(wallet.address, salt);
+            tokenId = await factory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -151,26 +156,14 @@ describe.skip('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const tx1 = await service.populateTransaction.deployAndRegisterInterchainToken(
-                salt,
-                name,
-                symbol,
-                decimals,
-                tokenCap,
-                wallet.address,
-            );
-            const data = [tx1.data];
+            let tx = await factory.populateTransaction.deployInterchainToken(salt, name, symbol, decimals, tokenCap, wallet.address);
+            const data = [tx.data];
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await service.populateTransaction.deployInterchainToken(
+                tx = await factory.populateTransaction.deployRemoteInterchainToken(
+                    chainName,
                     salt,
-                    name,
-                    symbol,
-                    decimals,
-                    '0x',
-                    '0x',
-                    0,
                     wallet.address,
                     otherChains[i],
                     gasValues[i],
@@ -179,32 +172,36 @@ describe.skip('Interchain Token Service Full Flow', () => {
                 value += gasValues[i];
             }
 
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address],
-            );
-            const tx = service.multicall(data, { value });
+            // Make the factory transfer the token to the user.
+            tx = await factory.populateTransaction.interchainTransfer(tokenId, '', wallet.address, tokenCap, 0);
+            data.push(tx.data);
 
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [factory.address, token.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, wallet.address],
+            );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
-            await expect(tx)
+            await expect(factory.multicall(data, { value }))
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, expectedTokenAddress, wallet.address, name, symbol, decimals, tokenCap, wallet.address)
+                .withArgs(tokenId, expectedTokenAddress, factory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), otherChains[0])
+                .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[0], service.address, keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, otherChains[0], service.address, keccak256(payload), payload)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, name, symbol, decimals, '0x', '0x', 0, wallet.address.toLowerCase(), otherChains[1])
+                .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), otherChains[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(factory.address, wallet.address, tokenCap);
         });
 
         it('Should send some token to another chain', async () => {
@@ -256,7 +253,7 @@ describe.skip('Interchain Token Service Full Flow', () => {
         });
     });
 
-    describe('Full pre-existing token registration and token send', async () => {
+    describe.skip('Full pre-existing token registration and token send', async () => {
         let token;
         const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
