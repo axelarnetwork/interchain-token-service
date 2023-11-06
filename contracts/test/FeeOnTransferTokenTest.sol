@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
+import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol';
 import { Distributable } from '../utils/Distributable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
-contract FeeOnTransferTokenTest is InterchainTokenBase, Distributable, IERC20MintableBurnable {
+contract FeeOnTransferTokenTest is BaseInterchainToken, Distributable, IERC20MintableBurnable {
     ITokenManager public tokenManager_;
     bool internal tokenManagerRequiresApproval_ = true;
 

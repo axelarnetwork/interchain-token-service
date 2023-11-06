@@ -8,11 +8,11 @@ import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
-import { InterchainTokenBase } from '../interchain-token/InterchainTokenBase.sol';
+import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol';
 import { ERC20Permit } from '../interchain-token/ERC20Permit.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
-contract InvalidInterchainToken is IERC20MintableBurnable, InterchainTokenBase, ERC20Permit, Implementation, Distributable {
+contract InvalidInterchainToken is IERC20MintableBurnable, BaseInterchainToken, ERC20Permit, Implementation, Distributable {
     using AddressBytes for bytes;
 
     string public name;

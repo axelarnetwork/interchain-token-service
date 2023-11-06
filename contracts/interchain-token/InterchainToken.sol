@@ -9,7 +9,7 @@ import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
-import { InterchainTokenBase } from './InterchainTokenBase.sol';
+import { BaseInterchainToken } from './BaseInterchainToken.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
 import { Distributable } from '../utils/Distributable.sol';
 
@@ -18,7 +18,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a interchain token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
-contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Distributable, IInterchainToken {
+contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Distributable, IInterchainToken {
     using AddressBytes for bytes;
 
     string public name;
@@ -39,7 +39,7 @@ contract InterchainToken is InterchainTokenBase, ERC20Permit, Implementation, Di
      * @notice Returns the token manager for this token
      * @return ITokenManager The token manager contract
      */
-    function tokenManager() public view override(InterchainTokenBase, IInterchainToken) returns (ITokenManager) {
+    function tokenManager() public view override(BaseInterchainToken, IInterchainToken) returns (ITokenManager) {
         return ITokenManager(tokenManager_);
     }
 
