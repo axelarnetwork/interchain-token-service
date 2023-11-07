@@ -7,6 +7,7 @@
     "verbatimModuleSyntax": false,
     "jsx": "react-jsx",
     "moduleResolution": "node",
-    "noEmit": true
-  }
+    "declaration": true
+  },
+  "include": ["typescript/**/*"]
 }
