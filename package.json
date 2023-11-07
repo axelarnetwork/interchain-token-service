@@ -8,7 +8,8 @@
   "main": "index.js",
   "scripts": {
     "build": "npx hardhat clean && npx hardhat compile && npm run copy:interfaces",
-    "codegen-typescript": "rm -rf typescript/contracts && tsx scripts/codegen.ts",
+    "codegen:ts": "rm -rf typescript/contracts && tsx scripts/codegen.ts",
+    "build:ts": "npm run codegen:ts && tsc",
     "test": "npx hardhat test",
     "copy:interfaces": "rm -rf interfaces && mkdir interfaces && cp artifacts/contracts/interfaces/*/*.json interfaces/ && rm interfaces/*.dbg.json",
     "clean:artifacts": "rm -rf artifacts/build-info artifacts/*/test artifacts/contracts/*/*/*.dbg.json",

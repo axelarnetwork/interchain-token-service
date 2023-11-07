@@ -25,6 +25,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Codegen typed contract ABIs
+        run: npm run build:ts
+
       - name: Clean artifacts
         run: npm run clean:artifacts
 
