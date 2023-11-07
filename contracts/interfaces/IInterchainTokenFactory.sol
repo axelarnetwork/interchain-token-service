@@ -9,6 +9,7 @@ interface IInterchainTokenFactory {
     error NotOperator(address operator);
     error NonZeroMintAmount();
     error ApproveFailed();
+    error UnsetDestinationChainUnsupported();
 
     function chainNameHash() external view returns (bytes32);
 
@@ -58,5 +59,11 @@ interface IInterchainTokenFactory {
 
     function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable;
 
-    function tokenApprove(bytes32 tokenId, uint256 amount) external payable;
+    function approveAndInterchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        uint256 gasValue
+    ) external payable;
 }

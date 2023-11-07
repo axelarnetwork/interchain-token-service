@@ -85,13 +85,9 @@ describe('Interchain Token Service Full Flow', () => {
             tx = await factory.populateTransaction.tokenTransferFrom(tokenId, totalMint);
             calls.push(tx.data);
 
-            // Approve total mint amount from the factory to the token manager contract
-            tx = await factory.populateTransaction.tokenApprove(tokenId, totalMint);
-            calls.push(tx.data);
-
             // Transfer tokens from factory contract to the user on remote chains.
             for (const i in otherChains) {
-                tx = await factory.populateTransaction.interchainTransfer(
+                tx = await factory.populateTransaction.approveAndInterchainTransfer(
                     tokenId,
                     otherChains[i],
                     wallet.address,
@@ -129,7 +125,11 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, factory.address, totalMint)
                 .and.to.emit(token, 'Approval')
-                .withArgs(factory.address, expectedTokenManagerAddress, totalMint)
+                .withArgs(factory.address, expectedTokenManagerAddress, mintAmount)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(factory.address, expectedTokenManagerAddress, mintAmount)
+                .and.to.emit(token, 'Approval')
+                .withArgs(factory.address, expectedTokenManagerAddress, mintAmount)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(factory.address, expectedTokenManagerAddress, mintAmount);
         });

@@ -221,14 +221,24 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     /**
-     * @dev Allow any token to be approved to the token manager.
-     * TODO: Move this into a dedicated approve + transfer method to prevent unused approvals to be created that some tokens don't like.
+     * @dev This will still incur unwanted approvals for mint/burn token managers.
      */
-    function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
+    function approveAndInterchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        uint256 gasValue
+    ) external payable {
+        if (bytes(destinationChain).length == 0) revert UnsetDestinationChainUnsupported();
+
         address tokenAddress = service.validTokenAddress(tokenId);
         IInterchainToken token = IInterchainToken(tokenAddress);
         address tokenManager = service.tokenManagerAddress(tokenId);
 
         token.safeCall(abi.encodeWithSelector(token.approve.selector, tokenManager, amount));
+
+        // slither-disable-next-line arbitrary-send-eth
+        service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, new bytes(0));
     }
 }

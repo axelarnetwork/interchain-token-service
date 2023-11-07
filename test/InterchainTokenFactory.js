@@ -109,6 +109,8 @@ describe('InterchainTokenFactory', () => {
 
         it('Should approve some tokens from the factory to the token manager', async () => {
             const amount = 123456;
+            const destinationAddress = '0x57689403';
+            const gasValue = 45960;
 
             await deployToken();
 
@@ -120,9 +122,21 @@ describe('InterchainTokenFactory', () => {
 
             tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
 
-            await expect(tokenFactory.tokenApprove(tokenId, amount))
+            await expect(token.transfer(tokenFactory.address, amount))
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, tokenFactory.address, amount);
+
+            await expect(
+                tokenFactory.approveAndInterchainTransfer(tokenId, destinationChain, destinationAddress, amount, gasValue, {
+                    value: gasValue,
+                }),
+            )
                 .to.emit(token, 'Approval')
-                .withArgs(tokenFactory.address, tokenManagerAddress, amount);
+                .withArgs(tokenFactory.address, tokenManagerAddress, amount)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(tokenFactory.address, tokenManagerAddress, amount)
+                .and.to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, destinationChain, destinationAddress, amount);
         });
 
         it('Should transfer some tokens through the factory as the deployer', async () => {
@@ -145,9 +159,14 @@ describe('InterchainTokenFactory', () => {
             const txs = [];
 
             txs.push(await tokenFactory.populateTransaction.tokenTransferFrom(tokenId, amount));
-            txs.push(await tokenFactory.populateTransaction.tokenApprove(tokenId, amount));
             txs.push(
-                await tokenFactory.populateTransaction.interchainTransfer(tokenId, destinationChain, destinationAddress, amount, gasValue),
+                await tokenFactory.populateTransaction.approveAndInterchainTransfer(
+                    tokenId,
+                    destinationChain,
+                    destinationAddress,
+                    amount,
+                    gasValue,
+                ),
             );
 
             await expect(
