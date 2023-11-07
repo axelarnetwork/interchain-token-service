@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 interface IInterchainTokenFactory {
     error ZeroAddress();
+    error InvalidChainName();
     error NotDistributor(address distributor);
     error NotOperator(address operator);
     error NonZeroMintAmount();
@@ -29,7 +30,7 @@ interface IInterchainTokenFactory {
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
-        address additionalDistributor,
+        address distributor,
         string memory destinationChain,
         uint256 gasValue
     ) external payable;

@@ -26,12 +26,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
+    address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
-        string memory chainName_ = IInterchainTokenService(interchainTokenServiceAddress).interchainAddressTracker().chainName();
-        chainNameHash = keccak256(bytes(chainName_));
+
+        chainNameHash = service.chainNameHash();
     }
 
     /**
@@ -50,11 +51,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     function interchainTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = service.interchainTokenId(address(this), interchainTokenSalt(chainNameHash, deployer, salt));
+        tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, interchainTokenSalt(chainNameHash, deployer, salt));
     }
 
     function canonicalInterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = service.interchainTokenId(address(this), canonicalInterchainTokenSalt(chainNameHash, tokenAddress));
+        tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, canonicalInterchainTokenSalt(chainNameHash, tokenAddress));
     }
 
     function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
@@ -82,14 +83,18 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, 0);
 
         if (mintAmount > 0) {
-            bytes32 tokenId = service.interchainTokenId(address(this), salt);
+            bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
+            ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
+
             token.mint(address(this), mintAmount);
+
             token.transferDistributorship(distributor);
 
-            ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
             tokenManager.removeFlowLimiter(address(this));
+
             if (distributor != address(0)) tokenManager.addFlowLimiter(distributor);
+
             tokenManager.transferOperatorship(distributor);
         }
     }
@@ -97,14 +102,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
-        address additionalDistributor,
+        address distributor,
         string memory destinationChain,
         uint256 gasValue
     ) external payable {
         string memory tokenName;
         string memory tokenSymbol;
         uint8 tokenDecimals;
-        bytes memory distributor = new bytes(0);
+        bytes memory distributor_ = new bytes(0);
 
         {
             bytes32 chainNameHash_;
@@ -113,22 +118,25 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             } else {
                 chainNameHash_ = keccak256(bytes(originalChainName));
             }
+
             address sender = msg.sender;
             salt = interchainTokenSalt(chainNameHash_, sender, salt);
-            bytes32 tokenId = service.interchainTokenId(address(this), salt);
+            bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
 
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
 
             tokenName = token.name();
             tokenSymbol = token.symbol();
             tokenDecimals = token.decimals();
-            if (additionalDistributor != address(0)) {
-                if (!token.isDistributor(additionalDistributor)) revert NotDistributor(additionalDistributor);
-                distributor = additionalDistributor.toBytes();
+
+            if (distributor != address(0)) {
+                if (!token.isDistributor(distributor)) revert NotDistributor(distributor);
+
+                distributor_ = distributor.toBytes();
             }
         }
 
-        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, gasValue);
+        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor_, gasValue);
     }
 
     function _deployInterchainToken(
@@ -176,8 +184,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             }
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
             salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);
-            bytes32 tokenId = service.interchainTokenId(address(this), salt);
-            token = IInterchainToken(service.tokenAddress(tokenId));
+            bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+            token = IInterchainToken(service.validTokenAddress(tokenId));
         }
 
         // The 3 lines below will revert if the token does not exist.
@@ -206,14 +214,18 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable {
-        address tokenAddress = service.tokenAddress(tokenId);
+        address tokenAddress = service.validTokenAddress(tokenId);
         IInterchainToken token = IInterchainToken(tokenAddress);
 
         token.safeTransferFrom(msg.sender, address(this), amount);
     }
 
+    /**
+     * @dev Allow any token to be approved to the token manager.
+     * TODO: Move this into a dedicated approve + transfer method to prevent unused approvals to be created that some tokens don't like.
+     */
     function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
-        address tokenAddress = service.tokenAddress(tokenId);
+        address tokenAddress = service.validTokenAddress(tokenId);
         IInterchainToken token = IInterchainToken(tokenAddress);
         address tokenManager = service.tokenManagerAddress(tokenId);
 

@@ -19,7 +19,6 @@ const {
     deployMockGateway,
     deployGasService,
     deployInterchainTokenService,
-    deployRemoteAddressValidator,
     deployTokenManagerImplementations,
 } = require('../scripts/deploy');
 
@@ -136,11 +135,12 @@ describe('Interchain Token Service', () => {
         let interchainToken;
         let interchainTokenDeployer;
         let interchainTokenServiceAddress;
-        let interchainAddressTracker;
         let tokenManagerImplementations;
+        let interchainTokenFactoryAddress;
 
         const chainName = 'Test';
-        const deploymentKey = 'interchainTokenService';
+        const deploymentKey = 'InterchainTokenService';
+        const factoryDeploymentKey = 'factoryKey';
 
         before(async () => {
             create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
@@ -152,11 +152,11 @@ describe('Interchain Token Service', () => {
             interchainToken = await deployContract(wallet, 'InterchainToken');
             interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
             interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-            interchainAddressTracker = await deployRemoteAddressValidator(wallet, interchainTokenServiceAddress, chainName);
+            interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey);
             tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
         });
 
-        it('Should revert on invalid remote address validator', async () => {
+        it('Should revert on invalid interchain token factory', async () => {
             await expectRevert(
                 (gasOptions) =>
                     deployInterchainTokenService(
@@ -168,6 +168,8 @@ describe('Interchain Token Service', () => {
                         gasService.address,
                         AddressZero,
                         tokenManagerImplementations.map((impl) => impl.address),
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
@@ -186,8 +188,10 @@ describe('Interchain Token Service', () => {
                         interchainTokenDeployer.address,
                         gateway.address,
                         AddressZero,
-                        interchainAddressTracker.address,
+                        interchainTokenFactoryAddress,
                         tokenManagerImplementations.map((impl) => impl.address),
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
@@ -206,8 +210,10 @@ describe('Interchain Token Service', () => {
                         interchainTokenDeployer.address,
                         gateway.address,
                         gasService.address,
-                        interchainAddressTracker.address,
+                        interchainTokenFactoryAddress,
                         tokenManagerImplementations.map((impl) => impl.address),
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
@@ -226,8 +232,10 @@ describe('Interchain Token Service', () => {
                         AddressZero,
                         gateway.address,
                         gasService.address,
-                        interchainAddressTracker.address,
+                        interchainTokenFactoryAddress,
                         tokenManagerImplementations.map((impl) => impl.address),
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
@@ -246,8 +254,10 @@ describe('Interchain Token Service', () => {
                         interchainTokenDeployer.address,
                         AddressZero,
                         gasService.address,
-                        interchainAddressTracker.address,
+                        interchainTokenFactoryAddress,
                         tokenManagerImplementations.map((impl) => impl.address),
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
@@ -268,8 +278,10 @@ describe('Interchain Token Service', () => {
                         interchainTokenDeployer.address,
                         gateway.address,
                         gasService.address,
-                        interchainAddressTracker.address,
+                        interchainTokenFactoryAddress,
                         tokenManagerImplementations.map((impl) => impl.address),
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
@@ -288,8 +300,10 @@ describe('Interchain Token Service', () => {
                 interchainTokenDeployer.address,
                 gateway.address,
                 gasService.address,
-                interchainAddressTracker.address,
+                interchainTokenFactoryAddress,
                 tokenManagerImplementations.map((impl) => impl.address),
+                chainName,
+                [],
                 deploymentKey,
             );
 
@@ -316,8 +330,10 @@ describe('Interchain Token Service', () => {
                         interchainTokenDeployer.address,
                         gateway.address,
                         gasService.address,
-                        interchainAddressTracker.address,
+                        interchainTokenFactoryAddress,
                         [...tokenManagerImplementations.map((impl) => impl.address), AddressZero],
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
@@ -341,8 +357,10 @@ describe('Interchain Token Service', () => {
                         interchainTokenDeployer.address,
                         gateway.address,
                         gasService.address,
-                        interchainAddressTracker.address,
+                        interchainTokenFactoryAddress,
                         tokenManagerImplementations.map((impl) => impl.address),
+                        chainName,
+                        [],
                         deploymentKey,
                         gasOptions,
                     ),
@@ -402,9 +420,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const token = await getContractAt('InterchainToken', tokenAddress, wallet);
-
-            console.log(await token.name());
+            await getContractAt('InterchainToken', tokenAddress, wallet);
         });
 
         it('Should revert when registering a interchain token when service is paused', async () => {
@@ -655,7 +671,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const tokenAddress = await service.tokenAddress(tokenId);
+            const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
         });
 
@@ -678,7 +694,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const tokenAddress = await service.tokenAddress(tokenId);
+            const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
         });
 
@@ -703,7 +719,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const tokenAddress = await service.tokenAddress(tokenId);
+            const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
         });
 
@@ -733,7 +749,7 @@ describe('Interchain Token Service', () => {
 
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
-            const tokenAddress = await service.tokenAddress(tokenId);
+            const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
         });
 

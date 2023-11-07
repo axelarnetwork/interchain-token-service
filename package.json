@@ -1,6 +1,6 @@
 {
   "name": "@axelar-network/interchain-token-service",
-  "version": "0.3.0",
+  "version": "1.0.0-beta.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/axelarnetwork/interchain-token-service"
@@ -8,11 +8,13 @@
   "main": "index.js",
   "scripts": {
     "build": "npx hardhat clean && npx hardhat compile && npm run copy:interfaces",
+    "codegen:ts": "rm -rf typescript/contracts && tsx scripts/codegen.ts",
+    "build:ts": "npm run codegen:ts && tsc",
     "test": "npx hardhat test",
     "copy:interfaces": "rm -rf interfaces && mkdir interfaces && cp artifacts/contracts/interfaces/*/*.json interfaces/ && rm interfaces/*.dbg.json",
     "clean:artifacts": "rm -rf artifacts/build-info artifacts/*/test artifacts/contracts/*/*/*.dbg.json",
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/**/*.js'",
-    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/**/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc'",
+    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/**/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc' '.github/**/*.yaml'",
     "flatten": "sh scripts/flatten-contracts.sh",
     "coverage": "cross-env COVERAGE=true hardhat coverage"
   },
@@ -27,11 +29,13 @@
   },
   "dependencies": {
     "@axelar-network/axelar-cgp-solidity": "6.1.2",
-    "@axelar-network/axelar-gmp-sdk-solidity": "5.6.1"
+    "@axelar-network/axelar-gmp-sdk-solidity": "5.6.2"
   },
   "devDependencies": {
     "@axelar-network/axelar-chains-config": "~0.1.2",
+    "@axelarjs/utils": "^0.1.12",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@tsconfig/strictest": "^2.0.2",
     "chai": "^4.3.7",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.1",
@@ -43,7 +47,10 @@
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
     "solhint": "^3.4.1",
-    "solidity-docgen": "^0.6.0-beta.36"
+    "solidity-docgen": "^0.6.0-beta.36",
+    "tsx": "^3.14.0",
+    "viem": "^1.18.3",
+    "zx": "^7.2.3"
   },
   "description": "Interchain token service for EVM chains to faciliate cross-chain token transfers and contract calls",
   "files": [
@@ -52,6 +59,7 @@
     "interfaces",
     "docs",
     "scripts",
+    "typescript",
     "DESIGN.md",
     "README.md",
     "hardhat.config.js"

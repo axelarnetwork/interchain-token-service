@@ -2,23 +2,23 @@
 
 pragma solidity ^0.8.0;
 
-import { IInterchainTokenBase } from '../interfaces/IInterchainTokenBase.sol';
+import { IInterchainTokenStandard } from '../interfaces/IInterchainTokenStandard.sol';
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { ERC20 } from './ERC20.sol';
 
 /**
- * @title An example implementation of the IInterchainToken.
+ * @title An example implementation of the IInterchainTokenStandard.
  * @notice The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
  * that can be used to create approvals, and that `allowance` is a mapping.
  */
-abstract contract InterchainTokenBase is IInterchainTokenBase, ERC20 {
+abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwritten.
      * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
      */
-    function tokenManager() public view virtual returns (ITokenManager tokenManager_);
+    function tokenManager() public view virtual returns (address tokenManager_);
 
     /**
      * @notice Implementation of the interchainTransfer method
@@ -39,7 +39,7 @@ abstract contract InterchainTokenBase is IInterchainTokenBase, ERC20 {
 
         _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
-        ITokenManager tokenManager_ = tokenManager();
+        ITokenManager tokenManager_ = ITokenManager(tokenManager());
         tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
 
@@ -68,7 +68,7 @@ abstract contract InterchainTokenBase is IInterchainTokenBase, ERC20 {
 
         _beforeInterchainTransfer(sender, destinationChain, recipient, amount, metadata);
 
-        ITokenManager tokenManager_ = tokenManager();
+        ITokenManager tokenManager_ = ITokenManager(tokenManager());
         tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
     }
 

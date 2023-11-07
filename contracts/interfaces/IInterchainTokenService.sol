@@ -5,11 +5,11 @@ pragma solidity ^0.8.0;
 import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarValuedExpressExecutable.sol';
 import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
 import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
-import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
+import { IAddressTracker } from './IAddressTracker.sol';
 
 interface IInterchainTokenService is
     ITokenManagerType,
@@ -17,11 +17,11 @@ interface IInterchainTokenService is
     IAxelarValuedExpressExecutable,
     IPausable,
     IMulticall,
-    IContractIdentifier
+    IContractIdentifier,
+    IAddressTracker
 {
-    error ZeroAddress();
-    error LengthMismatch();
     error InvalidTokenManagerImplementationType(address implementation);
+    error InvalidChainName();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error NotTokenManager(address caller, address tokenManager);
@@ -33,7 +33,6 @@ interface IInterchainTokenService is
     error InvalidMessageType(uint256 messageType);
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
-    error UntrustedChain(string chainName);
     error InvalidExpressMessageType(uint256 messageType);
 
     event InterchainTransfer(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
@@ -85,12 +84,6 @@ interface IInterchainTokenService is
     event InterchainTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
 
     /**
-     * @notice Returns the address of the interchain router contract.
-     * @return interchainAddressTracker_ The interchainAddressTracker.
-     */
-    function interchainAddressTracker() external view returns (IInterchainAddressTracker interchainAddressTracker_);
-
-    /**
      * @notice Returns the address of the token manager deployer contract.
      * @return tokenManagerDeployerAddress The address of the token manager deployer contract.
      */
@@ -101,6 +94,11 @@ interface IInterchainTokenService is
      * @return interchainTokenDeployerAddress The address of the interchain token deployer contract.
      */
     function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
+
+    /**
+     * @notice Returns hash of the chain name.
+     */
+    function chainNameHash() external view returns (bytes32);
 
     /**
      * @notice Returns the address of the token manager associated with the given tokenId.
@@ -117,18 +115,18 @@ interface IInterchainTokenService is
     function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
 
     /**
-     * @notice Returns the address of the token associated with the given tokenId.
+     * @notice Returns the address of the token that an existing tokenManager points to.
      * @param tokenId The tokenId of the token manager.
-     * @return tokenAddress_ The address of the token.
+     * @return tokenAddress The address of the token.
      */
-    function tokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
+    function validTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
     /**
      * @notice Returns the address of the interchain token associated with the given tokenId.
      * @param tokenId The tokenId of the interchain token.
-     * @return tokenAddress_ The address of the interchain token.
+     * @return tokenAddress The address of the interchain token.
      */
-    function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress_);
+    function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
     /**
      * @notice Returns the custom tokenId associated with the given operator and salt.
