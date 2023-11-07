@@ -39,6 +39,11 @@ jobs:
 
       - name: Generate release
         run: |
+          if [[ "${{ steps.release.outputs.tag }}" == *"-alpha."* || "${{ steps.release.outputs.tag }}" == *"-beta."* ]]; then
+          echo "No branch and tag creation for alpha/beta releases)."
+          exit 0
+          fi
+
           new_release_branch=""
 
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
