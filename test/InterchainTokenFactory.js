@@ -188,7 +188,6 @@ describe('InterchainTokenFactory', () => {
         });
 
         it('Should revert when trying to register a canonical mint/burn gateway token', async () => {
-            
             const tokenCap = 0;
             let tokenAddress = AddressZero;
             const mintLimit = 0;
