@@ -45,9 +45,10 @@ describe('Token Manager', () => {
     it('Should revert on transmitInterchainTransfer if not called by the token', async () => {
         const [service] = await deployAll(owner, 'Test');
         const salt = getRandomBytes32();
-        const LOCK_UNLCOK = 2;
+        const MINT_BURN = 0;
+
         const params = defaultAbiCoder.encode(['bytes', 'address'], [owner.address, token.address]);
-        await await service.deployTokenManager(salt, '', LOCK_UNLCOK, params, 0);
+        await await service.deployTokenManager(salt, '', MINT_BURN, params, 0);
         const tokenManagerAddress = await service.tokenManagerAddress(await service.interchainTokenId(owner.address, salt));
         const tokenManager = await getContractAt('ITokenManager', tokenManagerAddress, owner);
 

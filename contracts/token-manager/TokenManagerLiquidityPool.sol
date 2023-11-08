@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
 import { ITokenManagerLiquidityPool } from '../interfaces/ITokenManagerLiquidityPool.sol';
@@ -18,6 +18,7 @@ import { TokenManager } from './TokenManager.sol';
  */
 contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManagerLiquidityPool {
     using SafeTokenTransferFrom for IERC20;
+    using SafeTokenCall for IERC20;
 
     error NotSupported();
 
@@ -41,8 +42,10 @@ contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManag
      */
     function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
-        (, , address liquidityPool_) = abi.decode(params_, (uint256, address, address));
+        (, address tokenAddress_, address liquidityPool_) = abi.decode(params_, (uint256, address, address));
         _setLiquidityPool(liquidityPool_);
+
+        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, type(uint256).max));
     }
 
     /**
