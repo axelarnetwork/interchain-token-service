@@ -40,6 +40,11 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     function implementationType() external pure returns (uint256);
 
     /**
+     * @notice A function that should return the token address from the init params.
+     */
+    function getTokenAddressFromParams(bytes calldata params) external pure returns (address);
+
+    /**
      * @notice Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.

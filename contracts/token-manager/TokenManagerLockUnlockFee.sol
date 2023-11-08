@@ -31,23 +31,13 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
     }
 
     /**
-     * @dev Sets up the token address.
-     * @param params_ The setup parameters in bytes. Should be encoded with the token address.
-     */
-    function _setup(bytes calldata params_) internal override {
-        // The first argument is reserved for the operator.
-        (, address tokenAddress_) = abi.decode(params_, (bytes, address));
-        _setTokenAddress(tokenAddress_);
-    }
-
-    /**
      * @dev Transfers a specified amount of tokens from a specified address to this contract.
      * @param from The address to transfer tokens from
      * @param amount The amount of tokens to transfer
      * @return uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
      */
     function _takeToken(address from, uint256 amount) internal override noReEntrancy returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
         uint256 balanceBefore = token.balanceOf(address(this));
 
         token.safeTransferFrom(from, address(this), amount);
@@ -67,7 +57,7 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
      * @return uint The actual amount of tokens transferred
      */
     function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
         uint256 balanceBefore = token.balanceOf(to);
 
         token.safeTransfer(to, amount);

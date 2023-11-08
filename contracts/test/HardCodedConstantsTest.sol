@@ -14,7 +14,6 @@ contract TestTokenManager is TokenManagerLiquidityPool {
     string public constant NAME = 'TestTokenManager';
 
     constructor(address interchainTokenService_) TokenManagerLiquidityPool(interchainTokenService_) {
-        if (TOKEN_ADDRESS_SLOT != uint256(keccak256('token-address')) - 1) revert Invalid();
         if (LIQUIDITY_POOL_SLOT != uint256(keccak256('liquidity-pool-slot')) - 1) revert Invalid();
     }
 }

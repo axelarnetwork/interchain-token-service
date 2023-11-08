@@ -30,23 +30,13 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
     }
 
     /**
-     * @dev Sets up the token address.
-     * @param params_ The setup parameters in bytes. Should be encoded with the token address.
-     */
-    function _setup(bytes calldata params_) internal override {
-        // The first argument is reserved for the operator.
-        (, address tokenAddress_) = abi.decode(params_, (bytes, address));
-        _setTokenAddress(tokenAddress_);
-    }
-
-    /**
      * @dev Burns the specified amount of tokens from a particular address.
      * @param from Address to burn tokens from
      * @param amount Amount of tokens to burn
      * @return uint Amount of tokens burned
      */
     function _takeToken(address from, uint256 amount) internal virtual override returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
 
         token.safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
 
@@ -60,7 +50,7 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
      * @return uint Amount of tokens minted
      */
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
 
         token.safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
 

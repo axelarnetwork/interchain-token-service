@@ -5,10 +5,11 @@ const { ethers } = require('hardhat');
 const {
     utils: { toUtf8Bytes, defaultAbiCoder },
     constants: { AddressZero },
+    getContractAt,
 } = ethers;
 const { expect } = chai;
-const { expectRevert } = require('./utils');
-const { deployContract } = require('../scripts/deploy');
+const { expectRevert, getRandomBytes32 } = require('./utils');
+const { deployContract, deployAll } = require('../scripts/deploy');
 
 describe('Token Manager', () => {
     const FLOW_LIMITER_ROLE = 2;
@@ -42,6 +43,14 @@ describe('Token Manager', () => {
     });
 
     it('Should revert on transmitInterchainTransfer if not called by the token', async () => {
+        const [service] = await deployAll(owner, 'Test');
+        const salt = getRandomBytes32();
+        const LOCK_UNLCOK = 2;
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [owner.address, token.address]);
+        await await service.deployTokenManager(salt, '', LOCK_UNLCOK, params, 0);
+        const tokenManagerAddress = await service.tokenManagerAddress(await service.interchainTokenId(owner.address, salt));
+        const tokenManager = await getContractAt('ITokenManager', tokenManagerAddress, owner);
+
         const sender = owner.address;
         const destinationChain = 'Dest Chain';
         const destinationAddress = toUtf8Bytes(user.address);
@@ -50,14 +59,7 @@ describe('Token Manager', () => {
 
         await expectRevert(
             (gasOptions) =>
-                tokenManagerLockUnlock.transmitInterchainTransfer(
-                    sender,
-                    destinationChain,
-                    destinationAddress,
-                    amount,
-                    metadata,
-                    gasOptions,
-                ),
+                tokenManager.transmitInterchainTransfer(sender, destinationChain, destinationAddress, amount, metadata, gasOptions),
             tokenManagerLockUnlock,
             'NotToken',
             [sender],

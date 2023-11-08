@@ -41,8 +41,7 @@ contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManag
      */
     function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
-        (, address tokenAddress_, address liquidityPool_) = abi.decode(params_, (bytes, address, address));
-        _setTokenAddress(tokenAddress_);
+        (, , address liquidityPool_) = abi.decode(params_, (uint256, address, address));
         _setLiquidityPool(liquidityPool_);
     }
 
@@ -81,7 +80,7 @@ contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManag
      * @return uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
      */
     function _takeToken(address from, uint256 amount) internal override noReEntrancy returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
         address liquidityPool_ = liquidityPool();
         uint256 balance = token.balanceOf(liquidityPool_);
 
@@ -101,7 +100,7 @@ contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManag
      * @return uint The actual amount of tokens transferred
      */
     function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
         uint256 balance = token.balanceOf(to);
 
         // slither-disable-next-line arbitrary-send-erc20
