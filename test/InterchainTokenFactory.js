@@ -11,7 +11,7 @@ const {
 } = ethers;
 
 const { deployAll, deployContract } = require('../scripts/deploy');
-const { getRandomBytes32 } = require('./utils');
+const { getRandomBytes32, expectRevert } = require('./utils');
 
 // const MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 1;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
@@ -33,7 +33,7 @@ describe('InterchainTokenFactory', () => {
     const decimals = 18;
     const destinationChain = 'destination chain';
 
-    before(async () => {
+    beforeEach(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
         [service, gateway, gasService, tokenFactory] = await deployAll(wallet, chainName, [destinationChain]);
@@ -164,6 +164,47 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenFactory.address, tokenManagerAddress, amount)
                 .and.to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destinationChain, destinationAddress, amount);
+        });
+
+        it('Should revert when trying to register a canonical lock/unlock gateway token', async () => {
+            await deployToken();
+
+            const tokenCap = 0;
+            const mintLimit = 0;
+            const tokenAddress = token.address;
+
+            const params = defaultAbiCoder.encode(
+                ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
+                [name, symbol, decimals, tokenCap, tokenAddress, mintLimit],
+            );
+            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenAddress, gasOptions),
+                tokenFactory,
+                'GatewayToken',
+                [tokenAddress],
+            );
+        });
+
+        it('Should revert when trying to register a canonical mint/burn gateway token', async () => {
+            const tokenCap = 0;
+            let tokenAddress = AddressZero;
+            const mintLimit = 0;
+            const params = defaultAbiCoder.encode(
+                ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
+                [name, symbol, decimals, tokenCap, tokenAddress, mintLimit],
+            );
+            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+
+            tokenAddress = await gateway.tokenAddresses(symbol);
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenAddress, gasOptions),
+                tokenFactory,
+                'GatewayToken',
+                [tokenAddress],
+            );
         });
     });
 
