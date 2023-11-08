@@ -9,6 +9,7 @@ interface IInterchainTokenFactory {
     error NotOperator(address operator);
     error NonZeroMintAmount();
     error ApproveFailed();
+    error GatewayToken(address tokenAddress);
 
     function chainNameHash() external view returns (bytes32);
 

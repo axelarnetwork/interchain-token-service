@@ -6,6 +6,7 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
+import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
@@ -22,6 +23,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     IInterchainTokenService public immutable service;
     bytes32 public immutable chainNameHash;
+    IAxelarGateway public immutable gateway;
 
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
@@ -33,6 +35,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         service = IInterchainTokenService(interchainTokenServiceAddress);
 
         chainNameHash = service.chainNameHash();
+        gateway = service.gateway();
     }
 
     /**
@@ -162,6 +165,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
+
+        if (_isGatewayToken(tokenAddress)) revert GatewayToken(tokenAddress);
+
         bytes32 salt = canonicalInterchainTokenSalt(chainNameHash, tokenAddress);
         tokenId = service.deployTokenManager(salt, '', TokenManagerType.LOCK_UNLOCK, params, 0);
     }
@@ -222,7 +228,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @dev Allow any token to be approved to the token manager.
-     * TODO: Move this into a dedicated approve + transfer method to prevent unused approvals to be created that some tokens don't like.
      */
     function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.validTokenAddress(tokenId);
@@ -230,5 +235,10 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         address tokenManager = service.tokenManagerAddress(tokenId);
 
         token.safeCall(abi.encodeWithSelector(token.approve.selector, tokenManager, amount));
+    }
+
+    function _isGatewayToken(address token) internal view returns (bool) {
+        string memory symbol = IInterchainToken(token).symbol();
+        return token == gateway.tokenAddresses(symbol);
     }
 }
