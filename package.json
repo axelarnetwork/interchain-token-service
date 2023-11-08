@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@axelar-network/axelar-chains-config": "~0.1.2",
-    "@axelarjs/evm": "^0.1.16",
+    "@axelarjs/evm": "^0.1.17",
     "@axelarjs/utils": "^0.1.12",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@tsconfig/strictest": "^2.0.2",
@@ -46,13 +46,10 @@
     "hardhat": "~2.18.0",
     "hardhat-contract-sizer": "^2.10.0",
     "mocha": "^10.2.0",
-    "package-json": "^8.1.1",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
     "solhint": "^3.4.1",
-    "solidity-docgen": "^0.6.0-beta.36",
-    "tsx": "^3.14.0",
-    "zx": "^7.2.3"
+    "solidity-docgen": "^0.6.0-beta.36"
   },
   "description": "Interchain token service for EVM chains to faciliate cross-chain token transfers and contract calls",
   "files": [
