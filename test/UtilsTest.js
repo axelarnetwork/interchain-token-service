@@ -266,7 +266,6 @@ describe('InterchainTokenDeployer', () => {
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
         const token = await getContractAt('InterchainToken', tokenAddress, ownerWallet);
-        const tokenProxy = await getContractAt('InterchainTokenProxy', tokenAddress, ownerWallet);
 
         await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals))
             .and.to.emit(token, 'RolesAdded')

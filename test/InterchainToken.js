@@ -1,13 +1,10 @@
 'use strict';
 
-const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
     getContractAt,
-    utils: { keccak256, toUtf8Bytes },
 } = ethers;
-const { expect } = chai;
-const { getRandomBytes32, expectRevert, getGasOptions } = require('./utils');
+const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 describe('InterchainToken', () => {
@@ -19,7 +16,6 @@ describe('InterchainToken', () => {
     const mintAmount = 123;
 
     let token;
-    let tokenProxy;
 
     let owner;
 
@@ -35,7 +31,6 @@ describe('InterchainToken', () => {
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
         token = await getContractAt('InterchainToken', tokenAddress, owner);
-        tokenProxy = await getContractAt('InterchainTokenProxy', tokenAddress, owner);
 
         await interchainTokenDeployer
             .deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals)
@@ -54,7 +49,11 @@ describe('InterchainToken', () => {
             const tokenName = 'name';
             const tokenSymbol = 'symbol';
             const tokenDecimals = 7;
-            await expectRevert((gasOptions) => implementation.init(tokenManagerAddress, distributor, tokenName, tokenSymbol, tokenDecimals, gasOptions), implementation, 'AlreadySetup');
+            await expectRevert(
+                (gasOptions) => implementation.init(tokenManagerAddress, distributor, tokenName, tokenSymbol, tokenDecimals, gasOptions),
+                implementation,
+                'AlreadySetup',
+            );
         });
     });
 });

@@ -7,8 +7,6 @@ import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deplo
 import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
-import { InterchainTokenProxy } from '../proxies/InterchainTokenProxy.sol';
-
 /**
  * @title InterchainTokenDeployer
  * @notice This contract is used to deploy new instances of the InterchainTokenProxy contract.

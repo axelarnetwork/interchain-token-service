@@ -42,7 +42,6 @@ contract TestOperatable is Operatable {
 
 contract TestInterchainToken is InterchainToken {
     constructor() {
-
         if (IS_SETUP_SLOT != bytes32(uint256(keccak256('interchain-token-is-setup-slot')) - 1)) revert Invalid();
     }
 }
