@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 
 import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
+import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { InterchainTokenProxy } from '../proxies/InterchainTokenProxy.sol';
 
@@ -43,12 +44,18 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
         string calldata symbol,
         uint8 decimals
     ) external payable returns (address tokenAddress) {
-        bytes memory params = abi.encode(tokenManager, distributor, name, symbol, decimals);
         // slither-disable-next-line too-many-digits
-        bytes memory bytecode = bytes.concat(type(InterchainTokenProxy).creationCode, abi.encode(implementationAddress, params));
-
+        bytes memory bytecode = new bytes(0x37); //bytes.concat(type(InterchainTokenProxy).creationCode, abi.encode(implementationAddress, params));
+        address implementation = implementationAddress;
+        assembly {
+            mstore(add(bytecode, 0x20), shl(0x60, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73))
+            mstore(add(bytecode, 0x34), shl(0x60, implementation))
+            mstore(add(bytecode, 0x48), shl(0x88, 0x5af43d82803e903d91602b57fd5bf3))
+        }
         tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
+
+        IInterchainToken(tokenAddress).init(tokenManager, distributor, name, symbol, decimals);
     }
 
     function deployedAddress(bytes32 salt) external view returns (address tokenAddress) {

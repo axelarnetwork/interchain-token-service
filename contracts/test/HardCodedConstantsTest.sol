@@ -7,6 +7,7 @@ import { TokenManagerLiquidityPool } from '../token-manager/TokenManagerLiquidit
 import { Distributable } from '../utils/Distributable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
 import { Operatable } from '../utils/Operatable.sol';
+import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 
 error Invalid();
 
@@ -37,4 +38,11 @@ contract TestOperatable is Operatable {
     string public constant NAME = 'TestOperatable';
 
     constructor() {}
+}
+
+contract TestInterchainToken is InterchainToken {
+    constructor() {
+
+        if (IS_SETUP_SLOT != bytes32(uint256(keccak256('interchain-token-is-setup-slot')) - 1)) revert Invalid();
+    }
 }

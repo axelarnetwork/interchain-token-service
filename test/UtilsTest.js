@@ -274,7 +274,6 @@ describe('InterchainTokenDeployer', () => {
             .to.emit(token, 'RolesAdded')
             .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE);
 
-        expect(await tokenProxy.implementation()).to.equal(interchainToken.address);
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);
