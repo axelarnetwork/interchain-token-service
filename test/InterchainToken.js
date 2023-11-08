@@ -1,9 +1,7 @@
 'use strict';
 
 const { ethers } = require('hardhat');
-const {
-    getContractAt,
-} = ethers;
+const { getContractAt } = ethers;
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
