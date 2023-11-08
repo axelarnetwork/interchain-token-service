@@ -288,29 +288,3 @@ describe('InterchainTokenDeployer', () => {
         );
     });
 });
-
-describe.only('Gas Test', () => {
-    let deployer, token, wallet;
-    const tokenName = 'name', tokenSymbol = 'symbol', tokenDecimals = 6;
-    before(async () => {
-        wallet = (await ethers.getSigners())[0];
-        const impl = await deployContract(wallet, 'InterchainToken');
-        deployer = await deployContract(wallet, 'InterchainTokenDeployer', [impl.address]);
-        const salt = getRandomBytes32();
-        await (await deployer.deployInterchainToken(salt, wallet.address, AddressZero, tokenName, tokenSymbol, tokenDecimals)).wait();
-        const tokenAddress = await deployer.deployedAddress(salt);
-        token = await getContractAt('InterchainToken', tokenAddress, wallet);
-    });
-
-    it('Should print the cost of token deployment', async () => {
-        const salt = getRandomBytes32();
-        const receipt = await (await deployer.deployInterchainToken(salt, wallet.address, AddressZero, tokenName, tokenSymbol, tokenDecimals)).wait();
-        console.log(Number(receipt.gasUsed));
-    });
-
-    it('Should print the cost of aproving on the token', async () => {
-        const amount = 1234;
-        const receipt = await (await token.approve(wallet.address, amount)).wait();
-        console.log(Number(receipt.gasUsed));
-    });
-});
