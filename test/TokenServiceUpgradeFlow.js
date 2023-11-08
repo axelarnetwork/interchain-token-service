@@ -4,7 +4,10 @@ const chai = require('chai');
 const { expect } = chai;
 require('dotenv').config();
 const { ethers } = require('hardhat');
-const { keccak256, Interface } = ethers.utils;
+const {
+    utils: { keccak256, Interface, defaultAbiCoder },
+    getContractAt,
+} = ethers;
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const { isHardhat, waitFor, getRandomBytes32, getPayloadAndProposalHash } = require('./utils');
@@ -35,6 +38,23 @@ describe('Interchain Token Service Upgrade Flow', () => {
     const threshold = 2;
     const deploymentKey = 'InterchainTokenService';
     const chainName = 'Test';
+
+    const tokenName = 'Token Name';
+    const tokenSymbol = 'TN';
+    const tokenDecimals = 13;
+
+    async function testDeployTokenManager() {
+        const salt = getRandomBytes32();
+        const tokenId = await service.interchainTokenId(wallet.address, salt);
+        const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+
+        const token = await deployContract(wallet, 'InterchainTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+        await expect(service.deployTokenManager(salt, '', 0, params, 0))
+            .to.emit(service, 'TokenManagerDeployed')
+            .withArgs(tokenId, tokenManager.address, 0, params);
+    }
 
     before(async () => {
         [wallet, otherWallet, signer1, signer2, signer3] = await ethers.getSigners();
@@ -150,6 +170,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             .withArgs(proposalHash, target, calldata, nativeValue, executionTimestamp)
             .and.to.emit(service, 'Upgraded')
             .withArgs(newServiceImplementation.address);
+
+        await testDeployTokenManager();
     });
 
     it('should upgrade Interchain Token Service through AxelarServiceGovernance multisig proposal', async () => {
@@ -206,5 +228,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             .withArgs(proposalHash, target, calldata, nativeValue)
             .and.to.emit(service, 'Upgraded')
             .withArgs(newServiceImplementation.address);
+
+        await testDeployTokenManager();
     });
 });
