@@ -202,6 +202,47 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destinationChain, destinationAddress, amount);
         });
+
+        it('Should revert when trying to register a canonical lock/unlock gateway token', async () => {
+            await deployToken();
+
+            const tokenCap = 0;
+            const mintLimit = 0;
+            const tokenAddress = token.address;
+
+            const params = defaultAbiCoder.encode(
+                ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
+                [name, symbol, decimals, tokenCap, tokenAddress, mintLimit],
+            );
+            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenAddress, gasOptions),
+                tokenFactory,
+                'GatewayToken',
+                [tokenAddress],
+            );
+        });
+
+        it('Should revert when trying to register a canonical mint/burn gateway token', async () => {
+            const tokenCap = 0;
+            let tokenAddress = AddressZero;
+            const mintLimit = 0;
+            const params = defaultAbiCoder.encode(
+                ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
+                [name, symbol, decimals, tokenCap, tokenAddress, mintLimit],
+            );
+            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+
+            tokenAddress = await gateway.tokenAddresses(symbol);
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenAddress, gasOptions),
+                tokenFactory,
+                'GatewayToken',
+                [tokenAddress],
+            );
+        });
     });
 
     describe('Interchain Token Factory', async () => {
