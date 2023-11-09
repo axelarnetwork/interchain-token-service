@@ -42,12 +42,17 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
         string calldata symbol,
         uint8 decimals
     ) external payable returns (address tokenAddress) {
-        // slither-disable-next-line too-many-digits
-        bytes memory bytecode = new bytes(0x37); //bytes.concat(type(InterchainTokenProxy).creationCode, abi.encode(implementationAddress, params));
+        // The minimal proxy bytecode is the same as https://github.com/OpenZeppelin/openzeppelin-contracts/blob/94697be8a3f0dfcd95dfb13ffbd39b5973f5c65d/contracts/proxy/Clones.sol#L28
+        // The minimal proxy bytecode is 0x37 = 55 bytes long
+        bytes memory bytecode = new bytes(0x37);
         address implementation = implementationAddress;
         assembly {
+            // The first 0x20 = 32 bytes (0x00 - 0x19) are reserved for the length.
+            // The first 0x14 = 20 bytes (0x20 - 0x33) are the ones below.
             mstore(add(bytecode, 0x20), shl(0x60, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73))
+            // The next 0x14 = 20 bytes (0x34 - 0x47) are the implementation address.
             mstore(add(bytecode, 0x34), shl(0x60, implementation))
+            // The last 0x0f = 15 bytes (0x48 - 0x56) are the ones below.
             mstore(add(bytecode, 0x48), shl(0x88, 0x5af43d82803e903d91602b57fd5bf3))
         }
         tokenAddress = _create3(bytecode, salt);
