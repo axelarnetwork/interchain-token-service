@@ -73,7 +73,7 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
         uint8 tokenDecimals
     ) external {
         if (_isInitialized()) revert AlreadyInitialized();
-        
+
         _initialize();
 
         if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();

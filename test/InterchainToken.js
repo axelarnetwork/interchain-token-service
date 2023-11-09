@@ -50,7 +50,7 @@ describe('InterchainToken', () => {
             await expectRevert(
                 (gasOptions) => implementation.init(tokenManagerAddress, distributor, tokenName, tokenSymbol, tokenDecimals, gasOptions),
                 implementation,
-                'AlreadySetup',
+                'AlreadyInitialized',
             );
         });
     });
