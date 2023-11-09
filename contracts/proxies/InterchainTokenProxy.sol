@@ -7,15 +7,16 @@ import { FixedProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 
 /**
  * @title InterchainTokenProxy
- * @dev Proxy contract for InterchainToken contracts. Inherits from FixedProxy.
+ * @notice Proxy contract for InterchainToken contracts.
+ * @dev Inherits from FixedProxy.
  */
 contract InterchainTokenProxy is FixedProxy {
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token');
 
     /**
-     * @dev Constructs the InterchainTokenProxy contract.
-     * @param implementationAddress Address of the InterchainToken implementation
-     * @param params Initialization parameters for the InterchainToken contract
+     * @notice Constructs the InterchainTokenProxy contract.
+     * @param implementationAddress Address of the InterchainToken implementation.
+     * @param params Initialization parameters for the InterchainToken contract.
      */
     constructor(address implementationAddress, bytes memory params) FixedProxy(implementationAddress) {
         if (implementationAddress == address(0)) revert InvalidImplementation();
@@ -26,6 +27,7 @@ contract InterchainTokenProxy is FixedProxy {
 
     /**
      * @notice Getter for the contract id.
+     * @return bytes32 The contract id.
      */
     function contractId() internal pure override returns (bytes32) {
         return CONTRACT_ID;
