@@ -7,6 +7,7 @@ import { FixedProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 
 /**
  * @title InterchainTokenProxy
+ * @dev Proxy contract for InterchainToken contracts. Inherits from FixedProxy.
  */
 contract InterchainTokenProxy is FixedProxy {
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token');
