@@ -81,6 +81,7 @@ describe('Interchain Token Service', () => {
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
         const token = await deployContract(wallet, 'FeeOnTransferTokenTest', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
+
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
         await (await service.deployTokenManager(salt, '', LOCK_UNLOCK_FEE_ON_TRANSFER, params, 0)).wait();
@@ -1126,7 +1127,7 @@ describe('Interchain Token Service', () => {
         const destAddress = '0x5678';
         const gasValue = 90;
 
-        for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee']) {
+        for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee', 'mintBurnFrom']) {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
@@ -1140,6 +1141,10 @@ describe('Interchain Token Service', () => {
 
                 if (type === 'lockUnlock' || type === 'lockUnlockFee') {
                     transferToAddress = tokenManager.address;
+                }
+
+                if (type === 'mintBurnFrom') {
+                    await token.approve(tokenManager.address, sendAmount).then((tx) => tx.wait());
                 }
 
                 await expect(tokenManager.interchainTransfer(destinationChain, destAddress, amount, '0x', { value: gasValue }))

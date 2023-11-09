@@ -56,6 +56,13 @@ contract InterchainTokenTest is BaseInterchainToken, Distributable, IERC20Mintab
         _burn(account, amount);
     }
 
+    function burnFrom(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+        uint256 currentAllowance = allowance[account][msg.sender];
+        require(currentAllowance >= amount, 'burn amount exceeds allowance');
+        _approve(account, msg.sender, currentAllowance - amount);
+        _burn(account, amount);
+    }
+
     function setTokenManager(address tokenManagerAddress) external {
         tokenManager_ = tokenManagerAddress;
     }
