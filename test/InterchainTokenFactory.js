@@ -228,13 +228,14 @@ describe('InterchainTokenFactory', () => {
             const tokenCap = 0;
             let tokenAddress = AddressZero;
             const mintLimit = 0;
+            const newSymbol = 'NewSymbol';
             const params = defaultAbiCoder.encode(
                 ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
-                [name, symbol, decimals, tokenCap, tokenAddress, mintLimit],
+                [name, newSymbol, decimals, tokenCap, tokenAddress, mintLimit],
             );
             await (await gateway.deployToken(params, getRandomBytes32())).wait();
 
-            tokenAddress = await gateway.tokenAddresses(symbol);
+            tokenAddress = await gateway.tokenAddresses(newSymbol);
 
             await expectRevert(
                 (gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenAddress, gasOptions),
