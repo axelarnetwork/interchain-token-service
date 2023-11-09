@@ -13,6 +13,8 @@ contract InterchainTokenTest is BaseInterchainToken, Distributable, IERC20Mintab
     string public symbol;
     uint8 public decimals;
 
+    error AllowanceExceeded();
+
     constructor(string memory name_, string memory symbol_, uint8 decimals_, address tokenManagerAddress) {
         name = name_;
         symbol = symbol_;
@@ -58,7 +60,7 @@ contract InterchainTokenTest is BaseInterchainToken, Distributable, IERC20Mintab
 
     function burnFrom(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         uint256 currentAllowance = allowance[account][msg.sender];
-        require(currentAllowance >= amount, 'burn amount exceeds allowance');
+        if (currentAllowance < amount) revert AllowanceExceeded();
         _approve(account, msg.sender, currentAllowance - amount);
         _burn(account, amount);
     }
