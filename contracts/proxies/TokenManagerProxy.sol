@@ -11,7 +11,7 @@ import { ITokenManagerImplementation } from '../interfaces/ITokenManagerImplemen
 /**
  * @title TokenManagerProxy
  * @notice This contract is a proxy for token manager contracts.
- * @dev It implements ITokenManagerProxy.
+ * @dev This contract implements BaseProxy and ITokenManagerProxy.
  */
 contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
     bytes32 private constant CONTRACT_ID = keccak256('token-manager');
@@ -21,11 +21,11 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
     bytes32 public immutable interchainTokenId;
 
     /**
-     * @dev Constructs the TokenManagerProxy contract.
-     * @param interchainTokenService_ The address of the interchain token service
-     * @param implementationType_ The token manager type
-     * @param tokenId The identifier for the token
-     * @param params The initialization parameters for the token manager contract
+     * @notice Constructs the TokenManagerProxy contract.
+     * @param interchainTokenService_ The address of the interchain token service.
+     * @param implementationType_ The token manager type.
+     * @param tokenId The identifier for the token.
+     * @param params The initialization parameters for the token manager contract.
      */
     constructor(address interchainTokenService_, uint256 implementationType_, bytes32 tokenId, bytes memory params) {
         if (interchainTokenService_ == address(0)) revert ZeroAddress();
@@ -42,26 +42,26 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
     }
 
     /**
-     * @dev Returns the contract ID.
-     * @return bytes32 The contract ID
+     * @notice Getter for the contract id.
+     * @return bytes32 The contract id.
      */
     function contractId() internal pure override returns (bytes32) {
         return CONTRACT_ID;
     }
 
     /**
-     * @dev Returns the address of the current implementation.
-     * @return implementation_ The address of the current implementation
+     * @notice Returns the address of the current implementation.
+     * @return implementation_ The address of the current implementation.
      */
     function implementation() public view override(BaseProxy, IProxy) returns (address implementation_) {
         implementation_ = _tokenManagerImplementation(interchainTokenService, implementationType);
     }
 
     /**
-     * @dev Returns the implementation address from the interchain token service for the provided type.
-     * @param interchainTokenService_ The address of the interchain token service
-     * @param implementationType_ The token manager type
-     * @return implementation_ The address of the implementation
+     * @notice Returns the implementation address from the interchain token service for the provided type.
+     * @param interchainTokenService_ The address of the interchain token service.
+     * @param implementationType_ The token manager type.
+     * @return implementation_ The address of the implementation.
      */
     function _tokenManagerImplementation(
         address interchainTokenService_,
