@@ -21,8 +21,8 @@ contract InterchainTokenFactoryProxy is Proxy {
 
     /**
      * @notice Returns a unique identifier for this contract.
-     * @dev Override for the 'contractId' function in FinalProxy.
-     * @return bytes32 Tdentifier for this contract.
+     * @dev Override for the `contractId` function in FinalProxy.
+     * @return bytes32 Identifier for this contract.
      */
     function contractId() internal pure override returns (bytes32) {
         return CONTRACT_ID;

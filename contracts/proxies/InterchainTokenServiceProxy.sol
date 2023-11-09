@@ -6,8 +6,8 @@ import { Proxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgrada
 
 /**
  * @title InterchainTokenServiceProxy
- * @notice Proxy contract for interchain token service contracts.
- * @dev Inherits from the FinalProxy contract.
+ * @notice Proxy contract for interchain token service.
+ * @dev Inherits from the Proxy contract.
  */
 contract InterchainTokenServiceProxy is Proxy {
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
@@ -21,7 +21,7 @@ contract InterchainTokenServiceProxy is Proxy {
     constructor(address implementationAddress, address owner, bytes memory setupParams) Proxy(implementationAddress, owner, setupParams) {}
 
     /**
-     * @notice Override for the 'contractId' function in FinalProxy.
+     * @notice Override for the `contractId` function in Proxy.
      * @dev Returns a unique identifier for this contract.
      * @return bytes32 Identifier for this contract.
      */
