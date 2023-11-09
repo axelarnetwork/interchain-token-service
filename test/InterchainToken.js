@@ -4,7 +4,8 @@ const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
     getContractAt,
-    utils: { keccak256, toUtf8Bytes },
+    utils: { keccak256, toUtf8Bytes, defaultAbiCoder },
+    constants: { AddressZero },
 } = ethers;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, getGasOptions } = require('./utils');
@@ -45,7 +46,7 @@ describe('InterchainToken', () => {
     });
 
     describe('Interchain Token Proxy', () => {
-        it('should revert if interchain token implementation is invalid', async () => {
+        it('should revert if interchain token implementation is invalid via InterchainTokenDeployer', async () => {
             const invalidInterchainToken = await deployContract(owner, 'InvalidInterchainToken');
             interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [invalidInterchainToken.address]);
 
@@ -79,6 +80,28 @@ describe('InterchainToken', () => {
 
             const params = '0x';
             await expectRevert((gasOptions) => implementation.setup(params, gasOptions), token, 'NotProxy');
+        });
+
+        it('should revert on setup with invalid token manager address', async () => {
+            const tokenName = 'Token';
+            const distributor = owner.address;
+            const params = defaultAbiCoder.encode(
+                ['address', 'address', 'string', 'string', 'uint8'],
+                [AddressZero, distributor, tokenName, symbol, decimals],
+            );
+
+            await expect(deployContract(owner, 'InterchainTokenProxy', [interchainToken.address, params])).to.be.reverted;
+        });
+
+        it('should revert on setup with invalid token name', async () => {
+            const tokenName = '';
+            const distributor = owner.address;
+            const params = defaultAbiCoder.encode(
+                ['address', 'address', 'string', 'string', 'uint8'],
+                [owner.address, distributor, tokenName, symbol, decimals],
+            );
+
+            await expect(deployContract(owner, 'InterchainTokenProxy', [interchainToken.address, params])).to.be.reverted;
         });
     });
 });

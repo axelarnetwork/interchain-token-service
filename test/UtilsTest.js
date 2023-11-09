@@ -46,6 +46,10 @@ describe('Operatable', () => {
         ]);
     });
 
+    it('Should return true on isOperator if an address is an operator', async () => {
+        expect(await test.isOperator(ownerWallet.address)).to.be.true;
+    });
+
     it('Should be able to change the operator only as the operator', async () => {
         expect(await test.hasRole(ownerWallet.address, operatorRole)).to.be.true;
 
@@ -236,6 +240,18 @@ describe('FlowLimit', async () => {
         expect(await test.flowOutAmount()).to.equal(0);
 
         await (await test.addFlowOut(flowLimit)).wait();
+    });
+
+    it('Should revert if single flow amount exceeds the flow limit', async () => {
+        const excessiveFlowAmount = flowLimit + 1;
+        await test.setFlowLimit(flowLimit).then((tx) => tx.wait());
+
+        await test.addFlowIn(flowLimit - 1).then((tx) => tx.wait());
+
+        await expectRevert((gasOptions) => test.addFlowIn(excessiveFlowAmount, gasOptions), test, 'FlowLimitExceeded', [
+            flowLimit,
+            excessiveFlowAmount,
+        ]);
     });
 });
 
