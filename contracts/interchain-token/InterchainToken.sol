@@ -23,29 +23,29 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     uint8 public decimals;
     address internal tokenManager_;
 
-    // bytes32(uint256(keccak256('interchain-token-is-setup-slot')) - 1);
-    bytes32 internal constant IS_SETUP_SLOT = 0xb39f35de0a5b2620db9237c1e18c03b5e68a71236c9bdfbcd69f3582bab06df6;
+    // bytes32(uint256(keccak256('interchain-token-initialized')) - 1);
+    bytes32 internal constant INITIALIZED_SLOT = 0xc778385ecb3e8cecb82223fa1f343ec6865b2d64c65b0c15c7e8aef225d9e214;
 
     constructor() {
         // Make the implementation act as if it has been setup already to disallow calls to init() (even though that wouldn't achieve anything really)
-        _setSetup();
+        _initialize();
     }
 
     /**
      * @notice returns true if the contract has be setup.
      */
-    function _isSetup() internal view returns (bool isSetup) {
+    function _isInitialized() internal view returns (bool isSetup) {
         assembly {
-            isSetup := sload(IS_SETUP_SLOT)
+            isSetup := sload(INITIALIZED_SLOT)
         }
     }
 
     /**
      * @notice sets the isSetup to true, to allow only a single setup.
      */
-    function _setSetup() internal {
+    function _initialize() internal {
         assembly {
-            sstore(IS_SETUP_SLOT, true)
+            sstore(INITIALIZED_SLOT, true)
         }
     }
 
@@ -72,8 +72,9 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
         string calldata tokenSymbol,
         uint8 tokenDecimals
     ) external {
-        if (_isSetup()) revert AlreadySetup();
-        _setSetup();
+        if (_isInitialized()) revert AlreadyInitialized();
+        
+        _initialize();
 
         if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();

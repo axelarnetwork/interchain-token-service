@@ -13,7 +13,7 @@ import { IERC20Named } from './IERC20Named.sol';
 interface IInterchainToken is IInterchainTokenStandard, IDistributable, IERC20MintableBurnable, IERC20Named {
     error TokenManagerAddressZero();
     error TokenNameEmpty();
-    error AlreadySetup();
+    error AlreadyInitialized();
 
     /**
      * @notice Getter for the tokenManager used for this token.
