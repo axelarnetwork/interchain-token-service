@@ -6,18 +6,19 @@ import { IInterchainTokenExecutable } from './IInterchainTokenExecutable.sol';
 
 /**
  * @title IInterchainTokenExpressExecutable
- * @notice Implement this to accept express calls from the InterchainTokenService.
+ * @notice Contracts should implement this interface to accept express calls from the InterchainTokenService.
  */
 interface IInterchainTokenExpressExecutable is IInterchainTokenExecutable {
     /**
-     * @notice This will be called after the tokens arrive to this contract
-     * @dev Executable should revert unless the msg.sender is the InterchainTokenService
-     * @param sourceChain the name of the source chain
-     * @param sourceAddress the address that sent the contract call
-     * @param data the data to be processed
-     * @param tokenId the token id of the token manager managing the token.
-     * @param token the address of the token.
-     * @param amount the amount of token that was sent
+     * @notice Executes express logic in the context of an interchain token transfer.
+     * @dev Only callable by the interchain token service.
+     * @param sourceChain The source chain of the token transfer.
+     * @param sourceAddress The source address of the token transfer.
+     * @param data The data associated with the token transfer.
+     * @param tokenId The token ID.
+     * @param token The token address.
+     * @param amount The amount of tokens to be transferred.
+     * @return bytes32 Hash indicating success of the express execution.
      */
     function expressExecuteWithInterchainToken(
         string calldata sourceChain,

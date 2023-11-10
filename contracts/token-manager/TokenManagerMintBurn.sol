@@ -19,19 +19,24 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
     using SafeTokenCall for IERC20;
 
     /**
-     * @dev Constructs an instance of TokenManagerMintBurn. Calls the constructor
-     * of TokenManagerAddressStorage which calls the constructor of TokenManager.
-     * @param interchainTokenService_ The address of the interchain token service contract
+     * @notice Constructs an instance of TokenManagerMintBurn.
+     * @dev Calls the constructor of TokenManagerAddressStorage which calls the constructor of TokenManager.
+     * @param interchainTokenService_ The address of the interchain token service contract.
      */
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
+    /**
+     * @notice Returns the implementation type of the token manager.
+     * @return uint256 The implementation type.
+     */
     function implementationType() external pure virtual returns (uint256) {
         return uint256(TokenManagerType.MINT_BURN);
     }
 
     /**
-     * @dev Sets up the token address.
-     * @param params_ The setup parameters in bytes. Should be encoded with the token address.
+     * @notice Sets up the token address.
+     * @dev The params should be encoded with the token address.
+     * @param params_ The setup parameters in bytes.
      */
     function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
@@ -40,10 +45,10 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
     }
 
     /**
-     * @dev Burns the specified amount of tokens from a particular address.
-     * @param from Address to burn tokens from
-     * @param amount Amount of tokens to burn
-     * @return uint Amount of tokens burned
+     * @notice Burns the specified amount of tokens from a particular address.
+     * @param from Address to burn tokens from.
+     * @param amount Amount of tokens to burn.
+     * @return uint Amount of tokens burned.
      */
     function _takeToken(address from, uint256 amount) internal virtual override returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
@@ -54,10 +59,10 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
     }
 
     /**
-     * @dev Mints the specified amount of tokens to a particular address
-     * @param to Address to mint tokens to
-     * @param amount Amount of tokens to mint
-     * @return uint Amount of tokens minted
+     * @notice Mints the specified amount of tokens to a particular address.
+     * @param to Address to mint tokens to.
+     * @param amount Amount of tokens to mint.
+     * @return uint Amount of tokens minted.
      */
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
         IERC20 token = IERC20(tokenAddress());
@@ -68,10 +73,11 @@ contract TokenManagerMintBurn is TokenManager, ITokenManagerMintBurn {
     }
 
     /**
-     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-     * @param operator_ the operator of the TokenManager.
-     * @param tokenAddress_ the token to be managed.
-     * @return params_ the resulting params to be passed to custom TokenManager deployments.
+     * @notice Getter function for the parameters of a mint/burn TokenManager.
+     * @dev This function will be mainly used by frontends.
+     * @param operator_ The operator of the TokenManager.
+     * @param tokenAddress_ The token to be managed.
+     * @return params_ The resulting params to be passed to custom TokenManager deployments.
      */
     function params(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params_) {
         params_ = abi.encode(operator_, tokenAddress_);

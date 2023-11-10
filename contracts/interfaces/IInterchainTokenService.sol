@@ -11,6 +11,10 @@ import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 import { IAddressTracker } from './IAddressTracker.sol';
 
+/**
+ * @title IInterchainTokenService Interface
+ * @notice Interface for the Interchain Token Service
+ */
 interface IInterchainTokenService is
     ITokenManagerType,
     ITokenManagerImplementation,
@@ -96,7 +100,8 @@ interface IInterchainTokenService is
     function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
 
     /**
-     * @notice Returns hash of the chain name.
+     * @notice Returns the hash of the chain name.
+     * @return bytes32 The hash of the chain name.
      */
     function chainNameHash() external view returns (bytes32);
 
@@ -143,6 +148,7 @@ interface IInterchainTokenService is
      * @param tokenManagerType The type of token manager.
      * @param params The deployment parameters.
      * @param gasValue The gas value for deployment.
+     * @return tokenId The tokenId associated with the token manager.
      */
     function deployTokenManager(
         bytes32 salt,
@@ -172,6 +178,14 @@ interface IInterchainTokenService is
         uint256 gasValue
     ) external payable;
 
+    /**
+     * @notice Initiates an interchain transfer of a specified token to a destination chain.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param amount The amount of tokens to be transferred.
+     * @param metadata Additional metadata to be passed along with the transfer.
+     */
     function interchainTransfer(
         bytes32 tokenId,
         string calldata destinationChain,
@@ -180,6 +194,14 @@ interface IInterchainTokenService is
         bytes calldata metadata
     ) external payable;
 
+    /**
+     * @notice Initiates an interchain call contract with interchain token to a destination chain.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param amount The amount of tokens to be transferred.
+     * @param data Additional data to be passed along with the transfer.
+     */
     function callContractWithInterchainToken(
         bytes32 tokenId,
         string calldata destinationChain,
@@ -189,7 +211,8 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
-     * @notice Initiates an interchain token transfer. Only callable by TokenManagers
+     * @notice Initiates an interchain token transfer.
+     * @dev Only callable by TokenManagers.
      * @param tokenId The tokenId of the token to be transmitted.
      * @param sourceAddress The source address of the token.
      * @param destinationChain The name of the destination chain.

@@ -15,7 +15,7 @@ import { Distributable } from '../utils/Distributable.sol';
 /**
  * @title InterchainToken
  * @notice This contract implements a interchain token which extends InterchainToken functionality.
- * This contract also inherits Distributable and Implementation logic.
+ * @dev This contract also inherits Distributable and Implementation logic.
  */
 contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Distributable, IInterchainToken {
     using AddressBytes for bytes;
@@ -29,23 +29,24 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Di
 
     /**
      * @notice Getter for the contract id.
+     * @return bytes32 The contract id.
      */
     function contractId() external pure override returns (bytes32) {
         return CONTRACT_ID;
     }
 
     /**
-     * @notice Returns the token manager for this token
-     * @return address The token manager contract
+     * @notice Returns the token manager for this token.
+     * @return address The token manager contract.
      */
     function tokenManager() public view override(BaseInterchainToken, IInterchainToken) returns (address) {
         return tokenManager_;
     }
 
     /**
-     * @notice Setup function to initialize contract parameters
-     * @param params The setup parameters in bytes
-     * The setup params include tokenManager, distributor, tokenName, symbol, decimals, mintAmount and mintTo
+     * @notice Setup function to initialize contract parameters.
+     * @dev The setup params include tokenManager, distributor, tokenName, symbol, and decimals.
+     * @param params The setup parameters in bytes.
      */
     function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
         address distributor;
@@ -66,20 +67,20 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Di
     }
 
     /**
-     * @notice Function to mint new tokens
-     * Can only be called by the distributor address.
-     * @param account The address that will receive the minted tokens
-     * @param amount The amount of tokens to mint
+     * @notice Function to mint new tokens.
+     * @dev Can only be called by the distributor address.
+     * @param account The address that will receive the minted tokens.
+     * @param amount The amount of tokens to mint.
      */
     function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _mint(account, amount);
     }
 
     /**
-     * @notice Function to burn tokens
-     * Can only be called by the distributor address.
-     * @param account The address that will have its tokens burnt
-     * @param amount The amount of tokens to burn
+     * @notice Function to burn tokens.
+     * @dev Can only be called by the distributor address.
+     * @param account The address that will have its tokens burnt.
+     * @param amount The amount of tokens to burn.
      */
     function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _burn(account, amount);
