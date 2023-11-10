@@ -29,7 +29,7 @@ interface ITokenManagerProxy is IProxy {
     function tokenAddress() external view returns (address);
 
     /**
-     * @notice Returns implementation type and token address in one call.
+     * @notice Returns implementation type and token address.
      */
-    function getInfo() external view returns (uint256, address);
+    function getImplementationTypeAndTokenAddress() external view returns (uint256, address);
 }

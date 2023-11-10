@@ -53,7 +53,10 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
         return CONTRACT_ID;
     }
 
-    function getInfo() external view returns (uint256 implementationType_, address tokenAddress_) {
+    /**
+     * @notice Returns implementation type and token address.
+     */
+    function getImplementationTypeAndTokenAddress() external view returns (uint256 implementationType_, address tokenAddress_) {
         implementationType_ = implementationType;
         tokenAddress_ = tokenAddress;
     }
