@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import { IProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IProxy.sol';
 import { BaseProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/BaseProxy.sol';
 
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { IBaseTokenManager } from '../interfaces/IBaseTokenManager.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { ITokenManagerImplementation } from '../interfaces/ITokenManagerImplementation.sol';
 
@@ -42,7 +42,7 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
         (bool success, ) = implementation_.delegatecall(abi.encodeWithSelector(IProxy.setup.selector, params));
         if (!success) revert SetupFailed();
 
-        tokenAddress = ITokenManager(implementation_).getTokenAddressFromParams(params);
+        tokenAddress = IBaseTokenManager(implementation_).getTokenAddressFromParams(params);
     }
 
     /**
