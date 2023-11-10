@@ -7,6 +7,7 @@ import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 import { Operatable } from '../utils/Operatable.sol';
@@ -16,7 +17,7 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
  * @title The main functionality of TokenManagers.
  * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
  */
-abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
+abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, FlowLimit, Implementation {
     using AddressBytes for bytes;
 
     IInterchainTokenService public immutable interchainTokenService;
