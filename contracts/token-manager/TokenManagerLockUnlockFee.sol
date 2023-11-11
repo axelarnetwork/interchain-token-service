@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-import { SafeTokenTransferFrom, SafeTokenTransfer } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { SafeTokenTransferFrom, SafeTokenTransfer, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
 import { ITokenManagerLockUnlock } from '../interfaces/ITokenManagerLockUnlock.sol';
@@ -18,6 +18,7 @@ import { TokenManager } from './TokenManager.sol';
 contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManagerLockUnlock {
     using SafeTokenTransfer for IERC20;
     using SafeTokenTransferFrom for IERC20;
+    using SafeTokenCall for IERC20;
 
     /**
      * @dev Constructs an instance of TokenManagerLockUnlock. Calls the constructor
@@ -31,13 +32,14 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
     }
 
     /**
-     * @dev Sets up the token address.
-     * @param params_ The setup parameters in bytes. Should be encoded with the token address.
+     * @dev Sets up the token address and liquidity pool address.
+     * @param params_ The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address.
      */
     function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
-        (, address tokenAddress_) = abi.decode(params_, (bytes, address));
-        _setTokenAddress(tokenAddress_);
+        (, address tokenAddress_) = abi.decode(params_, (uint256, address));
+
+        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, type(uint256).max));
     }
 
     /**
@@ -47,7 +49,7 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
      * @return uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
      */
     function _takeToken(address from, uint256 amount) internal override noReEntrancy returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
         uint256 balanceBefore = token.balanceOf(address(this));
 
         token.safeTransferFrom(from, address(this), amount);
@@ -67,7 +69,7 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
      * @return uint The actual amount of tokens transferred
      */
     function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
         uint256 balanceBefore = token.balanceOf(to);
 
         token.safeTransfer(to, amount);

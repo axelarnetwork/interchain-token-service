@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { IProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IProxy.sol';
 import { BaseProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/BaseProxy.sol';
 
+import { IBaseTokenManager } from '../interfaces/IBaseTokenManager.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { ITokenManagerImplementation } from '../interfaces/ITokenManagerImplementation.sol';
 
@@ -19,6 +20,7 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
     address public immutable interchainTokenService;
     uint256 public immutable implementationType;
     bytes32 public immutable interchainTokenId;
+    address public immutable tokenAddress;
 
     /**
      * @notice Constructs the TokenManagerProxy contract.
@@ -39,6 +41,8 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
 
         (bool success, ) = implementation_.delegatecall(abi.encodeWithSelector(IProxy.setup.selector, params));
         if (!success) revert SetupFailed();
+
+        tokenAddress = IBaseTokenManager(implementation_).getTokenAddressFromParams(params);
     }
 
     /**
@@ -47,6 +51,14 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
      */
     function contractId() internal pure override returns (bytes32) {
         return CONTRACT_ID;
+    }
+
+    /**
+     * @notice Returns implementation type and token address.
+     */
+    function getImplementationTypeAndTokenAddress() external view returns (uint256 implementationType_, address tokenAddress_) {
+        implementationType_ = implementationType;
+        tokenAddress_ = tokenAddress;
     }
 
     /**

@@ -35,7 +35,7 @@ contract TokenManagerMintBurnFrom is TokenManagerMintBurn {
      * @return uint Amount of tokens burned
      */
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
-        IERC20 token = IERC20(tokenAddress());
+        IERC20 token = IERC20(this.tokenAddress());
 
         token.safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
 

@@ -374,12 +374,7 @@ describe('Interchain Token Service', () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const validParams = defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]);
-            const tokenManagerProxy = await deployContract(wallet, `TokenManagerProxy`, [
-                service.address,
-                LOCK_UNLOCK,
-                tokenId,
-                validParams,
-            ]);
+            const tokenManagerProxy = await deployContract(wallet, `TokenManagerProxy`, [service.address, MINT_BURN, tokenId, validParams]);
             const invalidParams = '0x1234';
 
             await expectRevert(
@@ -486,7 +481,7 @@ describe('Interchain Token Service', () => {
                 await service.deployTokenManager(
                     salt,
                     '',
-                    LOCK_UNLOCK,
+                    MINT_BURN,
                     defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]),
                     0,
                 )
@@ -811,7 +806,7 @@ describe('Interchain Token Service', () => {
                 await service.deployTokenManager(
                     salt,
                     '',
-                    LOCK_UNLOCK,
+                    MINT_BURN,
                     defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]),
                     0,
                 )
@@ -885,7 +880,7 @@ describe('Interchain Token Service', () => {
                 await service.deployTokenManager(
                     salt,
                     '',
-                    LOCK_UNLOCK,
+                    MINT_BURN,
                     defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]),
                     0,
                 )
