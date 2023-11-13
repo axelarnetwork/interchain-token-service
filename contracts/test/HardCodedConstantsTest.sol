@@ -4,9 +4,7 @@
 pragma solidity ^0.8.0;
 
 import { TokenManagerLiquidityPool } from '../token-manager/TokenManagerLiquidityPool.sol';
-import { Distributable } from '../utils/Distributable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
-import { Operatable } from '../utils/Operatable.sol';
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 
 error Invalid();
