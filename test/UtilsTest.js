@@ -25,12 +25,8 @@ describe('Operatable', () => {
     let operatorRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'OperatorableTest', [ownerWallet.address]);
+        test = await deployContract(ownerWallet, 'OperatableTest', [ownerWallet.address]);
         operatorRole = await test.operatorRole();
-    });
-
-    it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(ownerWallet, `TestOperatable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to run the onlyOperatorable function as the operator', async () => {
@@ -101,10 +97,6 @@ describe('Distributable', () => {
     before(async () => {
         test = await deployContract(ownerWallet, 'DistributableTest', [ownerWallet.address]);
         distributorRole = await test.distributorRole();
-    });
-
-    it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(ownerWallet, `TestDistributable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to run the onlyDistributor function as the distributor', async () => {

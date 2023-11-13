@@ -12,34 +12,24 @@ import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 error Invalid();
 
 contract TestTokenManager is TokenManagerLiquidityPool {
-    string public constant NAME = 'TestTokenManager';
+    string public name = 'Test';
 
     constructor(address interchainTokenService_) TokenManagerLiquidityPool(interchainTokenService_) {
         if (LIQUIDITY_POOL_SLOT != uint256(keccak256('liquidity-pool-slot')) - 1) revert Invalid();
     }
 }
 
-contract TestDistributable is Distributable {
-    string public constant NAME = 'TestDistributable';
-
-    constructor() {}
-}
-
 contract TestFlowLimit is FlowLimit {
-    string public constant NAME = 'TestFlowLimit';
+    string public name = 'Test';
 
     constructor() {
         if (FLOW_LIMIT_SLOT != uint256(keccak256('flow-limit')) - 1) revert Invalid();
     }
 }
 
-contract TestOperatable is Operatable {
-    string public constant NAME = 'TestOperatable';
-
-    constructor() {}
-}
-
 contract TestInterchainToken is InterchainToken {
+    string public name = 'Test';
+
     constructor() {
         if (INITIALIZED_SLOT != bytes32(uint256(keccak256('interchain-token-initialized')) - 1)) revert Invalid();
     }

@@ -3501,7 +3501,7 @@ string lastMessage
 function _executeWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal
 ```
 
-## InterchainTokenTest
+## BaseInterchainTokenTest
 
 ### tokenManager_
 
@@ -3791,7 +3791,7 @@ fallback() external payable virtual
 receive() external payable virtual
 ```
 
-## OperatorableTest
+## OperatableTest
 
 ### nonce
 

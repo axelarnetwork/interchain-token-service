@@ -34,14 +34,14 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     /**
      * @notice returns true if the contract has be setup.
      */
-    function _isInitialized() internal view returns (bool isSetup) {
+    function _isInitialized() internal view returns (bool initialized) {
         assembly {
-            isSetup := sload(INITIALIZED_SLOT)
+            initialized := sload(INITIALIZED_SLOT)
         }
     }
 
     /**
-     * @notice sets the isSetup to true, to allow only a single setup.
+     * @notice sets initialized to true, to allow only a single init.
      */
     function _initialize() internal {
         assembly {
