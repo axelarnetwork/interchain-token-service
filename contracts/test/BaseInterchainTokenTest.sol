@@ -6,7 +6,7 @@ import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol
 import { Distributable } from '../utils/Distributable.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
-contract InterchainTokenTest is BaseInterchainToken, Distributable, IERC20MintableBurnable {
+contract BaseInterchainTokenTest is BaseInterchainToken, Distributable, IERC20MintableBurnable {
     address public tokenManager_;
     bool internal tokenManagerRequiresApproval_ = true;
     string public name;

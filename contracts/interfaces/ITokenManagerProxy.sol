@@ -22,4 +22,14 @@ interface ITokenManagerProxy is IProxy {
      * @return bytes32 The interchain token ID of the token manager.
      */
     function interchainTokenId() external view returns (bytes32);
+
+    /**
+     * @notice Returns token address that this token manager manages.
+     */
+    function tokenAddress() external view returns (address);
+
+    /**
+     * @notice Returns implementation type and token address.
+     */
+    function getImplementationTypeAndTokenAddress() external view returns (uint256, address);
 }
