@@ -38,5 +38,5 @@ interface IInterchainTokenDeployer {
         string calldata name,
         string calldata symbol,
         uint8 decimals
-    ) external payable returns (address tokenAddress);
+    ) external returns (address tokenAddress);
 }
