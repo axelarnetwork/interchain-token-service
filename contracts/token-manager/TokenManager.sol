@@ -7,6 +7,7 @@ import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 import { Operatable } from '../utils/Operatable.sol';
@@ -16,15 +17,12 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
  * @title TokenManager
  * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
  */
-abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
+abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, FlowLimit, Implementation {
     using AddressBytes for bytes;
 
     IInterchainTokenService public immutable interchainTokenService;
 
     bytes32 private constant CONTRACT_ID = keccak256('token-manager');
-
-    // uint256(keccak256('token-address')) - 1
-    uint256 internal constant TOKEN_ADDRESS_SLOT = 0xc4e632779a6a7838736dd7e5e6a0eadf171dd37dfb6230720e265576dfcf42ba;
 
     /**
      * @notice Constructs the TokenManager contract.
@@ -48,7 +46,7 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @notice A modifier that allows only the token to execute the function.
      */
     modifier onlyToken() {
-        if (msg.sender != tokenAddress()) revert NotToken(msg.sender);
+        if (msg.sender != this.tokenAddress()) revert NotToken(msg.sender);
         _;
     }
 
@@ -60,13 +58,12 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @notice Reads the stored token address from the predetermined storage slot.
-     * @return tokenAddress_ The address of the token.
+     * @dev Reads the token address from the proxy
+     * @return tokenAddress_ The address of the token
      */
-    function tokenAddress() public view virtual returns (address tokenAddress_) {
-        assembly {
-            tokenAddress_ := sload(TOKEN_ADDRESS_SLOT)
-        }
+    function tokenAddress() external view virtual returns (address tokenAddress_) {
+        // Ask the proxy what the token address is.
+        tokenAddress_ = this.tokenAddress();
     }
 
     /**
@@ -77,6 +74,13 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     function interchainTokenId() public view returns (bytes32) {
         // slither-disable-next-line var-read-using-this
         return this.interchainTokenId();
+    }
+
+    /**
+     * @notice A function that should return the token address from the setup params.
+     */
+    function getTokenAddressFromParams(bytes calldata params) external pure returns (address tokenAddress_) {
+        (, tokenAddress_) = abi.decode(params, (bytes, address));
     }
 
     /**
@@ -259,16 +263,6 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
     }
 
     /**
-     * @dev Stores the token address in the predetermined storage slot.
-     * @param tokenAddress_ The address of the token to store.
-     */
-    function _setTokenAddress(address tokenAddress_) internal {
-        assembly {
-            sstore(TOKEN_ADDRESS_SLOT, tokenAddress_)
-        }
-    }
-
-    /**
      * @notice Transfers tokens from a specific address to this contract.
      * @dev Must be overridden in the inheriting contract.
      * @param from The address from which the tokens will be sent.
@@ -291,5 +285,5 @@ abstract contract TokenManager is ITokenManager, Operatable, FlowLimit, Implemen
      * @dev Must be overridden in the inheriting contract.
      * @param params The setup parameters.
      */
-    function _setup(bytes calldata params) internal virtual;
+    function _setup(bytes calldata params) internal virtual {}
 }

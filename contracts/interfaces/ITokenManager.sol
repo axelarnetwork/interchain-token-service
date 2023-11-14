@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
 
-import { ITokenManagerType } from './ITokenManagerType.sol';
+import { IBaseTokenManager } from './IBaseTokenManager.sol';
 import { IOperatable } from './IOperatable.sol';
 import { IFlowLimit } from './IFlowLimit.sol';
 
@@ -12,7 +12,7 @@ import { IFlowLimit } from './IFlowLimit.sol';
  * @title ITokenManager Interface
  * @notice This interface is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
  */
-interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplementation {
+interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
     error NotService(address caller);
     error TakeTokenFailed();
@@ -21,25 +21,6 @@ interface ITokenManager is ITokenManagerType, IOperatable, IFlowLimit, IImplemen
     error ZeroAddress();
     error AlreadyFlowLimiter(address flowLimiter);
     error NotFlowLimiter(address flowLimiter);
-
-    /**
-     * @notice A function that returns the token id.
-     * @return bytes32 The token id.
-     */
-    function interchainTokenId() external view returns (bytes32);
-
-    /**
-     * @notice A function that should return the address of the token.
-     * @dev Must be overridden in the inheriting contract.
-     * @return address address of the token.
-     */
-    function tokenAddress() external view returns (address);
-
-    /**
-     * @notice A function that should return the implementation type of the token manager.
-     * @return uint256 The implementation type of the token manager.
-     */
-    function implementationType() external pure returns (uint256);
 
     /**
      * @notice Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.

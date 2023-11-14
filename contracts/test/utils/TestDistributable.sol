@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import { Distributable } from '../../utils/Distributable.sol';
 
-contract DistributableTest is Distributable {
+contract TestDistributable is Distributable {
     uint256 public nonce;
 
     constructor(address distributor) {

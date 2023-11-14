@@ -25,12 +25,8 @@ describe('Operatable', () => {
     let operatorRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'OperatorableTest', [ownerWallet.address]);
+        test = await deployContract(ownerWallet, 'TestOperatable', [ownerWallet.address]);
         operatorRole = await test.operatorRole();
-    });
-
-    it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(ownerWallet, `TestOperatable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to run the onlyOperatorable function as the operator', async () => {
@@ -44,6 +40,10 @@ describe('Operatable', () => {
             otherWallet.address,
             operatorRole,
         ]);
+    });
+
+    it('Should return true on isOperator if an address is an operator', async () => {
+        expect(await test.isOperator(ownerWallet.address)).to.be.true;
     });
 
     it('Should be able to change the operator only as the operator', async () => {
@@ -99,12 +99,8 @@ describe('Distributable', () => {
     let distributorRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'DistributableTest', [ownerWallet.address]);
+        test = await deployContract(ownerWallet, 'TestDistributable', [ownerWallet.address]);
         distributorRole = await test.distributorRole();
-    });
-
-    it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(ownerWallet, `TestDistributable`, [])).to.not.be.reverted;
     });
 
     it('Should be able to run the onlyDistributor function as the distributor', async () => {
@@ -176,8 +172,8 @@ describe('FlowLimit', async () => {
 
     before(async () => {
         test = isHardhat
-            ? await deployContract(ownerWallet, 'FlowLimitTest')
-            : await deployContract(ownerWallet, 'FlowLimitTestLiveNetwork');
+            ? await deployContract(ownerWallet, 'TestFlowLimit')
+            : await deployContract(ownerWallet, 'TestFlowLimitLiveNetwork');
         tokenId = await test.TOKEN_ID();
     });
 
@@ -237,6 +233,18 @@ describe('FlowLimit', async () => {
 
         await (await test.addFlowOut(flowLimit)).wait();
     });
+
+    it('Should revert if single flow amount exceeds the flow limit', async () => {
+        const excessiveFlowAmount = flowLimit + 1;
+        await test.setFlowLimit(flowLimit).then((tx) => tx.wait());
+
+        await test.addFlowIn(flowLimit - 1).then((tx) => tx.wait());
+
+        await expectRevert((gasOptions) => test.addFlowIn(excessiveFlowAmount, gasOptions), test, 'FlowLimitExceeded', [
+            flowLimit,
+            excessiveFlowAmount,
+        ]);
+    });
 });
 
 describe('InterchainTokenDeployer', () => {
@@ -266,7 +274,6 @@ describe('InterchainTokenDeployer', () => {
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
         const token = await getContractAt('InterchainToken', tokenAddress, ownerWallet);
-        const tokenProxy = await getContractAt('InterchainTokenProxy', tokenAddress, ownerWallet);
 
         await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals))
             .and.to.emit(token, 'RolesAdded')
@@ -274,7 +281,6 @@ describe('InterchainTokenDeployer', () => {
             .to.emit(token, 'RolesAdded')
             .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE);
 
-        expect(await tokenProxy.implementation()).to.equal(interchainToken.address);
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);

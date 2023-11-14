@@ -3,8 +3,6 @@
 pragma solidity ^0.8.0;
 
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
-import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
-import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
@@ -17,7 +15,7 @@ import { Distributable } from '../utils/Distributable.sol';
  * @notice This contract implements a interchain token which extends InterchainToken functionality.
  * @dev This contract also inherits Distributable and Implementation logic.
  */
-contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Distributable, IInterchainToken {
+contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IInterchainToken {
     using AddressBytes for bytes;
 
     string public name;
@@ -25,14 +23,31 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Di
     uint8 public decimals;
     address internal tokenManager_;
 
-    bytes32 private constant CONTRACT_ID = keccak256('interchain-token');
+    // bytes32(uint256(keccak256('interchain-token-initialized')) - 1);
+    bytes32 internal constant INITIALIZED_SLOT = 0xc778385ecb3e8cecb82223fa1f343ec6865b2d64c65b0c15c7e8aef225d9e214;
+
+    constructor() {
+        // Make the implementation act as if it has been setup already to disallow calls to init() (even though that wouldn't achieve anything really)
+        _initialize();
+    }
 
     /**
-     * @notice Getter for the contract id.
+     * @notice returns true if the contract has be setup.
+     */
+    function _isInitialized() internal view returns (bool initialized) {
+        assembly {
+            initialized := sload(INITIALIZED_SLOT)
+        }
+    }
+
+    /**
+     * @notice sets initialized to true, to allow only a single init.
      * @return bytes32 The contract id.
      */
-    function contractId() external pure override returns (bytes32) {
-        return CONTRACT_ID;
+    function _initialize() internal {
+        assembly {
+            sstore(INITIALIZED_SLOT, true)
+        }
     }
 
     /**
@@ -44,21 +59,31 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Implementation, Di
     }
 
     /**
-     * @notice Setup function to initialize contract parameters.
-     * @dev The setup params include tokenManager, distributor, tokenName, symbol, and decimals.
-     * @param params The setup parameters in bytes.
+     * @notice Setup function to initialize contract parameters
+     * @param tokenManagerAddress The address of the token manager of this token
+     * @param distributor The address of the token distributor
+     * @param tokenName The name of the token
+     * @param tokenSymbol The symbopl of the token
+     * @param tokenDecimals The decimals of the token
      */
-    function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
-        address distributor;
-        address tokenManagerAddress;
-        string memory tokenName;
-        (tokenManagerAddress, distributor, tokenName, symbol, decimals) = abi.decode(params, (address, address, string, string, uint8));
+    function init(
+        address tokenManagerAddress,
+        address distributor,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 tokenDecimals
+    ) external {
+        if (_isInitialized()) revert AlreadyInitialized();
+
+        _initialize();
 
         if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();
 
         tokenManager_ = tokenManagerAddress;
         name = tokenName;
+        symbol = tokenSymbol;
+        decimals = tokenDecimals;
 
         if (distributor != address(0)) _addDistributor(distributor);
         _addDistributor(tokenManagerAddress);
