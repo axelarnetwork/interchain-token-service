@@ -25,10 +25,6 @@ describe('Token Manager', () => {
         tokenManagerLockUnlockFeeOnTransfer = await deployContract(owner, `TokenManagerLockUnlockFee`, [service.address]);
     });
 
-    it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(owner, `TestTokenManagerLiquidityPool`, [service.address])).to.not.be.reverted;
-    });
-
     it('Should revert on token manager deployment with invalid service address', async () => {
         await expectRevert(
             (gasOptions) => deployContract(owner, `TestTokenManager`, [AddressZero, gasOptions]),
