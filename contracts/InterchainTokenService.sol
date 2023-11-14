@@ -303,7 +303,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Used to deploy a interchain token alongside a TokenManager in another chain. If the `distributor` is empty
+     * @notice Used to deploy an interchain token alongside a TokenManager in another chain. If the `distributor` is empty
      * bytes then a mint/burn TokenManager is used. Otherwise a lock/unlock TokenManager is used.
      * @param salt the salt to be used.
      * @param name the name of the token to be deployed.
@@ -758,7 +758,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Deploys a interchain token on a destination chain.
+     * @notice Deploys an interchain token on a destination chain.
      * @param tokenId The ID of the token
      * @param name The name of the token
      * @param symbol The symbol of the token
@@ -810,7 +810,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Compute the salt for a interchain token deployment.
+     * @notice Compute the salt for an interchain token deployment.
      * @param tokenId The ID of the token
      * @return salt The computed salt for the token deployment
      */
@@ -819,7 +819,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Deploys a interchain token.
+     * @notice Deploys an interchain token.
      * @param tokenId The ID of the token
      * @param distributorBytes The distributor address for the token
      * @param name The name of the token

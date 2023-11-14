@@ -10,7 +10,7 @@ import { IFlowLimit } from './IFlowLimit.sol';
 
 /**
  * @title ITokenManager
- * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
+ * @notice This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
 interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
@@ -23,7 +23,7 @@ interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplemen
     error NotFlowLimiter(address flowLimiter);
 
     /**
-     * @notice Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.
+     * @notice Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
@@ -37,7 +37,7 @@ interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplemen
     ) external payable;
 
     /**
-     * @notice Calls the service to initiate a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
+     * @notice Calls the service to initiate an interchain transfer with data after taking the appropriate amount of tokens from the user.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.
@@ -51,8 +51,8 @@ interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplemen
     ) external payable;
 
     /**
-     * @notice Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
-     * @param sender the address of the user paying for the cross chain transfer.
+     * @notice Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
+     * @param sender the address of the user paying for the interchain transfer.
      * @param destinationChain the name of the chain to send tokens to.
      * @param destinationAddress the address of the user to send tokens to.
      * @param amount the amount of tokens to take from msg.sender.

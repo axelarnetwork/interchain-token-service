@@ -16,7 +16,7 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwritten.
-     * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
+     * @return tokenManager_ the TokenManager called to facilitate interchain transfers.
      */
     function tokenManager() public view virtual returns (address tokenManager_);
 
@@ -51,7 +51,7 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
      * @param destinationChain the string representation of the destination chain.
      * @param recipient the bytes representation of the address of the recipient.
      * @param amount the amount of token to be transferred.
-     * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
+     * @param metadata either empty, to just facilitate an interchain transfer, or the data to be passed to an interchain contract call and transfer.
      */
     function interchainTransferFrom(
         address sender,
@@ -78,7 +78,7 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
      * @param destinationChain the string representation of the destination chain.
      * @param destinationAddress the bytes representation of the address of the recipient.
      * @param amount the amount of token to be transferred.
-     * @param metadata either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
+     * @param metadata either empty, to just facilitate an interchain transfer, or the data to be passed to an interchain contract call and transfer.
      */
     function _beforeInterchainTransfer(
         address from,

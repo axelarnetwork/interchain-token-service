@@ -12,7 +12,7 @@ import { Distributable } from '../utils/Distributable.sol';
 
 /**
  * @title InterchainToken
- * @notice This contract implements a interchain token which extends InterchainToken functionality.
+ * @notice This contract implements an interchain token which extends InterchainToken functionality.
  * This contract also inherits Distributable and Implementation logic.
  */
 contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IInterchainToken {

@@ -1,2592 +1,5 @@
 # Solidity API
 
-## BaseInterchainToken
-
-The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
-that can be used to create approvals, and that `allowance` is a mapping.
-
-### tokenManager
-
-```solidity
-function tokenManager() public view virtual returns (address tokenManager_)
-```
-
-Getter for the tokenManager used for this token.
-
-_Needs to be overwritten._
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManager_ | address | the TokenManager called to facilitate cross chain transfers. |
-
-### interchainTransfer
-
-```solidity
-function interchainTransfer(string destinationChain, bytes recipient, uint256 amount, bytes metadata) external payable
-```
-
-Implementation of the interchainTransfer method
-
-_We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
-A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationChain | string | The destination chain identifier. |
-| recipient | bytes | The bytes representation of the address of the recipient. |
-| amount | uint256 | The amount of token to be transferred. |
-| metadata | bytes | Either empty, to just facilitate an interchain transfer, or the data can be passed for an interchain contract call with transfer as per semantics defined by the token service. |
-
-### interchainTransferFrom
-
-```solidity
-function interchainTransferFrom(address sender, string destinationChain, bytes recipient, uint256 amount, bytes metadata) external payable
-```
-
-Implementation of the interchainTransferFrom method
-
-_We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
-A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sender | address | the sender of the tokens. They need to have approved `msg.sender` before this is called. |
-| destinationChain | string | the string representation of the destination chain. |
-| recipient | bytes | the bytes representation of the address of the recipient. |
-| amount | uint256 | the amount of token to be transferred. |
-| metadata | bytes | either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer. |
-
-### _beforeInterchainTransfer
-
-```solidity
-function _beforeInterchainTransfer(address from, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) internal virtual
-```
-
-A method to be overwritten that will be called before an interchain transfer. You can approve the tokenManager here if you need and want to, to allow users for a 1-call transfer in case of a lock-unlock token manager.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| from | address | the sender of the tokens. They need to have approved `msg.sender` before this is called. |
-| destinationChain | string | the string representation of the destination chain. |
-| destinationAddress | bytes | the bytes representation of the address of the recipient. |
-| amount | uint256 | the amount of token to be transferred. |
-| metadata | bytes | either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer. |
-
-## ERC20
-
-_Implementation of the {IERC20} interface.
-
-This implementation is agnostic to the way tokens are created. This means
-that a supply mechanism has to be added in a derived contract using {_mint}.
-For a generic mechanism see {ERC20PresetMinterPauser}.
-
-TIP: For a detailed writeup see our guide
-https://forum.zeppelin.solutions/t/how-to-implement-erc20-supply-mechanisms/226[How
-to implement supply mechanisms].
-
-We have followed general OpenZeppelin guidelines: functions revert instead
-of returning `false` on failure. This behavior is nonetheless conventional
-and does not conflict with the expectations of ERC20 applications.
-
-Additionally, an {Approval} event is emitted on calls to {transferFrom}.
-This allows applications to reconstruct the allowance for all accounts just
-by listening to said events. Other implementations of the EIP may not emit
-these events, as it isn't required by the specification.
-
-Finally, the non-standard {decreaseAllowance} and {increaseAllowance}
-functions have been added to mitigate the well-known issues around setting
-allowances. See {IERC20-approve}._
-
-### balanceOf
-
-```solidity
-mapping(address => uint256) balanceOf
-```
-
-_Returns the amount of tokens owned by `account`._
-
-### allowance
-
-```solidity
-mapping(address => mapping(address => uint256)) allowance
-```
-
-_Returns the remaining number of tokens that `spender` will be
-allowed to spend on behalf of `owner` through {transferFrom}. This is
-zero by default.
-
-This value changes when {approve} or {transferFrom} are called._
-
-### totalSupply
-
-```solidity
-uint256 totalSupply
-```
-
-_Returns the amount of tokens in existence._
-
-### UINT256_MAX
-
-```solidity
-uint256 UINT256_MAX
-```
-
-### transfer
-
-```solidity
-function transfer(address recipient, uint256 amount) external virtual returns (bool)
-```
-
-_See {IERC20-transfer}.
-
-Requirements:
-
-- `recipient` cannot be the zero address.
-- the caller must have a balance of at least `amount`._
-
-### approve
-
-```solidity
-function approve(address spender, uint256 amount) external virtual returns (bool)
-```
-
-_See {IERC20-approve}.
-
-NOTE: If `amount` is the maximum `uint256`, the allowance is not updated on
-`transferFrom`. This is semantically equivalent to an infinite approval.
-
-Requirements:
-
-- `spender` cannot be the zero address._
-
-### transferFrom
-
-```solidity
-function transferFrom(address sender, address recipient, uint256 amount) external virtual returns (bool)
-```
-
-_See {IERC20-transferFrom}.
-
-Emits an {Approval} event indicating the updated allowance. This is not
-required by the EIP. See the note at the beginning of {ERC20}.
-
-Requirements:
-
-- `sender` and `recipient` cannot be the zero address.
-- `sender` must have a balance of at least `amount`.
-- the caller must have allowance for ``sender``'s tokens of at least
-`amount`._
-
-### increaseAllowance
-
-```solidity
-function increaseAllowance(address spender, uint256 addedValue) external virtual returns (bool)
-```
-
-_Atomically increases the allowance granted to `spender` by the caller.
-
-This is an alternative to {approve} that can be used as a mitigation for
-problems described in {IERC20-approve}.
-
-Emits an {Approval} event indicating the updated allowance.
-
-Requirements:
-
-- `spender` cannot be the zero address._
-
-### decreaseAllowance
-
-```solidity
-function decreaseAllowance(address spender, uint256 subtractedValue) external virtual returns (bool)
-```
-
-_Atomically decreases the allowance granted to `spender` by the caller.
-
-This is an alternative to {approve} that can be used as a mitigation for
-problems described in {IERC20-approve}.
-
-Emits an {Approval} event indicating the updated allowance.
-
-Requirements:
-
-- `spender` cannot be the zero address.
-- `spender` must have allowance for the caller of at least
-`subtractedValue`._
-
-### _transfer
-
-```solidity
-function _transfer(address sender, address recipient, uint256 amount) internal virtual
-```
-
-_Moves tokens `amount` from `sender` to `recipient`.
-
-This is internal function is equivalent to {transfer}, and can be used to
-e.g. implement automatic token fees, slashing mechanisms, etc.
-
-Emits a {Transfer} event.
-
-Requirements:
-
-- `sender` cannot be the zero address.
-- `recipient` cannot be the zero address.
-- `sender` must have a balance of at least `amount`._
-
-### _mint
-
-```solidity
-function _mint(address account, uint256 amount) internal virtual
-```
-
-_Creates `amount` tokens and assigns them to `account`, increasing
-the total supply.
-
-Emits a {Transfer} event with `from` set to the zero address.
-
-Requirements:
-
-- `to` cannot be the zero address._
-
-### _burn
-
-```solidity
-function _burn(address account, uint256 amount) internal virtual
-```
-
-_Destroys `amount` tokens from `account`, reducing the
-total supply.
-
-Emits a {Transfer} event with `to` set to the zero address.
-
-Requirements:
-
-- `account` cannot be the zero address.
-- `account` must have at least `amount` tokens._
-
-### _approve
-
-```solidity
-function _approve(address owner, address spender, uint256 amount) internal virtual
-```
-
-_Sets `amount` as the allowance of `spender` over the `owner` s tokens.
-
-This internal function is equivalent to `approve`, and can be used to
-e.g. set automatic allowances for certain subsystems, etc.
-
-Emits an {Approval} event.
-
-Requirements:
-
-- `owner` cannot be the zero address.
-- `spender` cannot be the zero address._
-
-## ERC20Permit
-
-_Extension of ERC20 to include permit functionality (EIP-2612).
-Allows for approval of ERC20 tokens by signature rather than transaction._
-
-### PermitExpired
-
-```solidity
-error PermitExpired()
-```
-
-### InvalidS
-
-```solidity
-error InvalidS()
-```
-
-### InvalidV
-
-```solidity
-error InvalidV()
-```
-
-### InvalidSignature
-
-```solidity
-error InvalidSignature()
-```
-
-### nameHash
-
-```solidity
-bytes32 nameHash
-```
-
-_Represents hash of the EIP-712 Domain Separator._
-
-### nonces
-
-```solidity
-mapping(address => uint256) nonces
-```
-
-_Mapping of nonces for each address._
-
-### _setNameHash
-
-```solidity
-function _setNameHash(string name) internal
-```
-
-Internal function to set the token name hash
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| name | string | The token name |
-
-### DOMAIN_SEPARATOR
-
-```solidity
-function DOMAIN_SEPARATOR() public view returns (bytes32)
-```
-
-Calculates the domain separator.
-
-_This is not cached because chainid can change on chain forks._
-
-### permit
-
-```solidity
-function permit(address issuer, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external
-```
-
-Permit the designated spender to spend the holder's tokens
-
-_The permit function is used to allow a holder to designate a spender
-to spend tokens on their behalf via a signed message._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| issuer | address | The address of the token holder |
-| spender | address | The address of the designated spender |
-| value | uint256 | The number of tokens to be spent |
-| deadline | uint256 | The time at which the permission to spend expires |
-| v | uint8 | The recovery id of the signature |
-| r | bytes32 | Half of the ECDSA signature pair |
-| s | bytes32 | Half of the ECDSA signature pair |
-
-## InterchainToken
-
-This contract implements a interchain token which extends InterchainToken functionality.
-This contract also inherits Distributable and Implementation logic.
-
-### name
-
-```solidity
-string name
-```
-
-Getter for the name of the token
-
-### symbol
-
-```solidity
-string symbol
-```
-
-Getter for the symbol of the token
-
-### decimals
-
-```solidity
-uint8 decimals
-```
-
-Getter for the decimals of the token
-
-### tokenManager_
-
-```solidity
-address tokenManager_
-```
-
-### INITIALIZED_SLOT
-
-```solidity
-bytes32 INITIALIZED_SLOT
-```
-
-### constructor
-
-```solidity
-constructor() public
-```
-
-### _isInitialized
-
-```solidity
-function _isInitialized() internal view returns (bool initialized)
-```
-
-returns true if the contract has be setup.
-
-### _initialize
-
-```solidity
-function _initialize() internal
-```
-
-sets initialized to true, to allow only a single init.
-
-### tokenManager
-
-```solidity
-function tokenManager() public view returns (address)
-```
-
-Returns the token manager for this token
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address | address The token manager contract |
-
-### init
-
-```solidity
-function init(address tokenManagerAddress, address distributor, string tokenName, string tokenSymbol, uint8 tokenDecimals) external
-```
-
-Setup function to initialize contract parameters
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManagerAddress | address | The address of the token manager of this token |
-| distributor | address | The address of the token distributor |
-| tokenName | string | The name of the token |
-| tokenSymbol | string | The symbopl of the token |
-| tokenDecimals | uint8 | The decimals of the token |
-
-### mint
-
-```solidity
-function mint(address account, uint256 amount) external
-```
-
-Function to mint new tokens
-Can only be called by the distributor address.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| account | address | The address that will receive the minted tokens |
-| amount | uint256 | The amount of tokens to mint |
-
-### burn
-
-```solidity
-function burn(address account, uint256 amount) external
-```
-
-Function to burn tokens
-Can only be called by the distributor address.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| account | address | The address that will have its tokens burnt |
-| amount | uint256 | The amount of tokens to burn |
-
-## IBaseTokenManager
-
-This contract is defines the base token manager interface implemented by all token managers.
-
-### interchainTokenId
-
-```solidity
-function interchainTokenId() external view returns (bytes32)
-```
-
-A function that returns the token id.
-
-### tokenAddress
-
-```solidity
-function tokenAddress() external view returns (address)
-```
-
-A function that should return the address of the token.
-Must be overridden in the inheriting contract.
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address | address address of the token. |
-
-### implementationType
-
-```solidity
-function implementationType() external pure returns (uint256)
-```
-
-A function that should return the implementation type of the token manager.
-
-### getTokenAddressFromParams
-
-```solidity
-function getTokenAddressFromParams(bytes params) external pure returns (address)
-```
-
-A function that should return the token address from the init params.
-
-## IDistributable
-
-### transferDistributorship
-
-```solidity
-function transferDistributorship(address distributor_) external
-```
-
-Change the distributor of the contract
-
-_Can only be called by the current distributor_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| distributor_ | address | The address of the new distributor |
-
-### proposeDistributorship
-
-```solidity
-function proposeDistributorship(address distributor_) external
-```
-
-Proposed a change of the distributor of the contract
-
-_Can only be called by the current distributor_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| distributor_ | address | The address of the new distributor |
-
-### acceptDistributorship
-
-```solidity
-function acceptDistributorship(address fromDistributor) external
-```
-
-Accept a change of the distributor of the contract
-
-_Can only be called by the proposed distributor_
-
-### isDistributor
-
-```solidity
-function isDistributor(address addr) external view returns (bool)
-```
-
-Query if an address is a distributor
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| addr | address | the address to query for |
-
-## IERC20MintableBurnable
-
-_Interface of the ERC20 standard as defined in the EIP._
-
-### mint
-
-```solidity
-function mint(address to, uint256 amount) external
-```
-
-Function to mint new tokens
-
-_Can only be called by the distributor address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| to | address | The address that will receive the minted tokens |
-| amount | uint256 | The amount of tokens to mint |
-
-### burn
-
-```solidity
-function burn(address from, uint256 amount) external
-```
-
-Function to burn tokens
-
-_Can only be called by the distributor address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| from | address | The address that will have its tokens burnt |
-| amount | uint256 | The amount of tokens to burn |
-
-## IERC20Named
-
-_Interface of the ERC20 standard as defined in the EIP._
-
-### name
-
-```solidity
-function name() external view returns (string)
-```
-
-Getter for the name of the token
-
-### symbol
-
-```solidity
-function symbol() external view returns (string)
-```
-
-Getter for the symbol of the token
-
-### decimals
-
-```solidity
-function decimals() external view returns (uint8)
-```
-
-Getter for the decimals of the token
-
-## IFlowLimit
-
-### FlowLimitExceeded
-
-```solidity
-error FlowLimitExceeded(uint256 limit, uint256 flowAmount)
-```
-
-### FlowLimitSet
-
-```solidity
-event FlowLimitSet(bytes32 tokenId, address operator, uint256 flowLimit_)
-```
-
-### flowLimit
-
-```solidity
-function flowLimit() external view returns (uint256 flowLimit_)
-```
-
-Returns the current flow limit
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimit_ | uint256 | The current flow limit value |
-
-### flowOutAmount
-
-```solidity
-function flowOutAmount() external view returns (uint256 flowOutAmount_)
-```
-
-Returns the current flow out amount
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowOutAmount_ | uint256 | The current flow out amount |
-
-### flowInAmount
-
-```solidity
-function flowInAmount() external view returns (uint256 flowInAmount_)
-```
-
-Returns the current flow in amount
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowInAmount_ | uint256 | The current flow in amount |
-
-## IInterchainToken
-
-### TokenManagerAddressZero
-
-```solidity
-error TokenManagerAddressZero()
-```
-
-### TokenNameEmpty
-
-```solidity
-error TokenNameEmpty()
-```
-
-### AlreadyInitialized
-
-```solidity
-error AlreadyInitialized()
-```
-
-### tokenManager
-
-```solidity
-function tokenManager() external view returns (address tokenManager_)
-```
-
-Getter for the tokenManager used for this token.
-
-_Needs to be overwitten._
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManager_ | address | the TokenManager called to facilitate cross chain transfers. |
-
-### init
-
-```solidity
-function init(address tokenManagerAddress, address distributor, string tokenName, string tokenSymbol, uint8 tokenDecimals) external
-```
-
-Setup function to initialize contract parameters
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManagerAddress | address | The address of the token manager of this token |
-| distributor | address | The address of the token distributor |
-| tokenName | string | The name of the token |
-| tokenSymbol | string | The symbopl of the token |
-| tokenDecimals | uint8 | The decimals of the token |
-
-## IInterchainTokenStandard
-
-_Interface of the ERC20 standard as defined in the EIP._
-
-### interchainTransfer
-
-```solidity
-function interchainTransfer(string destinationChain, bytes recipient, uint256 amount, bytes metadata) external payable
-```
-
-Implementation of the interchainTransfer method
-
-_We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
-A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationChain | string | The destination chain identifier. |
-| recipient | bytes | The bytes representation of the address of the recipient. |
-| amount | uint256 | The amount of token to be transferred. |
-| metadata | bytes | Either empty, to just facilitate an interchain transfer, or the data can be passed for an interchain contract call with transfer as per semantics defined by the token service. |
-
-### interchainTransferFrom
-
-```solidity
-function interchainTransferFrom(address sender, string destinationChain, bytes recipient, uint256 amount, bytes metadata) external payable
-```
-
-Implementation of the interchainTransferFrom method
-
-_We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
-A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sender | address | the sender of the tokens. They need to have approved `msg.sender` before this is called. |
-| destinationChain | string | the string representation of the destination chain. |
-| recipient | bytes | the bytes representation of the address of the recipient. |
-| amount | uint256 | the amount of token to be transferred. |
-| metadata | bytes | either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer. |
-
-## IOperatable
-
-### transferOperatorship
-
-```solidity
-function transferOperatorship(address operator_) external
-```
-
-Change the operator of the contract
-
-_Can only be called by the current operator_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator_ | address | The address of the new operator |
-
-### proposeOperatorship
-
-```solidity
-function proposeOperatorship(address operator_) external
-```
-
-Proposed a change of the operator of the contract
-
-_Can only be called by the current operator_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator_ | address | The address of the new operator |
-
-### acceptOperatorship
-
-```solidity
-function acceptOperatorship(address fromOperator) external
-```
-
-Accept a proposed change of operatorship
-
-_Can only be called by the proposed operator_
-
-### isOperator
-
-```solidity
-function isOperator(address addr) external view returns (bool)
-```
-
-Query if an address is a operator
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| addr | address | the address to query for |
-
-## ITokenManager
-
-This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
-
-### TokenLinkerZeroAddress
-
-```solidity
-error TokenLinkerZeroAddress()
-```
-
-### NotService
-
-```solidity
-error NotService(address caller)
-```
-
-### TakeTokenFailed
-
-```solidity
-error TakeTokenFailed()
-```
-
-### GiveTokenFailed
-
-```solidity
-error GiveTokenFailed()
-```
-
-### NotToken
-
-```solidity
-error NotToken(address caller)
-```
-
-### ZeroAddress
-
-```solidity
-error ZeroAddress()
-```
-
-### AlreadyFlowLimiter
-
-```solidity
-error AlreadyFlowLimiter(address flowLimiter)
-```
-
-### NotFlowLimiter
-
-```solidity
-error NotFlowLimiter(address flowLimiter)
-```
-
-### interchainTransfer
-
-```solidity
-function interchainTransfer(string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
-```
-
-Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationChain | string | the name of the chain to send tokens to. |
-| destinationAddress | bytes | the address of the user to send tokens to. |
-| amount | uint256 | the amount of tokens to take from msg.sender. |
-| metadata | bytes | any additional data to be sent with the transfer. |
-
-### callContractWithInterchainToken
-
-```solidity
-function callContractWithInterchainToken(string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable
-```
-
-Calls the service to initiate a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationChain | string | the name of the chain to send tokens to. |
-| destinationAddress | bytes | the address of the user to send tokens to. |
-| amount | uint256 | the amount of tokens to take from msg.sender. |
-| data | bytes | the data to pass to the destination contract. |
-
-### transmitInterchainTransfer
-
-```solidity
-function transmitInterchainTransfer(address sender, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
-```
-
-Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sender | address | the address of the user paying for the cross chain transfer. |
-| destinationChain | string | the name of the chain to send tokens to. |
-| destinationAddress | bytes | the address of the user to send tokens to. |
-| amount | uint256 | the amount of tokens to take from msg.sender. |
-| metadata | bytes | any additional data to be sent with the transfer. |
-
-### giveToken
-
-```solidity
-function giveToken(address destinationAddress, uint256 amount) external returns (uint256)
-```
-
-This function gives token to a specified address. Can only be called by the service.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationAddress | address | the address to give tokens to. |
-| amount | uint256 | the amount of token to give. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee. |
-
-### takeToken
-
-```solidity
-function takeToken(address sourceAddress, uint256 amount) external returns (uint256)
-```
-
-This function takes token to from a specified address. Can only be called by the service.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sourceAddress | address | the address to take tokens from. |
-| amount | uint256 | the amount of token to take. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | the amount of token actually taken, which will onle be differen than `amount` in cases where the token takes some on-transfer fee. |
-
-### addFlowLimiter
-
-```solidity
-function addFlowLimiter(address flowLimiter) external
-```
-
-This function adds a flow limiter for this TokenManager. Can only be called by the operator.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimiter | address | the address of the new flow limiter. |
-
-### removeFlowLimiter
-
-```solidity
-function removeFlowLimiter(address flowLimiter) external
-```
-
-This function removes a flow limiter for this TokenManager. Can only be called by the operator.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimiter | address | the address of an existing flow limiter. |
-
-### setFlowLimit
-
-```solidity
-function setFlowLimit(uint256 flowLimit_) external
-```
-
-This function sets the flow limit for this TokenManager. Can only be called by the operator.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimit_ | uint256 | the maximum difference between the tokens flowing in and/or out at any given interval of time (6h) |
-
-## Invalid
-
-```solidity
-error Invalid()
-```
-
-## TestInterchainToken
-
-### placeholder
-
-```solidity
-string placeholder
-```
-
-### constructor
-
-```solidity
-constructor() public
-```
-
-## Distributable
-
-_A contract module which provides a basic access control mechanism, where
-there is an account (a distributor) that can be granted exclusive access to
-specific functions. This module is used through inheritance._
-
-### _addDistributor
-
-```solidity
-function _addDistributor(address distributor_) internal
-```
-
-_Internal function that stores the new distributor address in the correct storage slot_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| distributor_ | address | The address of the new distributor |
-
-### transferDistributorship
-
-```solidity
-function transferDistributorship(address distributor_) external
-```
-
-Change the distributor of the contract
-
-_Can only be called by the current distributor_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| distributor_ | address | The address of the new distributor |
-
-### proposeDistributorship
-
-```solidity
-function proposeDistributorship(address distributor_) external
-```
-
-Proposed a change of the distributor of the contract
-
-_Can only be called by the current distributor_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| distributor_ | address | The address of the new distributor |
-
-### acceptDistributorship
-
-```solidity
-function acceptDistributorship(address fromDistributor) external
-```
-
-Accept a change of the distributor of the contract
-
-_Can only be called by the proposed distributor_
-
-### isDistributor
-
-```solidity
-function isDistributor(address addr) external view returns (bool)
-```
-
-Query if an address is a distributor
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| addr | address | the address to query for |
-
-## RolesConstants
-
-### Roles
-
-```solidity
-enum Roles {
-  DISTRIBUTOR,
-  OPERATOR,
-  FLOW_LIMITER
-}
-```
-
-## IAddressTracker
-
-### setTrustedAddress
-
-```solidity
-function setTrustedAddress(string chain, string address_) external
-```
-
-_Sets the trusted address for the specified chain_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| chain | string | Chain name to be trusted |
-| address_ | string | Trusted address to be added for the chain |
-
-### removeTrustedAddress
-
-```solidity
-function removeTrustedAddress(string chain) external
-```
-
-_Remove the trusted address of the chain._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| chain | string | Chain name that should be made untrusted |
-
-## IInterchainTokenService
-
-### InvalidTokenManagerImplementationType
-
-```solidity
-error InvalidTokenManagerImplementationType(address implementation)
-```
-
-### InvalidChainName
-
-```solidity
-error InvalidChainName()
-```
-
-### NotRemoteService
-
-```solidity
-error NotRemoteService()
-```
-
-### TokenManagerDoesNotExist
-
-```solidity
-error TokenManagerDoesNotExist(bytes32 tokenId)
-```
-
-### NotTokenManager
-
-```solidity
-error NotTokenManager(address caller, address tokenManager)
-```
-
-### ExecuteWithInterchainTokenFailed
-
-```solidity
-error ExecuteWithInterchainTokenFailed(address contractAddress)
-```
-
-### ExpressExecuteWithInterchainTokenFailed
-
-```solidity
-error ExpressExecuteWithInterchainTokenFailed(address contractAddress)
-```
-
-### GatewayToken
-
-```solidity
-error GatewayToken()
-```
-
-### TokenManagerDeploymentFailed
-
-```solidity
-error TokenManagerDeploymentFailed(bytes error)
-```
-
-### InterchainTokenDeploymentFailed
-
-```solidity
-error InterchainTokenDeploymentFailed(bytes error)
-```
-
-### InvalidMessageType
-
-```solidity
-error InvalidMessageType(uint256 messageType)
-```
-
-### InvalidMetadataVersion
-
-```solidity
-error InvalidMetadataVersion(uint32 version)
-```
-
-### ExecuteWithTokenNotSupported
-
-```solidity
-error ExecuteWithTokenNotSupported()
-```
-
-### InvalidExpressMessageType
-
-```solidity
-error InvalidExpressMessageType(uint256 messageType)
-```
-
-### InterchainTransfer
-
-```solidity
-event InterchainTransfer(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount)
-```
-
-### InterchainTransferWithData
-
-```solidity
-event InterchainTransferWithData(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, address sourceAddress, bytes data)
-```
-
-### InterchainTransferReceived
-
-```solidity
-event InterchainTransferReceived(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
-```
-
-### InterchainTransferReceivedWithData
-
-```solidity
-event InterchainTransferReceivedWithData(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
-```
-
-### TokenManagerDeploymentStarted
-
-```solidity
-event TokenManagerDeploymentStarted(bytes32 tokenId, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params)
-```
-
-### InterchainTokenDeploymentStarted
-
-```solidity
-event InterchainTokenDeploymentStarted(bytes32 tokenId, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes distributor, string destinationChain)
-```
-
-### TokenManagerDeployed
-
-```solidity
-event TokenManagerDeployed(bytes32 tokenId, address tokenManager, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params)
-```
-
-### InterchainTokenDeployed
-
-```solidity
-event InterchainTokenDeployed(bytes32 tokenId, address tokenAddress, address distributor, string name, string symbol, uint8 decimals)
-```
-
-### InterchainTokenIdClaimed
-
-```solidity
-event InterchainTokenIdClaimed(bytes32 tokenId, address deployer, bytes32 salt)
-```
-
-### tokenManagerDeployer
-
-```solidity
-function tokenManagerDeployer() external view returns (address tokenManagerDeployerAddress)
-```
-
-Returns the address of the token manager deployer contract.
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManagerDeployerAddress | address | The address of the token manager deployer contract. |
-
-### interchainTokenDeployer
-
-```solidity
-function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress)
-```
-
-Returns the address of the interchain token deployer contract.
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| interchainTokenDeployerAddress | address | The address of the interchain token deployer contract. |
-
-### chainNameHash
-
-```solidity
-function chainNameHash() external view returns (bytes32)
-```
-
-Returns hash of the chain name.
-
-### tokenManagerAddress
-
-```solidity
-function tokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_)
-```
-
-Returns the address of the token manager associated with the given tokenId.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the token manager. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManagerAddress_ | address | The address of the token manager. |
-
-### validTokenManagerAddress
-
-```solidity
-function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_)
-```
-
-Returns the address of the valid token manager associated with the given tokenId.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the token manager. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManagerAddress_ | address | The address of the valid token manager. |
-
-### validTokenAddress
-
-```solidity
-function validTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
-```
-
-Returns the address of the token that an existing tokenManager points to.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the token manager. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenAddress | address | The address of the token. |
-
-### interchainTokenAddress
-
-```solidity
-function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
-```
-
-Returns the address of the interchain token associated with the given tokenId.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the interchain token. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenAddress | address | The address of the interchain token. |
-
-### interchainTokenId
-
-```solidity
-function interchainTokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId)
-```
-
-Returns the custom tokenId associated with the given operator and salt.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator_ | address | The operator address. |
-| salt | bytes32 | The salt used for token id calculation. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The custom tokenId associated with the operator and salt. |
-
-### deployTokenManager
-
-```solidity
-function deployTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
-```
-
-Deploys a custom token manager contract on a remote chain.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| salt | bytes32 | The salt used for token manager deployment. |
-| destinationChain | string | The name of the destination chain. |
-| tokenManagerType | enum ITokenManagerType.TokenManagerType | The type of token manager. |
-| params | bytes | The deployment parameters. |
-| gasValue | uint256 | The gas value for deployment. |
-
-### deployInterchainToken
-
-```solidity
-function deployInterchainToken(bytes32 salt, string destinationChain, string name, string symbol, uint8 decimals, bytes distributor, uint256 gasValue) external payable
-```
-
-Deploys and registers a interchain token on a remote chain.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| salt | bytes32 | The salt used for token deployment. |
-| destinationChain | string | The name of the destination chain. Use '' for this chain. |
-| name | string | The name of the interchain tokens. |
-| symbol | string | The symbol of the interchain tokens. |
-| decimals | uint8 | The number of decimals for the interchain tokens. |
-| distributor | bytes | The distributor data for mint/burn operations. |
-| gasValue | uint256 | The gas value for deployment. |
-
-### interchainTransfer
-
-```solidity
-function interchainTransfer(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
-```
-
-### callContractWithInterchainToken
-
-```solidity
-function callContractWithInterchainToken(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable
-```
-
-### transmitInterchainTransfer
-
-```solidity
-function transmitInterchainTransfer(bytes32 tokenId, address sourceAddress, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
-```
-
-Initiates an interchain token transfer. Only callable by TokenManagers
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the token to be transmitted. |
-| sourceAddress | address | The source address of the token. |
-| destinationChain | string | The name of the destination chain. |
-| destinationAddress | bytes | The destination address on the destination chain. |
-| amount | uint256 | The amount of tokens to transmit. |
-| metadata | bytes | The metadata associated with the transmission. |
-
-### setFlowLimits
-
-```solidity
-function setFlowLimits(bytes32[] tokenIds, uint256[] flowLimits) external
-```
-
-Sets the flow limits for multiple tokens.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenIds | bytes32[] | An array of tokenIds. |
-| flowLimits | uint256[] | An array of flow limits corresponding to the tokenIds. |
-
-### flowLimit
-
-```solidity
-function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_)
-```
-
-Returns the flow limit for a specific token.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the token. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimit_ | uint256 | The flow limit for the token. |
-
-### flowOutAmount
-
-```solidity
-function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_)
-```
-
-Returns the total amount of outgoing flow for a specific token.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the token. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowOutAmount_ | uint256 | The total amount of outgoing flow for the token. |
-
-### flowInAmount
-
-```solidity
-function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_)
-```
-
-Returns the total amount of incoming flow for a specific token.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId of the token. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowInAmount_ | uint256 | The total amount of incoming flow for the token. |
-
-### setPauseStatus
-
-```solidity
-function setPauseStatus(bool paused) external
-```
-
-Allows the owner to pause/unpause the token service.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| paused | bool | whether to pause or unpause. |
-
-## ITokenManagerImplementation
-
-### tokenManagerImplementation
-
-```solidity
-function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress_)
-```
-
-Returns the implementation address for a given token manager type.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManagerType | uint256 | The type of token manager. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenManagerAddress_ | address | The address of the token manager implementation. |
-
-## ITokenManagerLiquidityPool
-
-This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
-
-### params
-
-```solidity
-function params(bytes operator_, address tokenAddress_, address liquidityPool_) external pure returns (bytes params_)
-```
-
-Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator_ | bytes | the operator of the TokenManager. |
-| tokenAddress_ | address | the token to be managed. |
-| liquidityPool_ | address | he address of the liquidity pool. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
-
-### liquidityPool
-
-```solidity
-function liquidityPool() external view returns (address liquidityPool_)
-```
-
-_Reads the stored liquidity pool address from the specified storage slot_
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| liquidityPool_ | address | The address of the liquidity pool |
-
-### setLiquidityPool
-
-```solidity
-function setLiquidityPool(address newLiquidityPool) external
-```
-
-_Updates the address of the liquidity pool. Can only be called by the operator._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| newLiquidityPool | address | The new address of the liquidity pool |
-
-## ITokenManagerLockUnlock
-
-This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
-
-### params
-
-```solidity
-function params(bytes operator_, address tokenAddress_) external pure returns (bytes params_)
-```
-
-Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator_ | bytes | the operator of the TokenManager. |
-| tokenAddress_ | address | the token to be managed. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
-
-## ITokenManagerType
-
-A simple interface that defines all the token manager types
-
-### TokenManagerType
-
-```solidity
-enum TokenManagerType {
-  MINT_BURN,
-  MINT_BURN_FROM,
-  LOCK_UNLOCK,
-  LOCK_UNLOCK_FEE
-}
-```
-
-## TestTokenManager
-
-### constructor
-
-```solidity
-constructor(address service) public
-```
-
-### addOperator
-
-```solidity
-function addOperator(address operator) external
-```
-
-## TokenManager
-
-This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
-
-### interchainTokenService
-
-```solidity
-contract IInterchainTokenService interchainTokenService
-```
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) internal
-```
-
-Constructs the TokenManager contract.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| interchainTokenService_ | address | The address of the interchain token service |
-
-### onlyService
-
-```solidity
-modifier onlyService()
-```
-
-_A modifier that allows only the interchain token service to execute the function._
-
-### onlyToken
-
-```solidity
-modifier onlyToken()
-```
-
-_A modifier that allows only the token to execute the function._
-
-### contractId
-
-```solidity
-function contractId() external pure returns (bytes32)
-```
-
-Getter for the contract id.
-
-### tokenAddress
-
-```solidity
-function tokenAddress() external view virtual returns (address tokenAddress_)
-```
-
-_Reads the token address from the proxy_
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenAddress_ | address | The address of the token |
-
-### interchainTokenId
-
-```solidity
-function interchainTokenId() public view returns (bytes32)
-```
-
-A function that returns the token id.
-
-_This will only work when implementation is called by a proxy, which stores the tokenId as an immutable._
-
-### getTokenAddressFromParams
-
-```solidity
-function getTokenAddressFromParams(bytes params) external pure returns (address tokenAddress_)
-```
-
-A function that should return the token address from the setup params.
-
-### setup
-
-```solidity
-function setup(bytes params) external
-```
-
-_This function should only be called by the proxy, and only once from the proxy constructor_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params | bytes | the parameters to be used to initialize the TokenManager. The exact format depends on the type of TokenManager used but the first 32 bytes are reserved for the address of the operator, stored as bytes (to be compatible with non-EVM chains) |
-
-### interchainTransfer
-
-```solidity
-function interchainTransfer(string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable virtual
-```
-
-Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationChain | string | the name of the chain to send tokens to. |
-| destinationAddress | bytes | the address of the user to send tokens to. |
-| amount | uint256 | the amount of tokens to take from msg.sender. |
-| metadata | bytes | any additional data to be sent with the transfer. |
-
-### callContractWithInterchainToken
-
-```solidity
-function callContractWithInterchainToken(string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable virtual
-```
-
-Calls the service to initiate a cross-chain transfer with data after taking the appropriate amount of tokens from the user.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationChain | string | the name of the chain to send tokens to. |
-| destinationAddress | bytes | the address of the user to send tokens to. |
-| amount | uint256 | the amount of tokens to take from msg.sender. |
-| data | bytes | the data to pass to the destination contract. |
-
-### transmitInterchainTransfer
-
-```solidity
-function transmitInterchainTransfer(address sender, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable virtual
-```
-
-Calls the service to initiate a cross-chain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sender | address | the address of the user paying for the cross chain transfer. |
-| destinationChain | string | the name of the chain to send tokens to. |
-| destinationAddress | bytes | the address of the user to send tokens to. |
-| amount | uint256 | the amount of tokens to take from msg.sender. |
-| metadata | bytes | any additional data to be sent with the transfer |
-
-### giveToken
-
-```solidity
-function giveToken(address destinationAddress, uint256 amount) external returns (uint256)
-```
-
-This function gives token to a specified address. Can only be called by the service.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationAddress | address | the address to give tokens to. |
-| amount | uint256 | the amount of token to give. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee. |
-
-### takeToken
-
-```solidity
-function takeToken(address sourceAddress, uint256 amount) external returns (uint256)
-```
-
-This function gives token to a specified address. Can only be called by the service.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| sourceAddress | address | the address to give tokens to. |
-| amount | uint256 | the amount of token to give. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee. |
-
-### addFlowLimiter
-
-```solidity
-function addFlowLimiter(address flowLimiter) external
-```
-
-This function adds a flow limiter for this TokenManager. Can only be called by the operator.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimiter | address | the address of the new flow limiter. |
-
-### removeFlowLimiter
-
-```solidity
-function removeFlowLimiter(address flowLimiter) external
-```
-
-This function removes a flow limiter for this TokenManager. Can only be called by the operator.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimiter | address | the address of an existing flow limiter. |
-
-### setFlowLimit
-
-```solidity
-function setFlowLimit(uint256 flowLimit_) external
-```
-
-This function sets the flow limit for this TokenManager. Can only be called by the flow limiters.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimit_ | uint256 | the maximum difference between the tokens flowing in and/or out at any given interval of time (6h) |
-
-### _takeToken
-
-```solidity
-function _takeToken(address from, uint256 amount) internal virtual returns (uint256)
-```
-
-Transfers tokens from a specific address to this contract.
-Must be overridden in the inheriting contract.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| from | address | The address from which the tokens will be sent |
-| amount | uint256 | The amount of tokens to receive |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint amount of tokens received |
-
-### _giveToken
-
-```solidity
-function _giveToken(address receiver, uint256 amount) internal virtual returns (uint256)
-```
-
-Transfers tokens from this contract to a specific address.
-Must be overridden in the inheriting contract.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| receiver | address | The address to which the tokens will be sent |
-| amount | uint256 | The amount of tokens to send |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint amount of tokens sent |
-
-### _setup
-
-```solidity
-function _setup(bytes params) internal virtual
-```
-
-_Additional setup logic to perform
-Must be overridden in the inheriting contract._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params | bytes | The setup parameters |
-
-## TokenManagerLiquidityPool
-
-This contract is a an implementation of TokenManager that stores all tokens in a separate liquity pool
-rather than within itself.
-
-_This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
-It uses the Axelar SDK to safely transfer tokens._
-
-### NotSupported
-
-```solidity
-error NotSupported()
-```
-
-### LIQUIDITY_POOL_SLOT
-
-```solidity
-uint256 LIQUIDITY_POOL_SLOT
-```
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) public
-```
-
-_Constructs an instance of TokenManagerLiquidityPool. Calls the constructor
-of TokenManagerAddressStorage which calls the constructor of TokenManager._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| interchainTokenService_ | address | The address of the interchain token service contract |
-
-### implementationType
-
-```solidity
-function implementationType() external pure returns (uint256)
-```
-
-A function that should return the implementation type of the token manager.
-
-### _setup
-
-```solidity
-function _setup(bytes params_) internal
-```
-
-_Sets up the token address and liquidity pool address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params_ | bytes | The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address. |
-
-### _setLiquidityPool
-
-```solidity
-function _setLiquidityPool(address liquidityPool_) internal
-```
-
-_Stores the liquidity pool address at a specific storage slot_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| liquidityPool_ | address | The address of the liquidity pool |
-
-### liquidityPool
-
-```solidity
-function liquidityPool() public view returns (address liquidityPool_)
-```
-
-_Reads the stored liquidity pool address from the specified storage slot_
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| liquidityPool_ | address | The address of the liquidity pool |
-
-### setLiquidityPool
-
-```solidity
-function setLiquidityPool(address newLiquidityPool) external
-```
-
-_Updates the address of the liquidity pool. Can only be called by the operator._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| newLiquidityPool | address | The new address of the liquidity pool |
-
-### _takeToken
-
-```solidity
-function _takeToken(address from, uint256 amount) internal returns (uint256)
-```
-
-_Transfers a specified amount of tokens from a specified address to the liquidity pool._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| from | address | The address to transfer tokens from |
-| amount | uint256 | The amount of tokens to transfer |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens. |
-
-### _giveToken
-
-```solidity
-function _giveToken(address to, uint256 amount) internal returns (uint256)
-```
-
-_Transfers a specified amount of tokens from the liquidity pool to a specified address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| to | address | The address to transfer tokens to |
-| amount | uint256 | The amount of tokens to transfer |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint The actual amount of tokens transferred |
-
-### params
-
-```solidity
-function params(bytes operator_, address tokenAddress_, address liquidityPoolAddress) external pure returns (bytes params_)
-```
-
-Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator_ | bytes | the operator of the TokenManager. |
-| tokenAddress_ | address | the token to be managed. |
-| liquidityPoolAddress | address | the liquidity pool to be used to store the bridged tokens. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
-
-## TokenManagerLockUnlock
-
-This contract is an implementation of TokenManager that locks and unlocks a specific token on behalf of the interchain token service.
-
-_This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
-It uses the Axelar SDK to safely transfer tokens._
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) public
-```
-
-_Constructs an instance of TokenManagerLockUnlock. Calls the constructor
-of TokenManagerAddressStorage which calls the constructor of TokenManager._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| interchainTokenService_ | address | The address of the interchain token service contract |
-
-### implementationType
-
-```solidity
-function implementationType() external pure returns (uint256)
-```
-
-A function that should return the implementation type of the token manager.
-
-### _setup
-
-```solidity
-function _setup(bytes params_) internal
-```
-
-_Sets up the token address and liquidity pool address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params_ | bytes | The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address. |
-
-### _takeToken
-
-```solidity
-function _takeToken(address from, uint256 amount) internal returns (uint256)
-```
-
-_Transfers a specified amount of tokens from a specified address to this contract._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| from | address | The address to transfer tokens from |
-| amount | uint256 | The amount of tokens to transfer |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens. |
-
-### _giveToken
-
-```solidity
-function _giveToken(address to, uint256 amount) internal returns (uint256)
-```
-
-_Transfers a specified amount of tokens from this contract to a specified address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| to | address | The address to transfer tokens to |
-| amount | uint256 | The amount of tokens to transfer |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint The actual amount of tokens transferred |
-
-### params
-
-```solidity
-function params(bytes operator_, address tokenAddress_) external pure returns (bytes params_)
-```
-
-Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator_ | bytes | the operator of the TokenManager. |
-| tokenAddress_ | address | the token to be managed. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
-
-## FlowLimit
-
-Implements flow limit logic for interchain token transfers.
-
-_This contract implements low-level assembly for optimization purposes._
-
-### FLOW_LIMIT_SLOT
-
-```solidity
-uint256 FLOW_LIMIT_SLOT
-```
-
-### PREFIX_FLOW_OUT_AMOUNT
-
-```solidity
-uint256 PREFIX_FLOW_OUT_AMOUNT
-```
-
-### PREFIX_FLOW_IN_AMOUNT
-
-```solidity
-uint256 PREFIX_FLOW_IN_AMOUNT
-```
-
-### EPOCH_TIME
-
-```solidity
-uint256 EPOCH_TIME
-```
-
-### flowLimit
-
-```solidity
-function flowLimit() public view returns (uint256 flowLimit_)
-```
-
-Returns the current flow limit
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimit_ | uint256 | The current flow limit value |
-
-### _setFlowLimit
-
-```solidity
-function _setFlowLimit(uint256 flowLimit_, bytes32 tokenId) internal
-```
-
-_Internal function to set the flow limit_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimit_ | uint256 | The value to set the flow limit to |
-| tokenId | bytes32 |  |
-
-### _getFlowOutSlot
-
-```solidity
-function _getFlowOutSlot(uint256 epoch) internal pure returns (uint256 slot)
-```
-
-_Returns the slot which is used to get the flow out amount for a specific epoch_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epoch | uint256 | The epoch to get the flow out amount for |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| slot | uint256 | The slot to get the flow out amount from |
-
-### _getFlowInSlot
-
-```solidity
-function _getFlowInSlot(uint256 epoch) internal pure returns (uint256 slot)
-```
-
-_Returns the slot which is used to get the flow in amount for a specific epoch_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epoch | uint256 | The epoch to get the flow in amount for |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| slot | uint256 | The slot to get the flow in amount from |
-
-### flowOutAmount
-
-```solidity
-function flowOutAmount() external view returns (uint256 flowOutAmount_)
-```
-
-Returns the current flow out amount
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowOutAmount_ | uint256 | The current flow out amount |
-
-### flowInAmount
-
-```solidity
-function flowInAmount() external view returns (uint256 flowInAmount_)
-```
-
-Returns the current flow in amount
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowInAmount_ | uint256 | The current flow in amount |
-
-### _addFlow
-
-```solidity
-function _addFlow(uint256 flowLimit_, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal
-```
-
-_Adds a flow amount while ensuring it does not exceed the flow limit_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowLimit_ | uint256 | The current flow limit value |
-| slotToAdd | uint256 | The slot to add the flow to |
-| slotToCompare | uint256 | The slot to compare the flow against |
-| flowAmount | uint256 | The flow amount to add |
-
-### _addFlowOut
-
-```solidity
-function _addFlowOut(uint256 flowOutAmount_) internal
-```
-
-_Adds a flow out amount_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowOutAmount_ | uint256 | The flow out amount to add |
-
-### _addFlowIn
-
-```solidity
-function _addFlowIn(uint256 flowInAmount_) internal
-```
-
-_Adds a flow in amount_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| flowInAmount_ | uint256 | The flow in amount to add |
-
-## Operatable
-
-_A contract module which provides a basic access control mechanism, where
-there is an account (a operator) that can be granted exclusive access to
-specific functions. This module is used through inheritance._
-
-### _addOperator
-
-```solidity
-function _addOperator(address operator) internal
-```
-
-_Internal function that stores the new operator address in the correct storage slot_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator | address | The address of the new operator |
-
-### transferOperatorship
-
-```solidity
-function transferOperatorship(address operator) external
-```
-
-Change the operator of the contract
-
-_Can only be called by the current operator_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator | address | The address of the new operator |
-
-### proposeOperatorship
-
-```solidity
-function proposeOperatorship(address operator) external
-```
-
-Proposed a change of the operator of the contract
-
-_Can only be called by the current operator_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator | address | The address of the new operator |
-
-### acceptOperatorship
-
-```solidity
-function acceptOperatorship(address fromOperator) external
-```
-
-Accept a change of the operator of the contract
-
-_Can only be called by the proposed operator_
-
-### isOperator
-
-```solidity
-function isOperator(address addr) external view returns (bool)
-```
-
-Query if an address is an operator
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| addr | address | the address to query for |
-
 ## InterchainTokenFactory
 
 ### service
@@ -2721,10 +134,11 @@ function _isGatewayToken(address token) internal view returns (bool)
 
 ## InterchainTokenService
 
-This contract is responsible for facilitating cross chain token transfers.
-It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
+This contract is responsible for facilitating interchain token transfers.
+It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for interchain transfers to happen.
 
-_The only storage used here is for ExpressCalls_
+_The only storage used in this contract is for Express calls.
+Furthermore, no ether is intended to or should be sent to this contract except as part of deploy/interchainTransfer payable methods for gas payment._
 
 ### gateway
 
@@ -3083,7 +497,7 @@ that could make remote contract calls._
 function deployInterchainToken(bytes32 salt, string destinationChain, string name, string symbol, uint8 decimals, bytes distributor, uint256 gasValue) external payable
 ```
 
-Used to deploy a interchain token alongside a TokenManager in another chain. If the `distributor` is empty
+Used to deploy an interchain token alongside a TokenManager in another chain. If the `distributor` is empty
 bytes then a mint/burn TokenManager is used. Otherwise a lock/unlock TokenManager is used.
 
 _`gasValue` exists because this function can be part of a multicall involving multiple functions that could make remote contract calls._
@@ -3174,7 +588,7 @@ Transfer a token interchain.
 | destinationChain | string | the name of the chain to send the token to. |
 | destinationAddress | bytes | the recipient of the interchain transfer. |
 | amount | uint256 | the amount of token to give. |
-| metadata | bytes | the data to be passed to the destination. If provided with a bytes4(0) prefix, it'll execute the destination contract. |
+| metadata | bytes | the data to be passed to the destination. If provided with a bytes4(0) version prefix, it'll execute the destination contract. |
 
 ### callContractWithInterchainToken
 
@@ -3391,7 +805,7 @@ Deploys a token manager on a destination chain.
 function _deployRemoteInterchainToken(bytes32 tokenId, string name, string symbol, uint8 decimals, bytes distributor, string destinationChain, uint256 gasValue) internal
 ```
 
-Deploys a interchain token on a destination chain.
+Deploys an interchain token on a destination chain.
 
 #### Parameters
 
@@ -3427,7 +841,7 @@ Deploys a token manager
 function _getInterchainTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt)
 ```
 
-Compute the salt for a interchain token deployment.
+Compute the salt for an interchain token deployment.
 
 #### Parameters
 
@@ -3447,7 +861,7 @@ Compute the salt for a interchain token deployment.
 function _deployInterchainToken(bytes32 tokenId, bytes distributorBytes, string name, string symbol, uint8 decimals) internal returns (address tokenAddress)
 ```
 
-Deploys a interchain token.
+Deploys an interchain token.
 
 #### Parameters
 
@@ -3484,99 +898,645 @@ Transmit a callContractWithInterchainToken for the given tokenId. Only callable 
 | amount | uint256 | the amount of token to give. |
 | metadata | bytes | the data to be passed to the destination. |
 
-## InterchainTokenExecutable
+## BaseInterchainToken
 
-### NotService
+The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
+that can be used to create approvals, and that `allowance` is a mapping.
 
-```solidity
-error NotService(address caller)
-```
-
-### interchainTokenService
+### tokenManager
 
 ```solidity
-address interchainTokenService
+function tokenManager() public view virtual returns (address tokenManager_)
 ```
 
-### EXECUTE_SUCCESS
+Getter for the tokenManager used for this token.
+
+_Needs to be overwritten._
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManager_ | address | the TokenManager called to facilitate interchain transfers. |
+
+### interchainTransfer
 
 ```solidity
-bytes32 EXECUTE_SUCCESS
+function interchainTransfer(string destinationChain, bytes recipient, uint256 amount, bytes metadata) external payable
 ```
 
-### constructor
+Implementation of the interchainTransfer method
 
-```solidity
-constructor(address interchainTokenService_) internal
-```
-
-### onlyService
-
-```solidity
-modifier onlyService()
-```
-
-### executeWithInterchainToken
-
-```solidity
-function executeWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external virtual returns (bytes32)
-```
-
-This will be called after the tokens arrive to this contract
-
-_Executable should revert unless the msg.sender is the InterchainTokenService_
+_We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
+A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| sourceChain | string | the name of the source chain |
-| sourceAddress | bytes | the address that sent the contract call |
-| data | bytes | the data to be processed |
-| tokenId | bytes32 | the tokenId of the token manager managing the token. |
-| token | address | the address of the token. |
-| amount | uint256 | the amount of token that was sent |
+| destinationChain | string | The destination chain identifier. |
+| recipient | bytes | The bytes representation of the address of the recipient. |
+| amount | uint256 | The amount of token to be transferred. |
+| metadata | bytes | Either empty, to just facilitate an interchain transfer, or the data can be passed for an interchain contract call with transfer as per semantics defined by the token service. |
 
-### _executeWithInterchainToken
+### interchainTransferFrom
 
 ```solidity
-function _executeWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal virtual
+function interchainTransferFrom(address sender, string destinationChain, bytes recipient, uint256 amount, bytes metadata) external payable
 ```
 
-## InterchainTokenExpressExecutable
+Implementation of the interchainTransferFrom method
 
-### EXPRESS_EXECUTE_SUCCESS
-
-```solidity
-bytes32 EXPRESS_EXECUTE_SUCCESS
-```
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) internal
-```
-
-### expressExecuteWithInterchainToken
-
-```solidity
-function expressExecuteWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external virtual returns (bytes32)
-```
-
-This will be called after the tokens arrive to this contract
-
-_Executable should revert unless the msg.sender is the InterchainTokenService_
+_We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
+A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| sourceChain | string | the name of the source chain |
-| sourceAddress | bytes | the address that sent the contract call |
-| data | bytes | the data to be processed |
-| tokenId | bytes32 | the token id of the token manager managing the token. |
-| token | address | the address of the token. |
-| amount | uint256 | the amount of token that was sent |
+| sender | address | the sender of the tokens. They need to have approved `msg.sender` before this is called. |
+| destinationChain | string | the string representation of the destination chain. |
+| recipient | bytes | the bytes representation of the address of the recipient. |
+| amount | uint256 | the amount of token to be transferred. |
+| metadata | bytes | either empty, to just facilitate an interchain transfer, or the data to be passed to an interchain contract call and transfer. |
+
+### _beforeInterchainTransfer
+
+```solidity
+function _beforeInterchainTransfer(address from, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) internal virtual
+```
+
+A method to be overwritten that will be called before an interchain transfer. You can approve the tokenManager here if you need and want to, to allow users for a 1-call transfer in case of a lock-unlock token manager.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | the sender of the tokens. They need to have approved `msg.sender` before this is called. |
+| destinationChain | string | the string representation of the destination chain. |
+| destinationAddress | bytes | the bytes representation of the address of the recipient. |
+| amount | uint256 | the amount of token to be transferred. |
+| metadata | bytes | either empty, to just facilitate an interchain transfer, or the data to be passed to an interchain contract call and transfer. |
+
+## ERC20
+
+_Implementation of the {IERC20} interface.
+
+This implementation is agnostic to the way tokens are created. This means
+that a supply mechanism has to be added in a derived contract using {_mint}.
+For a generic mechanism see {ERC20PresetMinterPauser}.
+
+TIP: For a detailed writeup see our guide
+https://forum.zeppelin.solutions/t/how-to-implement-erc20-supply-mechanisms/226[How
+to implement supply mechanisms].
+
+We have followed general OpenZeppelin guidelines: functions revert instead
+of returning `false` on failure. This behavior is nonetheless conventional
+and does not conflict with the expectations of ERC20 applications.
+
+Additionally, an {Approval} event is emitted on calls to {transferFrom}.
+This allows applications to reconstruct the allowance for all accounts just
+by listening to said events. Other implementations of the EIP may not emit
+these events, as it isn't required by the specification.
+
+Finally, the non-standard {decreaseAllowance} and {increaseAllowance}
+functions have been added to mitigate the well-known issues around setting
+allowances. See {IERC20-approve}._
+
+### balanceOf
+
+```solidity
+mapping(address => uint256) balanceOf
+```
+
+_Returns the amount of tokens owned by `account`._
+
+### allowance
+
+```solidity
+mapping(address => mapping(address => uint256)) allowance
+```
+
+_Returns the remaining number of tokens that `spender` will be
+allowed to spend on behalf of `owner` through {transferFrom}. This is
+zero by default.
+
+This value changes when {approve} or {transferFrom} are called._
+
+### totalSupply
+
+```solidity
+uint256 totalSupply
+```
+
+_Returns the amount of tokens in existence._
+
+### UINT256_MAX
+
+```solidity
+uint256 UINT256_MAX
+```
+
+### transfer
+
+```solidity
+function transfer(address recipient, uint256 amount) external virtual returns (bool)
+```
+
+_See {IERC20-transfer}.
+
+Requirements:
+
+- `recipient` cannot be the zero address.
+- the caller must have a balance of at least `amount`._
+
+### approve
+
+```solidity
+function approve(address spender, uint256 amount) external virtual returns (bool)
+```
+
+_See {IERC20-approve}.
+
+NOTE: If `amount` is the maximum `uint256`, the allowance is not updated on
+`transferFrom`. This is semantically equivalent to an infinite approval.
+
+Requirements:
+
+- `spender` cannot be the zero address._
+
+### transferFrom
+
+```solidity
+function transferFrom(address sender, address recipient, uint256 amount) external virtual returns (bool)
+```
+
+_See {IERC20-transferFrom}.
+
+Emits an {Approval} event indicating the updated allowance. This is not
+required by the EIP. See the note at the beginning of {ERC20}.
+
+Requirements:
+
+- `sender` and `recipient` cannot be the zero address.
+- `sender` must have a balance of at least `amount`.
+- the caller must have allowance for ``sender``'s tokens of at least
+`amount`._
+
+### increaseAllowance
+
+```solidity
+function increaseAllowance(address spender, uint256 addedValue) external virtual returns (bool)
+```
+
+_Atomically increases the allowance granted to `spender` by the caller.
+
+This is an alternative to {approve} that can be used as a mitigation for
+problems described in {IERC20-approve}.
+
+Emits an {Approval} event indicating the updated allowance.
+
+Requirements:
+
+- `spender` cannot be the zero address._
+
+### decreaseAllowance
+
+```solidity
+function decreaseAllowance(address spender, uint256 subtractedValue) external virtual returns (bool)
+```
+
+_Atomically decreases the allowance granted to `spender` by the caller.
+
+This is an alternative to {approve} that can be used as a mitigation for
+problems described in {IERC20-approve}.
+
+Emits an {Approval} event indicating the updated allowance.
+
+Requirements:
+
+- `spender` cannot be the zero address.
+- `spender` must have allowance for the caller of at least
+`subtractedValue`._
+
+### _transfer
+
+```solidity
+function _transfer(address sender, address recipient, uint256 amount) internal virtual
+```
+
+_Moves tokens `amount` from `sender` to `recipient`.
+
+This is internal function is equivalent to {transfer}, and can be used to
+e.g. implement automatic token fees, slashing mechanisms, etc.
+
+Emits a {Transfer} event.
+
+Requirements:
+
+- `sender` cannot be the zero address.
+- `recipient` cannot be the zero address.
+- `sender` must have a balance of at least `amount`._
+
+### _mint
+
+```solidity
+function _mint(address account, uint256 amount) internal virtual
+```
+
+_Creates `amount` tokens and assigns them to `account`, increasing
+the total supply.
+
+Emits a {Transfer} event with `from` set to the zero address.
+
+Requirements:
+
+- `to` cannot be the zero address._
+
+### _burn
+
+```solidity
+function _burn(address account, uint256 amount) internal virtual
+```
+
+_Destroys `amount` tokens from `account`, reducing the
+total supply.
+
+Emits a {Transfer} event with `to` set to the zero address.
+
+Requirements:
+
+- `account` cannot be the zero address.
+- `account` must have at least `amount` tokens._
+
+### _approve
+
+```solidity
+function _approve(address owner, address spender, uint256 amount) internal virtual
+```
+
+_Sets `amount` as the allowance of `spender` over the `owner` s tokens.
+
+This internal function is equivalent to `approve`, and can be used to
+e.g. set automatic allowances for certain subsystems, etc.
+
+Emits an {Approval} event.
+
+Requirements:
+
+- `owner` cannot be the zero address.
+- `spender` cannot be the zero address._
+
+## ERC20Permit
+
+_Extension of ERC20 to include permit functionality (EIP-2612).
+Allows for approval of ERC20 tokens by signature rather than transaction._
+
+### PermitExpired
+
+```solidity
+error PermitExpired()
+```
+
+### InvalidS
+
+```solidity
+error InvalidS()
+```
+
+### InvalidV
+
+```solidity
+error InvalidV()
+```
+
+### InvalidSignature
+
+```solidity
+error InvalidSignature()
+```
+
+### nameHash
+
+```solidity
+bytes32 nameHash
+```
+
+_Represents hash of the EIP-712 Domain Separator._
+
+### nonces
+
+```solidity
+mapping(address => uint256) nonces
+```
+
+_Mapping of nonces for each address._
+
+### _setNameHash
+
+```solidity
+function _setNameHash(string name) internal
+```
+
+Internal function to set the token name hash
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| name | string | The token name |
+
+### DOMAIN_SEPARATOR
+
+```solidity
+function DOMAIN_SEPARATOR() public view returns (bytes32)
+```
+
+Calculates the domain separator.
+
+_This is not cached because chainid can change on chain forks._
+
+### permit
+
+```solidity
+function permit(address issuer, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external
+```
+
+Permit the designated spender to spend the holder's tokens
+
+_The permit function is used to allow a holder to designate a spender
+to spend tokens on their behalf via a signed message._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| issuer | address | The address of the token holder |
+| spender | address | The address of the designated spender |
+| value | uint256 | The number of tokens to be spent |
+| deadline | uint256 | The time at which the permission to spend expires |
+| v | uint8 | The recovery id of the signature |
+| r | bytes32 | Half of the ECDSA signature pair |
+| s | bytes32 | Half of the ECDSA signature pair |
+
+## InterchainToken
+
+This contract implements an interchain token which extends InterchainToken functionality.
+This contract also inherits Distributable and Implementation logic.
+
+### name
+
+```solidity
+string name
+```
+
+Getter for the name of the token
+
+### symbol
+
+```solidity
+string symbol
+```
+
+Getter for the symbol of the token
+
+### decimals
+
+```solidity
+uint8 decimals
+```
+
+Getter for the decimals of the token
+
+### tokenManager_
+
+```solidity
+address tokenManager_
+```
+
+### INITIALIZED_SLOT
+
+```solidity
+bytes32 INITIALIZED_SLOT
+```
+
+### constructor
+
+```solidity
+constructor() public
+```
+
+### _isInitialized
+
+```solidity
+function _isInitialized() internal view returns (bool initialized)
+```
+
+returns true if the contract has be setup.
+
+### _initialize
+
+```solidity
+function _initialize() internal
+```
+
+sets initialized to true, to allow only a single init.
+
+### tokenManager
+
+```solidity
+function tokenManager() public view returns (address)
+```
+
+Returns the token manager for this token
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | address | address The token manager contract |
+
+### init
+
+```solidity
+function init(address tokenManagerAddress, address distributor, string tokenName, string tokenSymbol, uint8 tokenDecimals) external
+```
+
+Setup function to initialize contract parameters
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerAddress | address | The address of the token manager of this token |
+| distributor | address | The address of the token distributor |
+| tokenName | string | The name of the token |
+| tokenSymbol | string | The symbopl of the token |
+| tokenDecimals | uint8 | The decimals of the token |
+
+### mint
+
+```solidity
+function mint(address account, uint256 amount) external
+```
+
+Function to mint new tokens
+Can only be called by the distributor address.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| account | address | The address that will receive the minted tokens |
+| amount | uint256 | The amount of tokens to mint |
+
+### burn
+
+```solidity
+function burn(address account, uint256 amount) external
+```
+
+Function to burn tokens
+Can only be called by the distributor address.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| account | address | The address that will have its tokens burnt |
+| amount | uint256 | The amount of tokens to burn |
+
+## IAddressTracker
+
+### setTrustedAddress
+
+```solidity
+function setTrustedAddress(string chain, string address_) external
+```
+
+_Sets the trusted address for the specified chain_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| chain | string | Chain name to be trusted |
+| address_ | string | Trusted address to be added for the chain |
+
+### removeTrustedAddress
+
+```solidity
+function removeTrustedAddress(string chain) external
+```
+
+_Remove the trusted address of the chain._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| chain | string | Chain name that should be made untrusted |
+
+## IBaseTokenManager
+
+This contract is defines the base token manager interface implemented by all token managers.
+
+### interchainTokenId
+
+```solidity
+function interchainTokenId() external view returns (bytes32)
+```
+
+A function that returns the token id.
+
+### tokenAddress
+
+```solidity
+function tokenAddress() external view returns (address)
+```
+
+A function that should return the address of the token.
+Must be overridden in the inheriting contract.
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | address | address address of the token. |
+
+### implementationType
+
+```solidity
+function implementationType() external pure returns (uint256)
+```
+
+A function that should return the implementation type of the token manager.
+
+### getTokenAddressFromParams
+
+```solidity
+function getTokenAddressFromParams(bytes params) external pure returns (address)
+```
+
+A function that should return the token address from the init params.
+
+## IDistributable
+
+### transferDistributorship
+
+```solidity
+function transferDistributorship(address distributor_) external
+```
+
+Change the distributor of the contract
+
+_Can only be called by the current distributor_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| distributor_ | address | The address of the new distributor |
+
+### proposeDistributorship
+
+```solidity
+function proposeDistributorship(address distributor_) external
+```
+
+Proposed a change of the distributor of the contract
+
+_Can only be called by the current distributor_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| distributor_ | address | The address of the new distributor |
+
+### acceptDistributorship
+
+```solidity
+function acceptDistributorship(address fromDistributor) external
+```
+
+Accept a change of the distributor of the contract
+
+_Can only be called by the proposed distributor_
+
+### isDistributor
+
+```solidity
+function isDistributor(address addr) external view returns (bool)
+```
+
+Query if an address is a distributor
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| addr | address | the address to query for |
 
 ## IERC20BurnableFrom
 
@@ -3599,6 +1559,182 @@ _Can only be called by the distributor address._
 | ---- | ---- | ----------- |
 | from | address | The address that will have its tokens burnt |
 | amount | uint256 | The amount of tokens to burn |
+
+## IERC20MintableBurnable
+
+_Interface of the ERC20 standard as defined in the EIP._
+
+### mint
+
+```solidity
+function mint(address to, uint256 amount) external
+```
+
+Function to mint new tokens
+
+_Can only be called by the distributor address._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| to | address | The address that will receive the minted tokens |
+| amount | uint256 | The amount of tokens to mint |
+
+### burn
+
+```solidity
+function burn(address from, uint256 amount) external
+```
+
+Function to burn tokens
+
+_Can only be called by the distributor address._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | The address that will have its tokens burnt |
+| amount | uint256 | The amount of tokens to burn |
+
+## IERC20Named
+
+_Interface of the ERC20 standard as defined in the EIP._
+
+### name
+
+```solidity
+function name() external view returns (string)
+```
+
+Getter for the name of the token
+
+### symbol
+
+```solidity
+function symbol() external view returns (string)
+```
+
+Getter for the symbol of the token
+
+### decimals
+
+```solidity
+function decimals() external view returns (uint8)
+```
+
+Getter for the decimals of the token
+
+## IFlowLimit
+
+### FlowLimitExceeded
+
+```solidity
+error FlowLimitExceeded(uint256 limit, uint256 flowAmount)
+```
+
+### FlowLimitSet
+
+```solidity
+event FlowLimitSet(bytes32 tokenId, address operator, uint256 flowLimit_)
+```
+
+### flowLimit
+
+```solidity
+function flowLimit() external view returns (uint256 flowLimit_)
+```
+
+Returns the current flow limit
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimit_ | uint256 | The current flow limit value |
+
+### flowOutAmount
+
+```solidity
+function flowOutAmount() external view returns (uint256 flowOutAmount_)
+```
+
+Returns the current flow out amount
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowOutAmount_ | uint256 | The current flow out amount |
+
+### flowInAmount
+
+```solidity
+function flowInAmount() external view returns (uint256 flowInAmount_)
+```
+
+Returns the current flow in amount
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowInAmount_ | uint256 | The current flow in amount |
+
+## IInterchainToken
+
+### TokenManagerAddressZero
+
+```solidity
+error TokenManagerAddressZero()
+```
+
+### TokenNameEmpty
+
+```solidity
+error TokenNameEmpty()
+```
+
+### AlreadyInitialized
+
+```solidity
+error AlreadyInitialized()
+```
+
+### tokenManager
+
+```solidity
+function tokenManager() external view returns (address tokenManager_)
+```
+
+Getter for the tokenManager used for this token.
+
+_Needs to be overwitten._
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManager_ | address | the TokenManager called to facilitate interchain transfers. |
+
+### init
+
+```solidity
+function init(address tokenManagerAddress, address distributor, string tokenName, string tokenSymbol, uint8 tokenDecimals) external
+```
+
+Setup function to initialize contract parameters
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerAddress | address | The address of the token manager of this token |
+| distributor | address | The address of the token distributor |
+| tokenName | string | The name of the token |
+| tokenSymbol | string | The symbopl of the token |
+| tokenDecimals | uint8 | The decimals of the token |
 
 ## IInterchainTokenDeployer
 
@@ -3835,6 +1971,732 @@ function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable
 function tokenApprove(bytes32 tokenId, uint256 amount) external payable
 ```
 
+## IInterchainTokenService
+
+### InvalidTokenManagerImplementationType
+
+```solidity
+error InvalidTokenManagerImplementationType(address implementation)
+```
+
+### InvalidChainName
+
+```solidity
+error InvalidChainName()
+```
+
+### NotRemoteService
+
+```solidity
+error NotRemoteService()
+```
+
+### TokenManagerDoesNotExist
+
+```solidity
+error TokenManagerDoesNotExist(bytes32 tokenId)
+```
+
+### NotTokenManager
+
+```solidity
+error NotTokenManager(address caller, address tokenManager)
+```
+
+### ExecuteWithInterchainTokenFailed
+
+```solidity
+error ExecuteWithInterchainTokenFailed(address contractAddress)
+```
+
+### ExpressExecuteWithInterchainTokenFailed
+
+```solidity
+error ExpressExecuteWithInterchainTokenFailed(address contractAddress)
+```
+
+### GatewayToken
+
+```solidity
+error GatewayToken()
+```
+
+### TokenManagerDeploymentFailed
+
+```solidity
+error TokenManagerDeploymentFailed(bytes error)
+```
+
+### InterchainTokenDeploymentFailed
+
+```solidity
+error InterchainTokenDeploymentFailed(bytes error)
+```
+
+### InvalidMessageType
+
+```solidity
+error InvalidMessageType(uint256 messageType)
+```
+
+### InvalidMetadataVersion
+
+```solidity
+error InvalidMetadataVersion(uint32 version)
+```
+
+### ExecuteWithTokenNotSupported
+
+```solidity
+error ExecuteWithTokenNotSupported()
+```
+
+### InvalidExpressMessageType
+
+```solidity
+error InvalidExpressMessageType(uint256 messageType)
+```
+
+### InterchainTransfer
+
+```solidity
+event InterchainTransfer(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount)
+```
+
+### InterchainTransferWithData
+
+```solidity
+event InterchainTransferWithData(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, address sourceAddress, bytes data)
+```
+
+### InterchainTransferReceived
+
+```solidity
+event InterchainTransferReceived(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
+```
+
+### InterchainTransferReceivedWithData
+
+```solidity
+event InterchainTransferReceivedWithData(bytes32 tokenId, string sourceChain, bytes sourceAddress, address destinationAddress, uint256 amount)
+```
+
+### TokenManagerDeploymentStarted
+
+```solidity
+event TokenManagerDeploymentStarted(bytes32 tokenId, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params)
+```
+
+### InterchainTokenDeploymentStarted
+
+```solidity
+event InterchainTokenDeploymentStarted(bytes32 tokenId, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes distributor, string destinationChain)
+```
+
+### TokenManagerDeployed
+
+```solidity
+event TokenManagerDeployed(bytes32 tokenId, address tokenManager, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params)
+```
+
+### InterchainTokenDeployed
+
+```solidity
+event InterchainTokenDeployed(bytes32 tokenId, address tokenAddress, address distributor, string name, string symbol, uint8 decimals)
+```
+
+### InterchainTokenIdClaimed
+
+```solidity
+event InterchainTokenIdClaimed(bytes32 tokenId, address deployer, bytes32 salt)
+```
+
+### tokenManagerDeployer
+
+```solidity
+function tokenManagerDeployer() external view returns (address tokenManagerDeployerAddress)
+```
+
+Returns the address of the token manager deployer contract.
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerDeployerAddress | address | The address of the token manager deployer contract. |
+
+### interchainTokenDeployer
+
+```solidity
+function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress)
+```
+
+Returns the address of the interchain token deployer contract.
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| interchainTokenDeployerAddress | address | The address of the interchain token deployer contract. |
+
+### chainNameHash
+
+```solidity
+function chainNameHash() external view returns (bytes32)
+```
+
+Returns hash of the chain name.
+
+### tokenManagerAddress
+
+```solidity
+function tokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_)
+```
+
+Returns the address of the token manager associated with the given tokenId.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId of the token manager. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerAddress_ | address | The address of the token manager. |
+
+### validTokenManagerAddress
+
+```solidity
+function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_)
+```
+
+Returns the address of the valid token manager associated with the given tokenId.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId of the token manager. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerAddress_ | address | The address of the valid token manager. |
+
+### validTokenAddress
+
+```solidity
+function validTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+```
+
+Returns the address of the token that an existing tokenManager points to.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId of the token manager. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress | address | The address of the token. |
+
+### interchainTokenAddress
+
+```solidity
+function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+```
+
+Returns the address of the interchain token associated with the given tokenId.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId of the interchain token. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress | address | The address of the interchain token. |
+
+### interchainTokenId
+
+```solidity
+function interchainTokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId)
+```
+
+Returns the custom tokenId associated with the given operator and salt.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator_ | address | The operator address. |
+| salt | bytes32 | The salt used for token id calculation. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The custom tokenId associated with the operator and salt. |
+
+### deployTokenManager
+
+```solidity
+function deployTokenManager(bytes32 salt, string destinationChain, enum ITokenManagerType.TokenManagerType tokenManagerType, bytes params, uint256 gasValue) external payable returns (bytes32 tokenId)
+```
+
+Deploys a custom token manager contract on a remote chain.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| salt | bytes32 | The salt used for token manager deployment. |
+| destinationChain | string | The name of the destination chain. |
+| tokenManagerType | enum ITokenManagerType.TokenManagerType | The type of token manager. |
+| params | bytes | The deployment parameters. |
+| gasValue | uint256 | The gas value for deployment. |
+
+### deployInterchainToken
+
+```solidity
+function deployInterchainToken(bytes32 salt, string destinationChain, string name, string symbol, uint8 decimals, bytes distributor, uint256 gasValue) external payable
+```
+
+Deploys and registers an interchain token on a remote chain.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| salt | bytes32 | The salt used for token deployment. |
+| destinationChain | string | The name of the destination chain. Use '' for this chain. |
+| name | string | The name of the interchain tokens. |
+| symbol | string | The symbol of the interchain tokens. |
+| decimals | uint8 | The number of decimals for the interchain tokens. |
+| distributor | bytes | The distributor data for mint/burn operations. |
+| gasValue | uint256 | The gas value for deployment. |
+
+### interchainTransfer
+
+```solidity
+function interchainTransfer(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
+```
+
+### callContractWithInterchainToken
+
+```solidity
+function callContractWithInterchainToken(bytes32 tokenId, string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable
+```
+
+### transmitInterchainTransfer
+
+```solidity
+function transmitInterchainTransfer(bytes32 tokenId, address sourceAddress, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
+```
+
+Initiates an interchain token transfer. Only callable by TokenManagers
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId of the token to be transmitted. |
+| sourceAddress | address | The source address of the token. |
+| destinationChain | string | The name of the destination chain. |
+| destinationAddress | bytes | The destination address on the destination chain. |
+| amount | uint256 | The amount of tokens to transmit. |
+| metadata | bytes | The metadata associated with the transmission. |
+
+### setFlowLimits
+
+```solidity
+function setFlowLimits(bytes32[] tokenIds, uint256[] flowLimits) external
+```
+
+Sets the flow limits for multiple tokens.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenIds | bytes32[] | An array of tokenIds. |
+| flowLimits | uint256[] | An array of flow limits corresponding to the tokenIds. |
+
+### flowLimit
+
+```solidity
+function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_)
+```
+
+Returns the flow limit for a specific token.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId of the token. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimit_ | uint256 | The flow limit for the token. |
+
+### flowOutAmount
+
+```solidity
+function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_)
+```
+
+Returns the total amount of outgoing flow for a specific token.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId of the token. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowOutAmount_ | uint256 | The total amount of outgoing flow for the token. |
+
+### flowInAmount
+
+```solidity
+function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_)
+```
+
+Returns the total amount of incoming flow for a specific token.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId of the token. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowInAmount_ | uint256 | The total amount of incoming flow for the token. |
+
+### setPauseStatus
+
+```solidity
+function setPauseStatus(bool paused) external
+```
+
+Allows the owner to pause/unpause the token service.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| paused | bool | whether to pause or unpause. |
+
+## IInterchainTokenStandard
+
+_Interface of the ERC20 standard as defined in the EIP._
+
+### interchainTransfer
+
+```solidity
+function interchainTransfer(string destinationChain, bytes recipient, uint256 amount, bytes metadata) external payable
+```
+
+Implementation of the interchainTransfer method
+
+_We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
+A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationChain | string | The destination chain identifier. |
+| recipient | bytes | The bytes representation of the address of the recipient. |
+| amount | uint256 | The amount of token to be transferred. |
+| metadata | bytes | Either empty, to just facilitate an interchain transfer, or the data can be passed for an interchain contract call with transfer as per semantics defined by the token service. |
+
+### interchainTransferFrom
+
+```solidity
+function interchainTransferFrom(address sender, string destinationChain, bytes recipient, uint256 amount, bytes metadata) external payable
+```
+
+Implementation of the interchainTransferFrom method
+
+_We chose to either pass `metadata` as raw data on a remote contract call, or, if no data is passed, just do a transfer.
+A different implementation could have `metadata` that tells this function which function to use or that it is used for anything else as well._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sender | address | the sender of the tokens. They need to have approved `msg.sender` before this is called. |
+| destinationChain | string | the string representation of the destination chain. |
+| recipient | bytes | the bytes representation of the address of the recipient. |
+| amount | uint256 | the amount of token to be transferred. |
+| metadata | bytes | either empty, to just facilitate an interchain transfer, or the data to be passed to an interchain contract call and transfer. |
+
+## IOperatable
+
+### transferOperatorship
+
+```solidity
+function transferOperatorship(address operator_) external
+```
+
+Change the operator of the contract
+
+_Can only be called by the current operator_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator_ | address | The address of the new operator |
+
+### proposeOperatorship
+
+```solidity
+function proposeOperatorship(address operator_) external
+```
+
+Proposed a change of the operator of the contract
+
+_Can only be called by the current operator_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator_ | address | The address of the new operator |
+
+### acceptOperatorship
+
+```solidity
+function acceptOperatorship(address fromOperator) external
+```
+
+Accept a proposed change of operatorship
+
+_Can only be called by the proposed operator_
+
+### isOperator
+
+```solidity
+function isOperator(address addr) external view returns (bool)
+```
+
+Query if an address is a operator
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| addr | address | the address to query for |
+
+## ITokenManager
+
+This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
+
+### TokenLinkerZeroAddress
+
+```solidity
+error TokenLinkerZeroAddress()
+```
+
+### NotService
+
+```solidity
+error NotService(address caller)
+```
+
+### TakeTokenFailed
+
+```solidity
+error TakeTokenFailed()
+```
+
+### GiveTokenFailed
+
+```solidity
+error GiveTokenFailed()
+```
+
+### NotToken
+
+```solidity
+error NotToken(address caller)
+```
+
+### ZeroAddress
+
+```solidity
+error ZeroAddress()
+```
+
+### AlreadyFlowLimiter
+
+```solidity
+error AlreadyFlowLimiter(address flowLimiter)
+```
+
+### NotFlowLimiter
+
+```solidity
+error NotFlowLimiter(address flowLimiter)
+```
+
+### interchainTransfer
+
+```solidity
+function interchainTransfer(string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
+```
+
+Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationChain | string | the name of the chain to send tokens to. |
+| destinationAddress | bytes | the address of the user to send tokens to. |
+| amount | uint256 | the amount of tokens to take from msg.sender. |
+| metadata | bytes | any additional data to be sent with the transfer. |
+
+### callContractWithInterchainToken
+
+```solidity
+function callContractWithInterchainToken(string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable
+```
+
+Calls the service to initiate an interchain transfer with data after taking the appropriate amount of tokens from the user.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationChain | string | the name of the chain to send tokens to. |
+| destinationAddress | bytes | the address of the user to send tokens to. |
+| amount | uint256 | the amount of tokens to take from msg.sender. |
+| data | bytes | the data to pass to the destination contract. |
+
+### transmitInterchainTransfer
+
+```solidity
+function transmitInterchainTransfer(address sender, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable
+```
+
+Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sender | address | the address of the user paying for the interchain transfer. |
+| destinationChain | string | the name of the chain to send tokens to. |
+| destinationAddress | bytes | the address of the user to send tokens to. |
+| amount | uint256 | the amount of tokens to take from msg.sender. |
+| metadata | bytes | any additional data to be sent with the transfer. |
+
+### giveToken
+
+```solidity
+function giveToken(address destinationAddress, uint256 amount) external returns (uint256)
+```
+
+This function gives token to a specified address. Can only be called by the service.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationAddress | address | the address to give tokens to. |
+| amount | uint256 | the amount of token to give. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee. |
+
+### takeToken
+
+```solidity
+function takeToken(address sourceAddress, uint256 amount) external returns (uint256)
+```
+
+This function takes token to from a specified address. Can only be called by the service.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sourceAddress | address | the address to take tokens from. |
+| amount | uint256 | the amount of token to take. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | the amount of token actually taken, which will onle be differen than `amount` in cases where the token takes some on-transfer fee. |
+
+### addFlowLimiter
+
+```solidity
+function addFlowLimiter(address flowLimiter) external
+```
+
+This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimiter | address | the address of the new flow limiter. |
+
+### removeFlowLimiter
+
+```solidity
+function removeFlowLimiter(address flowLimiter) external
+```
+
+This function removes a flow limiter for this TokenManager. Can only be called by the operator.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimiter | address | the address of an existing flow limiter. |
+
+### setFlowLimit
+
+```solidity
+function setFlowLimit(uint256 flowLimit_) external
+```
+
+This function sets the flow limit for this TokenManager. Can only be called by the operator.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimit_ | uint256 | the maximum difference between the tokens flowing in and/or out at any given interval of time (6h) |
+
 ## ITokenManagerDeployer
 
 This contract is used to deploy new instances of the TokenManagerProxy contract.
@@ -3873,9 +2735,31 @@ Deploys a new instance of the TokenManagerProxy contract
 | ---- | ---- | ----------- |
 | tokenManager | address | Address of the deployed tokenManager |
 
-## ITokenManagerLockUnlockFee
+## ITokenManagerImplementation
 
-This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
+### tokenManagerImplementation
+
+```solidity
+function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address tokenManagerAddress_)
+```
+
+Returns the implementation address for a given token manager type.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerType | uint256 | The type of token manager. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerAddress_ | address | The address of the token manager implementation. |
+
+## ITokenManagerLockUnlock
+
+This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
 
 ### params
 
@@ -3899,6 +2783,1489 @@ Getter function for the parameters of a lock/unlock TokenManager. Mainly to be u
 | params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
 
 ## ITokenManagerMintBurn
+
+This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
+
+### params
+
+```solidity
+function params(bytes operator_, address tokenAddress_) external pure returns (bytes params_)
+```
+
+Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator_ | bytes | the operator of the TokenManager. |
+| tokenAddress_ | address | the token to be managed. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
+
+## ITokenManagerType
+
+A simple interface that defines all the token manager types
+
+### TokenManagerType
+
+```solidity
+enum TokenManagerType {
+  MINT_BURN,
+  MINT_BURN_FROM,
+  LOCK_UNLOCK,
+  LOCK_UNLOCK_FEE
+}
+```
+
+## TestBaseInterchainToken
+
+### tokenManager_
+
+```solidity
+address tokenManager_
+```
+
+### tokenManagerRequiresApproval_
+
+```solidity
+bool tokenManagerRequiresApproval_
+```
+
+### name
+
+```solidity
+string name
+```
+
+### symbol
+
+```solidity
+string symbol
+```
+
+### decimals
+
+```solidity
+uint8 decimals
+```
+
+### AllowanceExceeded
+
+```solidity
+error AllowanceExceeded()
+```
+
+### constructor
+
+```solidity
+constructor(string name_, string symbol_, uint8 decimals_, address tokenManagerAddress) public
+```
+
+### tokenManager
+
+```solidity
+function tokenManager() public view returns (address)
+```
+
+Getter for the tokenManager used for this token.
+
+_Needs to be overwritten._
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | address |  |
+
+### _beforeInterchainTransfer
+
+```solidity
+function _beforeInterchainTransfer(address sender, string, bytes, uint256 amount, bytes) internal
+```
+
+### setTokenManagerRequiresApproval
+
+```solidity
+function setTokenManagerRequiresApproval(bool requiresApproval) public
+```
+
+### mint
+
+```solidity
+function mint(address account, uint256 amount) external
+```
+
+### burn
+
+```solidity
+function burn(address account, uint256 amount) external
+```
+
+### burnFrom
+
+```solidity
+function burnFrom(address account, uint256 amount) external
+```
+
+### setTokenManager
+
+```solidity
+function setTokenManager(address tokenManagerAddress) external
+```
+
+## TestFeeOnTransferToken
+
+### tokenManager_
+
+```solidity
+address tokenManager_
+```
+
+### tokenManagerRequiresApproval_
+
+```solidity
+bool tokenManagerRequiresApproval_
+```
+
+### name
+
+```solidity
+string name
+```
+
+### symbol
+
+```solidity
+string symbol
+```
+
+### decimals
+
+```solidity
+uint8 decimals
+```
+
+### constructor
+
+```solidity
+constructor(string name_, string symbol_, uint8 decimals_, address tokenManagerAddress) public
+```
+
+### tokenManager
+
+```solidity
+function tokenManager() public view returns (address)
+```
+
+Getter for the tokenManager used for this token.
+
+_Needs to be overwritten._
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | address |  |
+
+### _beforeInterchainTransfer
+
+```solidity
+function _beforeInterchainTransfer(address sender, string, bytes, uint256 amount, bytes) internal
+```
+
+### setTokenManagerRequiresApproval
+
+```solidity
+function setTokenManagerRequiresApproval(bool requiresApproval) public
+```
+
+### mint
+
+```solidity
+function mint(address account, uint256 amount) external
+```
+
+### burn
+
+```solidity
+function burn(address account, uint256 amount) external
+```
+
+### setTokenManager
+
+```solidity
+function setTokenManager(address tokenManagerAddress) external
+```
+
+### _transfer
+
+```solidity
+function _transfer(address sender, address recipient, uint256 amount) internal
+```
+
+_Moves tokens `amount` from `sender` to `recipient`.
+
+This is internal function is equivalent to {transfer}, and can be used to
+e.g. implement automatic token fees, slashing mechanisms, etc.
+
+Emits a {Transfer} event.
+
+Requirements:
+
+- `sender` cannot be the zero address.
+- `recipient` cannot be the zero address.
+- `sender` must have a balance of at least `amount`._
+
+## Invalid
+
+```solidity
+error Invalid()
+```
+
+## TestInterchainToken
+
+### placeholder
+
+```solidity
+string placeholder
+```
+
+### constructor
+
+```solidity
+constructor() public
+```
+
+## TestInterchainTokenService
+
+### constructor
+
+```solidity
+constructor(address tokenManagerDeployer_, address interchainTokenDeployer_, address gateway_, address gasService_, address interchainTokenFactory_, string chainName_, address[] tokenManagerImplementations) public
+```
+
+### setupTest
+
+```solidity
+function setupTest(bytes params) external
+```
+
+## TestTokenManager
+
+### constructor
+
+```solidity
+constructor(address service) public
+```
+
+### addOperator
+
+```solidity
+function addOperator(address operator) external
+```
+
+## TokenManager
+
+This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
+
+### interchainTokenService
+
+```solidity
+contract IInterchainTokenService interchainTokenService
+```
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) internal
+```
+
+Constructs the TokenManager contract.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| interchainTokenService_ | address | The address of the interchain token service |
+
+### onlyService
+
+```solidity
+modifier onlyService()
+```
+
+_A modifier that allows only the interchain token service to execute the function._
+
+### onlyToken
+
+```solidity
+modifier onlyToken()
+```
+
+_A modifier that allows only the token to execute the function._
+
+### contractId
+
+```solidity
+function contractId() external pure returns (bytes32)
+```
+
+Getter for the contract id.
+
+### tokenAddress
+
+```solidity
+function tokenAddress() external view virtual returns (address tokenAddress_)
+```
+
+_Reads the token address from the proxy_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress_ | address | The address of the token |
+
+### interchainTokenId
+
+```solidity
+function interchainTokenId() public view returns (bytes32)
+```
+
+A function that returns the token id.
+
+_This will only work when implementation is called by a proxy, which stores the tokenId as an immutable._
+
+### getTokenAddressFromParams
+
+```solidity
+function getTokenAddressFromParams(bytes params) external pure returns (address tokenAddress_)
+```
+
+A function that should return the token address from the setup params.
+
+### setup
+
+```solidity
+function setup(bytes params) external
+```
+
+_This function should only be called by the proxy, and only once from the proxy constructor_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params | bytes | the parameters to be used to initialize the TokenManager. The exact format depends on the type of TokenManager used but the first 32 bytes are reserved for the address of the operator, stored as bytes (to be compatible with non-EVM chains) |
+
+### interchainTransfer
+
+```solidity
+function interchainTransfer(string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable virtual
+```
+
+Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationChain | string | the name of the chain to send tokens to. |
+| destinationAddress | bytes | the address of the user to send tokens to. |
+| amount | uint256 | the amount of tokens to take from msg.sender. |
+| metadata | bytes | any additional data to be sent with the transfer. |
+
+### callContractWithInterchainToken
+
+```solidity
+function callContractWithInterchainToken(string destinationChain, bytes destinationAddress, uint256 amount, bytes data) external payable virtual
+```
+
+Calls the service to initiate an interchain transfer with data after taking the appropriate amount of tokens from the user.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationChain | string | the name of the chain to send tokens to. |
+| destinationAddress | bytes | the address of the user to send tokens to. |
+| amount | uint256 | the amount of tokens to take from msg.sender. |
+| data | bytes | the data to pass to the destination contract. |
+
+### transmitInterchainTransfer
+
+```solidity
+function transmitInterchainTransfer(address sender, string destinationChain, bytes destinationAddress, uint256 amount, bytes metadata) external payable virtual
+```
+
+Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sender | address | the address of the user paying for the interchain transfer. |
+| destinationChain | string | the name of the chain to send tokens to. |
+| destinationAddress | bytes | the address of the user to send tokens to. |
+| amount | uint256 | the amount of tokens to take from msg.sender. |
+| metadata | bytes | any additional data to be sent with the transfer |
+
+### giveToken
+
+```solidity
+function giveToken(address destinationAddress, uint256 amount) external returns (uint256)
+```
+
+This function gives token to a specified address. Can only be called by the service.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationAddress | address | the address to give tokens to. |
+| amount | uint256 | the amount of token to give. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee. |
+
+### takeToken
+
+```solidity
+function takeToken(address sourceAddress, uint256 amount) external returns (uint256)
+```
+
+This function gives token to a specified address. Can only be called by the service.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sourceAddress | address | the address to give tokens to. |
+| amount | uint256 | the amount of token to give. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee. |
+
+### addFlowLimiter
+
+```solidity
+function addFlowLimiter(address flowLimiter) external
+```
+
+This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimiter | address | the address of the new flow limiter. |
+
+### removeFlowLimiter
+
+```solidity
+function removeFlowLimiter(address flowLimiter) external
+```
+
+This function removes a flow limiter for this TokenManager. Can only be called by the operator.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimiter | address | the address of an existing flow limiter. |
+
+### setFlowLimit
+
+```solidity
+function setFlowLimit(uint256 flowLimit_) external
+```
+
+This function sets the flow limit for this TokenManager. Can only be called by the flow limiters.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimit_ | uint256 | the maximum difference between the tokens flowing in and/or out at any given interval of time (6h) |
+
+### _takeToken
+
+```solidity
+function _takeToken(address from, uint256 amount) internal virtual returns (uint256)
+```
+
+Transfers tokens from a specific address to this contract.
+Must be overridden in the inheriting contract.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | The address from which the tokens will be sent |
+| amount | uint256 | The amount of tokens to receive |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint amount of tokens received |
+
+### _giveToken
+
+```solidity
+function _giveToken(address receiver, uint256 amount) internal virtual returns (uint256)
+```
+
+Transfers tokens from this contract to a specific address.
+Must be overridden in the inheriting contract.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| receiver | address | The address to which the tokens will be sent |
+| amount | uint256 | The amount of tokens to send |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint amount of tokens sent |
+
+### _setup
+
+```solidity
+function _setup(bytes params) internal virtual
+```
+
+_Additional setup logic to perform
+Must be overridden in the inheriting contract._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params | bytes | The setup parameters |
+
+## TokenManagerLockUnlock
+
+This contract is an implementation of TokenManager that locks and unlocks a specific token on behalf of the interchain token service.
+
+_This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
+It uses the Axelar SDK to safely transfer tokens._
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) public
+```
+
+_Constructs an instance of TokenManagerLockUnlock. Calls the constructor
+of TokenManagerAddressStorage which calls the constructor of TokenManager._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| interchainTokenService_ | address | The address of the interchain token service contract |
+
+### implementationType
+
+```solidity
+function implementationType() external pure returns (uint256)
+```
+
+A function that should return the implementation type of the token manager.
+
+### _setup
+
+```solidity
+function _setup(bytes params_) internal
+```
+
+_Sets up the token address and liquidity pool address._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params_ | bytes | The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address. |
+
+### _takeToken
+
+```solidity
+function _takeToken(address from, uint256 amount) internal returns (uint256)
+```
+
+_Transfers a specified amount of tokens from a specified address to this contract._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | The address to transfer tokens from |
+| amount | uint256 | The amount of tokens to transfer |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens. |
+
+### _giveToken
+
+```solidity
+function _giveToken(address to, uint256 amount) internal returns (uint256)
+```
+
+_Transfers a specified amount of tokens from this contract to a specified address._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| to | address | The address to transfer tokens to |
+| amount | uint256 | The amount of tokens to transfer |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint The actual amount of tokens transferred |
+
+### params
+
+```solidity
+function params(bytes operator_, address tokenAddress_) external pure returns (bytes params_)
+```
+
+Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator_ | bytes | the operator of the TokenManager. |
+| tokenAddress_ | address | the token to be managed. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
+
+## TokenManagerLockUnlockFee
+
+This contract is an implementation of TokenManager that locks and unlocks a specific token on behalf of the interchain token service.
+
+_This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
+It uses the Axelar SDK to safely transfer tokens._
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) public
+```
+
+_Constructs an instance of TokenManagerLockUnlock. Calls the constructor
+of TokenManagerAddressStorage which calls the constructor of TokenManager._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| interchainTokenService_ | address | The address of the interchain token service contract |
+
+### implementationType
+
+```solidity
+function implementationType() external pure returns (uint256)
+```
+
+A function that should return the implementation type of the token manager.
+
+### _setup
+
+```solidity
+function _setup(bytes params_) internal
+```
+
+_Sets up the token address and liquidity pool address._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params_ | bytes | The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address. |
+
+### _takeToken
+
+```solidity
+function _takeToken(address from, uint256 amount) internal returns (uint256)
+```
+
+_Transfers a specified amount of tokens from a specified address to this contract._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | The address to transfer tokens from |
+| amount | uint256 | The amount of tokens to transfer |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens. |
+
+### _giveToken
+
+```solidity
+function _giveToken(address to, uint256 amount) internal returns (uint256)
+```
+
+_Transfers a specified amount of tokens from this contract to a specified address._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| to | address | The address to transfer tokens to |
+| amount | uint256 | The amount of tokens to transfer |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint The actual amount of tokens transferred |
+
+### params
+
+```solidity
+function params(bytes operator_, address tokenAddress_) external pure returns (bytes params_)
+```
+
+Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator_ | bytes | the operator of the TokenManager. |
+| tokenAddress_ | address | the token to be managed. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
+
+## TokenManagerMintBurn
+
+This contract is an implementation of TokenManager that mints and burns a specific token on behalf of the interchain token service.
+
+_This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
+It uses the Axelar SDK to safely transfer tokens._
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) public
+```
+
+_Constructs an instance of TokenManagerMintBurn. Calls the constructor
+of TokenManagerAddressStorage which calls the constructor of TokenManager._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| interchainTokenService_ | address | The address of the interchain token service contract |
+
+### implementationType
+
+```solidity
+function implementationType() external pure virtual returns (uint256)
+```
+
+A function that should return the implementation type of the token manager.
+
+### _takeToken
+
+```solidity
+function _takeToken(address from, uint256 amount) internal virtual returns (uint256)
+```
+
+_Burns the specified amount of tokens from a particular address._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | Address to burn tokens from |
+| amount | uint256 | Amount of tokens to burn |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint Amount of tokens burned |
+
+### _giveToken
+
+```solidity
+function _giveToken(address to, uint256 amount) internal returns (uint256)
+```
+
+_Mints the specified amount of tokens to a particular address_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| to | address | Address to mint tokens to |
+| amount | uint256 | Amount of tokens to mint |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint Amount of tokens minted |
+
+### params
+
+```solidity
+function params(bytes operator_, address tokenAddress_) external pure returns (bytes params_)
+```
+
+Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator_ | bytes | the operator of the TokenManager. |
+| tokenAddress_ | address | the token to be managed. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
+
+## TokenManagerMintBurnFrom
+
+This contract is an implementation of TokenManager that mints and burns a specific token on behalf of the interchain token service.
+
+_This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
+It uses the Axelar SDK to safely transfer tokens._
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) public
+```
+
+_Constructs an instance of TokenManagerMintBurn. Calls the constructor
+of TokenManagerAddressStorage which calls the constructor of TokenManager._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| interchainTokenService_ | address | The address of the interchain token service contract |
+
+### implementationType
+
+```solidity
+function implementationType() external pure returns (uint256)
+```
+
+A function that should return the implementation type of the token manager.
+
+### _takeToken
+
+```solidity
+function _takeToken(address from, uint256 amount) internal returns (uint256)
+```
+
+_Burns the specified amount of tokens from a particular address._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | Address to burn tokens from |
+| amount | uint256 | Amount of tokens to burn |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint Amount of tokens burned |
+
+## Distributable
+
+_A contract module which provides a basic access control mechanism, where
+there is an account (a distributor) that can be granted exclusive access to
+specific functions. This module is used through inheritance._
+
+### _addDistributor
+
+```solidity
+function _addDistributor(address distributor_) internal
+```
+
+_Internal function that stores the new distributor address in the correct storage slot_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| distributor_ | address | The address of the new distributor |
+
+### transferDistributorship
+
+```solidity
+function transferDistributorship(address distributor_) external
+```
+
+Change the distributor of the contract
+
+_Can only be called by the current distributor_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| distributor_ | address | The address of the new distributor |
+
+### proposeDistributorship
+
+```solidity
+function proposeDistributorship(address distributor_) external
+```
+
+Proposed a change of the distributor of the contract
+
+_Can only be called by the current distributor_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| distributor_ | address | The address of the new distributor |
+
+### acceptDistributorship
+
+```solidity
+function acceptDistributorship(address fromDistributor) external
+```
+
+Accept a change of the distributor of the contract
+
+_Can only be called by the proposed distributor_
+
+### isDistributor
+
+```solidity
+function isDistributor(address addr) external view returns (bool)
+```
+
+Query if an address is a distributor
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| addr | address | the address to query for |
+
+## FlowLimit
+
+Implements flow limit logic for interchain token transfers.
+
+_This contract implements low-level assembly for optimization purposes._
+
+### FLOW_LIMIT_SLOT
+
+```solidity
+uint256 FLOW_LIMIT_SLOT
+```
+
+### PREFIX_FLOW_OUT_AMOUNT
+
+```solidity
+uint256 PREFIX_FLOW_OUT_AMOUNT
+```
+
+### PREFIX_FLOW_IN_AMOUNT
+
+```solidity
+uint256 PREFIX_FLOW_IN_AMOUNT
+```
+
+### EPOCH_TIME
+
+```solidity
+uint256 EPOCH_TIME
+```
+
+### flowLimit
+
+```solidity
+function flowLimit() public view returns (uint256 flowLimit_)
+```
+
+Returns the current flow limit
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimit_ | uint256 | The current flow limit value |
+
+### _setFlowLimit
+
+```solidity
+function _setFlowLimit(uint256 flowLimit_, bytes32 tokenId) internal
+```
+
+_Internal function to set the flow limit_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimit_ | uint256 | The value to set the flow limit to |
+| tokenId | bytes32 |  |
+
+### _getFlowOutSlot
+
+```solidity
+function _getFlowOutSlot(uint256 epoch) internal pure returns (uint256 slot)
+```
+
+_Returns the slot which is used to get the flow out amount for a specific epoch_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| epoch | uint256 | The epoch to get the flow out amount for |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| slot | uint256 | The slot to get the flow out amount from |
+
+### _getFlowInSlot
+
+```solidity
+function _getFlowInSlot(uint256 epoch) internal pure returns (uint256 slot)
+```
+
+_Returns the slot which is used to get the flow in amount for a specific epoch_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| epoch | uint256 | The epoch to get the flow in amount for |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| slot | uint256 | The slot to get the flow in amount from |
+
+### flowOutAmount
+
+```solidity
+function flowOutAmount() external view returns (uint256 flowOutAmount_)
+```
+
+Returns the current flow out amount
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowOutAmount_ | uint256 | The current flow out amount |
+
+### flowInAmount
+
+```solidity
+function flowInAmount() external view returns (uint256 flowInAmount_)
+```
+
+Returns the current flow in amount
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowInAmount_ | uint256 | The current flow in amount |
+
+### _addFlow
+
+```solidity
+function _addFlow(uint256 flowLimit_, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal
+```
+
+_Adds a flow amount while ensuring it does not exceed the flow limit_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowLimit_ | uint256 | The current flow limit value |
+| slotToAdd | uint256 | The slot to add the flow to |
+| slotToCompare | uint256 | The slot to compare the flow against |
+| flowAmount | uint256 | The flow amount to add |
+
+### _addFlowOut
+
+```solidity
+function _addFlowOut(uint256 flowOutAmount_) internal
+```
+
+_Adds a flow out amount_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowOutAmount_ | uint256 | The flow out amount to add |
+
+### _addFlowIn
+
+```solidity
+function _addFlowIn(uint256 flowInAmount_) internal
+```
+
+_Adds a flow in amount_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flowInAmount_ | uint256 | The flow in amount to add |
+
+## InterchainTokenDeployer
+
+This contract is used to deploy new instances of the InterchainTokenProxy contract.
+
+### implementationAddress
+
+```solidity
+address implementationAddress
+```
+
+Returns the interchain token implementation address
+
+### constructor
+
+```solidity
+constructor(address implementationAddress_) public
+```
+
+Constructor for the InterchainTokenDeployer contract
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| implementationAddress_ | address | Address of the InterchainToken contract |
+
+### deployInterchainToken
+
+```solidity
+function deployInterchainToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals) external returns (address tokenAddress)
+```
+
+Deploys a new instance of the InterchainTokenProxy contract
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| salt | bytes32 | The salt used by Create3Deployer |
+| tokenManager | address | Address of the token manager |
+| distributor | address | Address of the distributor |
+| name | string | Name of the token |
+| symbol | string | Symbol of the token |
+| decimals | uint8 | Decimals of the token |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress | address | Address of the deployed token |
+
+### deployedAddress
+
+```solidity
+function deployedAddress(bytes32 salt) external view returns (address tokenAddress)
+```
+
+Returns the interchain token deployment address.
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress | address | the token address. |
+
+## Operatable
+
+_A contract module which provides a basic access control mechanism, where
+there is an account (a operator) that can be granted exclusive access to
+specific functions. This module is used through inheritance._
+
+### _addOperator
+
+```solidity
+function _addOperator(address operator) internal
+```
+
+_Internal function that stores the new operator address in the correct storage slot_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator | address | The address of the new operator |
+
+### transferOperatorship
+
+```solidity
+function transferOperatorship(address operator) external
+```
+
+Change the operator of the contract
+
+_Can only be called by the current operator_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator | address | The address of the new operator |
+
+### proposeOperatorship
+
+```solidity
+function proposeOperatorship(address operator) external
+```
+
+Proposed a change of the operator of the contract
+
+_Can only be called by the current operator_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator | address | The address of the new operator |
+
+### acceptOperatorship
+
+```solidity
+function acceptOperatorship(address fromOperator) external
+```
+
+Accept a change of the operator of the contract
+
+_Can only be called by the proposed operator_
+
+### isOperator
+
+```solidity
+function isOperator(address addr) external view returns (bool)
+```
+
+Query if an address is an operator
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| addr | address | the address to query for |
+
+## RolesConstants
+
+### Roles
+
+```solidity
+enum Roles {
+  DISTRIBUTOR,
+  OPERATOR,
+  FLOW_LIMITER
+}
+```
+
+## InterchainTokenExecutable
+
+### NotService
+
+```solidity
+error NotService(address caller)
+```
+
+### interchainTokenService
+
+```solidity
+address interchainTokenService
+```
+
+### EXECUTE_SUCCESS
+
+```solidity
+bytes32 EXECUTE_SUCCESS
+```
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) internal
+```
+
+### onlyService
+
+```solidity
+modifier onlyService()
+```
+
+### executeWithInterchainToken
+
+```solidity
+function executeWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external virtual returns (bytes32)
+```
+
+This will be called after the tokens arrive to this contract
+
+_Executable should revert unless the msg.sender is the InterchainTokenService_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sourceChain | string | the name of the source chain |
+| sourceAddress | bytes | the address that sent the contract call |
+| data | bytes | the data to be processed |
+| tokenId | bytes32 | the tokenId of the token manager managing the token. |
+| token | address | the address of the token. |
+| amount | uint256 | the amount of token that was sent |
+
+### _executeWithInterchainToken
+
+```solidity
+function _executeWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal virtual
+```
+
+## InterchainTokenExpressExecutable
+
+### EXPRESS_EXECUTE_SUCCESS
+
+```solidity
+bytes32 EXPRESS_EXECUTE_SUCCESS
+```
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) internal
+```
+
+### expressExecuteWithInterchainToken
+
+```solidity
+function expressExecuteWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external virtual returns (bytes32)
+```
+
+This will be called after the tokens arrive to this contract
+
+_Executable should revert unless the msg.sender is the InterchainTokenService_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sourceChain | string | the name of the source chain |
+| sourceAddress | bytes | the address that sent the contract call |
+| data | bytes | the data to be processed |
+| tokenId | bytes32 | the token id of the token manager managing the token. |
+| token | address | the address of the token. |
+| amount | uint256 | the amount of token that was sent |
+
+## ITokenManagerLiquidityPool
+
+This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
+
+### params
+
+```solidity
+function params(bytes operator_, address tokenAddress_, address liquidityPool_) external pure returns (bytes params_)
+```
+
+Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator_ | bytes | the operator of the TokenManager. |
+| tokenAddress_ | address | the token to be managed. |
+| liquidityPool_ | address | he address of the liquidity pool. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
+
+### liquidityPool
+
+```solidity
+function liquidityPool() external view returns (address liquidityPool_)
+```
+
+_Reads the stored liquidity pool address from the specified storage slot_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| liquidityPool_ | address | The address of the liquidity pool |
+
+### setLiquidityPool
+
+```solidity
+function setLiquidityPool(address newLiquidityPool) external
+```
+
+_Updates the address of the liquidity pool. Can only be called by the operator._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newLiquidityPool | address | The new address of the liquidity pool |
+
+## ITokenManagerLockUnlockFee
 
 This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
 
@@ -4274,204 +4641,39 @@ Can only be called by the distributor address.
 function tokenManagerImplementation(uint256) external pure returns (address)
 ```
 
-## TestBaseInterchainToken
-
-### tokenManager_
+## Invalid
 
 ```solidity
-address tokenManager_
+error Invalid()
 ```
 
-### tokenManagerRequiresApproval_
+## TestTokenManager
+
+### placeholder
 
 ```solidity
-bool tokenManagerRequiresApproval_
-```
-
-### name
-
-```solidity
-string name
-```
-
-### symbol
-
-```solidity
-string symbol
-```
-
-### decimals
-
-```solidity
-uint8 decimals
-```
-
-### AllowanceExceeded
-
-```solidity
-error AllowanceExceeded()
+string placeholder
 ```
 
 ### constructor
 
 ```solidity
-constructor(string name_, string symbol_, uint8 decimals_, address tokenManagerAddress) public
+constructor(address interchainTokenService_) public
 ```
 
-### tokenManager
+## TestInterchainToken
+
+### placeholder
 
 ```solidity
-function tokenManager() public view returns (address)
-```
-
-Getter for the tokenManager used for this token.
-
-_Needs to be overwritten._
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address |  |
-
-### _beforeInterchainTransfer
-
-```solidity
-function _beforeInterchainTransfer(address sender, string, bytes, uint256 amount, bytes) internal
-```
-
-### setTokenManagerRequiresApproval
-
-```solidity
-function setTokenManagerRequiresApproval(bool requiresApproval) public
-```
-
-### mint
-
-```solidity
-function mint(address account, uint256 amount) external
-```
-
-### burn
-
-```solidity
-function burn(address account, uint256 amount) external
-```
-
-### burnFrom
-
-```solidity
-function burnFrom(address account, uint256 amount) external
-```
-
-### setTokenManager
-
-```solidity
-function setTokenManager(address tokenManagerAddress) external
-```
-
-## TestFeeOnTransferToken
-
-### tokenManager_
-
-```solidity
-address tokenManager_
-```
-
-### tokenManagerRequiresApproval_
-
-```solidity
-bool tokenManagerRequiresApproval_
-```
-
-### name
-
-```solidity
-string name
-```
-
-### symbol
-
-```solidity
-string symbol
-```
-
-### decimals
-
-```solidity
-uint8 decimals
+string placeholder
 ```
 
 ### constructor
 
 ```solidity
-constructor(string name_, string symbol_, uint8 decimals_, address tokenManagerAddress) public
+constructor() public
 ```
-
-### tokenManager
-
-```solidity
-function tokenManager() public view returns (address)
-```
-
-Getter for the tokenManager used for this token.
-
-_Needs to be overwritten._
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address |  |
-
-### _beforeInterchainTransfer
-
-```solidity
-function _beforeInterchainTransfer(address sender, string, bytes, uint256 amount, bytes) internal
-```
-
-### setTokenManagerRequiresApproval
-
-```solidity
-function setTokenManagerRequiresApproval(bool requiresApproval) public
-```
-
-### mint
-
-```solidity
-function mint(address account, uint256 amount) external
-```
-
-### burn
-
-```solidity
-function burn(address account, uint256 amount) external
-```
-
-### setTokenManager
-
-```solidity
-function setTokenManager(address tokenManagerAddress) external
-```
-
-### _transfer
-
-```solidity
-function _transfer(address sender, address recipient, uint256 amount) internal
-```
-
-_Moves tokens `amount` from `sender` to `recipient`.
-
-This is internal function is equivalent to {transfer}, and can be used to
-e.g. implement automatic token fees, slashing mechanisms, etc.
-
-Emits a {Transfer} event.
-
-Requirements:
-
-- `sender` cannot be the zero address.
-- `recipient` cannot be the zero address.
-- `sender` must have a balance of at least `amount`._
 
 ## TestInterchainExecutable
 
@@ -4497,20 +4699,6 @@ string lastMessage
 
 ```solidity
 function _executeWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal
-```
-
-## TestInterchainTokenService
-
-### constructor
-
-```solidity
-constructor(address tokenManagerDeployer_, address interchainTokenDeployer_, address gateway_, address gasService_, address interchainTokenFactory_, string chainName_, address[] tokenManagerImplementations) public
-```
-
-### setupTest
-
-```solidity
-function setupTest(bytes params) external
 ```
 
 ## TestInvalidInterchainExecutable
@@ -4854,12 +5042,25 @@ function testOperatorable() external
 function operatorRole() external pure returns (uint8)
 ```
 
-## TokenManagerLockUnlockFee
+## TokenManagerLiquidityPool
 
-This contract is an implementation of TokenManager that locks and unlocks a specific token on behalf of the interchain token service.
+This contract is a an implementation of TokenManager that stores all tokens in a separate liquity pool
+rather than within itself.
 
 _This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
 It uses the Axelar SDK to safely transfer tokens._
+
+### NotSupported
+
+```solidity
+error NotSupported()
+```
+
+### LIQUIDITY_POOL_SLOT
+
+```solidity
+uint256 LIQUIDITY_POOL_SLOT
+```
 
 ### constructor
 
@@ -4867,7 +5068,7 @@ It uses the Axelar SDK to safely transfer tokens._
 constructor(address interchainTokenService_) public
 ```
 
-_Constructs an instance of TokenManagerLockUnlock. Calls the constructor
+_Constructs an instance of TokenManagerLiquidityPool. Calls the constructor
 of TokenManagerAddressStorage which calls the constructor of TokenManager._
 
 #### Parameters
@@ -4898,13 +5099,55 @@ _Sets up the token address and liquidity pool address._
 | ---- | ---- | ----------- |
 | params_ | bytes | The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address. |
 
+### _setLiquidityPool
+
+```solidity
+function _setLiquidityPool(address liquidityPool_) internal
+```
+
+_Stores the liquidity pool address at a specific storage slot_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| liquidityPool_ | address | The address of the liquidity pool |
+
+### liquidityPool
+
+```solidity
+function liquidityPool() public view returns (address liquidityPool_)
+```
+
+_Reads the stored liquidity pool address from the specified storage slot_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| liquidityPool_ | address | The address of the liquidity pool |
+
+### setLiquidityPool
+
+```solidity
+function setLiquidityPool(address newLiquidityPool) external
+```
+
+_Updates the address of the liquidity pool. Can only be called by the operator._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newLiquidityPool | address | The new address of the liquidity pool |
+
 ### _takeToken
 
 ```solidity
 function _takeToken(address from, uint256 amount) internal returns (uint256)
 ```
 
-_Transfers a specified amount of tokens from a specified address to this contract._
+_Transfers a specified amount of tokens from a specified address to the liquidity pool._
 
 #### Parameters
 
@@ -4925,7 +5168,7 @@ _Transfers a specified amount of tokens from a specified address to this contrac
 function _giveToken(address to, uint256 amount) internal returns (uint256)
 ```
 
-_Transfers a specified amount of tokens from this contract to a specified address._
+_Transfers a specified amount of tokens from the liquidity pool to a specified address._
 
 #### Parameters
 
@@ -4943,10 +5186,10 @@ _Transfers a specified amount of tokens from this contract to a specified addres
 ### params
 
 ```solidity
-function params(bytes operator_, address tokenAddress_) external pure returns (bytes params_)
+function params(bytes operator_, address tokenAddress_, address liquidityPoolAddress) external pure returns (bytes params_)
 ```
 
-Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
+Getter function for the parameters of a liquidity pool TokenManager. Mainly to be used by frontends.
 
 #### Parameters
 
@@ -4954,221 +5197,13 @@ Getter function for the parameters of a lock/unlock TokenManager. Mainly to be u
 | ---- | ---- | ----------- |
 | operator_ | bytes | the operator of the TokenManager. |
 | tokenAddress_ | address | the token to be managed. |
+| liquidityPoolAddress | address | the liquidity pool to be used to store the bridged tokens. |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
-
-## TokenManagerMintBurn
-
-This contract is an implementation of TokenManager that mints and burns a specific token on behalf of the interchain token service.
-
-_This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
-It uses the Axelar SDK to safely transfer tokens._
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) public
-```
-
-_Constructs an instance of TokenManagerMintBurn. Calls the constructor
-of TokenManagerAddressStorage which calls the constructor of TokenManager._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| interchainTokenService_ | address | The address of the interchain token service contract |
-
-### implementationType
-
-```solidity
-function implementationType() external pure virtual returns (uint256)
-```
-
-A function that should return the implementation type of the token manager.
-
-### _takeToken
-
-```solidity
-function _takeToken(address from, uint256 amount) internal virtual returns (uint256)
-```
-
-_Burns the specified amount of tokens from a particular address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| from | address | Address to burn tokens from |
-| amount | uint256 | Amount of tokens to burn |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint Amount of tokens burned |
-
-### _giveToken
-
-```solidity
-function _giveToken(address to, uint256 amount) internal returns (uint256)
-```
-
-_Mints the specified amount of tokens to a particular address_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| to | address | Address to mint tokens to |
-| amount | uint256 | Amount of tokens to mint |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint Amount of tokens minted |
-
-### params
-
-```solidity
-function params(bytes operator_, address tokenAddress_) external pure returns (bytes params_)
-```
-
-Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| operator_ | bytes | the operator of the TokenManager. |
-| tokenAddress_ | address | the token to be managed. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params_ | bytes | the resulting params to be passed to custom TokenManager deployments. |
-
-## TokenManagerMintBurnFrom
-
-This contract is an implementation of TokenManager that mints and burns a specific token on behalf of the interchain token service.
-
-_This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
-It uses the Axelar SDK to safely transfer tokens._
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) public
-```
-
-_Constructs an instance of TokenManagerMintBurn. Calls the constructor
-of TokenManagerAddressStorage which calls the constructor of TokenManager._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| interchainTokenService_ | address | The address of the interchain token service contract |
-
-### implementationType
-
-```solidity
-function implementationType() external pure returns (uint256)
-```
-
-A function that should return the implementation type of the token manager.
-
-### _takeToken
-
-```solidity
-function _takeToken(address from, uint256 amount) internal returns (uint256)
-```
-
-_Burns the specified amount of tokens from a particular address._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| from | address | Address to burn tokens from |
-| amount | uint256 | Amount of tokens to burn |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | uint Amount of tokens burned |
-
-## InterchainTokenDeployer
-
-This contract is used to deploy new instances of the InterchainTokenProxy contract.
-
-### implementationAddress
-
-```solidity
-address implementationAddress
-```
-
-Returns the interchain token implementation address
-
-### constructor
-
-```solidity
-constructor(address implementationAddress_) public
-```
-
-Constructor for the InterchainTokenDeployer contract
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| implementationAddress_ | address | Address of the InterchainToken contract |
-
-### deployInterchainToken
-
-```solidity
-function deployInterchainToken(bytes32 salt, address tokenManager, address distributor, string name, string symbol, uint8 decimals) external returns (address tokenAddress)
-```
-
-Deploys a new instance of the InterchainTokenProxy contract
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| salt | bytes32 | The salt used by Create3Deployer |
-| tokenManager | address | Address of the token manager |
-| distributor | address | Address of the distributor |
-| name | string | Name of the token |
-| symbol | string | Symbol of the token |
-| decimals | uint8 | Decimals of the token |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenAddress | address | Address of the deployed token |
-
-### deployedAddress
-
-```solidity
-function deployedAddress(bytes32 salt) external view returns (address tokenAddress)
-```
-
-Returns the interchain token deployment address.
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenAddress | address | the token address. |
 
 ## TokenManagerDeployer
 
