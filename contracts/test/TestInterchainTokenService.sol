@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import { InterchainTokenService } from '../InterchainTokenService.sol';
 
-contract InterchainTokenServiceTest is InterchainTokenService {
+contract TestInterchainTokenService is InterchainTokenService {
     constructor(
         address tokenManagerDeployer_,
         address interchainTokenDeployer_,

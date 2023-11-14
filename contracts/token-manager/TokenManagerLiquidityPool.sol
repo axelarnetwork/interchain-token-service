@@ -22,8 +22,8 @@ contract TokenManagerLiquidityPool is TokenManager, ReentrancyGuard, ITokenManag
 
     error NotSupported();
 
-    // uint256(keccak256('liquidity-pool-slot')) - 1
-    uint256 internal constant LIQUIDITY_POOL_SLOT = 0x8e02741a3381812d092c5689c9fc701c5185c1742fdf7954c4c4472be4cc4807;
+    // bytes32(uint256(keccak256('liquidity-pool')) - 1);
+    bytes32 internal constant LIQUIDITY_POOL_SLOT = 0x6b96d20becbf90996c525d678f980ffe6dec77fdb9e37d175b3726d4dcebc2c1;
 
     /**
      * @dev Constructs an instance of TokenManagerLiquidityPool. Calls the constructor

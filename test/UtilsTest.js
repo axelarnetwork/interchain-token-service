@@ -25,7 +25,7 @@ describe('Operatable', () => {
     let operatorRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'OperatableTest', [ownerWallet.address]);
+        test = await deployContract(ownerWallet, 'TestOperatable', [ownerWallet.address]);
         operatorRole = await test.operatorRole();
     });
 
@@ -99,7 +99,7 @@ describe('Distributable', () => {
     let distributorRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'DistributableTest', [ownerWallet.address]);
+        test = await deployContract(ownerWallet, 'TestDistributable', [ownerWallet.address]);
         distributorRole = await test.distributorRole();
     });
 
@@ -172,8 +172,8 @@ describe('FlowLimit', async () => {
 
     before(async () => {
         test = isHardhat
-            ? await deployContract(ownerWallet, 'FlowLimitTest')
-            : await deployContract(ownerWallet, 'FlowLimitTestLiveNetwork');
+            ? await deployContract(ownerWallet, 'TestFlowLimit')
+            : await deployContract(ownerWallet, 'TestFlowLimitLiveNetwork');
         tokenId = await test.TOKEN_ID();
     });
 

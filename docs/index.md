@@ -3310,7 +3310,7 @@ _Returns the implementation address from the interchain token service for the pr
 | ---- | ---- | ----------- |
 | implementation_ | address | The address of the implementation |
 
-## FeeOnTransferTokenTest
+## TestFeeOnTransferToken
 
 ### tokenManager_
 
@@ -3475,7 +3475,7 @@ string NAME
 constructor() public
 ```
 
-## InterchainExecutableTest
+## TestInterchainExecutable
 
 ### MessageReceived
 
@@ -3501,7 +3501,7 @@ string lastMessage
 function _executeWithInterchainToken(string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal
 ```
 
-## BaseInterchainTokenTest
+## TestBaseInterchainToken
 
 ### tokenManager_
 
@@ -3585,7 +3585,7 @@ function burn(address account, uint256 amount) external
 function setTokenManager(address tokenManagerAddress) external
 ```
 
-## DistributableTest
+## TestDistributable
 
 ### nonce
 
@@ -3611,7 +3611,7 @@ function testDistributable() external
 function distributorRole() external pure returns (uint8)
 ```
 
-## FlowLimitTest
+## TestFlowLimit
 
 ### TOKEN_ID
 
@@ -3637,7 +3637,7 @@ function addFlowIn(uint256 flowInAmount) external
 function addFlowOut(uint256 flowOutAmount) external
 ```
 
-## FlowLimitTestLiveNetwork
+## TestFlowLimitLiveNetwork
 
 ### FLOW_LIMIT_SLOT
 
@@ -3791,7 +3791,7 @@ fallback() external payable virtual
 receive() external payable virtual
 ```
 
-## OperatableTest
+## TestOperatable
 
 ### nonce
 

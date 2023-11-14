@@ -4,24 +4,15 @@
 pragma solidity ^0.8.0;
 
 import { TokenManagerLiquidityPool } from '../token-manager/TokenManagerLiquidityPool.sol';
-import { FlowLimit } from '../utils/FlowLimit.sol';
 import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 
 error Invalid();
 
-contract TestTokenManager is TokenManagerLiquidityPool {
+contract TestTokenManagerLiquidityPool is TokenManagerLiquidityPool {
     string public placeholder;
 
     constructor(address interchainTokenService_) TokenManagerLiquidityPool(interchainTokenService_) {
-        if (LIQUIDITY_POOL_SLOT != uint256(keccak256('liquidity-pool-slot')) - 1) revert Invalid();
-    }
-}
-
-contract TestFlowLimit is FlowLimit {
-    string public placeholder;
-
-    constructor() {
-        if (FLOW_LIMIT_SLOT != uint256(keccak256('flow-limit')) - 1) revert Invalid();
+        if (LIQUIDITY_POOL_SLOT != bytes32(uint256(keccak256('liquidity-pool')) - 1)) revert Invalid();
     }
 }
 
