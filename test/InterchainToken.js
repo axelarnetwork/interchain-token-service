@@ -1,13 +1,7 @@
 'use strict';
 
 const { ethers } = require('hardhat');
-const {
-    getContractAt,
-    utils: { defaultAbiCoder },
-    constants: { AddressZero },
-} = ethers;
-const chai = require('chai');
-const { expect } = chai;
+const { getContractAt } = ethers;
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 

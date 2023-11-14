@@ -448,7 +448,12 @@ describe('Interchain Token Service', () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const validParams = defaultAbiCoder.encode(['bytes', 'address'], ['0x', interchainToken.address]);
-            const tokenManagerProxy = await deployContract(wallet, `TokenManagerProxyTest`, [service.address, MINT_BURN, tokenId, validParams]);
+            const tokenManagerProxy = await deployContract(wallet, `TokenManagerProxyTest`, [
+                service.address,
+                MINT_BURN,
+                tokenId,
+                validParams,
+            ]);
             const invalidParams = '0x1234';
 
             const contractId = await tokenManagerProxy.getContractId();
