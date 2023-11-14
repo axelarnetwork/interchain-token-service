@@ -24,12 +24,12 @@ interface IInterchainToken is IInterchainTokenStandard, IDistributable, IERC20Mi
     function tokenManager() external view returns (address tokenManager_);
 
     /**
-     * @notice Setup function to initialize contract parameters
-     * @param tokenManagerAddress The address of the token manager of this token
-     * @param distributor The address of the token distributor
-     * @param tokenName The name of the token
-     * @param tokenSymbol The symbopl of the token
-     * @param tokenDecimals The decimals of the token
+     * @notice Setup function to initialize contract parameters.
+     * @param tokenManagerAddress The address of the token manager of this token.
+     * @param distributor The address of the token distributor.
+     * @param tokenName The name of the token.
+     * @param tokenSymbol The symbopl of the token.
+     * @param tokenDecimals The decimals of the token.
      */
     function init(
         address tokenManagerAddress,

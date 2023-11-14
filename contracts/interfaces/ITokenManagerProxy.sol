@@ -25,11 +25,14 @@ interface ITokenManagerProxy is IProxy {
 
     /**
      * @notice Returns token address that this token manager manages.
+     * @return address The token address.
      */
     function tokenAddress() external view returns (address);
 
     /**
      * @notice Returns implementation type and token address.
+     * @return uint256 The implementation type.
+     * @return address The token address.
      */
     function getImplementationTypeAndTokenAddress() external view returns (uint256, address);
 }
