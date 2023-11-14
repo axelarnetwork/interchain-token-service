@@ -26,9 +26,10 @@ import { Operatable } from './utils/Operatable.sol';
 
 /**
  * @title The Interchain Token Service
- * @notice This contract is responsible for facilitating cross chain token transfers.
- * It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for cross chain transfers to happen.
- * @dev The only storage used here is for ExpressCalls
+ * @notice This contract is responsible for facilitating interchain token transfers.
+ * It (mostly) does not handle tokens, but is responsible for the messaging that needs to occur for interchain transfers to happen.
+ * @dev The only storage used in this contract is for Express calls.
+ * Furthermore, no ether is intended to or should be sent to this contract except as part of deploy/interchainTransfer payable methods for gas payment.
  */
 contract InterchainTokenService is
     Upgradable,
@@ -82,6 +83,11 @@ contract InterchainTokenService is
      * This removes the dependency on the address the token factory was deployed too to be able to derive the same tokenId.
      */
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
+
+    /**
+     * @dev Latest version of metadata that's supported.
+     */
+    uint32 private constant LATEST_METADATA_VERSION = 0;
 
     /**
      * @dev All of the variables passed here are stored as immutable variables.
@@ -413,7 +419,7 @@ contract InterchainTokenService is
      * @param destinationChain the name of the chain to send the token to.
      * @param destinationAddress the recipient of the interchain transfer.
      * @param amount the amount of token to give.
-     * @param metadata the data to be passed to the destination. If provided with a bytes4(0) prefix, it'll execute the destination contract.
+     * @param metadata the data to be passed to the destination. If provided with a bytes4(0) version prefix, it'll execute the destination contract.
      */
     function interchainTransfer(
         bytes32 tokenId,
@@ -436,8 +442,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
-        uint32 prefix = 0;
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(prefix, data));
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(LATEST_METADATA_VERSION, data));
     }
 
     /*********************\
@@ -892,9 +897,10 @@ contract InterchainTokenService is
             _callContract(destinationChain, payload, msg.value);
             return;
         }
+
         uint32 version;
         (version, metadata) = _decodeMetadata(metadata);
-        if (version > 0) revert InvalidMetadataVersion(version);
+        if (version > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(version);
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTransferWithData(tokenId, destinationChain, destinationAddress, amount, sourceAddress, metadata);
