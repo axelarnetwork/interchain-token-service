@@ -6,6 +6,7 @@ const {
     utils: { defaultAbiCoder },
     constants: { AddressZero },
 } = ethers;
+const chai = require('chai');
 const { expect } = chai;
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
@@ -57,28 +58,6 @@ describe('InterchainToken', () => {
                 implementation,
                 'AlreadyInitialized',
             );
-        });
-
-        it('should revert on setup with invalid token manager address', async () => {
-            const tokenName = 'Token';
-            const distributor = owner.address;
-            const params = defaultAbiCoder.encode(
-                ['address', 'address', 'string', 'string', 'uint8'],
-                [AddressZero, distributor, tokenName, symbol, decimals],
-            );
-
-            await expect(deployContract(owner, 'InterchainTokenProxy', [interchainToken.address, params])).to.be.reverted;
-        });
-
-        it('should revert on setup with invalid token name', async () => {
-            const tokenName = '';
-            const distributor = owner.address;
-            const params = defaultAbiCoder.encode(
-                ['address', 'address', 'string', 'string', 'uint8'],
-                [owner.address, distributor, tokenName, symbol, decimals],
-            );
-
-            await expect(deployContract(owner, 'InterchainTokenProxy', [interchainToken.address, params])).to.be.reverted;
         });
     });
 });

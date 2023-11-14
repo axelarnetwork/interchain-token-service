@@ -79,7 +79,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      * @notice A function that should return the token address from the setup params.
      */
     function getTokenAddressFromParams(bytes calldata params) external pure returns (address tokenAddress_) {
-        (, tokenAddress_) = abi.decode(params, (uint256, address));
+        (, tokenAddress_) = abi.decode(params, (bytes, address));
     }
 
     /**

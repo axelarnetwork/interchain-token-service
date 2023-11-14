@@ -36,7 +36,7 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
      */
     function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
-        (, address tokenAddress_) = abi.decode(params_, (uint256, address));
+        (, address tokenAddress_) = abi.decode(params_, (bytes, address));
 
         IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, type(uint256).max));
     }
