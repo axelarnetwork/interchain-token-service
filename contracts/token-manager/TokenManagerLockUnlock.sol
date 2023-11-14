@@ -35,8 +35,8 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
     }
 
     /**
-     * @notice Sets up the token address and liquidity pool address.
-     * @dev The params should be encoded with the token address and the liquidity pool address.
+     * @notice Sets up the token address.
+     * @dev The params should be encoded with the token address.
      * @param params_ The setup parameters in bytes.
      */
     function _setup(bytes calldata params_) internal override {

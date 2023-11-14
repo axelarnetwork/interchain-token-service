@@ -9,9 +9,10 @@ For the purposes of this document we will use two keywords: deployer, the person
 ## Architecture
 
 The main workflow of a bridge is the following:
-- Obtains `x` token from the user on chain A
-- Send a message to chain B indicating that this happened, and where the token should go to
-- Receive the above message, and hand `x` token to the appropriate address
+
+-   Obtains `x` token from the user on chain A
+-   Send a message to chain B indicating that this happened, and where the token should go to
+-   Receive the above message, and hand `x` token to the appropriate address
 
 For this to be a proper bridge it should be possible to perform the above steps for any supported chain being 'chain A' and 'chain B'. There are multiple different possible configurations for any bridge, and we wanted to make it as easy as possible for deployers to get what they want, while making it cheap and easy for users to get their tokens across chains as well.
 
@@ -26,9 +27,9 @@ Most current bridge designs aim to get a pre-existing, popular token to differen
 ### Custom Bridges
 
 Most projects that look to go cross-chain nowadays have more complex needs that the ones covered by Canonical Bridges: they often need custom `ERC20` designs, and will sometimes want to have additional power over the bridge. This is where the `InterchainTokenService` shines, deployers can claim certain `tokenIds` only based on their `address`, and a `salt` they provide, and specify any kind of `TokenManager` to be deployed and either manage an external `ERC20` or a `InterchainToken`. Users using Custom Bridges need to trust the deployers as they could easily confiscate the funds of users if they wanted to, same as any `ERC20` distributor could confiscate the funds of users. There are currently three kinds of possible `TokenManagers` available, but this number might increase in the future, as we find more potential uses for the `InterchainTokenService`.
-- Lock/Unlock: This `TokenManager` will simply transfer tokens from a user to itself or vice versa to initiate/fulfill cross-chain transfers
-- Mint/Burn: This `TokenManager` will burn/mint tokens from/to the user to initiate/fulfill cross-chain transfers. Tokens used with this kind of `TokenManager` need to be properly permissioned to allow for this behavior.
-- Liquidity Pool: This `TokenManager` functions exactly like a Lock/Unlock one, except the balance is kept at a separate, pre-specified account. This allows for deployers to have more control over the bridged funds.
+
+-   Lock/Unlock: This `TokenManager` will simply transfer tokens from a user to itself or vice versa to initiate/fulfill cross-chain transfers
+-   Mint/Burn: This `TokenManager` will burn/mint tokens from/to the user to initiate/fulfill cross-chain transfers. Tokens used with this kind of `TokenManager` need to be properly permissioned to allow for this behavior.
 
 ## Interchain Address Tracker
 
@@ -36,4 +37,4 @@ Most projects that look to go cross-chain nowadays have more complex needs that 
 
 ## Interchain Token
 
-We designed an [interface](./contracts/interfaces/IInterchainToken.sol) along a [example implementation](./contracts/interchainToken/InterchainToken.sol) of an ERC20 that can use the `InterchainTokenService` internally. This has the main benefit that for `TokenManagers` that require user approval (Lock/Unlock and Liquidity Pool typically) the token can provide this approval within the same call, providing better UX for users, and saving them some gas.
+We designed an [interface](./contracts/interfaces/IInterchainToken.sol) along a [example implementation](./contracts/interchainToken/InterchainToken.sol) of an ERC20 that can use the `InterchainTokenService` internally. This has the main benefit that for `TokenManagers` that require user approval (Lock/Unlock typically) the token can provide this approval within the same call, providing better UX for users, and saving them some gas.

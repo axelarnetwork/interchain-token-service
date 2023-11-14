@@ -26,13 +26,17 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     // bytes32(uint256(keccak256('interchain-token-initialized')) - 1);
     bytes32 internal constant INITIALIZED_SLOT = 0xc778385ecb3e8cecb82223fa1f343ec6865b2d64c65b0c15c7e8aef225d9e214;
 
+    /**
+     * @notice Constructs the InterchainToken contract.
+     * @dev Makes the implementation act as if it has been setup already to disallow calls to init() (even though that would not achieve anything really).
+     */
     constructor() {
-        // Make the implementation act as if it has been setup already to disallow calls to init() (even though that wouldn't achieve anything really)
         _initialize();
     }
 
     /**
-     * @notice returns true if the contract has be setup.
+     * @notice Returns true if the contract has been setup.
+     * @return initialized True if the contract has been setup, false otherwise.
      */
     function _isInitialized() internal view returns (bool initialized) {
         assembly {
@@ -41,8 +45,7 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     }
 
     /**
-     * @notice sets initialized to true, to allow only a single init.
-     * @return bytes32 The contract id.
+     * @notice Sets initialized to true, to allow only a single init.
      */
     function _initialize() internal {
         assembly {
@@ -59,12 +62,12 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     }
 
     /**
-     * @notice Setup function to initialize contract parameters
-     * @param tokenManagerAddress The address of the token manager of this token
-     * @param distributor The address of the token distributor
-     * @param tokenName The name of the token
-     * @param tokenSymbol The symbopl of the token
-     * @param tokenDecimals The decimals of the token
+     * @notice Setup function to initialize contract parameters.
+     * @param tokenManagerAddress The address of the token manager of this token.
+     * @param distributor The address of the token distributor.
+     * @param tokenName The name of the token.
+     * @param tokenSymbol The symbopl of the token.
+     * @param tokenDecimals The decimals of the token.
      */
     function init(
         address tokenManagerAddress,

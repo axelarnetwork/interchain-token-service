@@ -52,14 +52,15 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice Getter for the contract id.
+     * @return bytes32 The contract id.
      */
     function contractId() external pure override returns (bytes32) {
         return CONTRACT_ID;
     }
 
     /**
-     * @dev Reads the token address from the proxy
-     * @return tokenAddress_ The address of the token
+     * @dev Reads the token address from the proxy.
+     * @return tokenAddress_ The address of the token.
      */
     function tokenAddress() external view virtual returns (address tokenAddress_) {
         // Ask the proxy what the token address is.
@@ -78,6 +79,8 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice A function that should return the token address from the setup params.
+     * @param params The setup parameters.
+     * @return tokenAddress_ The token address.
      */
     function getTokenAddressFromParams(bytes calldata params) external pure returns (address tokenAddress_) {
         (, tokenAddress_) = abi.decode(params, (bytes, address));
