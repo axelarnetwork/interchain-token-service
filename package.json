@@ -50,7 +50,7 @@
     "solhint": "^3.4.1",
     "solidity-docgen": "^0.6.0-beta.36"
   },
-  "description": "Interchain token service for EVM chains to faciliate cross-chain token transfers and contract calls",
+  "description": "Interchain token service for EVM chains to faciliate interchain token transfers and contract calls",
   "files": [
     "artifacts",
     "contracts",

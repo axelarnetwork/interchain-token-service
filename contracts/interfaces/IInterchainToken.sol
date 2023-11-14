@@ -18,7 +18,7 @@ interface IInterchainToken is IInterchainTokenStandard, IDistributable, IERC20Mi
     /**
      * @notice Getter for the tokenManager used for this token.
      * @dev Needs to be overwitten.
-     * @return tokenManager_ the TokenManager called to facilitate cross chain transfers.
+     * @return tokenManager_ the TokenManager called to facilitate interchain transfers.
      */
     function tokenManager() external view returns (address tokenManager_);
 

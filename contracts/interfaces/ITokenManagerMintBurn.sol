@@ -6,7 +6,7 @@ import { ITokenManager } from './ITokenManager.sol';
 
 /**
  * @title ITokenManager
- * @notice This contract is responsible for handling tokens before initiating a cross chain token transfer, or after receiving one.
+ * @notice This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
 interface ITokenManagerMintBurn is ITokenManager {
     /**
