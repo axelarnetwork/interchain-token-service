@@ -442,7 +442,14 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, abi.encodePacked(LATEST_METADATA_VERSION, data));
+        _transmitInterchainTransfer(
+            tokenId,
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            abi.encodePacked(LATEST_METADATA_VERSION, data)
+        );
     }
 
     /*********************\
