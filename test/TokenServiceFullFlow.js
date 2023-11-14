@@ -46,7 +46,7 @@ describe('Interchain Token Service Full Flow', () => {
      * - Transfer per chain pre-mint amount to the user on each remote chain
      * - Transfer tokens via the token manager between chains after deployment
      */
-    describe('Canonical Interchain Token', async () => {
+    describe('Canonical Interchain Token', () => {
         let token;
         const gasValues = [1234, 5678];
         const tokenCap = 1e9;
@@ -83,6 +83,10 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Transfer total mint amount to the factory contract
             tx = await factory.populateTransaction.tokenTransferFrom(tokenId, totalMint);
+            calls.push(tx.data);
+
+            // Optional. Reset approval from the factory to the token manager contract. This is only needed for tokens like USDT that don't allow overriding existing approvals.
+            tx = await factory.populateTransaction.tokenApprove(tokenId, 0);
             calls.push(tx.data);
 
             // Approve total mint amount from the factory to the token manager contract
@@ -134,34 +138,59 @@ describe('Interchain Token Service Full Flow', () => {
                 .withArgs(factory.address, expectedTokenManagerAddress, mintAmount);
         });
 
-        it('Should send some token to another chain', async () => {
+        describe('Interchain transfer', () => {
             const amount = 1234;
             const destAddress = '0x1234';
             const destChain = otherChains[0];
             const gasValue = 6789;
+            let payload, payloadHash;
 
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount],
-            );
-            const payloadHash = keccak256(payload);
+            before(async () => {
+                payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount],
+                );
+                payloadHash = keccak256(payload);
+            });
 
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            it('Should send some tokens to another chain via token manager', async () => {
+                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+                tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
-            await expect(token.approve(tokenManager.address, amount))
-                .to.emit(token, 'Approval')
-                .withArgs(wallet.address, tokenManager.address, amount);
+                await expect(token.approve(tokenManager.address, amount))
+                    .to.emit(token, 'Approval')
+                    .withArgs(wallet.address, tokenManager.address, amount);
 
-            await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
-                .and.to.emit(token, 'Transfer')
-                .withArgs(wallet.address, tokenManager.address, amount)
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destChain, service.address, payloadHash, payload)
-                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                .to.emit(service, 'InterchainTransfer')
-                .withArgs(tokenId, destChain, destAddress, amount);
+                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, tokenManager.address, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, destChain, destAddress, amount);
+            });
+
+            it('Should send some tokens to another chain via ITS', async () => {
+                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+                tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+
+                // Canonical (pre-existing) token requires an approval due to locking
+                await expect(token.approve(tokenManager.address, amount))
+                    .to.emit(token, 'Approval')
+                    .withArgs(wallet.address, tokenManager.address, amount);
+
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, tokenManager.address, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, destChain, destAddress, amount);
+            });
         });
     });
 
@@ -174,7 +203,7 @@ describe('Interchain Token Service Full Flow', () => {
      * - Transfer tokens via the token manager between chains after deployment
      * - Transfers mint/burn role from original deployer wallet to another address
      */
-    describe('New Interchain token', async () => {
+    describe('New Interchain token', () => {
         let token;
         let tokenId;
         const salt = getRandomBytes32();
@@ -262,32 +291,63 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Only tokens minted for the local chain should be left, remaining should be burned.
             expect(await token.balanceOf(wallet.address)).to.equal(mintAmount);
+
+            expect(await service.validTokenManagerAddress(tokenId)).to.equal(expectedTokenManagerAddress);
         });
 
-        it('Should send some token to another chain', async () => {
+        describe('Interchain transfer', () => {
             const amount = 1234;
             const destAddress = '0x1234';
             const destChain = otherChains[0];
             const gasValue = 6789;
+            let payload, payloadHash;
 
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount],
-            );
-            const payloadHash = keccak256(payload);
+            before(async () => {
+                payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount],
+                );
+                payloadHash = keccak256(payload);
+            });
 
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            it('Should send some tokens to another chain via token manager', async () => {
+                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+                tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
-            await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
-                .and.to.emit(token, 'Transfer')
-                .withArgs(wallet.address, AddressZero, amount)
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destChain, service.address, payloadHash, payload)
-                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                .to.emit(service, 'InterchainTransfer')
-                .withArgs(tokenId, destChain, destAddress, amount);
+                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, AddressZero, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, destChain, destAddress, amount);
+            });
+
+            it('Should send some tokens to another chain via the token', async () => {
+                await expect(token.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, AddressZero, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, destChain, destAddress, amount);
+            });
+
+            it('Should send some tokens to another chain via ITS', async () => {
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, AddressZero, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, destChain, destAddress, amount);
+            });
         });
 
         /**
@@ -324,7 +384,7 @@ describe('Interchain Token Service Full Flow', () => {
      * - Transfer mint/burn permission (distributor role) to the token manager
      * - Transfer tokens via the token manager between chains
      */
-    describe('Pre-existing Token as Mint/Burn', async () => {
+    describe('Pre-existing Token as Mint/Burn', () => {
         let token;
         const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
@@ -339,14 +399,20 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const implAddress = await service.tokenManagerImplementation(MINT_BURN);
-            const impl = await getContractAt('TokenManagerMintBurn', implAddress, wallet);
-            const params = await impl.params(wallet.address, token.address);
+            const tokenManagerImplementationAddress = await service.tokenManagerImplementation(MINT_BURN);
+            const tokenManagerImplementation = await getContractAt('TokenManagerMintBurn', tokenManagerImplementationAddress, wallet);
+
+            const params = await tokenManagerImplementation.params(wallet.address, token.address);
             let tx = await service.populateTransaction.deployTokenManager(salt, '', MINT_BURN, params, 0);
+
             const calls = [tx.data];
             let value = 0;
 
             for (const i in otherChains) {
+                // This should be replaced with the existing token address on each chain being linked
+                const remoteTokenAddress = token.address;
+                const params = await tokenManagerImplementation.params(wallet.address, remoteTokenAddress);
+
                 tx = await service.populateTransaction.deployTokenManager(salt, otherChains[i], MINT_BURN, params, gasValues[i]);
                 calls.push(tx.data);
                 value += gasValues[i];
@@ -403,33 +469,50 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         /**
-         * Send an interchain transfer via the token manager. To receive the tokens, the receiving token manager
+         * Send an interchain transfer. To receive the tokens, the receiving token manager
          * also needs to have the mint/burn permission.
          */
-        it('Should send some token to another chain', async () => {
+        describe('Interchain transfer', () => {
             const amount = 1234;
             const destAddress = '0x1234';
             const destChain = otherChains[0];
             const gasValue = 6789;
+            let payload, payloadHash;
 
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount],
-            );
-            const payloadHash = keccak256(payload);
+            before(async () => {
+                payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount],
+                );
+                payloadHash = keccak256(payload);
+            });
 
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            it('Should send some tokens to another chain via token manager', async () => {
+                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+                tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
-            await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
-                .and.to.emit(token, 'Transfer')
-                .withArgs(wallet.address, AddressZero, amount)
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destChain, service.address, payloadHash, payload)
-                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                .to.emit(service, 'InterchainTransfer')
-                .withArgs(tokenId, destChain, destAddress, amount);
+                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, AddressZero, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, destChain, destAddress, amount);
+            });
+
+            it('Should send some tokens to another chain via ITS', async () => {
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, AddressZero, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, destChain, destAddress, amount);
+            });
         });
     });
 });
