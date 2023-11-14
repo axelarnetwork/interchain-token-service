@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import { Operatable } from '../../utils/Operatable.sol';
 
-contract OperatableTest is Operatable {
+contract TestOperatable is Operatable {
     uint256 public nonce;
 
     constructor(address operator) {

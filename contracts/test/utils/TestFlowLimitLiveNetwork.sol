@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import { IFlowLimit } from '../../interfaces/IFlowLimit.sol';
 
-contract FlowLimitTestLiveNetwork is IFlowLimit {
+contract TestFlowLimitLiveNetwork is IFlowLimit {
     uint256 internal constant FLOW_LIMIT_SLOT = 0x201b7a0b7c19aaddc4ce9579b7df8d2db123805861bc7763627f13e04d8af42f;
     uint256 internal constant PREFIX_FLOW_OUT_AMOUNT = uint256(keccak256('flow-out-amount'));
     uint256 internal constant PREFIX_FLOW_IN_AMOUNT = uint256(keccak256('flow-in-amount'));

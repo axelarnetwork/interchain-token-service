@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import { TokenManagerProxy } from '../proxies/TokenManagerProxy.sol';
 
-contract TokenManagerProxyTest is TokenManagerProxy {
+contract TestTokenManagerProxy is TokenManagerProxy {
     constructor(
         address interchainTokenService_,
         uint256 implementationType_,

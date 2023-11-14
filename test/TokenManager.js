@@ -14,38 +14,38 @@ const { deployContract, deployAll } = require('../scripts/deploy');
 describe('Token Manager', () => {
     const FLOW_LIMITER_ROLE = 2;
     let owner, user, token, service;
-    let tokenManagerTest, tokenManagerLockUnlock, tokenManagerMintBurn, tokenManagerLockUnlockFeeOnTransfer;
+    let TestTokenManager, tokenManagerLockUnlock, tokenManagerMintBurn, tokenManagerLockUnlockFeeOnTransfer;
 
     before(async () => {
         [owner, user, token, service] = await ethers.getSigners();
 
-        tokenManagerTest = await deployContract(owner, `TokenManagerTest`, [service.address]);
+        TestTokenManager = await deployContract(owner, `TestTokenManager`, [service.address]);
         tokenManagerLockUnlock = await deployContract(owner, `TokenManagerLockUnlock`, [service.address]);
         tokenManagerMintBurn = await deployContract(owner, `TokenManagerMintBurn`, [service.address]);
         tokenManagerLockUnlockFeeOnTransfer = await deployContract(owner, `TokenManagerLockUnlockFee`, [service.address]);
     });
 
     it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(owner, `TestTokenManager`, [service.address])).to.not.be.reverted;
+        await expect(deployContract(owner, `TestTokenManagerLiquidityPool`, [service.address])).to.not.be.reverted;
     });
 
     it('Should revert on token manager deployment with invalid service address', async () => {
         await expectRevert(
-            (gasOptions) => deployContract(owner, `TokenManagerTest`, [AddressZero, gasOptions]),
-            tokenManagerTest,
+            (gasOptions) => deployContract(owner, `TestTokenManager`, [AddressZero, gasOptions]),
+            TestTokenManager,
             'TokenLinkerZeroAddress',
         );
     });
 
     it('Should return the correct contract id', async () => {
         const expectedContractid = keccak256(toUtf8Bytes('token-manager'));
-        const contractId = await tokenManagerTest.contractId();
+        const contractId = await TestTokenManager.contractId();
         expect(contractId).to.eq(expectedContractid);
     });
 
     it('Should revert on setup if not called by the proxy', async () => {
         const params = '0x';
-        await expectRevert((gasOptions) => tokenManagerTest.setup(params, gasOptions), tokenManagerTest, 'NotProxy');
+        await expectRevert((gasOptions) => TestTokenManager.setup(params, gasOptions), TestTokenManager, 'NotProxy');
     });
 
     it('Should revert on transmitInterchainTransfer if not called by the token', async () => {
@@ -78,8 +78,8 @@ describe('Token Manager', () => {
         const amount = 10;
 
         await expectRevert(
-            (gasOptions) => tokenManagerTest.giveToken(destinationAddress, amount, gasOptions),
-            tokenManagerTest,
+            (gasOptions) => TestTokenManager.giveToken(destinationAddress, amount, gasOptions),
+            TestTokenManager,
             'NotService',
             [owner.address],
         );
@@ -89,7 +89,7 @@ describe('Token Manager', () => {
         const sourceAddress = user.address;
         const amount = 10;
 
-        await expectRevert((gasOptions) => tokenManagerTest.takeToken(sourceAddress, amount, gasOptions), tokenManagerTest, 'NotService', [
+        await expectRevert((gasOptions) => TestTokenManager.takeToken(sourceAddress, amount, gasOptions), TestTokenManager, 'NotService', [
             owner.address,
         ]);
     });
@@ -97,24 +97,24 @@ describe('Token Manager', () => {
     it('Should revert on setFlowLimit if not called by the operator', async () => {
         const flowLimit = 100;
 
-        await expectRevert((gasOptions) => tokenManagerTest.setFlowLimit(flowLimit, gasOptions), tokenManagerTest, 'MissingRole', [
+        await expectRevert((gasOptions) => TestTokenManager.setFlowLimit(flowLimit, gasOptions), TestTokenManager, 'MissingRole', [
             owner.address,
             FLOW_LIMITER_ROLE,
         ]);
     });
 
     it('Should revert on addFlowLimiter if flow limiter address is invalid', async () => {
-        await tokenManagerTest.addOperator(owner.address).then((tx) => tx.wait());
+        await TestTokenManager.addOperator(owner.address).then((tx) => tx.wait());
 
-        await expectRevert((gasOptions) => tokenManagerTest.addFlowLimiter(AddressZero, gasOptions), tokenManagerTest, 'ZeroAddress', []);
+        await expectRevert((gasOptions) => TestTokenManager.addFlowLimiter(AddressZero, gasOptions), TestTokenManager, 'ZeroAddress', []);
     });
 
     it('Should revert on removeFlowLimiter if flow limiter address is invalid', async () => {
-        await tokenManagerTest.addOperator(owner.address).then((tx) => tx.wait());
+        await TestTokenManager.addOperator(owner.address).then((tx) => tx.wait());
 
         await expectRevert(
-            (gasOptions) => tokenManagerTest.removeFlowLimiter(AddressZero, gasOptions),
-            tokenManagerTest,
+            (gasOptions) => TestTokenManager.removeFlowLimiter(AddressZero, gasOptions),
+            TestTokenManager,
             'ZeroAddress',
             [],
         );

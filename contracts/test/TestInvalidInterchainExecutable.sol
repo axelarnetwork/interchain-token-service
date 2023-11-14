@@ -7,7 +7,7 @@ import { InterchainTokenExecutable } from '../executable/InterchainTokenExecutab
 import { InterchainTokenExpressExecutable } from '../executable/InterchainTokenExpressExecutable.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
-contract InvalidInterchainExecutableTest is InterchainTokenExpressExecutable {
+contract TestInvalidInterchainExecutable is InterchainTokenExpressExecutable {
     bytes32 internal constant EXECUTE_FAILURE = keccak256('its-express-execute-failure');
     bytes32 internal constant EXPRESS_EXECUTE_FAILURE = keccak256('its-express-execute-failure');
 
