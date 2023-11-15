@@ -14,6 +14,10 @@ import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 
+/**
+ * @title InterchainTokenFactory
+ * @notice This contract is responsible for deploying new interchain tokens and managing their token managers.
+ */
 contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, Multicall, Upgradable {
     using AddressBytes for bytes;
     using AddressBytes for address;
@@ -30,6 +34,10 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
+    /**
+     * @notice Constructs the InterchainTokenFactory contract.
+     * @param interchainTokenServiceAddress The address of the interchain token service.
+     */
     constructor(address interchainTokenServiceAddress) {
         if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
         service = IInterchainTokenService(interchainTokenServiceAddress);
@@ -40,31 +48,72 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Getter for the contract id.
+     * @return bytes32 The contract id of this contract.
      */
     function contractId() external pure returns (bytes32) {
         return CONTRACT_ID;
     }
 
+    /**
+     * @notice Calculates the salt for an interchain token.
+     * @param chainNameHash_ The hash of the chain name.
+     * @param deployer The address of the deployer.
+     * @param salt A unique identifier to generate the salt.
+     * @return bytes32 The calculated salt for the interchain token.
+     */
     function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32) {
         return keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, chainNameHash_, deployer, salt));
     }
 
+    /**
+     * @notice Calculates the salt for a canonical interchain token.
+     * @param chainNameHash_ The hash of the chain name.
+     * @param tokenAddress The address of the token.
+     * @return salt The calculated salt for the interchain token.
+     */
     function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash_, tokenAddress));
     }
 
+    /**
+     * @notice Computes the ID for an interchain token based on the deployer and a salt.
+     * @param deployer The address that deployed the interchain token.
+     * @param salt A unique identifier used in the deployment process.
+     * @return tokenId The ID of the interchain token.
+     */
     function interchainTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
         tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, interchainTokenSalt(chainNameHash, deployer, salt));
     }
 
+    /**
+     * @notice Computes the ID for a canonical interchain token based on its address.
+     * @param tokenAddress The address of the canonical interchain token.
+     * @return tokenId The ID of the canonical interchain token.
+     */
     function canonicalInterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
         tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, canonicalInterchainTokenSalt(chainNameHash, tokenAddress));
     }
 
+    /**
+     * @notice Retrieves the address of an interchain token based on the deployer and a salt.
+     * @param deployer The address that deployed the interchain token.
+     * @param salt A unique identifier used in the deployment process.
+     * @return tokenAddress The address of the interchain token.
+     */
     function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
         tokenAddress = service.interchainTokenAddress(interchainTokenId(deployer, salt));
     }
 
+    /**
+     * @notice Deploys a new interchain token with specified parameters.
+     * @dev Creates a new token and optionally mints an initial amount to a specified distributor.
+     * @param salt The unique salt for deploying the token.
+     * @param name The name of the token.
+     * @param symbol The symbol of the token.
+     * @param decimals The number of decimals for the token.
+     * @param mintAmount The amount of tokens to mint initially (can be zero).
+     * @param distributor The address to receive the initially minted tokens.
+     */
     function deployInterchainToken(
         bytes32 salt,
         string calldata name,
@@ -102,6 +151,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         }
     }
 
+    /**
+     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @param originalChainName The name of the chain where the token originally exists.
+     * @param salt The unique salt for deploying the token.
+     * @param distributor The address to distribute the token on the destination chain.
+     * @param destinationChain The name of the destination chain.
+     * @param gasValue The amount of gas to send for the deployment.
+     */
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
@@ -142,6 +199,16 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor_, gasValue);
     }
 
+    /**
+     * @notice Deploys a new interchain token with specified parameters.
+     * @param salt The unique salt for deploying the token.
+     * @param destinationChain The name of the destination chain.
+     * @param tokenName The name of the token.
+     * @param tokenSymbol The symbol of the token.
+     * @param tokenDecimals The number of decimals for the token.
+     * @param distributor The address to receive the initially minted tokens.
+     * @param gasValue The amount of gas to send for the transfer.
+     */
     function _deployInterchainToken(
         bytes32 salt,
         string memory destinationChain,
@@ -163,6 +230,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         );
     }
 
+    /**
+     * @notice Registers a canonical token as an interchain token and deploys its token manager.
+     * @param tokenAddress The address of the canonical token.
+     * @return tokenId The unique identifier of the registered interchain token.
+     */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
 
@@ -172,6 +244,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenId = service.deployTokenManager(salt, '', TokenManagerType.LOCK_UNLOCK, params, 0);
     }
 
+    /**
+     * @notice Deploys a canonical interchain token on a remote chain.
+     * @param originalChain The name of the chain where the token originally exists.
+     * @param originalTokenAddress The address of the original token on the original chain.
+     * @param destinationChain The name of the chain where the token will be deployed.
+     * @param gasValue The gas amount to be sent for deployment.
+     */
     function deployRemoteCanonicalInterchainToken(
         string calldata originalChain,
         address originalTokenAddress,
@@ -202,6 +281,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
     }
 
+    /**
+     * @notice Transfers an interchain token to a specified destination chain and address.
+     * @param tokenId The identifier of the interchain token.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationAddress The address on the destination chain to receive the token.
+     * @param amount The amount of tokens to transfer.
+     * @param gasValue The amount of gas to send for the transfer.
+     */
     function interchainTransfer(
         bytes32 tokenId,
         string calldata destinationChain,
@@ -219,6 +306,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         }
     }
 
+    /**
+     * @notice Allows tokens to be transferred from the sender to the contract.
+     * @param tokenId The identifier of the interchain token.
+     * @param amount The amount of tokens to transfer.
+     */
     function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.validTokenAddress(tokenId);
         IInterchainToken token = IInterchainToken(tokenAddress);
@@ -227,7 +319,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     /**
-     * @dev Allow any token to be approved to the token manager.
+     * @notice Approves a specified amount of tokens to the token manager.
+     * @param tokenId The identifier of the interchain token.
+     * @param amount The amount of tokens to approve.
      */
     function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.validTokenAddress(tokenId);
@@ -237,6 +331,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         token.safeCall(abi.encodeWithSelector(token.approve.selector, tokenManager, amount));
     }
 
+    /**
+     * @notice Checks if a given token is a gateway token.
+     * @param token The address of the token to check.
+     * @return bool True if the token is a gateway token, false otherwise.
+     */
     function _isGatewayToken(address token) internal view returns (bool) {
         string memory symbol = IInterchainToken(token).symbol();
         return token == gateway.tokenAddresses(symbol);

@@ -3,7 +3,8 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title ITokenManagerImplementation
+ * @title ITokenManagerImplementation Interface
+ * @notice Interface for returning the token manager implementation type.
  */
 interface ITokenManagerImplementation {
     /**

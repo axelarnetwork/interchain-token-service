@@ -10,8 +10,8 @@ import { ITokenManagerLockUnlock } from '../interfaces/ITokenManagerLockUnlock.s
 import { TokenManager } from './TokenManager.sol';
 
 /**
- * @title TokenManagerLockUnlock
- * @notice This contract is an implementation of TokenManager that locks and unlocks a specific token on behalf of the interchain token service.
+ * @title TokenManagerLockUnlockFee
+ * @notice This contract is an implementation of TokenManager that locks and unlocks a specific fee-on-transfer token on behalf of the interchain token service.
  * @dev This contract extends TokenManagerAddressStorage and provides implementation for its abstract methods.
  * It uses the Axelar SDK to safely transfer tokens.
  */
@@ -21,19 +21,24 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
     using SafeTokenCall for IERC20;
 
     /**
-     * @dev Constructs an instance of TokenManagerLockUnlock. Calls the constructor
-     * of TokenManagerAddressStorage which calls the constructor of TokenManager.
-     * @param interchainTokenService_ The address of the interchain token service contract
+     * @notice Constructs an instance of TokenManagerLockUnlockFee.
+     * @dev Calls the constructor of TokenManagerAddressStorage which calls the constructor of TokenManager.
+     * @param interchainTokenService_ The address of the interchain token service contract.
      */
     constructor(address interchainTokenService_) TokenManager(interchainTokenService_) {}
 
+    /**
+     * @notice Returns the implementation type of the token manager.
+     * @return uint256 The implementation type.
+     */
     function implementationType() external pure returns (uint256) {
         return uint256(TokenManagerType.LOCK_UNLOCK_FEE);
     }
 
     /**
-     * @dev Sets up the token address and liquidity pool address.
-     * @param params_ The setup parameters in bytes. Should be encoded with the token address and the liquidity pool address.
+     * @notice Sets up the token address.
+     * @dev Should be encoded with the token address.
+     * @param params_ The setup parameters in bytes.
      */
     function _setup(bytes calldata params_) internal override {
         // The first argument is reserved for the operator.
@@ -43,10 +48,10 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
     }
 
     /**
-     * @dev Transfers a specified amount of tokens from a specified address to this contract.
-     * @param from The address to transfer tokens from
-     * @param amount The amount of tokens to transfer
-     * @return uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
+     * @notice Transfers a specified amount of tokens from a specified address to this contract.
+     * @param from The address to transfer tokens from.
+     * @param amount The amount of tokens to transfer.
+     * @return uint256 The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
      */
     function _takeToken(address from, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(this.tokenAddress());
@@ -63,10 +68,10 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
     }
 
     /**
-     * @dev Transfers a specified amount of tokens from this contract to a specified address.
-     * @param to The address to transfer tokens to
-     * @param amount The amount of tokens to transfer
-     * @return uint The actual amount of tokens transferred
+     * @notice Transfers a specified amount of tokens from this contract to a specified address.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of tokens to transfer.
+     * @return uint256 The actual amount of tokens transferred.
      */
     function _giveToken(address to, uint256 amount) internal override noReEntrancy returns (uint256) {
         IERC20 token = IERC20(this.tokenAddress());
@@ -83,10 +88,11 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
     }
 
     /**
-     * @notice Getter function for the parameters of a lock/unlock TokenManager. Mainly to be used by frontends.
-     * @param operator_ the operator of the TokenManager.
-     * @param tokenAddress_ the token to be managed.
-     * @return params_ the resulting params to be passed to custom TokenManager deployments.
+     * @notice Getter function for the parameters of a lock/unlock with fee TokenManager.
+     * @dev This function will be mainly used by frontends.
+     * @param operator_ The operator of the TokenManager.
+     * @param tokenAddress_ The token to be managed.
+     * @return params_ The resulting params to be passed to custom TokenManager deployments.
      */
     function params(bytes memory operator_, address tokenAddress_) external pure returns (bytes memory params_) {
         params_ = abi.encode(operator_, tokenAddress_);

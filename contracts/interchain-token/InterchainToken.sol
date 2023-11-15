@@ -13,7 +13,7 @@ import { Distributable } from '../utils/Distributable.sol';
 /**
  * @title InterchainToken
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
- * This contract also inherits Distributable and Implementation logic.
+ * @dev This contract also inherits Distributable and Implementation logic.
  */
 contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IInterchainToken {
     using AddressBytes for bytes;
@@ -26,13 +26,17 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     // bytes32(uint256(keccak256('interchain-token-initialized')) - 1);
     bytes32 internal constant INITIALIZED_SLOT = 0xc778385ecb3e8cecb82223fa1f343ec6865b2d64c65b0c15c7e8aef225d9e214;
 
+    /**
+     * @notice Constructs the InterchainToken contract.
+     * @dev Makes the implementation act as if it has been setup already to disallow calls to init() (even though that would not achieve anything really).
+     */
     constructor() {
-        // Make the implementation act as if it has been setup already to disallow calls to init() (even though that wouldn't achieve anything really)
         _initialize();
     }
 
     /**
-     * @notice returns true if the contract has be setup.
+     * @notice Returns true if the contract has been setup.
+     * @return initialized True if the contract has been setup, false otherwise.
      */
     function _isInitialized() internal view returns (bool initialized) {
         assembly {
@@ -41,7 +45,7 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     }
 
     /**
-     * @notice sets initialized to true, to allow only a single init.
+     * @notice Sets initialized to true, to allow only a single init.
      */
     function _initialize() internal {
         assembly {
@@ -50,20 +54,20 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     }
 
     /**
-     * @notice Returns the token manager for this token
-     * @return address The token manager contract
+     * @notice Returns the token manager for this token.
+     * @return address The token manager contract.
      */
     function tokenManager() public view override(BaseInterchainToken, IInterchainToken) returns (address) {
         return tokenManager_;
     }
 
     /**
-     * @notice Setup function to initialize contract parameters
-     * @param tokenManagerAddress The address of the token manager of this token
-     * @param distributor The address of the token distributor
-     * @param tokenName The name of the token
-     * @param tokenSymbol The symbopl of the token
-     * @param tokenDecimals The decimals of the token
+     * @notice Setup function to initialize contract parameters.
+     * @param tokenManagerAddress The address of the token manager of this token.
+     * @param distributor The address of the token distributor.
+     * @param tokenName The name of the token.
+     * @param tokenSymbol The symbopl of the token.
+     * @param tokenDecimals The decimals of the token.
      */
     function init(
         address tokenManagerAddress,
@@ -91,20 +95,20 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     }
 
     /**
-     * @notice Function to mint new tokens
-     * Can only be called by the distributor address.
-     * @param account The address that will receive the minted tokens
-     * @param amount The amount of tokens to mint
+     * @notice Function to mint new tokens.
+     * @dev Can only be called by the distributor address.
+     * @param account The address that will receive the minted tokens.
+     * @param amount The amount of tokens to mint.
      */
     function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _mint(account, amount);
     }
 
     /**
-     * @notice Function to burn tokens
-     * Can only be called by the distributor address.
-     * @param account The address that will have its tokens burnt
-     * @param amount The amount of tokens to burn
+     * @notice Function to burn tokens.
+     * @dev Can only be called by the distributor address.
+     * @param account The address that will have its tokens burnt.
+     * @param amount The amount of tokens to burn.
      */
     function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
         _burn(account, amount);

@@ -14,7 +14,7 @@ import { Operatable } from '../utils/Operatable.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
 
 /**
- * @title The main functionality of TokenManagers.
+ * @title TokenManager
  * @notice This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
 abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, FlowLimit, Implementation {
@@ -31,7 +31,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice Constructs the TokenManager contract.
-     * @param interchainTokenService_ The address of the interchain token service
+     * @param interchainTokenService_ The address of the interchain token service.
      */
     constructor(address interchainTokenService_) {
         if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
@@ -40,7 +40,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @dev A modifier that allows only the interchain token service to execute the function.
+     * @notice A modifier that allows only the interchain token service to execute the function.
      */
     modifier onlyService() {
         if (msg.sender != address(interchainTokenService)) revert NotService(msg.sender);
@@ -48,7 +48,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @dev A modifier that allows only the token to execute the function.
+     * @notice A modifier that allows only the token to execute the function.
      */
     modifier onlyToken() {
         if (msg.sender != this.tokenAddress()) revert NotToken(msg.sender);
@@ -57,14 +57,15 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice Getter for the contract id.
+     * @return bytes32 The contract id.
      */
     function contractId() external pure override returns (bytes32) {
         return CONTRACT_ID;
     }
 
     /**
-     * @dev Reads the token address from the proxy
-     * @return tokenAddress_ The address of the token
+     * @dev Reads the token address from the proxy.
+     * @return tokenAddress_ The address of the token.
      */
     function tokenAddress() external view virtual returns (address tokenAddress_) {
         // Ask the proxy what the token address is.
@@ -74,6 +75,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     /**
      * @notice A function that returns the token id.
      * @dev This will only work when implementation is called by a proxy, which stores the tokenId as an immutable.
+     * @return bytes32 The interchain token ID.
      */
     function interchainTokenId() public view returns (bytes32) {
         // slither-disable-next-line var-read-using-this
@@ -82,16 +84,19 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice A function that should return the token address from the setup params.
+     * @param params The setup parameters.
+     * @return tokenAddress_ The token address.
      */
     function getTokenAddressFromParams(bytes calldata params) external pure returns (address tokenAddress_) {
         (, tokenAddress_) = abi.decode(params, (bytes, address));
     }
 
     /**
-     * @dev This function should only be called by the proxy, and only once from the proxy constructor
-     * @param params the parameters to be used to initialize the TokenManager. The exact format depends
-     * on the type of TokenManager used but the first 32 bytes are reserved for the address of the operator,
-     * stored as bytes (to be compatible with non-EVM chains)
+     * @notice Setup function for the TokenManager.
+     * @dev This function should only be called by the proxy, and only once from the proxy constructor.
+     * The exact format of params depends on the type of TokenManager used but the first 32 bytes are reserved
+     * for the address of the operator, stored as bytes (to be compatible with non-EVM chains)
+     * @param params The parameters to be used to initialize the TokenManager.
      */
     function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
         bytes memory operatorBytes = abi.decode(params, (bytes));
@@ -117,10 +122,10 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user.
-     * @param destinationChain the name of the chain to send tokens to.
-     * @param destinationAddress the address of the user to send tokens to.
-     * @param amount the amount of tokens to take from msg.sender.
-     * @param metadata any additional data to be sent with the transfer.
+     * @param destinationChain The name of the chain to send tokens to.
+     * @param destinationAddress The address on the destination chain to send tokens to.
+     * @param amount The amount of tokens to take from msg.sender.
+     * @param metadata Any additional data to be sent with the transfer.
      */
     function interchainTransfer(
         string calldata destinationChain,
@@ -147,10 +152,10 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice Calls the service to initiate an interchain transfer with data after taking the appropriate amount of tokens from the user.
-     * @param destinationChain the name of the chain to send tokens to.
-     * @param destinationAddress the address of the user to send tokens to.
-     * @param amount the amount of tokens to take from msg.sender.
-     * @param data the data to pass to the destination contract.
+     * @param destinationChain The name of the chain to send tokens to.
+     * @param destinationAddress The address on the destination chain to send tokens to.
+     * @param amount The amount of tokens to take from msg.sender.
+     * @param data The data to pass to the destination contract.
      */
     function callContractWithInterchainToken(
         string calldata destinationChain,
@@ -177,11 +182,11 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
-     * @param sender the address of the user paying for the interchain transfer.
-     * @param destinationChain the name of the chain to send tokens to.
-     * @param destinationAddress the address of the user to send tokens to.
-     * @param amount the amount of tokens to take from msg.sender.
-     * @param metadata any additional data to be sent with the transfer
+     * @param sender The address of the sender paying for the interchain transfer.
+     * @param destinationChain The name of the chain to send tokens to.
+     * @param destinationAddress  The address on the destination chain to send tokens to.
+     * @param amount The amount of tokens to take from msg.sender.
+     * @param metadata Any additional data to be sent with the transfer.
      */
     function transmitInterchainTransfer(
         address sender,
@@ -206,10 +211,11 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @notice This function gives token to a specified address. Can only be called by the service.
-     * @param destinationAddress the address to give tokens to.
-     * @param amount the amount of token to give.
-     * @return uint the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
+     * @notice This function gives token to a specified address.
+     * @dev Can only be called by the service.
+     * @param destinationAddress The address to give tokens to.
+     * @param amount The amount of tokens to give.
+     * @return uint256 The amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
         // rate limit the incoming amount from source
@@ -221,10 +227,11 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @notice This function gives token to a specified address. Can only be called by the service.
-     * @param sourceAddress the address to give tokens to.
-     * @param amount the amount of token to give.
-     * @return uint the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+     * @notice This function gives token to a specified address.
+     * @dev Can only be called by the service.
+     * @param sourceAddress The address to give tokens to.
+     * @param amount The amount of tokens to give.
+     * @return uint256 The amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
     function takeToken(address sourceAddress, uint256 amount) external onlyService returns (uint256) {
         amount = _takeToken(sourceAddress, amount);
@@ -236,7 +243,8 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @notice This function adds a flow limiter for this TokenManager. Can only be called by the operator.
+     * @notice This function adds a flow limiter for this TokenManager.
+     * @dev Can only be called by the operator.
      * @param flowLimiter the address of the new flow limiter.
      */
     function addFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
@@ -246,7 +254,8 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @notice This function removes a flow limiter for this TokenManager. Can only be called by the operator.
+     * @notice This function removes a flow limiter for this TokenManager.
+     * @dev Can only be called by the operator.
      * @param flowLimiter the address of an existing flow limiter.
      */
     function removeFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
@@ -256,8 +265,9 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @notice This function sets the flow limit for this TokenManager. Can only be called by the flow limiters.
-     * @param flowLimit_ the maximum difference between the tokens flowing in and/or out at any given interval of time (6h)
+     * @notice This function sets the flow limit for this TokenManager.
+     * @dev Can only be called by the flow limiters.
+     * @param flowLimit_ The maximum difference between the tokens flowing in and/or out at any given interval of time (6h).
      */
     function setFlowLimit(uint256 flowLimit_) external onlyRole(uint8(Roles.FLOW_LIMITER)) {
         _setFlowLimit(flowLimit_, interchainTokenId());
@@ -265,26 +275,26 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
 
     /**
      * @notice Transfers tokens from a specific address to this contract.
-     * Must be overridden in the inheriting contract.
-     * @param from The address from which the tokens will be sent
-     * @param amount The amount of tokens to receive
-     * @return uint amount of tokens received
+     * @dev Must be overridden in the inheriting contract.
+     * @param from The address from which the tokens will be sent.
+     * @param amount The amount of tokens to receive.
+     * @return uint256 The amount of tokens received.
      */
     function _takeToken(address from, uint256 amount) internal virtual returns (uint256);
 
     /**
      * @notice Transfers tokens from this contract to a specific address.
-     * Must be overridden in the inheriting contract.
-     * @param receiver The address to which the tokens will be sent
-     * @param amount The amount of tokens to send
-     * @return uint amount of tokens sent
+     * @dev Must be overridden in the inheriting contract.
+     * @param receiver The address to which the tokens will be sent.
+     * @param amount The amount of tokens to send.
+     * @return uint256 The amount of tokens sent.
      */
     function _giveToken(address receiver, uint256 amount) internal virtual returns (uint256);
 
     /**
-     * @dev Additional setup logic to perform
-     * Must be overridden in the inheriting contract.
-     * @param params The setup parameters
+     * @notice Additional setup logic to perform
+     * @dev Must be overridden in the inheriting contract.
+     * @param params The setup parameters.
      */
     function _setup(bytes calldata params) internal virtual {}
 }

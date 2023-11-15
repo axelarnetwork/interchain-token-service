@@ -55,6 +55,8 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
 
     /**
      * @notice Returns implementation type and token address.
+     * @return implementationType_ The implementation type.
+     * @return tokenAddress_ The token address.
      */
     function getImplementationTypeAndTokenAddress() external view returns (uint256 implementationType_, address tokenAddress_) {
         implementationType_ = implementationType;
