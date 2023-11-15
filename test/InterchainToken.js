@@ -1,7 +1,10 @@
 'use strict';
 
 const { ethers } = require('hardhat');
-const { getContractAt } = ethers;
+const {
+    constants: { AddressZero },
+    getContractAt,
+} = ethers;
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
@@ -51,6 +54,34 @@ describe('InterchainToken', () => {
                 (gasOptions) => implementation.init(tokenManagerAddress, distributor, tokenName, tokenSymbol, tokenDecimals, gasOptions),
                 implementation,
                 'AlreadyInitialized',
+            );
+        });
+
+        it('revert on init if token manager address is invalid', async () => {
+            const implementationAddress = await interchainTokenDeployer.implementationAddress();
+            const implementation = await getContractAt('InterchainToken', implementationAddress, owner);
+
+            const salt = getRandomBytes32();
+            const distributor = owner.address;
+            await expectRevert(
+                (gasOptions) =>
+                    interchainTokenDeployer.deployInterchainToken(salt, AddressZero, distributor, name, symbol, decimals, gasOptions),
+                implementation,
+                'TokenManagerAddressZero',
+            );
+        });
+
+        it('revert on init if token manager address is invalid', async () => {
+            const implementationAddress = await interchainTokenDeployer.implementationAddress();
+            const implementation = await getContractAt('InterchainToken', implementationAddress, owner);
+
+            const salt = getRandomBytes32();
+            const distributor = owner.address;
+            await expectRevert(
+                (gasOptions) =>
+                    interchainTokenDeployer.deployInterchainToken(salt, distributor, distributor, '', symbol, decimals, gasOptions),
+                implementation,
+                'TokenNameEmpty',
             );
         });
     });

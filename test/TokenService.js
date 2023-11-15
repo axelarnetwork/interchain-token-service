@@ -80,12 +80,31 @@ describe('Interchain Token Service', () => {
         tokenDecimals,
         mintAmount = 0,
         skipApprove = false,
+        type = 'normal',
     ) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
-        const token = await deployContract(wallet, 'TestFeeOnTransferToken', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
+        let token;
+
+        if (type === 'free') {
+            token = await deployContract(wallet, 'TestFeeOnTransferTokenNoFee', [
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                tokenManager.address,
+            ]);
+        } else if (type === 'reentrant') {
+            token = await deployContract(wallet, 'TestFeeOnTransferTokenInvalid', [
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                tokenManager.address,
+            ]);
+        } else {
+            token = await deployContract(wallet, 'TestFeeOnTransferToken', [tokenName, tokenSymbol, tokenDecimals, tokenManager.address]);
+        }
 
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
@@ -812,6 +831,12 @@ describe('Interchain Token Service', () => {
 
             const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
+
+            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
+
+            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
+            expect(implementation).to.eq(LOCK_UNLOCK);
+            expect(tokenAddressFromProxy).to.eq(token.address);
         });
 
         it('Should deploy a mint/burn token manager', async () => {
@@ -840,6 +865,12 @@ describe('Interchain Token Service', () => {
 
             const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
+
+            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
+
+            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
+            expect(implementation).to.eq(MINT_BURN);
+            expect(tokenAddressFromProxy).to.eq(token.address);
         });
 
         it('Should deploy a mint/burn_from token manager', async () => {
@@ -870,6 +901,12 @@ describe('Interchain Token Service', () => {
 
             const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
+
+            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
+
+            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
+            expect(implementation).to.eq(MINT_BURN_FROM);
+            expect(tokenAddressFromProxy).to.eq(token.address);
         });
 
         it('Should deploy a lock/unlock with fee on transfer token manager', async () => {
@@ -900,6 +937,12 @@ describe('Interchain Token Service', () => {
 
             const tokenAddress = await service.validTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
+
+            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
+
+            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
+            expect(implementation).to.eq(LOCK_UNLOCK_FEE_ON_TRANSFER);
+            expect(tokenAddressFromProxy).to.eq(token.address);
         });
 
         it('Should revert when deploying a custom token manager twice', async () => {
@@ -1206,6 +1249,51 @@ describe('Interchain Token Service', () => {
             });
         }
 
+        it(`Should be able to initiate an interchain token transfer for lockUnlockFee with a normal ERC20 token`, async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                `Test Token lockUnlockFee`,
+                'TT',
+                12,
+                amount,
+                false,
+                'free',
+            );
+
+            const sendAmount = amount;
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, sendAmount],
+            );
+            const payloadHash = keccak256(payload);
+
+            const transferToAddress = tokenManager.address;
+
+            await expect(tokenManager.interchainTransfer(destinationChain, destAddress, amount, '0x', { value: gasValue }))
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
+                .to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, destinationChain, destAddress, sendAmount);
+        });
+
+        it(`Should revert on initiating an interchain token transfer for lockUnlockFee with reentrant token`, async () => {
+            const [, tokenManager] = await deployFunctions.lockUnlockFee(`Test Token lockUnlockFee`, 'TT', 12, amount, false, 'reentrant');
+
+            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManager.address, wallet);
+            const implementationAddress = await tokenManagerProxy.implementation();
+            const implementation = await getContractAt('TokenManagerLockUnlockFee', implementationAddress, wallet);
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenManager.interchainTransfer(destinationChain, destAddress, amount, '0x', { ...gasOptions, value: gasValue }),
+                implementation,
+                'TokenTransferFailed',
+            );
+        });
+
         it(`Should revert on initiate interchain token transfer when service is paused`, async () => {
             const [, tokenManager] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
 
@@ -1367,6 +1455,30 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenManager.address, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(tokenId, sourceChain, hexlify(wallet.address), destAddress, amount - 10);
+        });
+
+        it('Should be able to receive lock/unlock with fee on transfer token with normal ERC20 token', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                `Test Token Lock Unlock`,
+                'TT',
+                12,
+                amount,
+                false,
+                'free',
+            );
+            (await await token.transfer(tokenManager.address, amount)).wait();
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(tokenManager.address, destAddress, amount)
+                .and.to.emit(service, 'InterchainTransferReceived')
+                .withArgs(tokenId, sourceChain, hexlify(wallet.address), destAddress, amount);
         });
     });
 
