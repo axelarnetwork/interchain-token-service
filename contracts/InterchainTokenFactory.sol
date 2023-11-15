@@ -66,7 +66,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     /**
-     * @notice Calculates the salt for an canonical interchain token.
+     * @notice Calculates the salt for a canonical interchain token.
      * @param chainNameHash_ The hash of the chain name.
      * @param tokenAddress The address of the token.
      * @return salt The calculated salt for the interchain token.

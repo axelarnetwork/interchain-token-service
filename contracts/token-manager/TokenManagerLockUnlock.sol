@@ -51,7 +51,7 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
      * @notice Transfers a specified amount of tokens from a specified address to this contract.
      * @param from The address to transfer tokens from.
      * @param amount The amount of tokens to transfer.
-     * @return uint The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
+     * @return uint256 The actual amount of tokens transferred. This allows support for fee-on-transfer tokens.
      */
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
         IERC20 token = IERC20(this.tokenAddress());
@@ -65,7 +65,7 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
      * @notice Transfers a specified amount of tokens from this contract to a specified address.
      * @param to The address to transfer tokens to.
      * @param amount The amount of tokens to transfer.
-     * @return uint The actual amount of tokens transferred.
+     * @return uint256 The actual amount of tokens transferred.
      */
     function _giveToken(address to, uint256 amount) internal override returns (uint256) {
         IERC20 token = IERC20(this.tokenAddress());
