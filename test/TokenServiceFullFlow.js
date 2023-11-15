@@ -4,7 +4,7 @@ const chai = require('chai');
 const { expect } = chai;
 const { ethers } = require('hardhat');
 const { AddressZero } = ethers.constants;
-const { defaultAbiCoder, keccak256, hexlify, arrayify } = ethers.utils;
+const { defaultAbiCoder, keccak256, arrayify } = ethers.utils;
 const { getContractAt, Wallet } = ethers;
 
 const { getRandomBytes32, expectRevert } = require('./utils');
