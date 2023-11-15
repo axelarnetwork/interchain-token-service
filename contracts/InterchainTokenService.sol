@@ -471,7 +471,9 @@ contract InterchainTokenService is
         bytes calldata data
     ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
+
         amount = tokenManager.takeToken(msg.sender, amount);
+
         _transmitInterchainTransfer(
             tokenId,
             msg.sender,
