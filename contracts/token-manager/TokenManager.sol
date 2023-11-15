@@ -25,6 +25,11 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     bytes32 private constant CONTRACT_ID = keccak256('token-manager');
 
     /**
+     * @dev Latest version of metadata that's supported.
+     */
+    uint32 private constant LATEST_METADATA_VERSION = 0;
+
+    /**
      * @notice Constructs the TokenManager contract.
      * @param interchainTokenService_ The address of the interchain token service
      */
@@ -160,14 +165,13 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         // rate limit the outgoing amount to destination
         _addFlowOut(amount);
 
-        uint32 version = 0;
         interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
             interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
             amount,
-            abi.encodePacked(version, data)
+            abi.encodePacked(LATEST_METADATA_VERSION, data)
         );
     }
 
@@ -205,12 +209,14 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      * @notice This function gives token to a specified address. Can only be called by the service.
      * @param destinationAddress the address to give tokens to.
      * @param amount the amount of token to give.
-     * @return the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
+     * @return uint the amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
     function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
         // rate limit the incoming amount from source
         _addFlowIn(amount);
+
         amount = _giveToken(destinationAddress, amount);
+
         return amount;
     }
 
@@ -218,12 +224,14 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      * @notice This function gives token to a specified address. Can only be called by the service.
      * @param sourceAddress the address to give tokens to.
      * @param amount the amount of token to give.
-     * @return the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
+     * @return uint the amount of token actually given, which will onle be differen than `amount` in cases where the token takes some on-transfer fee.
      */
     function takeToken(address sourceAddress, uint256 amount) external onlyService returns (uint256) {
         amount = _takeToken(sourceAddress, amount);
+
         // rate limit the outgoing amount to destination
         _addFlowOut(amount);
+
         return amount;
     }
 
