@@ -32,7 +32,7 @@ interface IInterchainTokenStandard {
      * @param destinationChain The string representation of the destination chain.
      * @param recipient The bytes representation of the address of the recipient.
      * @param amount The amount of token to be transferred.
-     * @param metadata Either empty, to just facilitate a cross-chain transfer, or the data to be passed to a cross-chain contract call and transfer.
+     * @param metadata Either empty, to just facilitate an interchain transfer, or the data to be passed to an interchain contract call and transfer.
      */
     function interchainTransferFrom(
         address sender,

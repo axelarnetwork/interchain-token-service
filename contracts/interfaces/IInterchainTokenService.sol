@@ -159,7 +159,7 @@ interface IInterchainTokenService is
     ) external payable returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys and registers a interchain token on a remote chain.
+     * @notice Deploys and registers an interchain token on a remote chain.
      * @param salt The salt used for token deployment.
      * @param destinationChain The name of the destination chain. Use '' for this chain.
      * @param name The name of the interchain tokens.

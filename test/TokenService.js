@@ -534,7 +534,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
-        it('Should register a interchain token', async () => {
+        it('Should register an interchain token', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
@@ -554,7 +554,7 @@ describe('Interchain Token Service', () => {
             await getContractAt('InterchainToken', tokenAddress, wallet);
         });
 
-        it('Should revert when registering a interchain token when service is paused', async () => {
+        it('Should revert when registering an interchain token when service is paused', async () => {
             const salt = getRandomBytes32();
 
             txPaused = await service.setPauseStatus(true);
@@ -571,7 +571,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
-        it('Should revert when registering a interchain token as a lock/unlock for a second time', async () => {
+        it('Should revert when registering an interchain token as a lock/unlock for a second time', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
