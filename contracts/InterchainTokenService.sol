@@ -276,7 +276,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to deploy remote custom TokenManagers.
-     * @dev At least the `gasValue` amount specified must be passed to the function call. `gasValue` exists because this function can be
+     * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
      * part of a multicall involving multiple functions that could make remote contract calls.
      * @param salt The salt to be used during deployment.
      * @param destinationChain The name of the chain to deploy the TokenManager and standardized token to.
@@ -309,7 +309,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to deploy an interchain token alongside a TokenManager in another chain.
-     * @dev At least the `gasValue` amount specified must be passed to the function call. `gasValue` exists because this function can be
+     * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
      * part of a multicall involving multiple functions that could make remote contract calls. If the `distributor` parameter is empty bytes then
      * a mint/burn TokenManager is used, otherwise a lock/unlock TokenManager is used.
      * @param salt The salt to be used during deployment.
@@ -375,7 +375,6 @@ contract InterchainTokenService is
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
      * @param payload The encoded data payload for the transaction.
      */
-
     function expressExecute(
         bytes32 commandId,
         string calldata sourceChain,
