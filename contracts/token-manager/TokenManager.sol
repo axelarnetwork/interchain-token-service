@@ -64,12 +64,14 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @dev Reads the token address from the proxy.
+     * @notice Reads the token address from the proxy.
+     * @dev This function is not supported when directly called on the implementation. It
+     * must be called via TokenManagerProxy.
      * @return tokenAddress_ The address of the token.
      */
-    function tokenAddress() external view virtual returns (address tokenAddress_) {
+    function tokenAddress() external view virtual returns (address) {
         // Ask the proxy what the token address is.
-        tokenAddress_ = this.tokenAddress();
+        revert NotSupported();
     }
 
     /**
@@ -77,9 +79,9 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      * @dev This will only work when implementation is called by a proxy, which stores the tokenId as an immutable.
      * @return bytes32 The interchain token ID.
      */
-    function interchainTokenId() public view returns (bytes32) {
+    function interchainTokenId() public pure returns (bytes32) {
         // slither-disable-next-line var-read-using-this
-        return this.interchainTokenId();
+        revert NotSupported();
     }
 
     /**
@@ -141,7 +143,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         _addFlowOut(amount);
 
         interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
-            interchainTokenId(),
+            this.interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -171,7 +173,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         _addFlowOut(amount);
 
         interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
-            interchainTokenId(),
+            this.interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -201,7 +203,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         _addFlowOut(amount);
 
         interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
-            interchainTokenId(),
+            this.interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
@@ -270,7 +272,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      * @param flowLimit_ The maximum difference between the tokens flowing in and/or out at any given interval of time (6h).
      */
     function setFlowLimit(uint256 flowLimit_) external onlyRole(uint8(Roles.FLOW_LIMITER)) {
-        _setFlowLimit(flowLimit_, interchainTokenId());
+        _setFlowLimit(flowLimit_, this.interchainTokenId());
     }
 
     /**

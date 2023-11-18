@@ -805,6 +805,33 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
+        it('Should revert on getting token address and ID when called directly on the implementation', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const salt = getRandomBytes32();
+            const tokenId = await service.interchainTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                tokenManagerAddress,
+            ]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+            const tx = service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0);
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
+
+            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
+            const implementationAddress = await tokenManagerProxy.implementation();
+            const implementation = await getContractAt('TokenManager', implementationAddress, wallet);
+
+            await expectRevert((gasOptions) => implementation.tokenAddress(gasOptions), implementation, 'NotSupported');
+            await expectRevert((gasOptions) => implementation.interchainTokenId(gasOptions), implementation, 'NotSupported');
+        });
+
         it('Should deploy a lock/unlock token manager', async () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
