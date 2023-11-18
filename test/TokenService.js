@@ -1367,7 +1367,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert on execute if remote address validation fails', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
-            (await await token.transfer(tokenManager.address, amount)).wait();
+            (await token.transfer(tokenManager.address, amount)).wait();
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
@@ -1384,7 +1384,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert on execute if the service is paused', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
-            (await await token.transfer(tokenManager.address, amount)).wait();
+            (await token.transfer(tokenManager.address, amount)).wait();
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
@@ -1407,7 +1407,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert on execute with invalid messageType', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
-            (await await token.transfer(tokenManager.address, amount)).wait();
+            (await token.transfer(tokenManager.address, amount)).wait();
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'uint256'],
@@ -1436,7 +1436,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive lock/unlock token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
-            (await await token.transfer(tokenManager.address, amount)).wait();
+            (await token.transfer(tokenManager.address, amount)).wait();
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
@@ -1469,7 +1469,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(`Test Token Lock Unlock`, 'TT', 12, amount + 10);
-            (await await token.transfer(tokenManager.address, amount + 10)).wait();
+            (await token.transfer(tokenManager.address, amount + 10)).wait();
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
@@ -1493,7 +1493,7 @@ describe('Interchain Token Service', () => {
                 false,
                 'free',
             );
-            (await await token.transfer(tokenManager.address, amount)).wait();
+            (await token.transfer(tokenManager.address, amount)).wait();
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
@@ -1658,7 +1658,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive lock/unlock token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
-            (await await token.transfer(tokenManager.address, amount)).wait();
+            (await token.transfer(tokenManager.address, amount)).wait();
             const msg = `lock/unlock`;
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
             const payload = defaultAbiCoder.encode(
@@ -1706,7 +1706,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(`Test Token Lock Unlock`, 'TT', 12, amount + 10);
-            (await await token.transfer(tokenManager.address, amount + 10)).wait();
+            (await token.transfer(tokenManager.address, amount + 10)).wait();
             const msg = `lock/unlock`;
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
             const payload = defaultAbiCoder.encode(
@@ -1730,7 +1730,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert if execute with interchain token fails', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
-            (await await token.transfer(tokenManager.address, amount)).wait();
+            (await token.transfer(tokenManager.address, amount)).wait();
             const msg = `lock/unlock`;
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
             const payload = defaultAbiCoder.encode(

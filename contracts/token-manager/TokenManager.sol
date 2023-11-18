@@ -66,11 +66,10 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     /**
      * @notice Reads the token address from the proxy.
      * @dev This function is not supported when directly called on the implementation. It
-     * must be called via TokenManagerProxy.
+     * must be called by the proxy.
      * @return tokenAddress_ The address of the token.
      */
     function tokenAddress() external view virtual returns (address) {
-        // Ask the proxy what the token address is.
         revert NotSupported();
     }
 
@@ -80,7 +79,6 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      * @return bytes32 The interchain token ID.
      */
     function interchainTokenId() public pure returns (bytes32) {
-        // slither-disable-next-line var-read-using-this
         revert NotSupported();
     }
 
@@ -142,6 +140,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         // rate limit the outgoing amount to destination
         _addFlowOut(amount);
 
+        // slither-disable-next-line var-read-using-this
         interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
             this.interchainTokenId(),
             sender,
@@ -172,6 +171,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         // rate limit the outgoing amount to destination
         _addFlowOut(amount);
 
+        // slither-disable-next-line var-read-using-this
         interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
             this.interchainTokenId(),
             sender,
@@ -202,6 +202,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         // rate limit the outgoing amount to destination
         _addFlowOut(amount);
 
+        // slither-disable-next-line var-read-using-this
         interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
             this.interchainTokenId(),
             sender,
@@ -272,6 +273,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      * @param flowLimit_ The maximum difference between the tokens flowing in and/or out at any given interval of time (6h).
      */
     function setFlowLimit(uint256 flowLimit_) external onlyRole(uint8(Roles.FLOW_LIMITER)) {
+        // slither-disable-next-line var-read-using-this
         _setFlowLimit(flowLimit_, this.interchainTokenId());
     }
 
