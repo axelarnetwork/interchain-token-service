@@ -62,7 +62,7 @@ contract TestFeeOnTransferToken is BaseInterchainToken, Distributable, IERC20Min
     }
 
     // Always transfer 10 less base tokens.
-    function _transfer(address sender, address recipient, uint256 amount) internal override {
+    function _transfer(address sender, address recipient, uint256 amount) internal virtual override {
         if (sender == address(0) || recipient == address(0)) revert InvalidAccount();
 
         balanceOf[sender] -= amount;
