@@ -548,11 +548,6 @@ describe('Interchain Token Service', () => {
         const tokenDecimals = 13;
         let txPaused;
 
-        beforeEach(async () => {
-            txPaused = await service.setPauseStatus(false);
-            await txPaused.wait();
-        });
-
         it('Should register an interchain token', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
@@ -624,12 +619,6 @@ describe('Interchain Token Service', () => {
         const distributor = '0x12345678';
         const gasValue = 1234;
         let salt;
-        let txPaused;
-
-        beforeEach(async () => {
-            txPaused = await service.setPauseStatus(false);
-            await txPaused.wait();
-        });
 
         it('Should initialize a remote interchain token deployment', async () => {
             salt = getRandomBytes32();
@@ -700,15 +689,9 @@ describe('Interchain Token Service', () => {
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
         let sourceAddress;
-        let txPaused;
 
         before(async () => {
             sourceAddress = service.address;
-        });
-
-        beforeEach(async () => {
-            txPaused = await service.setPauseStatus(false);
-            await txPaused.wait();
         });
 
         it('Should revert on receiving a remote interchain token depoloyment if not approved by the gateway', async () => {
@@ -798,13 +781,6 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Custom Token Manager Deployment', () => {
-        let txPaused;
-
-        beforeEach(async () => {
-            txPaused = await service.setPauseStatus(false);
-            await txPaused.wait();
-        });
-
         it('Should revert on getting token address and ID when called directly on the implementation', async () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
@@ -1026,13 +1002,6 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Initialize remote custom token manager deployment', () => {
-        let txPaused;
-
-        beforeEach(async () => {
-            txPaused = await service.setPauseStatus(false);
-            await txPaused.wait();
-        });
-
         it('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
 
@@ -1100,13 +1069,6 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Initialize remote interchain token and manager deployment', () => {
-        let txPaused;
-
-        beforeEach(async () => {
-            txPaused = await service.setPauseStatus(false);
-            await txPaused.wait();
-        });
-
         it('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
 
