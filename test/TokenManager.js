@@ -36,7 +36,7 @@ describe('Token Manager', () => {
     it('Should return the correct contract id', async () => {
         const expectedContractid = keccak256(toUtf8Bytes('token-manager'));
         const contractId = await TestTokenManager.contractId();
-        expect(contractId).to.eq(expectedContractid);
+        await expect(contractId).to.eq(expectedContractid);
     });
 
     it('Should revert on setup if not called by the proxy', async () => {
@@ -119,18 +119,18 @@ describe('Token Manager', () => {
     it('Should return the correct parameters for lock/unlock token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
         const params = await tokenManagerLockUnlock.params(toUtf8Bytes(owner.address), token.address);
-        expect(expectedParams).to.eq(params);
+        await expect(expectedParams).to.eq(params);
     });
 
     it('Should return the correct parameters for mint/burn token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
         const params = await tokenManagerMintBurn.params(toUtf8Bytes(owner.address), token.address);
-        expect(expectedParams).to.eq(params);
+        await expect(expectedParams).to.eq(params);
     });
 
     it('Should return the correct parameters for fee on transfer token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
         const params = await tokenManagerLockUnlockFeeOnTransfer.params(toUtf8Bytes(owner.address), token.address);
-        expect(expectedParams).to.eq(params);
+        await expect(expectedParams).to.eq(params);
     });
 });

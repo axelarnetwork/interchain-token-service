@@ -87,9 +87,9 @@ describe('ERC20 Permit', () => {
             .to.emit(token, 'Approval')
             .withArgs(owner.address, user.address, allowance);
 
-        expect(await token.nonces(owner.address)).to.equal(nonce.add(1));
+        await expect(await token.nonces(owner.address)).to.equal(nonce.add(1));
 
-        expect(await token.allowance(owner.address, user.address)).to.equal(allowance);
+        await expect(await token.allowance(owner.address, user.address)).to.equal(allowance);
     });
 
     it('should revert if permit is expired', async () => {

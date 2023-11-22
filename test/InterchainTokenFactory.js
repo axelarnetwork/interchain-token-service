@@ -311,8 +311,8 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenFactory.address, distributor, mintAmount);
 
-            expect(await token.balanceOf(tokenFactory.address)).to.equal(0);
-            expect(await token.balanceOf(distributor)).to.equal(mintAmount);
+            await expect(await token.balanceOf(tokenFactory.address)).to.equal(0);
+            await expect(await token.balanceOf(distributor)).to.equal(mintAmount);
         });
 
         it('Should initiate a remote interchain token deployment with the same distributor', async () => {
@@ -346,7 +346,6 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, wallet.address.toLowerCase()],
@@ -418,7 +417,6 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],

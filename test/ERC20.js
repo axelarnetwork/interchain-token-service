@@ -44,21 +44,21 @@ describe('ERC20', () => {
 
     it('should increase and decrease allowance', async () => {
         const initialAllowance = await token.allowance(user.address, owner.address);
-        expect(initialAllowance).to.eq(0);
+        await expect(initialAllowance).to.eq(0);
 
         await expect(token.connect(user).increaseAllowance(owner.address, MaxUint256))
             .to.emit(token, 'Approval')
             .withArgs(user.address, owner.address, MaxUint256);
 
         const increasedAllowance = await token.allowance(user.address, owner.address);
-        expect(increasedAllowance).to.eq(MaxUint256);
+        await expect(increasedAllowance).to.eq(MaxUint256);
 
         await expect(token.connect(user).decreaseAllowance(owner.address, MaxUint256))
             .to.emit(token, 'Approval')
             .withArgs(user.address, owner.address, 0);
 
         const finalAllowance = await token.allowance(user.address, owner.address);
-        expect(finalAllowance).to.eq(0);
+        await expect(finalAllowance).to.eq(0);
     });
 
     it('should revert on approve with invalid owner or sender', async () => {
@@ -77,14 +77,14 @@ describe('ERC20', () => {
 
     it('should revert on transfer to invalid address', async () => {
         const initialAllowance = await token.allowance(user.address, owner.address);
-        expect(initialAllowance).to.eq(0);
+        await expect(initialAllowance).to.eq(0);
 
         await expect(token.connect(user).increaseAllowance(owner.address, MaxUint256))
             .to.emit(token, 'Approval')
             .withArgs(user.address, owner.address, MaxUint256);
 
         const increasedAllowance = await token.allowance(user.address, owner.address);
-        expect(increasedAllowance).to.eq(MaxUint256);
+        await expect(increasedAllowance).to.eq(MaxUint256);
 
         const amount = 100;
 

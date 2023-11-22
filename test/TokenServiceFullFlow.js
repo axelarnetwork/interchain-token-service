@@ -290,9 +290,9 @@ describe('Interchain Token Service Full Flow', () => {
                 .withArgs(factory.address, AddressZero, mintAmount);
 
             // Only tokens minted for the local chain should be left, remaining should be burned.
-            expect(await token.balanceOf(wallet.address)).to.equal(mintAmount);
+            await expect(await token.balanceOf(wallet.address)).to.equal(mintAmount);
 
-            expect(await service.validTokenManagerAddress(tokenId)).to.equal(expectedTokenManagerAddress);
+            await expect(await service.validTokenManagerAddress(tokenId)).to.equal(expectedTokenManagerAddress);
         });
 
         describe('Interchain transfer', () => {
