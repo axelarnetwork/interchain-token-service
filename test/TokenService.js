@@ -816,9 +816,7 @@ describe('Interchain Token Service', () => {
 
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            await expect(
-                reportGas(service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0), 'Call deployTokenManager on source chain'),
-            )
+            await expect(reportGas(service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0), 'Call deployTokenManager on source chain'))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
 
