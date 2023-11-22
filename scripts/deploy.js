@@ -3,8 +3,7 @@ const {
     Contract,
     utils: { defaultAbiCoder },
 } = ethers;
-const InterchainTokenServiceProxy = require('../artifacts/contracts/proxies/InterchainTokenServiceProxy.sol/InterchainTokenServiceProxy.json');
-const InterchainTokenFactoryProxy = require('../artifacts/contracts/proxies/InterchainTokenFactoryProxy.sol/InterchainTokenFactoryProxy.json');
+const Proxy = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Proxy.sol/Proxy.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 
@@ -51,7 +50,7 @@ async function deployInterchainTokenService(
         chainName,
         tokenManagerImplementations,
     ]);
-    const proxy = await create3DeployContract(create3DeployerAddress, wallet, InterchainTokenServiceProxy, deploymentKey, [
+    const proxy = await create3DeployContract(create3DeployerAddress, wallet, Proxy, deploymentKey, [
         implementation.address,
         ownerAddress,
         defaultAbiCoder.encode(
@@ -65,9 +64,10 @@ async function deployInterchainTokenService(
 
 async function deployInterchainTokenFactory(wallet, create3DeployerAddress, interchainTokenServiceAddress, deploymentKey) {
     const implementation = await deployContract(wallet, 'InterchainTokenFactory', [interchainTokenServiceAddress]);
-    const proxy = await create3DeployContract(create3DeployerAddress, wallet, InterchainTokenFactoryProxy, deploymentKey, [
+    const proxy = await create3DeployContract(create3DeployerAddress, wallet, Proxy, deploymentKey, [
         implementation.address,
         wallet.address,
+        '0x',
     ]);
     const factory = new Contract(proxy.address, implementation.interface, wallet);
     return factory;
