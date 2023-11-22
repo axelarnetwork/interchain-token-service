@@ -21,6 +21,7 @@ interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplemen
     error ZeroAddress();
     error AlreadyFlowLimiter(address flowLimiter);
     error NotFlowLimiter(address flowLimiter);
+    error NotSupported();
 
     /**
      * @notice Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user.

@@ -50,7 +50,7 @@ describe('Token Manager', () => {
         const MINT_BURN = 0;
 
         const params = defaultAbiCoder.encode(['bytes', 'address'], [owner.address, token.address]);
-        await await service.deployTokenManager(salt, '', MINT_BURN, params, 0);
+        await service.deployTokenManager(salt, '', MINT_BURN, params, 0);
         const tokenManagerAddress = await service.tokenManagerAddress(await service.interchainTokenId(owner.address, salt));
         const tokenManager = await getContractAt('ITokenManager', tokenManagerAddress, owner);
 

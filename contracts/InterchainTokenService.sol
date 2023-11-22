@@ -230,12 +230,10 @@ contract InterchainTokenService is
      * @return tokenManagerAddress The address of the TokenManager implementation.
      */
     function tokenManagerImplementation(uint256 tokenManagerType) external view returns (address) {
-        if (tokenManagerType > uint256(type(TokenManagerType).max)) revert InvalidImplementation();
-
-        if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN) return implementationMintBurn;
-        if (TokenManagerType(tokenManagerType) == TokenManagerType.MINT_BURN_FROM) return implementationMintBurnFrom;
-        if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK) return implementationLockUnlock;
-        if (TokenManagerType(tokenManagerType) == TokenManagerType.LOCK_UNLOCK_FEE) return implementationLockUnlockFee;
+        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) return implementationMintBurn;
+        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) return implementationMintBurnFrom;
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) return implementationLockUnlock;
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) return implementationLockUnlockFee;
 
         revert InvalidImplementation();
     }

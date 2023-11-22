@@ -95,6 +95,18 @@ describe('ERC20', () => {
         );
     });
 
+    it('should revert on transfer from invalid address', async () => {
+        const testERC20 = await deployContract(owner, 'TestERC20');
+
+        const amount = 100;
+
+        await expectRevert(
+            (gasOptions) => testERC20.connect(owner).transferFromWithoutApprove(AddressZero, owner.address, amount, gasOptions),
+            testERC20,
+            'InvalidAccount',
+        );
+    });
+
     it('should revert mint or burn to invalid address', async () => {
         const amount = 100;
         await expectRevert((gasOptions) => token.mint(AddressZero, amount, gasOptions), token, 'InvalidAccount');
