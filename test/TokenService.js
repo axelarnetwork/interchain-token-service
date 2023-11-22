@@ -12,7 +12,7 @@ const { Wallet } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
-const { getRandomBytes32, expectRevert } = require('./utils');
+const { getRandomBytes32, expectRevert, reportGas } = require('./utils');
 const {
     deployAll,
     deployContract,
@@ -555,14 +555,16 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            const tx = await service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0);
-            await expect(tx)
+            await expect(
+                reportGas(
+                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0),
+                    'Call deployInterchainToken on source chain',
+                ),
+            )
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
-
-            console.log('deployInterchainToken on the source chain gas:', (await tx.wait()).gasUsed.toNumber());
 
             const tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
@@ -638,27 +640,20 @@ describe('Interchain Token Service', () => {
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
             );
 
-            const tx = await service.deployInterchainToken(
-                salt,
-                destinationChain,
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                distributor,
-                gasValue,
-                {
-                    value: gasValue,
-                },
-            );
-            await expect(tx)
+            await expect(
+                reportGas(
+                    service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, gasValue, {
+                        value: gasValue,
+                    }),
+                    'Send deployInterchainToken to remote chain',
+                ),
+            )
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
-
-            console.log('Send deployInterchainToken to remote chain gas:', (await tx.wait()).gasUsed.toNumber());
         });
 
         it('Should revert on remote interchain token deployment if destination chain is not trusted', async () => {
@@ -740,15 +735,13 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            const tx = await service.execute(commandId, sourceChain, sourceAddress, payload);
-            await expect(tx)
+            await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_INTERCHAIN_TOKEN'))
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, distributor, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
-            console.log('Receive GMP DEPLOY_INTERCHAIN_TOKEN gas:', (await tx.wait()).gasUsed.toNumber());
+            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
@@ -821,19 +814,21 @@ describe('Interchain Token Service', () => {
             ]);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
-            const tx = await service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
 
-            console.log('deployTokenManager on the source chain gas:', (await tx.wait()).gasUsed.toNumber());
+            await expect(
+                reportGas(service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0), 'Call deployTokenManager on source chain'),
+            )
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
 
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
+            await expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
-            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
+            await expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
             const tokenAddress = await service.validTokenAddress(tokenId);
-            expect(tokenAddress).to.eq(token.address);
+            await expect(tokenAddress).to.eq(token.address);
 
             const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
 
@@ -1024,16 +1019,18 @@ describe('Interchain Token Service', () => {
                 [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, type, params],
             );
 
-            const tx = await service.deployTokenManager(salt, destinationChain, type, params, gasValue, { value: gasValue });
-            await expect(tx)
+            await expect(
+                reportGas(
+                    service.deployTokenManager(salt, destinationChain, type, params, gasValue, { value: gasValue }),
+                    'Send deployTokenManager to remote chain',
+                ),
+            )
                 .to.emit(service, 'TokenManagerDeploymentStarted')
                 .withArgs(tokenId, destinationChain, type, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
-
-            console.log('Send custom deployTokenManager to remote chain gas:', (await tx.wait()).gasUsed.toNumber());
         });
 
         it('Should revert on a remote custom token manager deployment if the token manager does does not exist', async () => {
@@ -1166,11 +1163,9 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            const tx = await service.execute(commandId, sourceChain, sourceAddress, payload);
-
-            await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
-
-            console.log('Receive GMP DEPLOY_TOKEN_MANAGER gas:', (await tx.wait()).gasUsed.toNumber());
+            await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
 
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
@@ -1232,10 +1227,14 @@ describe('Interchain Token Service', () => {
                     await token.approve(tokenManager.address, sendAmount).then((tx) => tx.wait());
                 }
 
-                const tx = await tokenManager.interchainTransfer(destinationChain, destAddress, amount, '0x', {
-                    value: gasValue,
-                });
-                await expect(tx)
+                await expect(
+                    reportGas(
+                        tokenManager.interchainTransfer(destinationChain, destAddress, amount, '0x', {
+                            value: gasValue,
+                        }),
+                        `Call tokenManager.interchainTransfer ${type}`,
+                    ),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -1244,8 +1243,6 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount);
-
-                if (type === 'mintBurn') console.log('Send tokenManager.interchainTransfer gas:', (await tx.wait()).gasUsed.toNumber());
             });
         }
 
@@ -1417,14 +1414,13 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            const tx = await service.execute(commandId, sourceChain, sourceAddress, payload);
-            await expect(tx)
+            await expect(
+                reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP INTERCHAIN_TRANSFER lock/unlock'),
+            )
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(tokenId, sourceChain, hexlify(wallet.address), destAddress, amount);
-
-            console.log('Receive GMP INTERCHAIN_TRANSFER lock/unlock gas:', (await tx.wait()).gasUsed.toNumber());
         });
 
         it('Should be able to receive mint/burn token', async () => {
@@ -1436,14 +1432,13 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            const tx = await service.execute(commandId, sourceChain, sourceAddress, payload);
-            await expect(tx)
+            await expect(
+                reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP INTERCHAIN_TRANSFER mint/burn'),
+            )
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(tokenId, sourceChain, hexlify(wallet.address), destAddress, amount);
-
-            console.log('Receive GMP INTERCHAIN_TRANSFER mint/burn gas:', (await tx.wait()).gasUsed.toNumber());
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
@@ -1515,10 +1510,14 @@ describe('Interchain Token Service', () => {
                     transferToAddress = tokenManager.address;
                 }
 
-                const tx = await tokenManager.callContractWithInterchainToken(destinationChain, destAddress, amount, data, {
-                    value: gasValue,
-                });
-                await expect(tx)
+                await expect(
+                    reportGas(
+                        tokenManager.callContractWithInterchainToken(destinationChain, destAddress, amount, data, {
+                            value: gasValue,
+                        }),
+                        `Call tokenManager.callContractWithInterchainToken ${type}`,
+                    ),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -1527,9 +1526,6 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransferWithData')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, data);
-
-                if (type === 'mintBurn')
-                    console.log('tokenManager.callContractWithInterchainToken mint/burn gas:', (await tx.wait()).gasUsed.toNumber());
             });
         }
 
@@ -1550,17 +1546,18 @@ describe('Interchain Token Service', () => {
                     transferToAddress = tokenManager.address;
                 }
 
-                const tx = await service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata);
-                await expect(tx)
-                    .and.to.emit(token, 'Transfer')
+                await expect(
+                    reportGas(
+                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata),
+                        `Call service.interchainTransfer with metadata ${type}`,
+                    ),
+                )
+                    .to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .to.emit(service, 'InterchainTransferWithData')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, '0x');
-
-                if (type === 'mintBurn')
-                    console.log('service.interchainTransfer with metadata mint/burn gas:', (await tx.wait()).gasUsed.toNumber());
             });
         }
 
@@ -1580,17 +1577,18 @@ describe('Interchain Token Service', () => {
                     transferToAddress = tokenManager.address;
                 }
 
-                const tx = await service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data);
-                await expect(tx)
+                await expect(
+                    reportGas(
+                        service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data),
+                        `Call service.callContractWithInterchainToken ${type}`,
+                    ),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .to.emit(service, 'InterchainTransferWithData')
                     .withArgs(tokenId, destinationChain, destAddress, sendAmount, sourceAddress, data);
-
-                if (type === 'mintBurn')
-                    console.log('service.callContractWithInterchainToken mint/burn gas:', (await tx.wait()).gasUsed.toNumber());
             });
         }
 
@@ -1684,8 +1682,12 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
-            const tx = await service.execute(commandId, sourceChain, sourceAddress, payload);
-            await expect(tx)
+            await expect(
+                reportGas(
+                    service.execute(commandId, sourceChain, sourceAddress, payload),
+                    'Receive GMP INTERCHAIN_TRANSFER_WITH_DATA mint/burn',
+                ),
+            )
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, destAddress, amount)
                 .to.emit(token, 'Transfer')
@@ -1694,8 +1696,6 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, sourceChain, sourceAddressForService, destAddress, amount)
                 .and.to.emit(executable, 'MessageReceived')
                 .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
-
-            console.log('Receive GMP INTERCHAIN_TRANSFER_WITH_DATA mint/burn gas:', (await tx.wait()).gasUsed.toNumber());
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1827,10 +1827,14 @@ describe('Interchain Token Service', () => {
             const spender = otherWallet;
             await token.approve(spender.address, MaxUint256).then((tx) => tx.wait());
 
-            const tx = await token
-                .connect(spender)
-                .interchainTransferFrom(sender.address, destinationChain, destAddress, amount, metadata, { value: gasValue });
-            await expect(tx)
+            await expect(
+                reportGas(
+                    token
+                        .connect(spender)
+                        .interchainTransferFrom(sender.address, destinationChain, destAddress, amount, metadata, { value: gasValue }),
+                    'Call token.interchainTransferFrom lock/unlock',
+                ),
+            )
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, transferToAddress, amount)
                 .and.to.emit(gateway, 'ContractCall')
@@ -1839,8 +1843,6 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, spender.address)
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, destinationChain, destAddress, sendAmount);
-
-            console.log('token.interchainTransferFrom lock/unlock gas:', (await tx.wait()).gasUsed.toNumber());
         });
     });
 

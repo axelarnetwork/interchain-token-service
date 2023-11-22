@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const { ethers, network } = require('hardhat');
 const { expect } = require('chai');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
@@ -61,6 +62,30 @@ const waitFor = async (timeDelay) => {
     }
 };
 
+const gasReport = {};
+let gasReportScheduled = false;
+
+const writeGasReport = () => {
+    const report = Object.entries(gasReport)
+        .map(([key, value]) => `${key}\n-${value.toLocaleString().padStart(10)} gas`)
+        .join('\n\n');
+
+    fs.writeFileSync('gas.report.log', report);
+};
+
+const reportGas = (tx, message) => {
+    if (message) {
+        tx.then((tx) => tx.wait().then((receipt) => (gasReport[message] = receipt.gasUsed.toNumber())));
+    }
+
+    if (!gasReportScheduled) {
+        gasReportScheduled = true;
+        process.on('exit', writeGasReport);
+    }
+
+    return tx;
+};
+
 module.exports = {
     getRandomBytes32,
     isHardhat,
@@ -69,4 +94,5 @@ module.exports = {
     expectRevert,
     getPayloadAndProposalHash,
     waitFor,
+    reportGas,
 };
