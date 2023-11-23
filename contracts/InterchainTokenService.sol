@@ -403,7 +403,7 @@ contract InterchainTokenService is
      */
     function _expressExecute(bytes32 commandId, string calldata sourceChain, bytes calldata payload) internal {
         (
-            uint256 messageType,
+            ,
             bytes32 tokenId,
             bytes memory sourceAddress,
             bytes memory destinationAddressBytes,
