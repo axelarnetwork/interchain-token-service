@@ -162,7 +162,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata data
+        bytes memory data
     ) external payable virtual {
         address sender = msg.sender;
 
@@ -172,13 +172,14 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         _addFlowOut(amount);
 
         // slither-disable-next-line var-read-using-this
-        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
+        interchainTokenService.transmitInterchainTransferWithData{ value: msg.value }(
             this.interchainTokenId(),
             sender,
             destinationChain,
             destinationAddress,
             amount,
-            abi.encodePacked(LATEST_METADATA_VERSION, data)
+            LATEST_METADATA_VERSION,
+            data
         );
     }
 

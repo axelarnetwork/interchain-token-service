@@ -478,7 +478,7 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata data
+        bytes memory data
     ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
 
@@ -511,6 +511,29 @@ contract InterchainTokenService is
     ) external payable onlyTokenManager(tokenId) whenNotPaused {
         (uint32 metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data);
+    }
+
+    /**
+     * @notice Transmit an interchain transfer for the given tokenId.
+     * @dev Only callable by a token manager.
+     * @param tokenId The tokenId of the TokenManager (which must be the msg.sender).
+     * @param sourceAddress The address where the token is coming from, which will also be used for reimbursement of gas.
+     * @param destinationChain The name of the chain to send tokens to.
+     * @param destinationAddress The destinationAddress for the interchainTransfer.
+     * @param amount The amount of token to give.
+     * @param metadataVersion The version of the metadata.
+     * @param data The data to be passed to the destination.
+     */
+    function transmitInterchainTransferWithData(
+        bytes32 tokenId,
+        address sourceAddress,
+        string calldata destinationChain,
+        bytes memory destinationAddress,
+        uint256 amount,
+        uint32 metadataVersion,
+        bytes memory data
+    ) external payable onlyTokenManager(tokenId) whenNotPaused {
         _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data);
     }
 
