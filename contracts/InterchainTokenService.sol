@@ -460,7 +460,9 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         ITokenManager tokenManager = ITokenManager(tokenManagerAddress(tokenId));
         amount = tokenManager.takeToken(msg.sender, amount);
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadata);
+        (uint32 metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data);
     }
 
     /**
@@ -482,14 +484,7 @@ contract InterchainTokenService is
 
         amount = tokenManager.takeToken(msg.sender, amount);
 
-        _transmitInterchainTransfer(
-            tokenId,
-            msg.sender,
-            destinationChain,
-            destinationAddress,
-            amount,
-            abi.encodePacked(LATEST_METADATA_VERSION, data)
-        );
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, LATEST_METADATA_VERSION, data);
     }
 
     /*********************\
@@ -514,7 +509,9 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable onlyTokenManager(tokenId) whenNotPaused {
-        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadata);
+        (uint32 metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data);
     }
 
     /*************\
@@ -930,21 +927,14 @@ contract InterchainTokenService is
      * @return version The version number extracted from the metadata.
      * @return data The data bytes extracted from the metadata.
      */
-    function _decodeMetadata(bytes memory metadata) internal pure returns (uint32 version, bytes memory data) {
-        assembly {
-            version := shr(224, mload(add(metadata, 32)))
-        }
+    function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes memory data) {
+        if (metadata.length < 4) return (version, data);
 
-        if (metadata.length <= 4) return (version, data);
+        version = uint32(bytes4(metadata[:4]));
 
-        data = new bytes(metadata.length - 4);
+        if (metadata.length == 4) return (version, data);
 
-        uint256 n = (data.length - 1) / 32;
-        for (uint256 i = 0; i <= n; ++i) {
-            assembly {
-                mstore(add(data, add(32, mul(32, i))), mload(add(metadata, add(36, mul(32, i)))))
-            }
-        }
+        data = metadata[4:];
     }
 
     /**
@@ -954,7 +944,8 @@ contract InterchainTokenService is
      * @param destinationChain The name of the chain to send tokens to.
      * @param destinationAddress The destinationAddress for the interchainTransfer.
      * @param amount The amount of tokens to send.
-     * @param metadata The data to be passed with the token transfer.
+     * @param metadataVersion The version of the metadata.
+     * @param data The data to be passed with the token transfer.
      */
     function _transmitInterchainTransfer(
         bytes32 tokenId,
@@ -962,10 +953,10 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes memory destinationAddress,
         uint256 amount,
-        bytes memory metadata
+        uint32 metadataVersion,
+        bytes memory data
     ) internal {
-        (uint32 version, bytes memory data) = _decodeMetadata(metadata);
-        if (version > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(version);
+        if (metadataVersion > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(metadataVersion);
 
         if (data.length == 0) {
             // slither-disable-next-line reentrancy-events
