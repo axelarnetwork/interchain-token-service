@@ -13,9 +13,9 @@ const {
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32, expectRevert } = require('./utils');
 
-// const MESSAGE_TYPE_INTERCHAIN_TRANSFER_WITH_DATA = 1;
-const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
-// const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
+// const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
+const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
+// const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
 
 const LOCK_UNLOCK = 2;
 const MINT_BURN = 0;
@@ -200,7 +200,7 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(tokenFactory.address, tokenManagerAddress, amount)
                 .and.to.emit(service, 'InterchainTransfer')
-                .withArgs(tokenId, destinationChain, destinationAddress, amount);
+                .withArgs(tokenId, tokenFactory.address, destinationChain, destinationAddress, amount);
         });
 
         it('Should revert when trying to register a canonical lock/unlock gateway token', async () => {

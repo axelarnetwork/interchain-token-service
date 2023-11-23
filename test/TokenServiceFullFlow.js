@@ -11,8 +11,8 @@ const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
-const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 2;
-const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 3;
+const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
+const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
 
 const DISTRIBUTOR_ROLE = 0;
 
@@ -147,8 +147,8 @@ describe('Interchain Token Service Full Flow', () => {
 
             before(async () => {
                 payload = defaultAbiCoder.encode(
-                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount],
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount, '0x'],
                 );
                 payloadHash = keccak256(payload);
             });
@@ -169,7 +169,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
@@ -189,7 +189,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
             });
         });
     });
@@ -304,8 +304,8 @@ describe('Interchain Token Service Full Flow', () => {
 
             before(async () => {
                 payload = defaultAbiCoder.encode(
-                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount],
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount, '0x'],
                 );
                 payloadHash = keccak256(payload);
             });
@@ -322,7 +322,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
             });
 
             it('Should send some tokens to another chain via the token', async () => {
@@ -334,7 +334,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
@@ -346,7 +346,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
             });
         });
 
@@ -481,8 +481,8 @@ describe('Interchain Token Service Full Flow', () => {
 
             before(async () => {
                 payload = defaultAbiCoder.encode(
-                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
-                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount],
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount, '0x'],
                 );
                 payloadHash = keccak256(payload);
             });
@@ -499,7 +499,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
@@ -511,7 +511,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
             });
         });
     });
