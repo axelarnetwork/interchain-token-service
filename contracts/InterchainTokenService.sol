@@ -402,14 +402,8 @@ contract InterchainTokenService is
      * @param payload the payload of the receive token
      */
     function _expressExecute(bytes32 commandId, string calldata sourceChain, bytes calldata payload) internal {
-        (
-            ,
-            bytes32 tokenId,
-            bytes memory sourceAddress,
-            bytes memory destinationAddressBytes,
-            uint256 amount,
-            bytes memory data
-        ) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256, bytes));
+        (, bytes32 tokenId, bytes memory sourceAddress, bytes memory destinationAddressBytes, uint256 amount, bytes memory data) = abi
+            .decode(payload, (uint256, bytes32, bytes, bytes, uint256, bytes));
         address destinationAddress = destinationAddressBytes.toAddress();
 
         IERC20 token;
