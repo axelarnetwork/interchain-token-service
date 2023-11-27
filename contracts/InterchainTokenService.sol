@@ -567,7 +567,7 @@ contract InterchainTokenService is
         uint256 length = trustedChainNames.length;
 
         if (operator == address(0)) revert ZeroAddress();
-        if (bytes(chainName_).length == 0) revert InvalidChainName();
+        if (bytes(chainName_).length == 0 || keccak256(bytes(chainName_)) != chainNameHash) revert InvalidChainName();
         if (length != trustedAddresses.length) revert LengthMismatch();
 
         _addOperator(operator);
