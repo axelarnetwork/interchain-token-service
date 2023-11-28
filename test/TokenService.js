@@ -1233,7 +1233,7 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount);
+                    .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
             });
         }
 
@@ -1264,7 +1264,7 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
                 .to.emit(service, 'InterchainTransfer')
-                .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount);
+                .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
         });
 
         it(`Should revert on initiating an interchain token transfer for lockUnlockFee with reentrant token`, async () => {
@@ -1409,7 +1409,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
-                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount);
+                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount, HashZero);
         });
 
         it('Should be able to receive mint/burn token', async () => {
@@ -1425,7 +1425,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
-                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount);
+                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount, HashZero);
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
@@ -1442,7 +1442,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
-                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount - 10);
+                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount - 10, HashZero);
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token with normal ERC20 token', async () => {
@@ -1466,7 +1466,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
-                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount);
+                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount, HashZero);
         });
     });
 
@@ -1504,7 +1504,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'InterchainTransferWithData')
+                    .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, keccak256(data));
             });
         }
@@ -1532,7 +1532,7 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount);
+                    .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
             });
         }
 
@@ -1557,7 +1557,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
-                    .to.emit(service, 'InterchainTransferWithData')
+                    .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, keccak256(data));
             });
         }
@@ -1633,7 +1633,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenManager.address, destAddress, amount)
                 .to.emit(token, 'Transfer')
                 .withArgs(destAddress, wallet.address, amount)
-                .and.to.emit(service, 'InterchainTransferReceivedWithData')
+                .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, sourceAddressForService, destAddress, amount, keccak256(data))
                 .and.to.emit(executable, 'MessageReceived')
                 .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
@@ -1657,7 +1657,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(AddressZero, destAddress, amount)
                 .to.emit(token, 'Transfer')
                 .withArgs(destAddress, wallet.address, amount)
-                .and.to.emit(service, 'InterchainTransferReceivedWithData')
+                .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, sourceAddressForService, destAddress, amount, keccak256(data))
                 .and.to.emit(executable, 'MessageReceived')
                 .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
@@ -1681,7 +1681,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenManager.address, destAddress, amount)
                 .to.emit(token, 'Transfer')
                 .withArgs(destAddress, wallet.address, amount - 10)
-                .and.to.emit(service, 'InterchainTransferReceivedWithData')
+                .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, sourceAddressForService, destAddress, amount - 10, keccak256(data))
                 .and.to.emit(executable, 'MessageReceived')
                 .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount - 10);
@@ -1739,7 +1739,7 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount);
+                    .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
             });
 
             it(`Should be able to initiate an interchain token transfer using interchainTransferFrom [${type}]`, async () => {
@@ -1773,7 +1773,7 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, spender.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, sender.address, destinationChain, destAddress, sendAmount);
+                    .withArgs(tokenId, sender.address, destinationChain, destAddress, sendAmount, HashZero);
             });
         }
 
@@ -1804,7 +1804,7 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, spender.address)
                 .to.emit(service, 'InterchainTransfer')
-                .withArgs(tokenId, sender.address, destinationChain, destAddress, sendAmount);
+                .withArgs(tokenId, sender.address, destinationChain, destAddress, sendAmount, HashZero);
         });
     });
 
@@ -1844,7 +1844,7 @@ describe('Interchain Token Service', () => {
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'InterchainTransferWithData')
+                    .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, keccak256(data));
             });
         }

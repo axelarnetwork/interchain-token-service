@@ -44,25 +44,10 @@ interface IInterchainTokenService is
         address indexed sourceAddress,
         string destinationChain,
         bytes destinationAddress,
-        uint256 amount
-    );
-    event InterchainTransferWithData(
-        bytes32 indexed tokenId,
-        address indexed sourceAddress,
-        string destinationChain,
-        bytes destinationAddress,
         uint256 amount,
         bytes32 indexed dataHash
     );
     event InterchainTransferReceived(
-        bytes32 indexed commandId,
-        bytes32 indexed tokenId,
-        string sourceChain,
-        bytes sourceAddress,
-        address indexed destinationAddress,
-        uint256 amount
-    );
-    event InterchainTransferReceivedWithData(
         bytes32 indexed commandId,
         bytes32 indexed tokenId,
         string sourceChain,

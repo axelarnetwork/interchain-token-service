@@ -6,7 +6,7 @@ const { ethers } = require('hardhat');
 const {
     getContractAt,
     Wallet,
-    constants: { AddressZero },
+    constants: { AddressZero, HashZero },
     utils: { defaultAbiCoder, keccak256 },
 } = ethers;
 
@@ -200,7 +200,7 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(tokenFactory.address, tokenManagerAddress, amount)
                 .and.to.emit(service, 'InterchainTransfer')
-                .withArgs(tokenId, tokenFactory.address, destinationChain, destinationAddress, amount);
+                .withArgs(tokenId, tokenFactory.address, destinationChain, destinationAddress, amount, HashZero);
         });
 
         it('Should revert when trying to register a canonical lock/unlock gateway token', async () => {
