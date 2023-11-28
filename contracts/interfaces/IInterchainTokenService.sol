@@ -39,28 +39,22 @@ interface IInterchainTokenService is
     error ExecuteWithTokenNotSupported();
     error InvalidExpressMessageType(uint256 messageType);
 
-    event InterchainTransfer(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
-    event InterchainTransferWithData(
+    event InterchainTransfer(
         bytes32 indexed tokenId,
+        address indexed sourceAddress,
         string destinationChain,
         bytes destinationAddress,
-        uint256 indexed amount,
-        address indexed sourceAddress,
-        bytes data
+        uint256 amount,
+        bytes32 indexed dataHash
     );
     event InterchainTransferReceived(
+        bytes32 indexed commandId,
         bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,
         address indexed destinationAddress,
-        uint256 indexed amount
-    );
-    event InterchainTransferReceivedWithData(
-        bytes32 indexed tokenId,
-        string sourceChain,
-        bytes sourceAddress,
-        address indexed destinationAddress,
-        uint256 indexed amount
+        uint256 amount,
+        bytes32 dataHash
     );
     event TokenManagerDeploymentStarted(
         bytes32 indexed tokenId,
