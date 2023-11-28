@@ -414,21 +414,18 @@ contract InterchainTokenService is
 
         token.safeTransferFrom(msg.sender, destinationAddress, amount);
 
-        if (data.length == 0) {
-            // slither-disable-next-line reentrancy-events
-            emit InterchainTransferReceived(commandId, tokenId, sourceChain, sourceAddress, destinationAddress, amount);
-        } else {
-            // slither-disable-next-line reentrancy-events
-            emit InterchainTransferReceivedWithData(
-                commandId,
-                tokenId,
-                sourceChain,
-                sourceAddress,
-                destinationAddress,
-                amount,
-                keccak256(data)
-            );
+        // slither-disable-next-line reentrancy-events
+        emit InterchainTransferReceived(
+            commandId,
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data.length == 0 ? bytes32(0) : keccak256(data)
+        );
 
+        if (data.length != 0) {
             bytes32 result = IInterchainTokenExpressExecutable(destinationAddress).expressExecuteWithInterchainToken(
                 sourceChain,
                 sourceAddress,
@@ -712,21 +709,18 @@ contract InterchainTokenService is
 
         amount = tokenManager.giveToken(destinationAddress, amount);
 
-        if (data.length == 0) {
-            // slither-disable-next-line reentrancy-events
-            emit InterchainTransferReceived(commandId, tokenId, sourceChain, sourceAddress, destinationAddress, amount);
-        } else {
-            // slither-disable-next-line reentrancy-events
-            emit InterchainTransferReceivedWithData(
-                commandId,
-                tokenId,
-                sourceChain,
-                sourceAddress,
-                destinationAddress,
-                amount,
-                keccak256(data)
-            );
+        // slither-disable-next-line reentrancy-events
+        emit InterchainTransferReceived(
+            commandId,
+            tokenId,
+            sourceChain,
+            sourceAddress,
+            destinationAddress,
+            amount,
+            data.length == 0 ? bytes32(0) : keccak256(data)
+        );
 
+        if (data.length != 0) {
             bytes32 result = IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(
                 sourceChain,
                 sourceAddress,
@@ -967,13 +961,15 @@ contract InterchainTokenService is
         (uint32 version, bytes memory data) = _decodeMetadata(metadata);
         if (version > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(version);
 
-        if (data.length == 0) {
-            // slither-disable-next-line reentrancy-events
-            emit InterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount);
-        } else {
-            // slither-disable-next-line reentrancy-events
-            emit InterchainTransferWithData(tokenId, sourceAddress, destinationChain, destinationAddress, amount, keccak256(data));
-        }
+        // slither-disable-next-line reentrancy-events
+        emit InterchainTransfer(
+            tokenId,
+            sourceAddress,
+            destinationChain,
+            destinationAddress,
+            amount,
+            data.length == 0 ? bytes32(0) : keccak256(data)
+        );
 
         bytes memory payload = abi.encode(
             MESSAGE_TYPE_INTERCHAIN_TRANSFER,

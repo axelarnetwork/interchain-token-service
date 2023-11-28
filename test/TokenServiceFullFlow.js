@@ -4,8 +4,13 @@ const chai = require('chai');
 const { expect } = chai;
 const { ethers } = require('hardhat');
 const { AddressZero } = ethers.constants;
-const { defaultAbiCoder, keccak256, arrayify } = ethers.utils;
-const { getContractAt, Wallet } = ethers;
+
+const {
+    getContractAt,
+    Wallet,
+    constants: { HashZero },
+    utils: { defaultAbiCoder, keccak256, arrayify },
+} = ethers;
 
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
@@ -169,7 +174,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
@@ -189,7 +194,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
         });
     });
@@ -322,7 +327,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
 
             it('Should send some tokens to another chain via the token', async () => {
@@ -334,7 +339,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
@@ -346,7 +351,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
         });
 
@@ -499,7 +504,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
@@ -511,7 +516,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount);
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
         });
     });
