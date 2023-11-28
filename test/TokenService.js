@@ -12,7 +12,7 @@ const { Wallet } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
-const { getRandomBytes32, expectRevert, reportGas } = require('./utils');
+const { getRandomBytes32, expectRevert, gasReporter } = require('./utils');
 const {
     deployAll,
     deployContract,
@@ -36,6 +36,8 @@ const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
 // const DISTRIBUTOR_ROLE = 0;
 const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
+
+const reportGas = gasReporter('Interchain Token Service');
 
 describe('Interchain Token Service', () => {
     let wallet, otherWallet;

@@ -62,20 +62,30 @@ const waitFor = async (timeDelay) => {
     }
 };
 
-const gasReport = {};
+const gasReports = {};
 let gasReportScheduled = false;
 
 const writeGasReport = () => {
-    const report = Object.entries(gasReport)
-        .map(([key, value]) => `${key}\n-${value.toLocaleString().padStart(10)} gas`)
+    const report = Object.entries(gasReports)
+        .flatMap(([contract, report]) => [
+            `## ${contract} gas report:`,
+            ...Object.entries(report).map(([key, value]) => `  |> ${key}\n  ==${value.toLocaleString().padStart(10)} gas`),
+        ])
         .join('\n\n');
 
     fs.writeFileSync('gas.report.log', report);
 };
 
-const reportGas = (tx, message) => {
+const gasReporter = (contact) => (tx, message) => {
+    if (process.env.REPORT_GAS === undefined) return tx;
+
     if (message) {
-        tx.then((tx) => tx.wait().then((receipt) => (gasReport[message] = receipt.gasUsed.toNumber())));
+        tx.then((tx) =>
+            tx.wait().then((receipt) => {
+                if (!gasReports[contact]) gasReports[contact] = {};
+                gasReports[contact][message] = receipt.gasUsed.toNumber();
+            }),
+        );
     }
 
     if (!gasReportScheduled) {
@@ -94,5 +104,5 @@ module.exports = {
     expectRevert,
     getPayloadAndProposalHash,
     waitFor,
-    reportGas,
+    gasReporter,
 };
