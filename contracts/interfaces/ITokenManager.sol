@@ -24,6 +24,12 @@ interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplemen
     error NotSupported();
 
     /**
+     * @notice Returns the interchain token ID of the token manager.
+     * @return bytes32 The interchain token ID of the token manager.
+     */
+    function interchainTokenId() external view returns (bytes32);
+
+    /**
      * @notice Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user.
      * @param destinationChain The name of the chain to send tokens to.
      * @param destinationAddress The address of the user to send tokens to.
