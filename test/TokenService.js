@@ -218,6 +218,13 @@ describe('Interchain Token Service', () => {
 
             await expectRevert((gasOptions) => serviceTest.setupTest(params, gasOptions), serviceTest, 'InvalidChainName');
 
+            params = defaultAbiCoder.encode(
+                ['address', 'string', 'string[]', 'string[]'],
+                [operator, 'Invalid', trustedChainNames, trustedAddresses],
+            );
+
+            await expectRevert((gasOptions) => serviceTest.setupTest(params, gasOptions), serviceTest, 'InvalidChainName');
+
             trustedAddresses.pop();
 
             params = defaultAbiCoder.encode(
@@ -1527,6 +1534,46 @@ describe('Interchain Token Service', () => {
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, keccak256(data));
             });
         }
+
+        it(`Should revert on transmitInterchainTransferWithData if not called by the token manager`, async () => {
+            const [, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
+
+            const sourceAddress = otherWallet.address;
+            const metadataVersion = 1;
+
+            await expectRevert(
+                (gasOptions) =>
+                    service.transmitInterchainTransferWithData(
+                        tokenId,
+                        sourceAddress,
+                        destinationChain,
+                        destAddress,
+                        amount,
+                        metadataVersion,
+                        data,
+                        gasOptions,
+                    ),
+                service,
+                'NotTokenManager',
+                [wallet.address, tokenManager.address],
+            );
+        });
+
+        it(`Should revert on an interchain transfer if service is paused`, async () => {
+            const [, tokenManager] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
+
+            let txPaused = await service.setPauseStatus(true);
+            await txPaused.wait();
+
+            await expectRevert(
+                (gasOptions) => tokenManager.callContractWithInterchainToken(destinationChain, destAddress, amount, data, gasOptions),
+                service,
+                'Pause',
+            );
+
+            txPaused = await service.setPauseStatus(false);
+            await txPaused.wait();
+        });
 
         for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee']) {
             it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service [${type}]`, async () => {

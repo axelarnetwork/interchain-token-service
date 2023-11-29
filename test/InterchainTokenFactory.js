@@ -7,7 +7,7 @@ const {
     getContractAt,
     Wallet,
     constants: { AddressZero, HashZero },
-    utils: { defaultAbiCoder, keccak256 },
+    utils: { defaultAbiCoder, keccak256, toUtf8Bytes },
 } = ethers;
 
 const { deployAll, deployContract } = require('../scripts/deploy');
@@ -45,6 +45,12 @@ describe('InterchainTokenFactory', () => {
                 tokenFactory,
                 'ZeroAddress',
             );
+        });
+
+        it('Should return the correct contract ID', async () => {
+            const expectedContractid = keccak256(toUtf8Bytes('interchain-token-factory'));
+            const contractId = await tokenFactory.contractId();
+            expect(contractId).to.eq(expectedContractid);
         });
     });
 
