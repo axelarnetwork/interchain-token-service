@@ -63,8 +63,8 @@ contract TestFlowLimitLiveNetwork is IFlowLimit {
 
         uint256 maxFlowLimit = flowToCompare + flowLimit_;
         uint256 netFlowAmount = flowToAdd + flowAmount;
-        if (netFlowAmount > maxFlowLimit) revert FlowLimitExceeded(maxFlowLimit, netFlowAmount);
-        if (flowAmount > flowLimit_) revert FlowLimitExceeded(flowLimit_, flowAmount);
+        if (netFlowAmount > maxFlowLimit) revert FlowLimitExceeded(maxFlowLimit, netFlowAmount, address(this));
+        if (flowAmount > flowLimit_) revert FlowLimitExceeded(flowLimit_, flowAmount, address(this));
 
         assembly {
             sstore(slotToAdd, add(flowToAdd, flowAmount))
