@@ -196,7 +196,6 @@ interface IInterchainTokenService is
      * @param amount The amount of tokens to be transferred.
      */
     function transferFromSenderToTokenManager(bytes32 tokenId, address token, address from, uint256 amount) external;
-    
 
     /**
      * @notice Initiates an interchain call contract with interchain token to a destination chain.

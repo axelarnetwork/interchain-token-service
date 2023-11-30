@@ -1619,7 +1619,7 @@ describe('Interchain Token Service', () => {
                 const payloadHash = keccak256(payload);
 
                 const transferToAddress = tokenManager.address;
-                
+
                 await (await token.approve(service.address, amount)).wait();
                 await (await token.approve(tokenManager.address, 0)).wait();
 
