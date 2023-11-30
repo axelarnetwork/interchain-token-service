@@ -410,9 +410,20 @@ contract InterchainTokenService is
         {
             ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
             token = IERC20(tokenManager.tokenAddress());
-        }
 
-        token.safeTransferFrom(msg.sender, destinationAddress, amount);
+            if (tokenManager.implementationType() == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+                uint256 balanceAmount = token.balanceOf(destinationAddress);
+
+                token.safeTransferFrom(msg.sender, destinationAddress, amount);
+                balanceAmount = token.balanceOf(destinationAddress) - balanceAmount;
+
+                if (balanceAmount < amount) {
+                    amount = balanceAmount;
+                }
+            } else {
+                token.safeTransferFrom(msg.sender, destinationAddress, amount);
+            }
+        }
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTransferReceived(
