@@ -208,7 +208,11 @@ describe('FlowLimit', async () => {
             expect(await test.flowInAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
+        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [
+            flowLimit,
+            flowLimit + 1,
+            test.address,
+        ]);
 
         await nextEpoch();
 
@@ -225,7 +229,11 @@ describe('FlowLimit', async () => {
             expect(await test.flowOutAmount()).to.equal(i + 1);
         }
 
-        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [flowLimit, flowLimit + 1]);
+        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [
+            flowLimit,
+            flowLimit + 1,
+            test.address,
+        ]);
 
         await nextEpoch();
 
@@ -243,6 +251,7 @@ describe('FlowLimit', async () => {
         await expectRevert((gasOptions) => test.addFlowIn(excessiveFlowAmount, gasOptions), test, 'FlowLimitExceeded', [
             flowLimit,
             excessiveFlowAmount,
+            test.address,
         ]);
     });
 });

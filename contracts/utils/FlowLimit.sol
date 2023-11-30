@@ -101,8 +101,8 @@ contract FlowLimit is IFlowLimit {
         }
 
         if (flowToAdd + flowAmount > flowToCompare + flowLimit_)
-            revert FlowLimitExceeded((flowToCompare + flowLimit_), flowToAdd + flowAmount);
-        if (flowAmount > flowLimit_) revert FlowLimitExceeded(flowLimit_, flowAmount);
+            revert FlowLimitExceeded((flowToCompare + flowLimit_), flowToAdd + flowAmount, address(this));
+        if (flowAmount > flowLimit_) revert FlowLimitExceeded(flowLimit_, flowAmount, address(this));
 
         assembly {
             sstore(slotToAdd, add(flowToAdd, flowAmount))
