@@ -1631,7 +1631,7 @@ Getter for the decimals of the token
 ### FlowLimitExceeded
 
 ```solidity
-error FlowLimitExceeded(uint256 limit, uint256 flowAmount)
+error FlowLimitExceeded(uint256 limit, uint256 flowAmount, address tokenManager)
 ```
 
 ### FlowLimitSet
