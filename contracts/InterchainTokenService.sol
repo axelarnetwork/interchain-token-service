@@ -469,7 +469,7 @@ contract InterchainTokenService is
      * @param from The address of the user to take tokens from.
      * @param amount The amount of tokens to be transferred.
      */
-    function transferFromSenderToTokenManager(
+    function transferToTokenManager(
         bytes32 tokenId,
         address token,
         address from,

@@ -58,7 +58,7 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
 
         if (token.allowance(from, address(this)) < amount) {
             // slither-disable-next-line var-read-using-this
-            interchainTokenService.transferFromSenderToTokenManager(this.interchainTokenId(), address(token), from, amount);
+            interchainTokenService.transferToTokenManager(this.interchainTokenId(), address(token), from, amount);
         } else {
             token.safeTransferFrom(from, address(this), amount);
         }
