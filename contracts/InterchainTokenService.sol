@@ -475,7 +475,7 @@ contract InterchainTokenService is
         address from,
         uint256 amount
     ) external onlyTokenManager(tokenId) {
-        // slither-disable-next-line arbitrary-from-in-transferfrom
+        // slither-disable-next-line arbitrary-send-erc20
         IERC20(token).safeTransferFrom(from, msg.sender, amount);
     }
 
