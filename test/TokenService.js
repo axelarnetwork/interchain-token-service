@@ -2153,6 +2153,34 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
                 .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
         });
+
+        it('Should be able to receive lock/unlock with fee on transfer token with normal ERC20 token', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                `Test Token Lock Unlock`,
+                'TT',
+                12,
+                2 * amount,
+                false,
+                'free',
+            );
+            await (await token.transfer(tokenManager.address, amount)).wait();
+            await (await token.approve(service.address, amount)).wait();
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
+            );
+
+            const commandId = getRandomBytes32();
+            await (await service.expressExecute(commandId, sourceChain, sourceAddress, payload)).wait();
+            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(tokenManager.address, wallet.address, amount)
+                .and.to.emit(service, 'ExpressExecutionFulfilled')
+                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+        });
     });
 
     describe('Express Receive Remote Token with Data', () => {
