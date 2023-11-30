@@ -19,6 +19,8 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
     using SafeTokenTransferFrom for IERC20;
     using SafeTokenCall for IERC20;
 
+    uint256 internal constant UINT256_MAX = 2 ** 256 - 1;
+
     /**
      * @notice Constructs an instance of TokenManagerLockUnlock.
      * @dev Calls the constructor of TokenManagerAddressStorage which calls the constructor of TokenManager.
@@ -44,7 +46,7 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
         (, address tokenAddress_) = abi.decode(params_, (bytes, address));
 
         /// @dev Keep future compatibility for allowing ITS to manage funds instead of the token manager
-        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, type(uint256).max));
+        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, UINT256_MAX));
     }
 
     /**
