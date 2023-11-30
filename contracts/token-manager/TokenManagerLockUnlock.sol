@@ -56,7 +56,9 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
         IERC20 token = IERC20(this.tokenAddress());
 
-        token.safeTransferFrom(from, address(this), amount);
+        try interchainTokenService.transferFromSenderToTokenManager(this.interchainTokenId(), address(token), from, amount) {} catch {
+            token.safeTransferFrom(from, address(this), amount);
+        }
 
         return amount;
     }

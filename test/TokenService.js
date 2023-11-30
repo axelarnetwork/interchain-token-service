@@ -1607,6 +1607,37 @@ describe('Interchain Token Service', () => {
             });
         }
 
+        for (const type of ['lockUnlock', 'lockUnlockFee']) {
+            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approve as well [${type}]`, async () => {
+                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
+                const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
+                const metadata = '0x00000000';
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
+                );
+                const payloadHash = keccak256(payload);
+
+                const transferToAddress = tokenManager.address;
+                
+                await (await token.approve(service.address, amount)).wait();
+                await (await token.approve(tokenManager.address, 0)).wait();
+
+                await expect(
+                    reportGas(
+                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata),
+                        `Call service.interchainTransfer with metadata ${type}`,
+                    ),
+                )
+                    .to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, transferToAddress, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+            });
+        }
+
         for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee']) {
             it(`Should be able to initiate an interchain token transfer via the callContractWithInterchainToken function on the service [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);

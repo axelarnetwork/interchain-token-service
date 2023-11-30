@@ -57,7 +57,9 @@ contract TokenManagerLockUnlockFee is TokenManager, ReentrancyGuard, ITokenManag
         IERC20 token = IERC20(this.tokenAddress());
         uint256 balanceBefore = token.balanceOf(address(this));
 
-        token.safeTransferFrom(from, address(this), amount);
+        try interchainTokenService.transferFromSenderToTokenManager(this.interchainTokenId(), address(token), from, amount) {} catch {
+            token.safeTransferFrom(from, address(this), amount);
+        }
 
         uint256 diff = token.balanceOf(address(this)) - balanceBefore;
         if (diff < amount) {
