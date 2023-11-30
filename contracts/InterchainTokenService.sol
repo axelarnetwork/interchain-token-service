@@ -463,7 +463,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Can be called by lock unlock token managers to allow for approvals to the service instaed of them.
+     * @notice Can be called by lock unlock token managers to allow for approvals to the service instead of them.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param token The address of the token to transfer from.
      * @param from The address of the user to take tokens from.
