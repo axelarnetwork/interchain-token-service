@@ -48,14 +48,6 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @notice A modifier that allows only the token to execute the function.
-     */
-    modifier onlyToken() {
-        if (msg.sender != this.tokenAddress()) revert NotToken(msg.sender);
-        _;
-    }
-
-    /**
      * @notice Getter for the contract id.
      * @return bytes32 The contract id.
      */
