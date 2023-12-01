@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
  * @notice Interface for flow limit logic for interchain token transfers.
  */
 interface IFlowLimit {
-    error FlowLimitExceeded(uint256 limit, uint256 flowAmount);
+    error FlowLimitExceeded(uint256 limit, uint256 flowAmount, address tokenManager);
 
     event FlowLimitSet(bytes32 indexed tokenId, address operator, uint256 flowLimit_);
 
