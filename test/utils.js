@@ -1,7 +1,7 @@
 'use strict';
 
 const fs = require('fs');
-const { ethers, network } = require('hardhat');
+const { ethers, network, config } = require('hardhat');
 const { expect } = require('chai');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 
@@ -96,6 +96,10 @@ const gasReporter = (contact) => (tx, message) => {
     return tx;
 };
 
+const getEVMVersion = () => {
+    return config.solidity.compilers[0].settings.evmVersion;
+};
+
 module.exports = {
     getRandomBytes32,
     isHardhat,
@@ -105,4 +109,5 @@ module.exports = {
     getPayloadAndProposalHash,
     waitFor,
     gasReporter,
+    getEVMVersion,
 };
