@@ -12,7 +12,7 @@ const { Wallet } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
-const { getRandomBytes32, expectRevert, gasReporter } = require('./utils');
+const { getRandomBytes32, expectRevert, gasReporter, getEVMVersion } = require('./utils');
 const {
     deployAll,
     deployContract,
@@ -2537,6 +2537,22 @@ describe('Interchain Token Service', () => {
                 service,
                 'ExecuteWithTokenNotSupported',
             );
+        });
+    });
+
+    describe('Bytecode checks [ @skip-on-coverage ]', () => {
+        it('Should preserve the same proxy bytecode for each EVM', async () => {
+            const proxyFactory = await ethers.getContractFactory('Proxy', wallet);
+            const proxyBytecode = proxyFactory.bytecode;
+            const proxyBytecodeHash = keccak256(proxyBytecode);
+
+            const expected = {
+                istanbul: '0xc3db348537acecfe55d79dfcac2afdbe7fb4e3a3911dcfe96665bbb6e364c19e',
+                berlin: '0x2d8417cd1af08f7eb531649d52505299ce4db63fb0a2a30ee16397435ab8b7d3',
+                london: '0x6e2908fca7d4bf622350ebb2d3f536d34b55a7588ac26a056cf4c11f71694826',
+            }[getEVMVersion()];
+
+            expect(proxyBytecodeHash).to.be.equal(expected);
         });
     });
 });
