@@ -71,4 +71,18 @@ describe('Token Manager', () => {
         const params = await TestTokenManager.params(toUtf8Bytes(owner.address), token.address);
         expect(expectedParams).to.eq(params);
     });
+
+    it('Should preserve the same proxy bytecode for each EVM [ @skip-on-coverage ]', async () => {
+        const proxyFactory = await ethers.getContractFactory('TokenManagerProxy', owner);
+        const proxyBytecode = proxyFactory.bytecode;
+        const proxyBytecodeHash = keccak256(proxyBytecode);
+
+        const expected = {
+            istanbul: '0x6b736a5ec65994238466070da91520144aaa3b41ecdcda7cfa4e7b6cd2296347',
+            berlin: '0xcbd407743ce6492f90dc2542f2ad71ca6c99d21fd29cc9a8fdf6ff54bb28131f',
+            london: '0x028f986ea9320071af6747d2dad9e0870c28e8bd19542168f5e4855566e38376',
+        }[getEVMVersion()];
+
+        expect(proxyBytecodeHash).to.be.equal(expected);
+    });
 });

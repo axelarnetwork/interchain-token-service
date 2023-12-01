@@ -1517,6 +1517,49 @@ describe('Interchain Token Service', () => {
             });
         }
 
+        for (const type of ['lockUnlock', 'lockUnlockFee']) {
+            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}]`, async () => {
+                const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
+                const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
+                const metadata = '0x00000000';
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
+                );
+                const payloadHash = keccak256(payload);
+
+                const transferToAddress = tokenManager.address;
+
+                await (await token.approve(service.address, amount)).wait();
+                await (await token.approve(tokenManager.address, 0)).wait();
+
+                await expect(
+                    reportGas(
+                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata),
+                        `Call service.interchainTransfer with metadata ${type}`,
+                    ),
+                )
+                    .to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, transferToAddress, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+            });
+        }
+
+        it(`Should revert on transferToTokenManager when not called by the correct tokenManager`, async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
+            const from = otherWallet.address;
+
+            expectRevert(
+                (gasOptions) => service.transferToTokenManager(tokenId, token.address, from, amount, gasOptions),
+                service,
+                'NotTokenManager',
+                [wallet.address, tokenManager.address],
+            );
+        });
+
         for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee']) {
             it(`Should be able to initiate an interchain token transfer via the callContractWithInterchainToken function on the service [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
@@ -2376,6 +2419,22 @@ describe('Interchain Token Service', () => {
                 service,
                 'ExecuteWithTokenNotSupported',
             );
+        });
+    });
+
+    describe('Bytecode checks [ @skip-on-coverage ]', () => {
+        it('Should preserve the same proxy bytecode for each EVM', async () => {
+            const proxyFactory = await ethers.getContractFactory('Proxy', wallet);
+            const proxyBytecode = proxyFactory.bytecode;
+            const proxyBytecodeHash = keccak256(proxyBytecode);
+
+            const expected = {
+                istanbul: '0xc3db348537acecfe55d79dfcac2afdbe7fb4e3a3911dcfe96665bbb6e364c19e',
+                berlin: '0x2d8417cd1af08f7eb531649d52505299ce4db63fb0a2a30ee16397435ab8b7d3',
+                london: '0x6e2908fca7d4bf622350ebb2d3f536d34b55a7588ac26a056cf4c11f71694826',
+            }[getEVMVersion()];
+
+            expect(proxyBytecodeHash).to.be.equal(expected);
         });
     });
 });
