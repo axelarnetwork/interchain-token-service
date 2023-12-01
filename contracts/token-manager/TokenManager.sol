@@ -100,22 +100,18 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      */
     function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
         bytes memory operatorBytes = abi.decode(params, (bytes));
+
         address operator;
-
-        /**
-         * @dev Specifying an empty operator will default to the service being the operator. This makes it easy to deploy
-         * remote interchain tokens without knowing anything about the service address at the destination.
-         */
-        if (operatorBytes.length == 0) {
-            operator = address(interchainTokenService);
-        } else {
+        if (operatorBytes.length != 0) {
             operator = operatorBytes.toAddress();
-
-            // Add flow limiter role to the service by default. The operator can remove this if they so choose.
-            _addAccountRoles(address(interchainTokenService), 1 << uint8(Roles.FLOW_LIMITER));
         }
 
+        // If an operator is not provided, set `address(0)` as the operator.
+        // This allows anyone to easily check if a custom operator was set on the token manager.
         _addAccountRoles(operator, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
+
+        // Add flow limiter role to the service by default. The operator can remove this if they so choose.
+        _addAccountRoles(address(interchainTokenService), (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
 
         _setup(params);
     }
@@ -266,6 +262,15 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         if (flowLimiter == address(0)) revert ZeroAddress();
 
         _removeRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
+    }
+
+    /**
+     * @notice Query if an address is a flow limiter.
+     * @param addr The address to query for.
+     * @return bool Boolean value representing whether or not the address is a flow limiter.
+     */
+    function isFlowLimiter(address addr) external view returns (bool) {
+        return hasRole(addr, uint8(Roles.FLOW_LIMITER));
     }
 
     /**

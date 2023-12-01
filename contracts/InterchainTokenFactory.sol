@@ -124,11 +124,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     ) external payable {
         address sender = msg.sender;
         salt = interchainTokenSalt(chainNameHash, sender, salt);
-        bytes memory distributorBytes;
+        bytes memory distributorBytes = new bytes(0);
 
         if (mintAmount > 0) {
             distributorBytes = address(this).toBytes();
-        } else {
+        } else if (distributor != address(0)) {
             distributorBytes = distributor.toBytes();
         }
 
