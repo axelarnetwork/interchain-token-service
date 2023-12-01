@@ -88,8 +88,13 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
         symbol = tokenSymbol;
         decimals = tokenDecimals;
 
-        if (distributor != address(0)) _addDistributor(distributor);
+        /**
+         * @dev Set the token manager as a distributor to allow it to mint and burn tokens.
+         * Also add the provided address as a distributor. If `address(0)` was provided,
+         * add it as a distributor to allow anyone to easily check that no custom distributor was set.
+         */
         _addDistributor(tokenManagerAddress);
+        _addDistributor(distributor);
 
         _setNameHash(tokenName);
     }
