@@ -101,7 +101,7 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
         bytes memory operatorBytes = abi.decode(params, (bytes));
 
-        address operator;
+        address operator = address(0);
         if (operatorBytes.length != 0) {
             operator = operatorBytes.toAddress();
         }
