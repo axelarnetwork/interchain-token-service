@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
+import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { TokenManagerProxy } from '../proxies/TokenManagerProxy.sol';
 
@@ -33,5 +34,8 @@ contract TokenManagerDeployer is ITokenManagerDeployer, Create3 {
         tokenManager = _create3(bytecode, tokenId);
 
         if (tokenManager.code.length == 0) revert TokenManagerDeploymentFailed();
+
+        if (implementationType == uint256(TokenManagerType.LOCK_UNLOCK) || implementationType == uint256(TokenManagerType.LOCK_UNLOCK_FEE))
+            ITokenManager(tokenManager).addServiceApproval();
     }
 }

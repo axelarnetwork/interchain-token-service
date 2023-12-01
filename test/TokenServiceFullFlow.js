@@ -26,7 +26,7 @@ const LOCK_UNLOCK = 2;
 
 describe('Interchain Token Service Full Flow', () => {
     let wallet;
-    let service, gateway, gasService, tokenManager, factory, tokenId;
+    let service, gateway, gasService, factory, tokenId;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const otherChains = ['chain 1', 'chain 2'];
@@ -138,7 +138,7 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, factory.address, totalMint)
                 .and.to.emit(token, 'Approval')
-                .withArgs(factory.address, expectedTokenManagerAddress, totalMint)
+                .withArgs(factory.address, service.address, totalMint)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(factory.address, expectedTokenManagerAddress, mintAmount);
         });
@@ -160,15 +160,14 @@ describe('Interchain Token Service Full Flow', () => {
 
             it('Should send some tokens to another chain via token manager', async () => {
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-                tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
-                await expect(token.approve(tokenManager.address, amount))
+                await expect(token.approve(service.address, amount))
                     .to.emit(token, 'Approval')
-                    .withArgs(wallet.address, tokenManager.address, amount);
+                    .withArgs(wallet.address, service.address, amount);
 
-                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, tokenManager.address, amount)
+                    .withArgs(wallet.address, tokenManagerAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -179,16 +178,15 @@ describe('Interchain Token Service Full Flow', () => {
 
             it('Should send some tokens to another chain via ITS', async () => {
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-                tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
                 // Canonical (pre-existing) token requires an approval due to locking
-                await expect(token.approve(tokenManager.address, amount))
+                await expect(token.approve(service.address, amount))
                     .to.emit(token, 'Approval')
-                    .withArgs(wallet.address, tokenManager.address, amount);
+                    .withArgs(wallet.address, service.address, amount);
 
                 await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, tokenManager.address, amount)
+                    .withArgs(wallet.address, tokenManagerAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destChain, service.address, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -316,10 +314,7 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via token manager', async () => {
-                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-                tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-
-                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -404,8 +399,8 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const tokenManagerImplementationAddress = await service.tokenManagerImplementation(MINT_BURN);
-            const tokenManagerImplementation = await getContractAt('TokenManagerMintBurn', tokenManagerImplementationAddress, wallet);
+            const tokenManagerImplementationAddress = await service.tokenManager();
+            const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
             const params = await tokenManagerImplementation.params(wallet.address, token.address);
             let tx = await service.populateTransaction.deployTokenManager(salt, '', MINT_BURN, params, 0);
@@ -452,16 +447,14 @@ describe('Interchain Token Service Full Flow', () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
 
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(tokenManagerAddress))
+            await expect(token.transferDistributorship(service.address))
                 .to.emit(token, 'RolesRemoved')
                 .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
                 .to.emit(token, 'RolesAdded')
-                .withArgs(tokenManagerAddress, 1 << DISTRIBUTOR_ROLE);
+                .withArgs(service.address, 1 << DISTRIBUTOR_ROLE);
 
             await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
                 wallet.address,
@@ -493,10 +486,7 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via token manager', async () => {
-                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-                tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-
-                await expect(tokenManager.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')

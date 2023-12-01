@@ -2,11 +2,13 @@
 
 pragma solidity ^0.8.0;
 
+import { ITokenManagerType } from './ITokenManagerType.sol';
+
 /**
  * @title ITokenManagerDeployer Interface
  * @notice This interface is used to deploy new instances of the TokenManagerProxy contract.
  */
-interface ITokenManagerDeployer {
+interface ITokenManagerDeployer is ITokenManagerType {
     error AddressZero();
     error TokenManagerDeploymentFailed();
 

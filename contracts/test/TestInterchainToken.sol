@@ -10,7 +10,7 @@ error Invalid();
 contract TestInterchainToken is InterchainToken {
     string public placeholder;
 
-    constructor() {
+    constructor() InterchainToken(address(1)) {
         if (INITIALIZED_SLOT != bytes32(uint256(keccak256('interchain-token-initialized')) - 1)) revert Invalid();
     }
 }

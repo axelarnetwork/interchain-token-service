@@ -1,12 +1,11 @@
 'use strict';
 
-const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
     constants: { MaxUint256, AddressZero },
     getContractAt,
 } = ethers;
-const { expect } = chai;
+const { expect } = require('chai');
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
@@ -27,19 +26,19 @@ describe('ERC20', () => {
         owner = wallets[0];
         user = wallets[1];
 
-        interchainToken = await deployContract(owner, 'InterchainToken');
+        interchainToken = await deployContract(owner, 'InterchainToken', [owner.address]);
         interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [interchainToken.address]);
 
         const salt = getRandomBytes32();
+        const tokenId = getRandomBytes32();
 
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
         token = await getContractAt('InterchainToken', tokenAddress, owner);
 
-        await interchainTokenDeployer
-            .deployInterchainToken(salt, owner.address, owner.address, name, symbol, decimals)
-            .then((tx) => tx.wait());
+        await interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait());
 
         await (await token.mint(owner.address, mintAmount)).wait();
+        expect(await token.interchainTokenId()).to.equal(tokenId);
     });
 
     it('should increase and decrease allowance', async () => {

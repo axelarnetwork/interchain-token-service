@@ -16,7 +16,6 @@ const {
     deployMockGateway,
     deployGasService,
     deployInterchainTokenService,
-    deployTokenManagerImplementations,
 } = require('../scripts/deploy');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/governance/AxelarServiceGovernance.sol/AxelarServiceGovernance.json');
@@ -25,7 +24,7 @@ const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifac
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, signer1, signer2, signer3;
     let service, gateway, gasService;
-    let tokenManagerDeployer, interchainTokenDeployer, tokenManagerImplementations;
+    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler;
     let interchainTokenFactoryAddress;
 
     let axelarServiceGovernanceFactory;
@@ -52,7 +51,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             tokenName,
             tokenSymbol,
             tokenDecimals,
-            tokenManager.address,
+            service.address,
+            tokenId,
         ]);
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
@@ -71,13 +71,14 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const create3DeployerFactory = await ethers.getContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet);
         const create3Deployer = await create3DeployerFactory.deploy().then((d) => d.deployed());
         const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-        const interchainToken = await deployContract(wallet, 'InterchainToken');
+        const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
 
         gateway = await deployMockGateway(wallet);
         gasService = await deployGasService(wallet);
         tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
         interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
-        tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
+        tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
+        tokenHandler = await deployContract(wallet, 'TokenHandler', []);
         interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey + 'Factory');
 
         axelarServiceGovernanceFactory = await ethers.getContractFactory(
@@ -105,7 +106,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             gateway.address,
             gasService.address,
             interchainTokenFactoryAddress,
-            tokenManagerImplementations.map((impl) => impl.address),
+            tokenManager.address,
+            tokenHandler.address,
             chainName,
             [],
             deploymentKey,
@@ -127,7 +129,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             gasService.address,
             interchainTokenFactoryAddress,
             chainName,
-            tokenManagerImplementations.map((impl) => impl.address),
+            tokenManager.address,
+            tokenHandler.address,
         ]);
         const newServiceImplementationCodeHash = await getBytecodeHash(newServiceImplementation);
         const setupParams = '0x';
@@ -192,7 +195,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             gasService.address,
             interchainTokenFactoryAddress,
             chainName,
-            tokenManagerImplementations.map((impl) => impl.address),
+            tokenManager.address,
+            tokenHandler.address,
         ]);
         const newServiceImplementationCodeHash = await getBytecodeHash(newServiceImplementation);
         const setupParams = '0x';
