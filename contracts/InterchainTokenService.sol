@@ -474,6 +474,18 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Can be called by lock unlock token managers to allow for approvals to the service instead of them.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param token The address of the token to transfer from.
+     * @param from The address of the user to take tokens from.
+     * @param amount The amount of tokens to be transferred.
+     */
+    function transferToTokenManager(bytes32 tokenId, address token, address from, uint256 amount) external onlyTokenManager(tokenId) {
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(token).safeTransferFrom(from, msg.sender, amount);
+    }
+
+    /**
      * @notice Initiates an interchain call contract with interchain token to a destination chain.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.

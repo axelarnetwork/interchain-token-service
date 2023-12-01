@@ -56,7 +56,12 @@ contract TokenManagerLockUnlock is TokenManager, ITokenManagerLockUnlock {
     function _takeToken(address from, uint256 amount) internal override returns (uint256) {
         IERC20 token = IERC20(this.tokenAddress());
 
-        token.safeTransferFrom(from, address(this), amount);
+        if (token.allowance(from, address(this)) < amount) {
+            // slither-disable-next-line var-read-using-this
+            interchainTokenService.transferToTokenManager(this.interchainTokenId(), address(token), from, amount);
+        } else {
+            token.safeTransferFrom(from, address(this), amount);
+        }
 
         return amount;
     }
