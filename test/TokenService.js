@@ -1608,7 +1608,7 @@ describe('Interchain Token Service', () => {
         }
 
         for (const type of ['lockUnlock', 'lockUnlockFee']) {
-            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approve as well [${type}]`, async () => {
+            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
                 const metadata = '0x00000000';
@@ -1637,6 +1637,18 @@ describe('Interchain Token Service', () => {
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
             });
         }
+
+        it(`Should revert on transferToTokenManager when not called by the correct tokenManager`, async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
+            const from = otherWallet.address;
+
+            expectRevert(
+                (gasOptions) => service.transferToTokenManager(tokenId, token.address, from, amount, gasOptions),
+                service,
+                'NotTokenManager',
+                [wallet.address, tokenManager.address],
+            );
+        });
 
         for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee']) {
             it(`Should be able to initiate an interchain token transfer via the callContractWithInterchainToken function on the service [${type}]`, async () => {
