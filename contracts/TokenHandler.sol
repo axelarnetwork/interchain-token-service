@@ -27,6 +27,7 @@ contract TokenHandler is ITokenHandler, ReentrancyGuard {
      * @param to the address of the recepient.
      * @return amount The amount of tokens actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
+    // slither-disable-next-line locked-ether
     function giveToken(
         uint256 tokenManagerType,
         address tokenAddress,
@@ -69,6 +70,7 @@ contract TokenHandler is ITokenHandler, ReentrancyGuard {
      * @param from the address of the provider.
      * @return amount The amount of tokens actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
      */
+    // slither-disable-next-line locked-ether
     function takeToken(
         uint256 tokenManagerType,
         address tokenAddress,
@@ -78,12 +80,14 @@ contract TokenHandler is ITokenHandler, ReentrancyGuard {
     ) external payable noReEntrancy returns (uint256) {
         IERC20 token = IERC20(tokenAddress);
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
+            // slither-disable-next-line arbitrary-send-erc20
             token.safeTransferFrom(from, tokenManager, amount);
             return amount;
         }
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             uint256 balanceBefore = token.balanceOf(tokenManager);
 
+            // slither-disable-next-line arbitrary-send-erc20
             token.safeTransferFrom(from, tokenManager, amount);
 
             uint256 diff = token.balanceOf(tokenManager) - balanceBefore;

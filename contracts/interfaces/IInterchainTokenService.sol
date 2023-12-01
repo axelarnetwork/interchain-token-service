@@ -97,9 +97,9 @@ interface IInterchainTokenService is
 
     /**
      * @notice Returns the address of TokenManager implementation.
-     * @return tokenManagerAddress The address of the token manager contract.
+     * @return tokenManagerAddress_ The address of the token manager contract.
      */
-    function tokenManager() external view returns (address tokenManagerAddress);
+    function tokenManager() external view returns (address tokenManagerAddress_);
 
     /**
      * @notice Returns the address of TokenHandler implementation.

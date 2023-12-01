@@ -973,6 +973,7 @@ contract InterchainTokenService is
         uint256 tmt;
         (tmt, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
 
+        // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.takeToken.selector, tmt, tokenAddress, tokenManager_, from, amount)
         );
@@ -987,7 +988,8 @@ contract InterchainTokenService is
     function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address) {
         address tokenManager_ = tokenManagerAddress(tokenId);
         (uint256 tmt, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-
+        
+        // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.giveToken.selector, tmt, tokenAddress, tokenManager_, to, amount)
         );

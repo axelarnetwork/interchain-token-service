@@ -96,12 +96,10 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
      */
     function setup(bytes calldata params_) external override(Implementation, IImplementation) onlyProxy {
         bytes memory operatorBytes = abi.decode(params_, (bytes));
+        
+        // slither-disable-next-line uninitialized-local
         address operator;
 
-        /**
-         * @dev Specifying an empty operator will default to the service being the operator. This makes it easy to deploy
-         * remote interchain tokens without knowing anything about the service address at the destination.
-         */
         if (operatorBytes.length != 0) {
             operator = operatorBytes.toAddress();
             // Add flow limiter role to the service by default. The operator can remove this if they so choose.
