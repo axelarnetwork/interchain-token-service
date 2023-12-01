@@ -2570,9 +2570,9 @@ describe('Interchain Token Service', () => {
             const proxyBytecodeHash = keccak256(proxyBytecode);
 
             const expected = {
-                istanbul: '0xc3db348537acecfe55d79dfcac2afdbe7fb4e3a3911dcfe96665bbb6e364c19e',
-                berlin: '0x2d8417cd1af08f7eb531649d52505299ce4db63fb0a2a30ee16397435ab8b7d3',
-                london: '0x6e2908fca7d4bf622350ebb2d3f536d34b55a7588ac26a056cf4c11f71694826',
+                istanbul: '0x4e164bfb56555d2b7bfec101a5bae5aa87fcfbcdd2c895a5c3cccbd68047ed27',
+                berlin: '0x5b973f3ea8aada2c5a451b77fbed9d668ef176c3ef0d0e4be24fda1347a2df68',
+                london: '0x5ab26238fc73053542097bf88cf7661d41b25c17d3f08f1c1fb9872d4476ce9d',
             }[getEVMVersion()];
 
             expect(proxyBytecodeHash).to.be.equal(expected);
