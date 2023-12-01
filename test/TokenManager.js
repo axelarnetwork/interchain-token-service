@@ -140,9 +140,9 @@ describe('Token Manager', () => {
         const proxyBytecodeHash = keccak256(proxyBytecode);
 
         const expected = {
-            istanbul: '0x6b736a5ec65994238466070da91520144aaa3b41ecdcda7cfa4e7b6cd2296347',
-            berlin: '0xcbd407743ce6492f90dc2542f2ad71ca6c99d21fd29cc9a8fdf6ff54bb28131f',
-            london: '0x028f986ea9320071af6747d2dad9e0870c28e8bd19542168f5e4855566e38376',
+            istanbul: '0xce3ee5c04c84351d193a6e5dc52e34702039a6083437b077367bac26da57103c',
+            berlin: '0xea7ab1f8727ce63dd60f1b7c6770723259b7ac2ce69a74046509e2a65cd4b899',
+            london: '0x97da1989bb59bf727d23961f163900ce0dcab3dafa2b3fa0aec39f09c5bd233e',
         }[getEVMVersion()];
 
         expect(proxyBytecodeHash).to.be.equal(expected);
