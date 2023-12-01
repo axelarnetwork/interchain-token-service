@@ -469,12 +469,7 @@ contract InterchainTokenService is
      * @param from The address of the user to take tokens from.
      * @param amount The amount of tokens to be transferred.
      */
-    function transferToTokenManager(
-        bytes32 tokenId,
-        address token,
-        address from,
-        uint256 amount
-    ) external onlyTokenManager(tokenId) {
+    function transferToTokenManager(bytes32 tokenId, address token, address from, uint256 amount) external onlyTokenManager(tokenId) {
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(token).safeTransferFrom(from, msg.sender, amount);
     }
