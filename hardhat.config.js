@@ -43,8 +43,8 @@ module.exports = {
         compilers: [compilerSettings],
         // Fix the Proxy bytecodes
         overrides: {
-            "contracts/proxies/Proxy.sol": compilerSettings,
-            "contracts/proxies/TokenManagerProxy.sol": compilerSettings,
+            'contracts/proxies/Proxy.sol': compilerSettings,
+            'contracts/proxies/TokenManagerProxy.sol': compilerSettings,
         },
     },
     defaultNetwork: 'hardhat',
