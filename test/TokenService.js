@@ -12,7 +12,7 @@ const { Wallet } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
-const { getRandomBytes32, expectRevert, gasReporter } = require('./utils');
+const { getRandomBytes32, expectRevert, gasReporter, getEVMVersion } = require('./utils');
 const { deployAll, deployContract, deployMockGateway, deployGasService, deployInterchainTokenService } = require('../scripts/deploy');
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;

@@ -152,7 +152,7 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
     /**
      * @notice A function to renew approval to the service if we need to.
      */
-    function addServiceApproval() public {
+    function addServiceApproval() external onlyService {
         IERC20(this.tokenAddress()).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, UINT256_MAX));
     }
 
