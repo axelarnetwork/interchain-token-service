@@ -271,6 +271,21 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
         });
 
+        it('Should register a token if the mint amount is zero and distributor is the zero address', async () => {
+            const salt = keccak256('0x123456');
+            tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
+            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
+            const distributorBytes = new Uint8Array();
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [distributorBytes, tokenAddress]);
+            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+
+            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, AddressZero))
+                .to.emit(service, 'InterchainTokenDeployed')
+                .withArgs(tokenId, tokenAddress, AddressZero, name, symbol, decimals)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
+        });
+
         it('Should register a token if the mint amount is greater than zero and the distributor is the zero address', async () => {
             const salt = keccak256('0x12345678');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
