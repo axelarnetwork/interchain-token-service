@@ -105,6 +105,8 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
             // Add flow limiter role to the service by default. The operator can remove this if they so choose.
         }
 
+        // If an operator is not provided, set `address(0)` as the operator.
+        // This allows anyone to easily check if a custom operator was set on the token manager.
         _addAccountRoles(operator, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
         _addAccountRoles(address(interchainTokenService), (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
     }
@@ -137,6 +139,15 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
         if (flowLimiter == address(0)) revert ZeroAddress();
 
         _removeRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
+    }
+
+    /**
+     * @notice Query if an address is a flow limiter.
+     * @param addr The address to query for.
+     * @return bool Boolean value representing whether or not the address is a flow limiter.
+     */
+    function isFlowLimiter(address addr) external view returns (bool) {
+        return hasRole(addr, uint8(Roles.FLOW_LIMITER));
     }
 
     /**

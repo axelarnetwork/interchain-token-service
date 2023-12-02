@@ -42,6 +42,13 @@ interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplemen
     function removeFlowLimiter(address flowLimiter) external;
 
     /**
+     * @notice Query if an address is a flow limiter.
+     * @param addr The address to query for.
+     * @return bool Boolean value representing whether or not the address is a flow limiter.
+     */
+    function isFlowLimiter(address addr) external view returns (bool);
+
+    /**
      * @notice This function sets the flow limit for this TokenManager.
      * @dev Can only be called by the flow limiters.
      * @param flowLimit_ The maximum difference between the tokens flowing in and/or out at any given interval of time (6h).
