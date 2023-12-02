@@ -1468,30 +1468,6 @@ describe('Interchain Token Service', () => {
             sourceAddress = wallet.address;
         });
 
-        it(`Should revert on transmitInterchainTransferWithData if not called by the token`, async () => {
-            const [token, , tokenId] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
-
-            const sourceAddress = wallet.address;
-            const metadataVersion = 1;
-
-            await expectRevert(
-                (gasOptions) =>
-                    service.transmitInterchainTransferWithData(
-                        tokenId,
-                        sourceAddress,
-                        destinationChain,
-                        destAddress,
-                        amount,
-                        metadataVersion,
-                        data,
-                        gasOptions,
-                    ),
-                service,
-                'NotToken',
-                [wallet.address, token.address],
-            );
-        });
-
         it(`Should revert on an interchain transfer if service is paused`, async () => {
             const [, , tokenId] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
 

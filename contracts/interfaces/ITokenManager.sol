@@ -64,7 +64,7 @@ interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplemen
     /**
      * @notice A function to renew approval to the service if we need to.
      */
-    function addServiceApproval() external;
+    function approveService() external;
 
     /**
      * @notice Getter function for the parameters of a lock/unlock TokenManager.

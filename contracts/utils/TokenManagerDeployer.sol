@@ -34,8 +34,5 @@ contract TokenManagerDeployer is ITokenManagerDeployer, Create3 {
         tokenManager = _create3(bytecode, tokenId);
 
         if (tokenManager.code.length == 0) revert TokenManagerDeploymentFailed();
-
-        if (implementationType == uint256(TokenManagerType.LOCK_UNLOCK) || implementationType == uint256(TokenManagerType.LOCK_UNLOCK_FEE))
-            ITokenManager(tokenManager).addServiceApproval();
     }
 }

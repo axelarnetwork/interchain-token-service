@@ -2,13 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import { ITokenManagerType } from './ITokenManagerType.sol';
-
 /**
  * @title ITokenManager Interface
  * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
-interface ITokenHandler is ITokenManagerType {
+interface ITokenHandler {
     error UnsupportedTokenManagerType(uint256 tokenManagerType);
 
     /**

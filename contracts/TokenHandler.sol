@@ -7,6 +7,7 @@ import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 import { SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
+import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 
@@ -14,7 +15,7 @@ import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
  * @title ITokenManager Interface
  * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
-contract TokenHandler is ITokenHandler, ReentrancyGuard {
+contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     using SafeTokenTransferFrom for IERC20;
     using SafeTokenCall for IERC20;
 
@@ -34,28 +35,17 @@ contract TokenHandler is ITokenHandler, ReentrancyGuard {
         address tokenManager,
         address to,
         uint256 amount
-    ) external payable noReEntrancy returns (uint256) {
-        IERC20 token = IERC20(tokenAddress);
+    ) external payable returns (uint256) {
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
-            // slither-disable-next-line arbitrary-send-erc20
-            token.safeTransferFrom(tokenManager, to, amount);
+            _giveTokenLockUnlock(tokenAddress, tokenManager, to, amount);
             return amount;
         }
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            uint256 balanceBefore = token.balanceOf(to);
-
-            // slither-disable-next-line arbitrary-send-erc20
-            token.safeTransferFrom(tokenManager, to, amount);
-
-            uint256 diff = token.balanceOf(to) - balanceBefore;
-            if (diff < amount) {
-                amount = diff;
-            }
-
+            amount = _giveTokenLockUnlockFee(tokenAddress, tokenManager, to, amount);
             return amount;
         }
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
-            token.safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
+            _giveTokenMintBurn(tokenAddress, to, amount);
             return amount;
         }
         revert UnsupportedTokenManagerType(tokenManagerType);
@@ -77,34 +67,81 @@ contract TokenHandler is ITokenHandler, ReentrancyGuard {
         address tokenManager,
         address from,
         uint256 amount
-    ) external payable noReEntrancy returns (uint256) {
-        IERC20 token = IERC20(tokenAddress);
+    ) external payable returns (uint256) {
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
-            // slither-disable-next-line arbitrary-send-erc20
-            token.safeTransferFrom(from, tokenManager, amount);
+            _takeTokenLockUnlock(tokenAddress, tokenManager, from, amount);
             return amount;
         }
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            uint256 balanceBefore = token.balanceOf(tokenManager);
-
-            // slither-disable-next-line arbitrary-send-erc20
-            token.safeTransferFrom(from, tokenManager, amount);
-
-            uint256 diff = token.balanceOf(tokenManager) - balanceBefore;
-            if (diff < amount) {
-                amount = diff;
-            }
-
+            amount = _takeTokenLockUnlockFee(tokenAddress, tokenManager, from, amount);
             return amount;
         }
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
-            token.safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
+            _takeTokenMintBurn(tokenAddress, from, amount);
             return amount;
         }
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
-            token.safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
+            _takeTokenMintBurnFrom(tokenAddress, from, amount);
             return amount;
         }
         revert UnsupportedTokenManagerType(tokenManagerType);
+    }
+
+    function _giveTokenLockUnlock(address tokenAddress, address tokenManager, address to, uint256 amount) internal {
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(tokenAddress).safeTransferFrom(tokenManager, to, amount);
+    }
+
+    function _takeTokenLockUnlock(address tokenAddress, address tokenManager, address from, uint256 amount) internal {
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(tokenAddress).safeTransferFrom(from, tokenManager, amount);
+    }
+
+    function _giveTokenLockUnlockFee(
+        address tokenAddress,
+        address tokenManager,
+        address to,
+        uint256 amount
+    ) internal noReEntrancy returns (uint256) {
+        uint256 balanceBefore = IERC20(tokenAddress).balanceOf(to);
+
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(tokenAddress).safeTransferFrom(tokenManager, to, amount);
+
+        uint256 diff = IERC20(tokenAddress).balanceOf(to) - balanceBefore;
+        if (diff < amount) {
+            amount = diff;
+        }
+        return amount;
+    }
+
+    function _takeTokenLockUnlockFee(
+        address tokenAddress,
+        address tokenManager,
+        address from,
+        uint256 amount
+    ) internal noReEntrancy returns (uint256) {
+        uint256 balanceBefore = IERC20(tokenAddress).balanceOf(tokenManager);
+
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(tokenAddress).safeTransferFrom(from, tokenManager, amount);
+
+        uint256 diff = IERC20(tokenAddress).balanceOf(tokenManager) - balanceBefore;
+        if (diff < amount) {
+            amount = diff;
+        }
+        return amount;
+    }
+
+    function _giveTokenMintBurn(address tokenAddress, address to, uint256 amount) internal {
+        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
+    }
+
+    function _takeTokenMintBurn(address tokenAddress, address from, uint256 amount) internal {
+        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
+    }
+
+    function _takeTokenMintBurnFrom(address tokenAddress, address from, uint256 amount) internal {
+        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
     }
 }

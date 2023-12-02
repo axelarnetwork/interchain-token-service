@@ -97,7 +97,7 @@ contract InterchainTokenService is
      * @param gasService_ The address of the AxelarGasService.
      * @param interchainTokenFactory_ The address of the InterchainTokenFactory.
      * @param chainName_ The name of the chain that this contract is deployed on.
-     * @param tokenManager_ The tokenManager implementation.
+     * @param tokenManagerImplementation_ The tokenManager implementation.
      * @param tokenHandler_ The tokenHandler implementation.
      */
     constructor(
@@ -107,7 +107,7 @@ contract InterchainTokenService is
         address gasService_,
         address interchainTokenFactory_,
         string memory chainName_,
-        address tokenManager_,
+        address tokenManagerImplementation_,
         address tokenHandler_
     ) {
         if (
@@ -116,7 +116,7 @@ contract InterchainTokenService is
             interchainTokenDeployer_ == address(0) ||
             gateway_ == address(0) ||
             interchainTokenFactory_ == address(0) ||
-            tokenManager_ == address(0) ||
+            tokenManagerImplementation_ == address(0) ||
             tokenHandler_ == address(0)
         ) revert ZeroAddress();
 
@@ -129,7 +129,7 @@ contract InterchainTokenService is
         if (bytes(chainName_).length == 0) revert InvalidChainName();
         chainNameHash = keccak256(bytes(chainName_));
 
-        tokenManager = tokenManager_;
+        tokenManager = tokenManagerImplementation_;
         tokenHandler = tokenHandler_;
     }
 
@@ -477,12 +477,12 @@ contract InterchainTokenService is
     }
 
     /*********************\
-    TOKEN MANAGER FUNCTIONS
+    TOKEN ONLY FUNCTIONS
     \*********************/
 
     /**
      * @notice Transmit an interchain transfer for the given tokenId.
-     * @dev Only callable by a token manager.
+     * @dev Only callable by a token registerred under tokenId.
      * @param tokenId The tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress The address where the token is coming from, which will also be used for reimbursement of gas.
      * @param destinationChain The name of the chain to send tokens to.
@@ -506,36 +506,6 @@ contract InterchainTokenService is
         if (sender != tokenAddress) revert NotToken(sender, tokenAddress);
 
         (uint32 metadataVersion, bytes memory data) = _decodeMetadata(metadata);
-
-        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data);
-    }
-
-    /**
-     * @notice Transmit an interchain transfer for the given tokenId.
-     * @dev Only callable by a token manager.
-     * @param tokenId The tokenId of the TokenManager (which must be the msg.sender).
-     * @param sourceAddress The address where the token is coming from, which will also be used for reimbursement of gas.
-     * @param destinationChain The name of the chain to send tokens to.
-     * @param destinationAddress The destinationAddress for the interchainTransfer.
-     * @param amount The amount of token to give.
-     * @param metadataVersion The version of the metadata.
-     * @param data The data to be passed to the destination.
-     */
-    function transmitInterchainTransferWithData(
-        bytes32 tokenId,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes memory destinationAddress,
-        uint256 amount,
-        uint32 metadataVersion,
-        bytes memory data
-    ) external payable whenNotPaused {
-        address tokenAddress;
-        address sender = msg.sender;
-
-        (amount, tokenAddress) = _takeToken(tokenId, sourceAddress, amount);
-
-        if (sender != tokenAddress) revert NotToken(sender, tokenAddress);
 
         _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data);
     }
@@ -866,6 +836,9 @@ contract InterchainTokenService is
             tokenManager_ := mload(add(returnData, 0x20))
         }
 
+        if (tokenManagerType == TokenManagerType.LOCK_UNLOCK || tokenManagerType == TokenManagerType.LOCK_UNLOCK_FEE)
+            ITokenManager(tokenManager_).approveService();
+
         // slither-disable-next-line reentrancy-events
         emit TokenManagerDeployed(tokenId, tokenManager_, tokenManagerType, params);
     }
@@ -985,12 +958,12 @@ contract InterchainTokenService is
 
     function _takeToken(bytes32 tokenId, address from, uint256 amount) internal returns (uint256, address tokenAddress) {
         address tokenManager_ = tokenManagerAddress(tokenId);
-        uint256 tmt;
-        (tmt, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
+        uint256 tokenManagerType;
+        (tokenManagerType, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
 
         // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tmt, tokenAddress, tokenManager_, from, amount)
+            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenManagerType, tokenAddress, tokenManager_, from, amount)
         );
         if (!success) revert TakeTokenFailed(data);
         amount = abi.decode(data, (uint256));
@@ -1002,16 +975,16 @@ contract InterchainTokenService is
 
     function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address) {
         address tokenManager_ = tokenManagerAddress(tokenId);
-        (uint256 tmt, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
+
+        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
+        ITokenManager(tokenManager_).addFlowIn(amount);
 
         // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tmt, tokenAddress, tokenManager_, to, amount)
+            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, tokenManager_, to, amount)
         );
         if (!success) revert GiveTokenFailed(data);
         amount = abi.decode(data, (uint256));
-
-        ITokenManager(tokenManager_).addFlowIn(amount);
 
         return (amount, tokenAddress);
     }

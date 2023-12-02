@@ -105,17 +105,16 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
     function setup(bytes calldata params_) external override(Implementation, IImplementation) onlyProxy {
         bytes memory operatorBytes = abi.decode(params_, (bytes));
 
-        // slither-disable-next-line uninitialized-local
-        address operator;
+        address operator = address(0);
 
         if (operatorBytes.length != 0) {
             operator = operatorBytes.toAddress();
-            // Add flow limiter role to the service by default. The operator can remove this if they so choose.
         }
 
         // If an operator is not provided, set `address(0)` as the operator.
         // This allows anyone to easily check if a custom operator was set on the token manager.
         _addAccountRoles(operator, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
+        // Add operator and flow limiter role to the service. The operator can remove the flow limiter role if they so chose and the service has no way to use the operator role for now.
         _addAccountRoles(address(interchainTokenService), (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
     }
 
@@ -171,7 +170,7 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
     /**
      * @notice A function to renew approval to the service if we need to.
      */
-    function addServiceApproval() external onlyService {
+    function approveService() external onlyService {
         IERC20(this.tokenAddress()).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, UINT256_MAX));
     }
 
