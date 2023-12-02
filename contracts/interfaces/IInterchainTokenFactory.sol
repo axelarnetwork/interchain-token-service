@@ -11,7 +11,7 @@ interface IInterchainTokenFactory {
     error InvalidChainName();
     error NotDistributor(address distributor);
     error NotOperator(address operator);
-    error NonZeroMintAmount();
+    error InsufficientBalance(bytes32 tokenId, address deployer, uint256 balance);
     error ApproveFailed();
     error GatewayToken(address tokenAddress);
 
@@ -52,7 +52,7 @@ interface IInterchainTokenFactory {
      * @param name The name of the token.
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals for the token.
-     * @param mintAmount The amount of tokens to mint initially (can be zero).
+     * @param initialSupply The amount of tokens to mint initially (can be zero).
      * @param distributor The address to receive the initially minted tokens.
      */
     function deployInterchainToken(
@@ -60,7 +60,7 @@ interface IInterchainTokenFactory {
         string calldata name,
         string calldata symbol,
         uint8 decimals,
-        uint256 mintAmount,
+        uint256 initialSupply,
         address distributor
     ) external payable;
 
