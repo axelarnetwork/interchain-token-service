@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
 
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
 import { TokenManagerProxy } from '../proxies/TokenManagerProxy.sol';
 

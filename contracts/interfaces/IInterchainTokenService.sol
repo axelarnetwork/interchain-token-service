@@ -237,7 +237,6 @@ interface IInterchainTokenService is
         bytes calldata metadata
     ) external payable;
 
-
     /**
      * @notice Sets the flow limits for multiple tokens.
      * @param tokenIds An array of tokenIds.
