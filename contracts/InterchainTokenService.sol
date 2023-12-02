@@ -391,10 +391,10 @@ contract InterchainTokenService is
 
         IERC20 token;
         {
-            ITokenManager tokenManager = ITokenManager(validTokenManagerAddress(tokenId));
-            token = IERC20(tokenManager.tokenAddress());
+            ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
+            token = IERC20(tokenManager_.tokenAddress());
 
-            if (tokenManager.implementationType() == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+            if (tokenManager_.implementationType() == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
                 uint256 balanceAmount = token.balanceOf(destinationAddress);
 
                 token.safeTransferFrom(msg.sender, destinationAddress, amount);
@@ -1003,7 +1003,7 @@ contract InterchainTokenService is
     function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address) {
         address tokenManager_ = tokenManagerAddress(tokenId);
         (uint256 tmt, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-        
+
         // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.giveToken.selector, tmt, tokenAddress, tokenManager_, to, amount)

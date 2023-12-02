@@ -564,7 +564,7 @@ describe('Interchain Token Service', () => {
 
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
             expect(await token.isDistributor(wallet.address)).to.be.true;
-            expect(await token.isDistributor(tokenManager.address)).to.be.true;
+            expect(await token.isDistributor(service.address)).to.be.true;
         });
 
         it('Should revert when registering an interchain token when service is paused', async () => {

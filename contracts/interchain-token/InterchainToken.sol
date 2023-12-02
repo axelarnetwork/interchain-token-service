@@ -99,7 +99,7 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
         symbol = tokenSymbol;
         decimals = tokenDecimals;
         tokenId = tokenId_;
-        
+
         _addDistributor(interchainTokenServiceAddress);
         _addDistributor(distributor);
 

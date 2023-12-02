@@ -23,6 +23,12 @@ interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplemen
     error NotFlowLimiter(address flowLimiter);
     error NotSupported();
 
+    /**
+     * @notice Returns implementation type of this token manager.
+     * @return uint256 The implementation type of this token manager.
+     */
+    function implementationType() external view returns (uint256);
+
     function addFlowIn(uint256 amount) external;
 
     function addFlowOut(uint256 amount) external;

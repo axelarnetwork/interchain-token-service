@@ -79,6 +79,14 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
     }
 
     /**
+     * @notice Returns implementation type of this token manager.
+     * @return uint256 The implementation type of this token manager.
+     */
+    function implementationType() external pure returns (uint256) {
+        revert NotSupported();
+    }
+
+    /**
      * @notice A function that should return the token address from the setup params.
      * @param params_ The setup parameters.
      * @return tokenAddress_ The token address.
@@ -96,7 +104,7 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
      */
     function setup(bytes calldata params_) external override(Implementation, IImplementation) onlyProxy {
         bytes memory operatorBytes = abi.decode(params_, (bytes));
-        
+
         // slither-disable-next-line uninitialized-local
         address operator;
 

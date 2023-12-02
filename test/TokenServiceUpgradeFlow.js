@@ -11,12 +11,7 @@ const {
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const { isHardhat, waitFor, getRandomBytes32, getPayloadAndProposalHash } = require('./utils');
-const {
-    deployContract,
-    deployMockGateway,
-    deployGasService,
-    deployInterchainTokenService,
-} = require('../scripts/deploy');
+const { deployContract, deployMockGateway, deployGasService, deployInterchainTokenService } = require('../scripts/deploy');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/governance/AxelarServiceGovernance.sol/AxelarServiceGovernance.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
