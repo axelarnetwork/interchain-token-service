@@ -32,6 +32,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
+    bytes32 internal constant PREFIX_DEPLOYER_BALANCE = keccak256('deployer-balance');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     /**
@@ -104,6 +105,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenAddress = service.interchainTokenAddress(interchainTokenId(deployer, salt));
     }
 
+    function deployerTokenBalance(bytes32 tokenId, address deployer) public view returns (uint256 deployerBalance) {
+        bytes32 balanceKey = keccak256(abi.encode(PREFIX_DEPLOYER_BALANCE, tokenId, deployer));
+        assembly {
+            deployerBalance := sload(balanceKey)
+        }
+    }
+
     /**
      * @notice Deploys a new interchain token with specified parameters.
      * @dev Creates a new token and optionally mints an initial amount to a specified distributor.
@@ -111,7 +119,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param name The name of the token.
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals for the token.
-     * @param mintAmount The amount of tokens to mint initially (can be zero).
+     * @param initialSupply The amount of tokens to mint initially (can be zero).
      * @param distributor The address to receive the initially minted tokens.
      */
     function deployInterchainToken(
@@ -119,14 +127,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string calldata name,
         string calldata symbol,
         uint8 decimals,
-        uint256 mintAmount,
+        uint256 initialSupply,
         address distributor
     ) external payable {
         address sender = msg.sender;
         salt = interchainTokenSalt(chainNameHash, sender, salt);
         bytes memory distributorBytes = new bytes(0);
 
-        if (mintAmount > 0) {
+        if (initialSupply > 0) {
             distributorBytes = address(this).toBytes();
         } else if (distributor != address(0)) {
             distributorBytes = distributor.toBytes();
@@ -134,12 +142,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
         _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, 0);
 
-        if (mintAmount > 0) {
+        if (initialSupply > 0) {
             bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
             ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
 
-            token.mint(address(this), mintAmount);
+            _setDeployerTokenBalance(tokenId, sender, initialSupply);
+            token.mint(address(this), initialSupply);
 
             token.transferDistributorship(distributor);
 
@@ -296,6 +305,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint256 amount,
         uint256 gasValue
     ) external payable {
+        address sender = msg.sender;
+        uint256 balance = deployerTokenBalance(tokenId, sender);
+
+        if (amount > balance) revert InsufficientBalance(tokenId, sender, balance);
+
+        _setDeployerTokenBalance(tokenId, sender, balance - amount);
+
         if (bytes(destinationChain).length == 0) {
             address tokenAddress = service.interchainTokenAddress(tokenId);
             IInterchainToken token = IInterchainToken(tokenAddress);
@@ -314,6 +330,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.validTokenAddress(tokenId);
         IInterchainToken token = IInterchainToken(tokenAddress);
+
+        _setDeployerTokenBalance(tokenId, msg.sender, deployerTokenBalance(tokenId, msg.sender) + amount);
 
         token.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -338,5 +356,12 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     function _isGatewayToken(address token) internal view returns (bool) {
         string memory symbol = IInterchainToken(token).symbol();
         return token == gateway.tokenAddresses(symbol);
+    }
+
+    function _setDeployerTokenBalance(bytes32 tokenId, address deployer, uint256 deployerBalance) internal {
+        bytes32 balanceKey = keccak256(abi.encode(PREFIX_DEPLOYER_BALANCE, tokenId, deployer));
+        assembly {
+            sstore(balanceKey, deployerBalance)
+        }
     }
 }
