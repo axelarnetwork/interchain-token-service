@@ -12,7 +12,8 @@ contract TestInterchainTokenService is InterchainTokenService {
         address gasService_,
         address interchainTokenFactory_,
         string memory chainName_,
-        address[] memory tokenManagerImplementations
+        address tokenManager_,
+        address tokenHandler_
     )
         InterchainTokenService(
             tokenManagerDeployer_,
@@ -21,7 +22,8 @@ contract TestInterchainTokenService is InterchainTokenService {
             gasService_,
             interchainTokenFactory_,
             chainName_,
-            tokenManagerImplementations
+            tokenManager_,
+            tokenHandler_
         )
     {}
 

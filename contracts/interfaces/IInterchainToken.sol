@@ -12,27 +12,35 @@ import { IERC20Named } from './IERC20Named.sol';
  * @dev Extends IInterchainTokenStandard and IDistributable.
  */
 interface IInterchainToken is IInterchainTokenStandard, IDistributable, IERC20MintableBurnable, IERC20Named {
-    error TokenManagerAddressZero();
+    error InterchainTokenServiceAddressZero();
+    error TokenIdZero();
     error TokenNameEmpty();
     error AlreadyInitialized();
 
     /**
-     * @notice Getter for the tokenManager used for this token.
+     * @notice Getter for the interchain token service contract.
      * @dev Needs to be overwitten.
-     * @return tokenManager_ The TokenManager called to facilitate interchain transfers.
+     * @return interchainTokenServiceAddress The interchain token service address.
      */
-    function tokenManager() external view returns (address tokenManager_);
+    function interchainTokenService() external view returns (address interchainTokenServiceAddress);
+
+    /**
+     * @notice Getter for the tokenId used for this token.
+     * @dev Needs to be overwitten.
+     * @return tokenId_ The tokenId for this token.
+     */
+    function interchainTokenId() external view returns (bytes32 tokenId_);
 
     /**
      * @notice Setup function to initialize contract parameters.
-     * @param tokenManagerAddress The address of the token manager of this token.
+     * @param tokenId_ The tokenId of the token.
      * @param distributor The address of the token distributor.
      * @param tokenName The name of the token.
      * @param tokenSymbol The symbopl of the token.
      * @param tokenDecimals The decimals of the token.
      */
     function init(
-        address tokenManagerAddress,
+        bytes32 tokenId_,
         address distributor,
         string calldata tokenName,
         string calldata tokenSymbol,

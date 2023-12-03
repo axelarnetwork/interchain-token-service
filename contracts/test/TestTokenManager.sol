@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import { TokenManagerLockUnlock } from '../token-manager/TokenManagerLockUnlock.sol';
+import { TokenManager } from '../token-manager/TokenManager.sol';
 
-contract TestTokenManager is TokenManagerLockUnlock {
-    constructor(address service) TokenManagerLockUnlock(service) {}
+contract TestTokenManager is TokenManager {
+    constructor(address service) TokenManager(service) {}
 
     function addOperator(address operator) external {
         _addOperator(operator);

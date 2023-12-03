@@ -28,7 +28,7 @@ interface IInterchainTokenService is
     error InvalidChainName();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
-    error NotTokenManager(address caller, address tokenManager);
+    error NotToken(address caller, address token);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error GatewayToken();
@@ -38,6 +38,8 @@ interface IInterchainTokenService is
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
     error InvalidExpressMessageType(uint256 messageType);
+    error TakeTokenFailed(bytes data);
+    error GiveTokenFailed(bytes data);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
@@ -92,6 +94,18 @@ interface IInterchainTokenService is
      * @return interchainTokenDeployerAddress The address of the interchain token deployer contract.
      */
     function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
+
+    /**
+     * @notice Returns the address of TokenManager implementation.
+     * @return tokenManagerAddress_ The address of the token manager contract.
+     */
+    function tokenManager() external view returns (address tokenManagerAddress_);
+
+    /**
+     * @notice Returns the address of TokenHandler implementation.
+     * @return tokenHandlerAddress The address of the token handler contract.
+     */
+    function tokenHandler() external view returns (address tokenHandlerAddress);
 
     /**
      * @notice Returns the hash of the chain name.
@@ -189,15 +203,6 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
-     * @notice Can be called by lock unlock token managers to allow for approvals to the service instaed of them.
-     * @param tokenId The unique identifier of the token to be transferred.
-     * @param token The address of the token to transfer from.
-     * @param from The address of the user to take tokens from.
-     * @param amount The amount of tokens to be transferred.
-     */
-    function transferToTokenManager(bytes32 tokenId, address token, address from, uint256 amount) external;
-
-    /**
      * @notice Initiates an interchain call contract with interchain token to a destination chain.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
@@ -230,27 +235,6 @@ interface IInterchainTokenService is
         bytes memory destinationAddress,
         uint256 amount,
         bytes calldata metadata
-    ) external payable;
-
-    /**
-     * @notice Initiates an interchain token transfer.
-     * @dev Only callable by TokenManagers.
-     * @param tokenId The tokenId of the token to be transmitted.
-     * @param sourceAddress The source address of the token.
-     * @param destinationChain The name of the destination chain.
-     * @param destinationAddress The destination address on the destination chain.
-     * @param amount The amount of tokens to transmit.
-     * @param metadataVersion The version of the metadata.
-     * @param data The data to be passed to the destination.
-     */
-    function transmitInterchainTransferWithData(
-        bytes32 tokenId,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes memory destinationAddress,
-        uint256 amount,
-        uint32 metadataVersion,
-        bytes memory data
     ) external payable;
 
     /**

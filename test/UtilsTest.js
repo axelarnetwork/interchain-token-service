@@ -258,14 +258,14 @@ describe('FlowLimit', async () => {
 
 describe('InterchainTokenDeployer', () => {
     let interchainToken, interchainTokenDeployer;
-    const tokenManager = new Wallet(getRandomBytes32()).address;
+    const service = new Wallet(getRandomBytes32()).address;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const decimals = 18;
     const DISTRIBUTOR_ROLE = 0;
 
     before(async () => {
-        interchainToken = await deployContract(ownerWallet, 'InterchainToken');
+        interchainToken = await deployContract(ownerWallet, 'InterchainToken', [service]);
         interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [interchainToken.address]);
     });
 
@@ -279,26 +279,28 @@ describe('InterchainTokenDeployer', () => {
 
     it('Should deploy a mint burn token only once', async () => {
         const salt = getRandomBytes32();
-
+        const tokenId = getRandomBytes32();
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
         const token = await getContractAt('InterchainToken', tokenAddress, ownerWallet);
 
-        await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals))
-            .and.to.emit(token, 'RolesAdded')
-            .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE)
+        await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals))
             .to.emit(token, 'RolesAdded')
-            .withArgs(tokenManager, 1 << DISTRIBUTOR_ROLE);
+            .withArgs(service, 1 << DISTRIBUTOR_ROLE)
+            .and.to.emit(token, 'RolesAdded')
+            .withArgs(ownerWallet.address, 1 << DISTRIBUTOR_ROLE);
 
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);
-        expect(await token.hasRole(tokenManager, DISTRIBUTOR_ROLE)).to.be.true;
-        expect(await token.tokenManager()).to.equal(tokenManager);
+        expect(await token.hasRole(service, DISTRIBUTOR_ROLE)).to.be.true;
+        expect(await token.hasRole(ownerWallet.address, DISTRIBUTOR_ROLE)).to.be.true;
+        expect(await token.interchainTokenId()).to.equal(tokenId);
+        expect(await token.interchainTokenService()).to.equal(service);
 
         await expectRevert(
             (gasOptions) =>
-                interchainTokenDeployer.deployInterchainToken(salt, tokenManager, tokenManager, name, symbol, decimals, gasOptions),
+                interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals, gasOptions),
             interchainTokenDeployer,
             'AlreadyDeployed',
         );

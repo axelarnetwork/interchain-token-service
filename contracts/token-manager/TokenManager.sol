@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.0;
 
+import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
 import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
+import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 import { Operatable } from '../utils/Operatable.sol';
@@ -17,8 +18,11 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
  * @title TokenManager
  * @notice This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
-abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, FlowLimit, Implementation {
+contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
     using AddressBytes for bytes;
+    using SafeTokenCall for IERC20;
+
+    uint256 internal constant UINT256_MAX = 2 ** 256 - 1;
 
     IInterchainTokenService public immutable interchainTokenService;
 
@@ -44,14 +48,6 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      */
     modifier onlyService() {
         if (msg.sender != address(interchainTokenService)) revert NotService(msg.sender);
-        _;
-    }
-
-    /**
-     * @notice A modifier that allows only the token to execute the function.
-     */
-    modifier onlyToken() {
-        if (msg.sender != this.tokenAddress()) revert NotToken(msg.sender);
         _;
     }
 
@@ -83,12 +79,20 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
+     * @notice Returns implementation type of this token manager.
+     * @return uint256 The implementation type of this token manager.
+     */
+    function implementationType() external pure returns (uint256) {
+        revert NotSupported();
+    }
+
+    /**
      * @notice A function that should return the token address from the setup params.
-     * @param params The setup parameters.
+     * @param params_ The setup parameters.
      * @return tokenAddress_ The token address.
      */
-    function getTokenAddressFromParams(bytes calldata params) external pure returns (address tokenAddress_) {
-        (, tokenAddress_) = abi.decode(params, (bytes, address));
+    function getTokenAddressFromParams(bytes calldata params_) external pure returns (address tokenAddress_) {
+        (, tokenAddress_) = abi.decode(params_, (bytes, address));
     }
 
     /**
@@ -96,12 +100,13 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
      * @dev This function should only be called by the proxy, and only once from the proxy constructor.
      * The exact format of params depends on the type of TokenManager used but the first 32 bytes are reserved
      * for the address of the operator, stored as bytes (to be compatible with non-EVM chains)
-     * @param params The parameters to be used to initialize the TokenManager.
+     * @param params_ The parameters to be used to initialize the TokenManager.
      */
-    function setup(bytes calldata params) external override(Implementation, IImplementation) onlyProxy {
-        bytes memory operatorBytes = abi.decode(params, (bytes));
+    function setup(bytes calldata params_) external override(Implementation, IImplementation) onlyProxy {
+        bytes memory operatorBytes = abi.decode(params_, (bytes));
 
         address operator = address(0);
+
         if (operatorBytes.length != 0) {
             operator = operatorBytes.toAddress();
         }
@@ -109,137 +114,16 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
         // If an operator is not provided, set `address(0)` as the operator.
         // This allows anyone to easily check if a custom operator was set on the token manager.
         _addAccountRoles(operator, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
-
-        // Add flow limiter role to the service by default. The operator can remove this if they so choose.
+        // Add operator and flow limiter role to the service. The operator can remove the flow limiter role if they so chose and the service has no way to use the operator role for now.
         _addAccountRoles(address(interchainTokenService), (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
-
-        _setup(params);
     }
 
-    /**
-     * @notice Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user.
-     * @param destinationChain The name of the chain to send tokens to.
-     * @param destinationAddress The address on the destination chain to send tokens to.
-     * @param amount The amount of tokens to take from msg.sender.
-     * @param metadata Any additional data to be sent with the transfer.
-     */
-    function interchainTransfer(
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes calldata metadata
-    ) external payable virtual {
-        address sender = msg.sender;
-
-        amount = _takeToken(sender, amount);
-
-        // rate limit the outgoing amount to destination
-        _addFlowOut(amount);
-
-        // slither-disable-next-line var-read-using-this
-        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
-            this.interchainTokenId(),
-            sender,
-            destinationChain,
-            destinationAddress,
-            amount,
-            metadata
-        );
-    }
-
-    /**
-     * @notice Calls the service to initiate an interchain transfer with data after taking the appropriate amount of tokens from the user.
-     * @param destinationChain The name of the chain to send tokens to.
-     * @param destinationAddress The address on the destination chain to send tokens to.
-     * @param amount The amount of tokens to take from msg.sender.
-     * @param data The data to pass to the destination contract.
-     */
-    function callContractWithInterchainToken(
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes memory data
-    ) external payable virtual {
-        address sender = msg.sender;
-
-        amount = _takeToken(sender, amount);
-
-        // rate limit the outgoing amount to destination
-        _addFlowOut(amount);
-
-        // slither-disable-next-line var-read-using-this
-        interchainTokenService.transmitInterchainTransferWithData{ value: msg.value }(
-            this.interchainTokenId(),
-            sender,
-            destinationChain,
-            destinationAddress,
-            amount,
-            LATEST_METADATA_VERSION,
-            data
-        );
-    }
-
-    /**
-     * @notice Calls the service to initiate an interchain transfer after taking the appropriate amount of tokens from the user. This can only be called by the token itself.
-     * @param sender The address of the sender paying for the interchain transfer.
-     * @param destinationChain The name of the chain to send tokens to.
-     * @param destinationAddress  The address on the destination chain to send tokens to.
-     * @param amount The amount of tokens to take from msg.sender.
-     * @param metadata Any additional data to be sent with the transfer.
-     */
-    function transmitInterchainTransfer(
-        address sender,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes calldata metadata
-    ) external payable virtual onlyToken {
-        amount = _takeToken(sender, amount);
-
-        // rate limit the outgoing amount to destination
-        _addFlowOut(amount);
-
-        // slither-disable-next-line var-read-using-this
-        interchainTokenService.transmitInterchainTransfer{ value: msg.value }(
-            this.interchainTokenId(),
-            sender,
-            destinationChain,
-            destinationAddress,
-            amount,
-            metadata
-        );
-    }
-
-    /**
-     * @notice This function gives token to a specified address.
-     * @dev Can only be called by the service.
-     * @param destinationAddress The address to give tokens to.
-     * @param amount The amount of tokens to give.
-     * @return uint256 The amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
-     */
-    function giveToken(address destinationAddress, uint256 amount) external onlyService returns (uint256) {
-        // rate limit the incoming amount from source
+    function addFlowIn(uint256 amount) external onlyService {
         _addFlowIn(amount);
-
-        amount = _giveToken(destinationAddress, amount);
-
-        return amount;
     }
 
-    /**
-     * @notice This function gives token to a specified address.
-     * @dev Can only be called by the service.
-     * @param sourceAddress The address to give tokens to.
-     * @param amount The amount of tokens to give.
-     * @return uint256 The amount of token actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
-     */
-    function takeToken(address sourceAddress, uint256 amount) external onlyService returns (uint256) {
-        amount = _takeToken(sourceAddress, amount);
-
-        // rate limit the outgoing amount to destination
+    function addFlowOut(uint256 amount) external onlyService {
         _addFlowOut(amount);
-
-        return amount;
     }
 
     /**
@@ -284,27 +168,25 @@ abstract contract TokenManager is ITokenManager, ITokenManagerType, Operatable, 
     }
 
     /**
-     * @notice Transfers tokens from a specific address to this contract.
-     * @dev Must be overridden in the inheriting contract.
-     * @param from The address from which the tokens will be sent.
-     * @param amount The amount of tokens to receive.
-     * @return uint256 The amount of tokens received.
+     * @notice A function to renew approval to the service if we need to.
      */
-    function _takeToken(address from, uint256 amount) internal virtual returns (uint256);
+    function approveService() external onlyService {
+        /**
+         * @dev Some tokens may not obey the infinite approval.
+         * Even so, it is unexpected to run out of allowance in practice.
+         * If needed, we can upgrade to allow replenishing the allowance in the future.
+         */
+        IERC20(this.tokenAddress()).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, UINT256_MAX));
+    }
 
     /**
-     * @notice Transfers tokens from this contract to a specific address.
-     * @dev Must be overridden in the inheriting contract.
-     * @param receiver The address to which the tokens will be sent.
-     * @param amount The amount of tokens to send.
-     * @return uint256 The amount of tokens sent.
+     * @notice Getter function for the parameters of a lock/unlock TokenManager.
+     * @dev This function will be mainly used by frontends.
+     * @param operator_ The operator of the TokenManager.
+     * @param tokenAddress_ The token to be managed.
+     * @return params_ The resulting params to be passed to custom TokenManager deployments.
      */
-    function _giveToken(address receiver, uint256 amount) internal virtual returns (uint256);
-
-    /**
-     * @notice Additional setup logic to perform
-     * @dev Must be overridden in the inheriting contract.
-     * @param params The setup parameters.
-     */
-    function _setup(bytes calldata params) internal virtual {}
+    function params(bytes calldata operator_, address tokenAddress_) external pure returns (bytes memory params_) {
+        params_ = abi.encode(operator_, tokenAddress_);
+    }
 }

@@ -344,9 +344,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
         address tokenAddress = service.validTokenAddress(tokenId);
         IInterchainToken token = IInterchainToken(tokenAddress);
-        address tokenManager = service.tokenManagerAddress(tokenId);
 
-        token.safeCall(abi.encodeWithSelector(token.approve.selector, tokenManager, amount));
+        token.safeCall(abi.encodeWithSelector(token.approve.selector, service, amount));
     }
 
     /**

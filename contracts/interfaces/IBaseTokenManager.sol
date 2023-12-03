@@ -20,11 +20,6 @@ interface IBaseTokenManager {
     function tokenAddress() external view returns (address);
 
     /**
-     * @notice A function that should return the implementation type of the token manager.
-     */
-    function implementationType() external pure returns (uint256);
-
-    /**
      * @notice A function that should return the token address from the init params.
      */
     function getTokenAddressFromParams(bytes calldata params) external pure returns (address);

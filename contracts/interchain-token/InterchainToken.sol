@@ -21,7 +21,8 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     string public name;
     string public symbol;
     uint8 public decimals;
-    address internal tokenManager_;
+    bytes32 internal tokenId;
+    address internal immutable interchainTokenService_;
 
     // bytes32(uint256(keccak256('interchain-token-initialized')) - 1);
     bytes32 internal constant INITIALIZED_SLOT = 0xc778385ecb3e8cecb82223fa1f343ec6865b2d64c65b0c15c7e8aef225d9e214;
@@ -30,8 +31,12 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
      * @notice Constructs the InterchainToken contract.
      * @dev Makes the implementation act as if it has been setup already to disallow calls to init() (even though that would not achieve anything really).
      */
-    constructor() {
+    constructor(address interchainTokenServiceAddress) {
         _initialize();
+
+        if (interchainTokenServiceAddress == address(0)) revert InterchainTokenServiceAddressZero();
+
+        interchainTokenService_ = interchainTokenServiceAddress;
     }
 
     /**
@@ -54,23 +59,31 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     }
 
     /**
-     * @notice Returns the token manager for this token.
-     * @return address The token manager contract.
+     * @notice Returns the interchain token service
+     * @return address The interchain token service contract
      */
-    function tokenManager() public view override(BaseInterchainToken, IInterchainToken) returns (address) {
-        return tokenManager_;
+    function interchainTokenService() public view override(BaseInterchainToken, IInterchainToken) returns (address) {
+        return interchainTokenService_;
+    }
+
+    /**
+     * @notice Returns the tokenId for this token.
+     * @return bytes32 The token manager contract.
+     */
+    function interchainTokenId() public view override(BaseInterchainToken, IInterchainToken) returns (bytes32) {
+        return tokenId;
     }
 
     /**
      * @notice Setup function to initialize contract parameters.
-     * @param tokenManagerAddress The address of the token manager of this token.
+     * @param tokenId_ The tokenId of the token.
      * @param distributor The address of the token distributor.
      * @param tokenName The name of the token.
      * @param tokenSymbol The symbopl of the token.
      * @param tokenDecimals The decimals of the token.
      */
     function init(
-        address tokenManagerAddress,
+        bytes32 tokenId_,
         address distributor,
         string calldata tokenName,
         string calldata tokenSymbol,
@@ -80,20 +93,20 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
 
         _initialize();
 
-        if (tokenManagerAddress == address(0)) revert TokenManagerAddressZero();
+        if (tokenId_ == bytes32(0)) revert TokenIdZero();
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();
 
-        tokenManager_ = tokenManagerAddress;
         name = tokenName;
         symbol = tokenSymbol;
         decimals = tokenDecimals;
+        tokenId = tokenId_;
 
         /**
-         * @dev Set the token manager as a distributor to allow it to mint and burn tokens.
+         * @dev Set the token service as a distributor to allow it to mint and burn tokens.
          * Also add the provided address as a distributor. If `address(0)` was provided,
          * add it as a distributor to allow anyone to easily check that no custom distributor was set.
          */
-        _addDistributor(tokenManagerAddress);
+        _addDistributor(interchainTokenService_);
         _addDistributor(distributor);
 
         _setNameHash(tokenName);

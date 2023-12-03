@@ -7,7 +7,8 @@ import { Distributable } from '../utils/Distributable.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
 contract TestBaseInterchainToken is BaseInterchainToken, Distributable, IERC20MintableBurnable {
-    address public tokenManager_;
+    address internal service;
+    bytes32 internal tokenId;
     bool internal tokenManagerRequiresApproval_ = true;
     string public name;
     string public symbol;
@@ -15,16 +16,21 @@ contract TestBaseInterchainToken is BaseInterchainToken, Distributable, IERC20Mi
 
     error AllowanceExceeded();
 
-    constructor(string memory name_, string memory symbol_, uint8 decimals_, address tokenManagerAddress) {
+    constructor(string memory name_, string memory symbol_, uint8 decimals_, address service_, bytes32 tokenId_) {
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
         _addDistributor(msg.sender);
-        tokenManager_ = tokenManagerAddress;
+        service = service_;
+        tokenId = tokenId_;
     }
 
-    function tokenManager() public view override returns (address) {
-        return tokenManager_;
+    function interchainTokenService() public view override returns (address) {
+        return service;
+    }
+
+    function interchainTokenId() public view override returns (bytes32) {
+        return tokenId;
     }
 
     function _beforeInterchainTransfer(
@@ -35,14 +41,14 @@ contract TestBaseInterchainToken is BaseInterchainToken, Distributable, IERC20Mi
         bytes calldata /*metadata*/
     ) internal override {
         if (!tokenManagerRequiresApproval_) return;
-        address tokenManagerAddress = tokenManager_;
-        uint256 allowance_ = allowance[sender][tokenManagerAddress];
+        address serviceAddress = service;
+        uint256 allowance_ = allowance[sender][serviceAddress];
         if (allowance_ != UINT256_MAX) {
             if (allowance_ > UINT256_MAX - amount) {
                 allowance_ = UINT256_MAX - amount;
             }
 
-            _approve(sender, tokenManagerAddress, allowance_ + amount);
+            _approve(sender, serviceAddress, allowance_ + amount);
         }
     }
 
@@ -65,7 +71,7 @@ contract TestBaseInterchainToken is BaseInterchainToken, Distributable, IERC20Mi
         _burn(account, amount);
     }
 
-    function setTokenManager(address tokenManagerAddress) external {
-        tokenManager_ = tokenManagerAddress;
+    function setTokenId(bytes32 tokenId_) external {
+        tokenId = tokenId_;
     }
 }

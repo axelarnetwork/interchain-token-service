@@ -59,11 +59,11 @@ describe('InterchainTokenFactory', () => {
         const tokenCap = BigInt(1e18);
 
         async function deployToken() {
-            token = await deployContract(wallet, 'TestBaseInterchainToken', [name, symbol, decimals, wallet.address]);
+            token = await deployContract(wallet, 'TestBaseInterchainToken', [name, symbol, decimals, service.address, getRandomBytes32()]);
             tokenId = await tokenFactory.canonicalInterchainTokenId(token.address);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();
-            await (await token.setTokenManager(tokenManagerAddress)).wait();
+            await (await token.setTokenId(tokenId)).wait();
         }
 
         it('Should register a token', async () => {
@@ -165,7 +165,7 @@ describe('InterchainTokenFactory', () => {
 
             await expect(tokenFactory.tokenApprove(tokenId, amount))
                 .to.emit(token, 'Approval')
-                .withArgs(tokenFactory.address, tokenManagerAddress, amount);
+                .withArgs(tokenFactory.address, service.address, amount);
         });
 
         it('Should transfer some tokens through the factory as the deployer', async () => {
@@ -202,7 +202,7 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(token, 'Transfer')
                 .withArgs(wallet.address, tokenFactory.address, amount)
                 .and.to.emit(token, 'Approval')
-                .withArgs(tokenFactory.address, tokenManagerAddress, amount)
+                .withArgs(tokenFactory.address, service.address, amount)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(tokenFactory.address, tokenManagerAddress, amount)
                 .and.to.emit(service, 'InterchainTransfer')
