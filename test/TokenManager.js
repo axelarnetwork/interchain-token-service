@@ -66,22 +66,34 @@ describe('Token Manager', () => {
         );
     });
 
+    it('Should revert on addFlowIn when calling directly', async () => {
+        await expectRevert((gasOptions) => TestTokenManager.addFlowIn(0, gasOptions), TestTokenManager, 'NotService', [owner.address]);
+    });
+
+    it('Should revert on addFlowOut when calling directly', async () => {
+        await expectRevert((gasOptions) => TestTokenManager.addFlowOut(0, gasOptions), TestTokenManager, 'NotService', [owner.address]);
+    });
+
+    it('Should revert on approveService when calling directly', async () => {
+        await expectRevert((gasOptions) => TestTokenManager.approveService(gasOptions), TestTokenManager, 'NotService', [owner.address]);
+    });
+
     it('Should return the correct parameters for a token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
         const params = await TestTokenManager.params(toUtf8Bytes(owner.address), token.address);
         expect(expectedParams).to.eq(params);
     });
 
-    describe.skip('Bytecode checks [ @skip-on-coverage ]', () => {
+    describe('Bytecode checks [ @skip-on-coverage ]', () => {
         it('Should preserve the same proxy bytecode for each EVM', async () => {
             const proxyFactory = await ethers.getContractFactory('TokenManagerProxy', owner);
             const proxyBytecode = proxyFactory.bytecode;
             const proxyBytecodeHash = keccak256(proxyBytecode);
 
             const expected = {
-                istanbul: '0xce3ee5c04c84351d193a6e5dc52e34702039a6083437b077367bac26da57103c',
-                berlin: '0xea7ab1f8727ce63dd60f1b7c6770723259b7ac2ce69a74046509e2a65cd4b899',
-                london: '0x97da1989bb59bf727d23961f163900ce0dcab3dafa2b3fa0aec39f09c5bd233e',
+                istanbul: '0x8e833c9efc444489f636e5582be33991c73273049065a071e414b3fc6e64bb54',
+                berlin: '0x6e1fe42f41fb15015c4fc5b702747255296568a52b019b8f061c000921433aa3',
+                london: '0x6ff5905df915a3661814814739766a16d87576480c270fda42c04c25955716ad',
             }[getEVMVersion()];
 
             expect(proxyBytecodeHash).to.be.equal(expected);

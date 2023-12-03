@@ -40,14 +40,17 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
             _giveTokenLockUnlock(tokenAddress, tokenManager, to, amount);
             return amount;
         }
+
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _giveTokenLockUnlockFee(tokenAddress, tokenManager, to, amount);
             return amount;
         }
+
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _giveTokenMintBurn(tokenAddress, to, amount);
             return amount;
         }
+
         revert UnsupportedTokenManagerType(tokenManagerType);
     }
 
@@ -72,18 +75,22 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
             _takeTokenLockUnlock(tokenAddress, tokenManager, from, amount);
             return amount;
         }
+
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _takeTokenLockUnlockFee(tokenAddress, tokenManager, from, amount);
             return amount;
         }
+
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _takeTokenMintBurn(tokenAddress, from, amount);
             return amount;
         }
+
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _takeTokenMintBurnFrom(tokenAddress, from, amount);
             return amount;
         }
+
         revert UnsupportedTokenManagerType(tokenManagerType);
     }
 
@@ -112,6 +119,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         if (diff < amount) {
             amount = diff;
         }
+
         return amount;
     }
 
@@ -130,6 +138,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         if (diff < amount) {
             amount = diff;
         }
+
         return amount;
     }
 

@@ -400,29 +400,52 @@ describe('Interchain Token Service', () => {
                 service,
                 'ZeroAddress',
             );
+        });
 
-            it('Should revert on invalid token manager', async () => {
-                await expectRevert(
-                    (gasOptions) =>
-                        deployInterchainTokenService(
-                            wallet,
-                            create3Deployer.address,
-                            tokenManagerDeployer.address,
-                            interchainTokenDeployer.address,
-                            gateway.address,
-                            gasService.address,
-                            interchainTokenFactoryAddress,
-                            tokenManager.address,
-                            AddressZero,
-                            chainName,
-                            [],
-                            deploymentKey,
-                            gasOptions,
-                        ),
-                    service,
-                    'ZeroAddress',
-                );
-            });
+        it('Should revert on invalid token handler', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    deployInterchainTokenService(
+                        wallet,
+                        create3Deployer.address,
+                        tokenManagerDeployer.address,
+                        interchainTokenDeployer.address,
+                        gateway.address,
+                        gasService.address,
+                        interchainTokenFactoryAddress,
+                        tokenManager.address,
+                        AddressZero,
+                        chainName,
+                        [],
+                        deploymentKey,
+                        gasOptions,
+                    ),
+                service,
+                'ZeroAddress',
+            );
+        });
+
+        it('Should revert on invalid token manager', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    deployInterchainTokenService(
+                        wallet,
+                        create3Deployer.address,
+                        tokenManagerDeployer.address,
+                        interchainTokenDeployer.address,
+                        gateway.address,
+                        gasService.address,
+                        interchainTokenFactoryAddress,
+                        tokenManager.address,
+                        AddressZero,
+                        chainName,
+                        [],
+                        deploymentKey,
+                        gasOptions,
+                    ),
+                service,
+                'ZeroAddress',
+            );
         });
 
         it('Should return the token manager implementation', async () => {
@@ -790,6 +813,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert((gasOptions) => implementation.tokenAddress(gasOptions), implementation, 'NotSupported');
             await expectRevert((gasOptions) => implementation.interchainTokenId(gasOptions), implementation, 'NotSupported');
+            await expectRevert((gasOptions) => implementation.implementationType(gasOptions), implementation, 'NotSupported');
         });
 
         it('Should deploy a lock/unlock token manager', async () => {

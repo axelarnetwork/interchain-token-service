@@ -22,7 +22,7 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     string public symbol;
     uint8 public decimals;
     bytes32 internal tokenId;
-    address internal immutable interchainTokenServiceAddress;
+    address internal immutable interchainTokenService_;
 
     // bytes32(uint256(keccak256('interchain-token-initialized')) - 1);
     bytes32 internal constant INITIALIZED_SLOT = 0xc778385ecb3e8cecb82223fa1f343ec6865b2d64c65b0c15c7e8aef225d9e214;
@@ -31,11 +31,12 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
      * @notice Constructs the InterchainToken contract.
      * @dev Makes the implementation act as if it has been setup already to disallow calls to init() (even though that would not achieve anything really).
      */
-    constructor(address interchainTokenServiceAddress_) {
+    constructor(address interchainTokenServiceAddress) {
         _initialize();
 
-        if (interchainTokenServiceAddress_ == address(0)) revert InterchainTokenServiceAddressZero();
-        interchainTokenServiceAddress = interchainTokenServiceAddress_;
+        if (interchainTokenServiceAddress == address(0)) revert InterchainTokenServiceAddressZero();
+
+        interchainTokenService_ = interchainTokenServiceAddress;
     }
 
     /**
@@ -62,7 +63,7 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
      * @return address The interchain token service contract
      */
     function interchainTokenService() public view override(BaseInterchainToken, IInterchainToken) returns (address) {
-        return interchainTokenServiceAddress;
+        return interchainTokenService_;
     }
 
     /**
@@ -100,7 +101,12 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
         decimals = tokenDecimals;
         tokenId = tokenId_;
 
-        _addDistributor(interchainTokenServiceAddress);
+        /**
+         * @dev Set the token service as a distributor to allow it to mint and burn tokens.
+         * Also add the provided address as a distributor. If `address(0)` was provided,
+         * add it as a distributor to allow anyone to easily check that no custom distributor was set.
+         */
+        _addDistributor(interchainTokenService_);
         _addDistributor(distributor);
 
         _setNameHash(tokenName);

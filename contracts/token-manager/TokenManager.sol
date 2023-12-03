@@ -171,6 +171,11 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
      * @notice A function to renew approval to the service if we need to.
      */
     function approveService() external onlyService {
+        /**
+         * @dev Some tokens may not obey the infinite approval.
+         * Even so, it is unexpected to run out of allowance in practice.
+         * If needed, we can upgrade to allow replenishing the allowance in the future.
+         */
         IERC20(this.tokenAddress()).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, UINT256_MAX));
     }
 

@@ -825,7 +825,6 @@ contract InterchainTokenService is
      * @param params Additional parameters for the token manager deployment.
      */
     function _deployTokenManager(bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) internal {
-        // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
             abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
         );
@@ -836,8 +835,9 @@ contract InterchainTokenService is
             tokenManager_ := mload(add(returnData, 0x20))
         }
 
-        if (tokenManagerType == TokenManagerType.LOCK_UNLOCK || tokenManagerType == TokenManagerType.LOCK_UNLOCK_FEE)
+        if (tokenManagerType == TokenManagerType.LOCK_UNLOCK || tokenManagerType == TokenManagerType.LOCK_UNLOCK_FEE) {
             ITokenManager(tokenManager_).approveService();
+        }
 
         // slither-disable-next-line reentrancy-events
         emit TokenManagerDeployed(tokenId, tokenManager_, tokenManagerType, params);
@@ -872,7 +872,6 @@ contract InterchainTokenService is
         address distributor;
         if (bytes(distributorBytes).length != 0) distributor = distributorBytes.toAddress();
 
-        // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
             abi.encodeWithSelector(
                 IInterchainTokenDeployer.deployInterchainToken.selector,
@@ -961,7 +960,6 @@ contract InterchainTokenService is
         uint256 tokenManagerType;
         (tokenManagerType, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
 
-        // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenManagerType, tokenAddress, tokenManager_, from, amount)
         );
@@ -977,9 +975,9 @@ contract InterchainTokenService is
         address tokenManager_ = tokenManagerAddress(tokenId);
 
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
+
         ITokenManager(tokenManager_).addFlowIn(amount);
 
-        // slither-disable-next-line controlled-delegatecall
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, tokenManager_, to, amount)
         );
