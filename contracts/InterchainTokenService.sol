@@ -414,6 +414,7 @@ contract InterchainTokenService is
 
         if (data.length != 0) {
             bytes32 result = IInterchainTokenExpressExecutable(destinationAddress).expressExecuteWithInterchainToken(
+                commandId,
                 sourceChain,
                 sourceAddress,
                 data,
@@ -693,6 +694,7 @@ contract InterchainTokenService is
 
         if (data.length != 0) {
             bytes32 result = IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(
+                commandId,
                 sourceChain,
                 sourceAddress,
                 data,
