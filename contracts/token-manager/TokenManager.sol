@@ -132,8 +132,6 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
      * @param flowLimiter the address of the new flow limiter.
      */
     function addFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
-        if (flowLimiter == address(0)) revert ZeroAddress();
-
         _addRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
     }
 
@@ -143,8 +141,6 @@ contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
      * @param flowLimiter the address of an existing flow limiter.
      */
     function removeFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
-        if (flowLimiter == address(0)) revert ZeroAddress();
-
         _removeRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
     }
 

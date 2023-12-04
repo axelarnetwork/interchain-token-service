@@ -153,8 +153,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             token.transferDistributorship(distributor);
 
             tokenManager.removeFlowLimiter(address(this));
-
-            if (distributor != address(0)) tokenManager.addFlowLimiter(distributor);
+            tokenManager.addFlowLimiter(distributor);
 
             tokenManager.transferOperatorship(distributor);
         }
@@ -337,7 +336,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     /**
-     * @notice Approves a specified amount of tokens to the token manager.
+     * @notice Approves a specified amount of tokens to the service.
      * @param tokenId The identifier of the interchain token.
      * @param amount The amount of tokens to approve.
      */

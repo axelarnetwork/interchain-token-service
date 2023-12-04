@@ -49,23 +49,6 @@ describe('Token Manager', () => {
         ]);
     });
 
-    it('Should revert on addFlowLimiter if flow limiter address is invalid', async () => {
-        await TestTokenManager.addOperator(owner.address).then((tx) => tx.wait());
-
-        await expectRevert((gasOptions) => TestTokenManager.addFlowLimiter(AddressZero, gasOptions), TestTokenManager, 'ZeroAddress', []);
-    });
-
-    it('Should revert on removeFlowLimiter if flow limiter address is invalid', async () => {
-        await TestTokenManager.addOperator(owner.address).then((tx) => tx.wait());
-
-        await expectRevert(
-            (gasOptions) => TestTokenManager.removeFlowLimiter(AddressZero, gasOptions),
-            TestTokenManager,
-            'ZeroAddress',
-            [],
-        );
-    });
-
     it('Should revert on addFlowIn when calling directly', async () => {
         await expectRevert((gasOptions) => TestTokenManager.addFlowIn(0, gasOptions), TestTokenManager, 'NotService', [owner.address]);
     });

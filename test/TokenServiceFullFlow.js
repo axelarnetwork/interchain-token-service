@@ -49,7 +49,7 @@ describe('Interchain Token Service Full Flow', () => {
      * - Transfer pre-mint amount to the Factory contract
      * - Approve ITS for pre-mint amount
      * - Transfer per chain pre-mint amount to the user on each remote chain
-     * - Transfer tokens via the token manager between chains after deployment
+     * - Transfer tokens via ITS between chains after deployment
      */
     describe('Canonical Interchain Token', () => {
         let token;
@@ -90,11 +90,11 @@ describe('Interchain Token Service Full Flow', () => {
             tx = await factory.populateTransaction.tokenTransferFrom(tokenId, totalMint);
             calls.push(tx.data);
 
-            // Optional. Reset approval from the factory to the token manager contract. This is only needed for tokens like USDT that don't allow overriding existing approvals.
+            // Optional. Reset approval from the factory to ITS. This is only needed for tokens like USDT that don't allow overriding existing approvals.
             tx = await factory.populateTransaction.tokenApprove(tokenId, 0);
             calls.push(tx.data);
 
-            // Approve total mint amount from the factory to the token manager contract
+            // Approve total mint amount from the factory to ITS
             tx = await factory.populateTransaction.tokenApprove(tokenId, totalMint);
             calls.push(tx.data);
 
@@ -158,24 +158,6 @@ describe('Interchain Token Service Full Flow', () => {
                 payloadHash = keccak256(payload);
             });
 
-            it('Should send some tokens to another chain via token manager', async () => {
-                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-
-                await expect(token.approve(service.address, amount))
-                    .to.emit(token, 'Approval')
-                    .withArgs(wallet.address, service.address, amount);
-
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
-                    .and.to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, tokenManagerAddress, amount)
-                    .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
-                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
-            });
-
             it('Should send some tokens to another chain via ITS', async () => {
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
@@ -203,7 +185,7 @@ describe('Interchain Token Service Full Flow', () => {
      * - Deploy new Interchain token to each remote chain via the factory
      * - Transfer initial amount to the user on local chain
      * - Transfer initial amount to the user on each remote chain
-     * - Transfer tokens via the token manager between chains after deployment
+     * - Transfer tokens via ITS between chains after deployment
      * - Transfers mint/burn role from original deployer wallet to another address
      */
     describe('New Interchain token', () => {
@@ -313,18 +295,6 @@ describe('Interchain Token Service Full Flow', () => {
                 payloadHash = keccak256(payload);
             });
 
-            it('Should send some tokens to another chain via token manager', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
-                    .and.to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, AddressZero, amount)
-                    .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
-                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
-            });
-
             it('Should send some tokens to another chain via the token', async () => {
                 await expect(token.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
@@ -378,11 +348,11 @@ describe('Interchain Token Service Full Flow', () => {
     });
 
     /**
-     * This test creates a token link between pre-existing tokens by giving mint/burn permission to a linked token manager.
+     * This test creates a token link between pre-existing tokens by giving mint/burn permission to ITS.
      * - Deploy a normal mint/burn ERC20 registered with an owner
      * - Deploy a mint/burn token manager for the token on all chains
-     * - Transfer mint/burn permission (distributor role) to the token manager
-     * - Transfer tokens via the token manager between chains
+     * - Transfer mint/burn permission (distributor role) to ITS
+     * - Transfer tokens via ITS between chains
      */
     describe('Pre-existing Token as Mint/Burn', () => {
         let token;
@@ -441,7 +411,7 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         /**
-         * Transfer the distributor to associated the token manager on all chains to allow ITS to mint/burn
+         * Transfer the distributor to ITS on all chains to allow it to mint/burn
          */
         it('Should be able to change the token distributor', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
@@ -467,7 +437,7 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         /**
-         * Send an interchain transfer. To receive the tokens, the receiving token manager
+         * Send an interchain transfer. To receive the tokens, the receiving ITS
          * also needs to have the mint/burn permission.
          */
         describe('Interchain transfer', () => {
@@ -483,18 +453,6 @@ describe('Interchain Token Service Full Flow', () => {
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount, '0x'],
                 );
                 payloadHash = keccak256(payload);
-            });
-
-            it('Should send some tokens to another chain via token manager', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
-                    .and.to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, AddressZero, amount)
-                    .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
-                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
