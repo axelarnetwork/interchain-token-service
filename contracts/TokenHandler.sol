@@ -42,12 +42,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
-            _transferToken(tokenAddress, tokenManager, to, amount);
+            _transferTokenFrom(tokenAddress, tokenManager, to, amount);
             return amount;
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenLockUnlockFee(tokenAddress, tokenManager, to, amount);
+            amount = _transferTokenFromLockUnlockFee(tokenAddress, tokenManager, to, amount);
             return amount;
         }
 
@@ -82,12 +82,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
-            _transferToken(tokenAddress, from, tokenManager, amount);
+            _transferTokenFrom(tokenAddress, from, tokenManager, amount);
             return amount;
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenLockUnlockFee(tokenAddress, from, tokenManager, amount);
+            amount = _transferTokenFromLockUnlockFee(tokenAddress, from, tokenManager, amount);
             return amount;
         }
 
@@ -116,24 +116,24 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
             tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
             tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
         ) {
-            _transferToken(tokenAddress, from, to, amount);
+            _transferTokenFrom(tokenAddress, from, to, amount);
             return amount;
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenLockUnlockFee(tokenAddress, from, to, amount);
+            amount = _transferTokenFromLockUnlockFee(tokenAddress, from, to, amount);
             return amount;
         }
 
         revert UnsupportedTokenManagerType(tokenManagerType);
     }
 
-    function _transferToken(address tokenAddress, address from, address to, uint256 amount) internal {
+    function _transferTokenFrom(address tokenAddress, address from, address to, uint256 amount) internal {
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(tokenAddress).safeTransferFrom(from, to, amount);
     }
 
-    function _transferTokenLockUnlockFee(
+    function _transferTokenFromLockUnlockFee(
         address tokenAddress,
         address from,
         address to,
@@ -141,7 +141,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     ) internal noReEntrancy returns (uint256) {
         uint256 balanceBefore = IERC20(tokenAddress).balanceOf(to);
 
-        _transferToken(tokenAddress, from, to, amount);
+        _transferTokenFrom(tokenAddress, from, to, amount);
 
         uint256 diff = IERC20(tokenAddress).balanceOf(to) - balanceBefore;
         if (diff < amount) {
