@@ -899,7 +899,7 @@ contract InterchainTokenService is
      * @return data The data bytes extracted from the metadata.
      */
     function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes memory data) {
-        if (metadata.length < 4) return (version, data);
+        if (metadata.length < 4) return (LATEST_METADATA_VERSION, data);
 
         version = uint32(bytes4(metadata[:4]));
 
