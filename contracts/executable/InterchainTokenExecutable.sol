@@ -38,7 +38,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
     /**
      * @notice Executes logic in the context of an interchain token transfer.
      * @dev Only callable by the interchain token service.
-     * @param commandId The message id for the call.
+     * @param commandId The unique message id.
      * @param sourceChain The source chain of the token transfer.
      * @param sourceAddress The source address of the token transfer.
      * @param data The data associated with the token transfer.
@@ -63,6 +63,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
     /**
      * @notice Internal function containing the logic to be executed with interchain token transfer.
      * @dev Logic must be implemented by derived contracts.
+     * @param commandId The unique message id.
      * @param sourceChain The source chain of the token transfer.
      * @param sourceAddress The source address of the token transfer.
      * @param data The data associated with the token transfer.

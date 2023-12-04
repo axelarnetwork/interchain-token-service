@@ -350,7 +350,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Express executes operations based on the payload and selector.
-     * @param commandId The AxelarGateway command ID.
+     * @param commandId The unique message id.
      * @param sourceChain The chain where the transaction originates from.
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
      * @param payload The encoded data payload for the transaction.
@@ -381,7 +381,7 @@ contract InterchainTokenService is
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
      * interchainTransfer that matches the parameters passed here.
-     * @param commandId the commandId of the transfer being expressed.
+     * @param commandId The unique message id of the transfer being expressed.
      * @param sourceChain the name of the chain where the interchainTransfer originated from.
      * @param payload the payload of the receive token
      */
@@ -586,7 +586,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Executes operations based on the payload and selector.
-     * @param commandId The AxelarGateway command ID
+     * @param commandId The unique message id.
      * @param sourceChain The chain where the transaction originates from.
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
      * @param payload The encoded data payload for the transaction.
@@ -653,7 +653,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Processes the payload data for a send token call.
-     * @param commandId The AxelarGateway command ID
+     * @param commandId The unique message id.
      * @param expressExecutor The address of the express executor. Equals `address(0)` if it wasn't expressed.
      * @param sourceChain The chain where the transaction originates from.
      * @param payload The encoded data payload to be processed.
