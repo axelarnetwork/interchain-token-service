@@ -153,6 +153,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             token.transferDistributorship(distributor);
 
             tokenManager.removeFlowLimiter(address(this));
+
+            // If distributor == address(0), we still set it as a flow limiter for consistency with the remote token manager.
             tokenManager.addFlowLimiter(distributor);
 
             tokenManager.transferOperatorship(distributor);

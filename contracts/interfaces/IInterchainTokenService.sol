@@ -40,6 +40,7 @@ interface IInterchainTokenService is
     error InvalidExpressMessageType(uint256 messageType);
     error TakeTokenFailed(bytes data);
     error GiveTokenFailed(bytes data);
+    error TokenHandlerFailed(bytes data);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,

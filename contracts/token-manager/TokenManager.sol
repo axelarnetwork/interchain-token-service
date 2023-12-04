@@ -16,7 +16,7 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
 
 /**
  * @title TokenManager
- * @notice This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
+ * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
  */
 contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
     using AddressBytes for bytes;

@@ -394,11 +394,18 @@ contract InterchainTokenService is
             ITokenManager tokenManager_ = ITokenManager(tokenManagerAddress(tokenId));
             token = IERC20(tokenManager_.tokenAddress());
 
-            if (tokenManager_.implementationType() == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-                amount = _giveTokenFrom(uint256(TokenManagerType.LOCK_UNLOCK_FEE), address(token), msg.sender, destinationAddress, amount);
-            } else {
-                token.safeTransferFrom(msg.sender, destinationAddress, amount);
-            }
+            (bool success, bytes memory returnData) = tokenHandler.delegatecall(
+                abi.encodeWithSelector(
+                    ITokenHandler.transferToken.selector,
+                    tokenManager_.implementationType(),
+                    address(token),
+                    msg.sender,
+                    destinationAddress,
+                    amount
+                )
+            );
+            if (!success) revert TokenHandlerFailed(returnData);
+            amount = abi.decode(returnData, (uint256));
         }
 
         // slither-disable-next-line reentrancy-events
@@ -982,27 +989,12 @@ contract InterchainTokenService is
         /// @dev Track the flow amount being received via the message
         ITokenManager(tokenManager_).addFlowIn(amount);
 
-        amount = _giveTokenFrom(tokenManagerType, tokenAddress, tokenManager_, to, amount);
-
-        return (amount, tokenAddress);
-    }
-
-    /**
-     * @dev Gives tokens to a recipient from a provided address.
-     */
-    function _giveTokenFrom(
-        uint256 tokenManagerType,
-        address tokenAddress,
-        address from,
-        address to,
-        uint256 amount
-    ) internal returns (uint256) {
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, from, to, amount)
+            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, tokenManager_, to, amount)
         );
         if (!success) revert GiveTokenFailed(data);
         amount = abi.decode(data, (uint256));
 
-        return amount;
+        return (amount, tokenAddress);
     }
 }
