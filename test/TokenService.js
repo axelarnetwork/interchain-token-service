@@ -1788,7 +1788,12 @@ describe('Interchain Token Service', () => {
                     transferToAddress = tokenManager.address;
                 }
 
-                await expect(token.interchainTransfer(destinationChain, destAddress, amount, metadata, { value: gasValue }))
+                await expect(
+                    reportGas(
+                        token.connect(wallet).interchainTransfer(destinationChain, destAddress, amount, metadata, { value: gasValue }),
+                        `Call token.interchainTransfer ${type}`,
+                    ),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')

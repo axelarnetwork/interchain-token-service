@@ -380,7 +380,7 @@ contract InterchainTokenService is
     /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
      * interchainTransfer that matches the parameters passed here.
-     * @dev This is not to be used with fee on transfer tokens as it will incur losses for the express caller.
+     * @param commandId the commandId of the transfer being expressed.
      * @param sourceChain the name of the chain where the interchainTransfer originated from.
      * @param payload the payload of the receive token
      */
@@ -391,18 +391,11 @@ contract InterchainTokenService is
 
         IERC20 token;
         {
-            ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
+            ITokenManager tokenManager_ = ITokenManager(tokenManagerAddress(tokenId));
             token = IERC20(tokenManager_.tokenAddress());
 
             if (tokenManager_.implementationType() == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-                uint256 balanceAmount = token.balanceOf(destinationAddress);
-
-                token.safeTransferFrom(msg.sender, destinationAddress, amount);
-                balanceAmount = token.balanceOf(destinationAddress) - balanceAmount;
-
-                if (balanceAmount < amount) {
-                    amount = balanceAmount;
-                }
+                amount = _giveTokenFrom(uint256(TokenManagerType.LOCK_UNLOCK_FEE), address(token), msg.sender, destinationAddress, amount);
             } else {
                 token.safeTransferFrom(msg.sender, destinationAddress, amount);
             }
@@ -652,7 +645,7 @@ contract InterchainTokenService is
     /**
      * @notice Processes the payload data for a send token call.
      * @param commandId The AxelarGateway command ID
-     * @param expressExecutor The address of the express executor.
+     * @param expressExecutor The address of the express executor. Equals `address(0)` if it wasn't expressed.
      * @param sourceChain The chain where the transaction originates from.
      * @param payload The encoded data payload to be processed.
      */
@@ -680,6 +673,7 @@ contract InterchainTokenService is
         if (expressExecutor != address(0)) {
             // slither-disable-next-line unused-return
             _giveToken(tokenId, expressExecutor, amount);
+
             return;
         }
 
@@ -955,6 +949,9 @@ contract InterchainTokenService is
         _callContract(destinationChain, payload, msg.value);
     }
 
+    /**
+     * @dev Takes token from a sender via the token service.
+     */
     function _takeToken(bytes32 tokenId, address from, uint256 amount) internal returns (uint256, address tokenAddress) {
         address tokenManager_ = tokenManagerAddress(tokenId);
         uint256 tokenManagerType;
@@ -966,24 +963,44 @@ contract InterchainTokenService is
         if (!success) revert TakeTokenFailed(data);
         amount = abi.decode(data, (uint256));
 
+        /// @dev Track the flow amount being sent out as a message
         ITokenManager(tokenManager_).addFlowOut(amount);
 
         return (amount, tokenAddress);
     }
 
+    /**
+     * @dev Gives token to recipient via the token service.
+     */
     function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address) {
         address tokenManager_ = tokenManagerAddress(tokenId);
 
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
 
+        /// @dev Track the flow amount being received via the message
         ITokenManager(tokenManager_).addFlowIn(amount);
 
+        amount = _giveTokenFrom(tokenManagerType, tokenAddress, tokenManager_, to, amount);
+
+        return (amount, tokenAddress);
+    }
+
+    /**
+     * @dev Gives tokens to a recipient from a provided address.
+     */
+    function _giveTokenFrom(
+        uint256 tokenManagerType,
+        address tokenAddress,
+        address from,
+        address to,
+        uint256 amount
+    ) internal returns (uint256) {
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, tokenManager_, to, amount)
+            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, from, to, amount)
         );
         if (!success) revert GiveTokenFailed(data);
         amount = abi.decode(data, (uint256));
 
-        return (amount, tokenAddress);
+        return amount;
     }
 }
