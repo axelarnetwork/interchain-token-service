@@ -988,7 +988,13 @@ contract InterchainTokenService is
     /**
      * @dev Gives tokens to a recipient from a provided address.
      */
-    function _giveTokenFrom(uint256 tokenManagerType, address tokenAddress, address from, address to, uint256 amount) internal returns (uint256) {
+    function _giveTokenFrom(
+        uint256 tokenManagerType,
+        address tokenAddress,
+        address from,
+        address to,
+        uint256 amount
+    ) internal returns (uint256) {
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, from, to, amount)
         );

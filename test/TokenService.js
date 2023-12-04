@@ -1789,13 +1789,11 @@ describe('Interchain Token Service', () => {
                 }
 
                 await expect(
-                        reportGas(
-                            token
-                                .connect(wallet)
-                                .interchainTransfer(destinationChain, destAddress, amount, metadata, { value: gasValue }),
-                            `Call token.interchainTransfer ${type}`,
-                        ),
-                    )
+                    reportGas(
+                        token.connect(wallet).interchainTransfer(destinationChain, destAddress, amount, metadata, { value: gasValue }),
+                        `Call token.interchainTransfer ${type}`,
+                    ),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
