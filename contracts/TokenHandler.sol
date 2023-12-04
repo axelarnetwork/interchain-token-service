@@ -12,7 +12,7 @@ import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol'
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 
 /**
- * @title ITokenManager Interface
+ * @title TokenHandler
  * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
 contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
@@ -20,34 +20,34 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     using SafeTokenCall for IERC20;
 
     /**
-     * @notice This function gives token to a specified address.
-     * @dev Can only be called by the service.
+     * @notice This function gives token to a specified address from the token manager.
      * @param tokenManagerType The token manager type.
      * @param tokenAddress The address of the token to give.
-     * @param from The address of the sender (usually token manager).
-     * @param to The address of the recepient.
-     * @return amount The amount of tokens actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
+     * @param tokenManager The address of the token manager.
+     * @param to The address to give tokens to.
+     * @param amount The amount of tokens to give.
+     * @return uint256 The amount of token actually given, which could be different for certain token type.
      */
     // slither-disable-next-line locked-ether
     function giveToken(
         uint256 tokenManagerType,
         address tokenAddress,
-        address from,
+        address tokenManager,
         address to,
         uint256 amount
     ) external payable returns (uint256) {
+        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
+            _giveTokenMintBurn(tokenAddress, to, amount);
+            return amount;
+        }
+
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
-            _transferTokenLockUnlock(tokenAddress, from, to, amount);
+            _transferTokenFrom(tokenAddress, tokenManager, to, amount);
             return amount;
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenLockUnlockFee(tokenAddress, from, to, amount);
-            return amount;
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
-            _giveTokenMintBurn(tokenAddress, to, amount);
+            amount = _transferTokenFromWithFee(tokenAddress, tokenManager, to, amount);
             return amount;
         }
 
@@ -55,32 +55,22 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     }
 
     /**
-     * @notice This function gives token to a specified address.
-     * @dev Can only be called by the service.
+     * @notice This function takes token from a specified address to the token manager.
      * @param tokenManagerType The token manager type.
-     * @param tokenAddress the address of the token to give.
-     * @param to The address of the recipient (usually the token manager).
-     * @param from the address of the provider.
-     * @return amount The amount of tokens actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee.
+     * @param tokenAddress The address of the token to give.
+     * @param tokenManager The address of the token manager.
+     * @param from The address to take tokens from.
+     * @param amount The amount of token to take.
+     * @return uint256 The amount of token actually taken, which could be different for certain token type.
      */
     // slither-disable-next-line locked-ether
     function takeToken(
         uint256 tokenManagerType,
         address tokenAddress,
-        address to,
+        address tokenManager,
         address from,
         uint256 amount
     ) external payable returns (uint256) {
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
-            _transferTokenLockUnlock(tokenAddress, from, to, amount);
-            return amount;
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenLockUnlockFee(tokenAddress, from, to, amount);
-            return amount;
-        }
-
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _takeTokenMintBurn(tokenAddress, from, amount);
             return amount;
@@ -91,15 +81,59 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
             return amount;
         }
 
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
+            _transferTokenFrom(tokenAddress, from, tokenManager, amount);
+            return amount;
+        }
+
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+            amount = _transferTokenFromWithFee(tokenAddress, from, tokenManager, amount);
+            return amount;
+        }
+
         revert UnsupportedTokenManagerType(tokenManagerType);
     }
 
-    function _transferTokenLockUnlock(address tokenAddress, address from, address to, uint256 amount) internal {
+    /**
+     * @notice This function transfers token from and to a specified address.
+     * @param tokenManagerType The token manager type.
+     * @param tokenAddress the address of the token to give.
+     * @param from The address to transfer tokens from.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of token to transfer.
+     * @return uint256 The amount of token actually transferred, which could be different for certain token type.
+     */
+    // slither-disable-next-line locked-ether
+    function transferTokenFrom(
+        uint256 tokenManagerType,
+        address tokenAddress,
+        address from,
+        address to,
+        uint256 amount
+    ) external payable returns (uint256) {
+        if (
+            tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) ||
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
+        ) {
+            _transferTokenFrom(tokenAddress, from, to, amount);
+            return amount;
+        }
+
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+            amount = _transferTokenFromWithFee(tokenAddress, from, to, amount);
+            return amount;
+        }
+
+        revert UnsupportedTokenManagerType(tokenManagerType);
+    }
+
+    function _transferTokenFrom(address tokenAddress, address from, address to, uint256 amount) internal {
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(tokenAddress).safeTransferFrom(from, to, amount);
     }
 
-    function _transferTokenLockUnlockFee(
+    function _transferTokenFromWithFee(
         address tokenAddress,
         address from,
         address to,
@@ -107,8 +141,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     ) internal noReEntrancy returns (uint256) {
         uint256 balanceBefore = IERC20(tokenAddress).balanceOf(to);
 
-        // slither-disable-next-line arbitrary-send-erc20
-        IERC20(tokenAddress).safeTransferFrom(from, to, amount);
+        _transferTokenFrom(tokenAddress, from, to, amount);
 
         uint256 diff = IERC20(tokenAddress).balanceOf(to) - balanceBefore;
         if (diff < amount) {
