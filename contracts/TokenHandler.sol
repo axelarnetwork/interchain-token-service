@@ -47,7 +47,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenFromLockUnlockFee(tokenAddress, tokenManager, to, amount);
+            amount = _transferTokenFromWithFee(tokenAddress, tokenManager, to, amount);
             return amount;
         }
 
@@ -87,7 +87,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenFromLockUnlockFee(tokenAddress, from, tokenManager, amount);
+            amount = _transferTokenFromWithFee(tokenAddress, from, tokenManager, amount);
             return amount;
         }
 
@@ -121,7 +121,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenFromLockUnlockFee(tokenAddress, from, to, amount);
+            amount = _transferTokenFromWithFee(tokenAddress, from, to, amount);
             return amount;
         }
 
@@ -133,7 +133,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         IERC20(tokenAddress).safeTransferFrom(from, to, amount);
     }
 
-    function _transferTokenFromLockUnlockFee(
+    function _transferTokenFromWithFee(
         address tokenAddress,
         address from,
         address to,
