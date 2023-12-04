@@ -26,7 +26,7 @@ interface IInterchainTokenDeployer {
     /**
      * @notice Deploys a new instance of the InterchainTokenProxy contract.
      * @param salt The salt used by Create3Deployer.
-     * @param tokenManager Address of the token manager.
+     * @param tokenId tokenId of the token.
      * @param distributor Address of the distributor.
      * @param name Name of the token.
      * @param symbol Symbol of the token.
@@ -35,7 +35,7 @@ interface IInterchainTokenDeployer {
      */
     function deployInterchainToken(
         bytes32 salt,
-        address tokenManager,
+        bytes32 tokenId,
         address distributor,
         string calldata name,
         string calldata symbol,

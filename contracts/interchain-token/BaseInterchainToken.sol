@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IInterchainTokenStandard } from '../interfaces/IInterchainTokenStandard.sol';
-import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 import { ERC20 } from './ERC20.sol';
 
@@ -14,11 +14,18 @@ import { ERC20 } from './ERC20.sol';
  */
 abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
     /**
-     * @notice Getter for the tokenManager used for this token.
+     * @notice Getter for the tokenId used for this token.
      * @dev Needs to be overwritten.
-     * @return tokenManager_ The TokenManager called to facilitate interchain transfers.
+     * @return tokenId_ The tokenId that this token is registerred under.
      */
-    function tokenManager() public view virtual returns (address tokenManager_);
+    function interchainTokenId() public view virtual returns (bytes32 tokenId_);
+
+    /**
+     * @notice Getter for the interchain token service.
+     * @dev Needs to be overwritten.
+     * @return service The address of the interchain token service.
+     */
+    function interchainTokenService() public view virtual returns (address service);
 
     /**
      * @notice Implementation of the interchainTransfer method
@@ -40,8 +47,8 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
 
         _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
-        ITokenManager tokenManager_ = ITokenManager(tokenManager());
-        tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
+        IInterchainTokenService service = IInterchainTokenService(interchainTokenService());
+        service.transmitInterchainTransfer{ value: msg.value }(interchainTokenId(), sender, destinationChain, recipient, amount, metadata);
     }
 
     /**
@@ -69,8 +76,8 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
 
         _beforeInterchainTransfer(sender, destinationChain, recipient, amount, metadata);
 
-        ITokenManager tokenManager_ = ITokenManager(tokenManager());
-        tokenManager_.transmitInterchainTransfer{ value: msg.value }(sender, destinationChain, recipient, amount, metadata);
+        IInterchainTokenService service = IInterchainTokenService(interchainTokenService());
+        service.transmitInterchainTransfer{ value: msg.value }(interchainTokenId(), sender, destinationChain, recipient, amount, metadata);
     }
 
     /**

@@ -9,8 +9,9 @@ contract TestFeeOnTransferTokenNoFee is TestFeeOnTransferToken {
         string memory name_,
         string memory symbol_,
         uint8 decimals_,
-        address tokenManagerAddress
-    ) TestFeeOnTransferToken(name_, symbol_, decimals_, tokenManagerAddress) {}
+        address service_,
+        bytes32 tokenId_
+    ) TestFeeOnTransferToken(name_, symbol_, decimals_, service_, tokenId_) {}
 
     // no fee
     function _transfer(address sender, address recipient, uint256 amount) internal override {

@@ -28,7 +28,7 @@ interface IInterchainTokenService is
     error InvalidChainName();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
-    error NotTokenManager(address caller, address tokenManager);
+    error NotToken(address caller, address token);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error GatewayToken();
@@ -38,29 +38,25 @@ interface IInterchainTokenService is
     error InvalidMetadataVersion(uint32 version);
     error ExecuteWithTokenNotSupported();
     error InvalidExpressMessageType(uint256 messageType);
+    error TakeTokenFailed(bytes data);
+    error GiveTokenFailed(bytes data);
 
-    event InterchainTransfer(bytes32 indexed tokenId, string destinationChain, bytes destinationAddress, uint256 indexed amount);
-    event InterchainTransferWithData(
+    event InterchainTransfer(
         bytes32 indexed tokenId,
+        address indexed sourceAddress,
         string destinationChain,
         bytes destinationAddress,
-        uint256 indexed amount,
-        address indexed sourceAddress,
-        bytes data
+        uint256 amount,
+        bytes32 indexed dataHash
     );
     event InterchainTransferReceived(
+        bytes32 indexed commandId,
         bytes32 indexed tokenId,
         string sourceChain,
         bytes sourceAddress,
         address indexed destinationAddress,
-        uint256 indexed amount
-    );
-    event InterchainTransferReceivedWithData(
-        bytes32 indexed tokenId,
-        string sourceChain,
-        bytes sourceAddress,
-        address indexed destinationAddress,
-        uint256 indexed amount
+        uint256 amount,
+        bytes32 dataHash
     );
     event TokenManagerDeploymentStarted(
         bytes32 indexed tokenId,
@@ -98,6 +94,18 @@ interface IInterchainTokenService is
      * @return interchainTokenDeployerAddress The address of the interchain token deployer contract.
      */
     function interchainTokenDeployer() external view returns (address interchainTokenDeployerAddress);
+
+    /**
+     * @notice Returns the address of TokenManager implementation.
+     * @return tokenManagerAddress_ The address of the token manager contract.
+     */
+    function tokenManager() external view returns (address tokenManagerAddress_);
+
+    /**
+     * @notice Returns the address of TokenHandler implementation.
+     * @return tokenHandlerAddress The address of the token handler contract.
+     */
+    function tokenHandler() external view returns (address tokenHandlerAddress);
 
     /**
      * @notice Returns the hash of the chain name.

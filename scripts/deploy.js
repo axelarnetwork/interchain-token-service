@@ -32,7 +32,8 @@ async function deployInterchainTokenService(
     gatewayAddress,
     gasServiceAddress,
     interchainTokenFactoryAddress,
-    tokenManagerImplementations,
+    tokenManagerAddress,
+    tokenHandlerAddress,
     chainName,
     evmChains = [],
     deploymentKey,
@@ -48,7 +49,8 @@ async function deployInterchainTokenService(
         gasServiceAddress,
         interchainTokenFactoryAddress,
         chainName,
-        tokenManagerImplementations,
+        tokenManagerAddress,
+        tokenHandlerAddress,
     ]);
     const proxy = await create3DeployContract(create3DeployerAddress, wallet, Proxy, deploymentKey, [
         implementation.address,
@@ -73,17 +75,6 @@ async function deployInterchainTokenFactory(wallet, create3DeployerAddress, inte
     return factory;
 }
 
-async function deployTokenManagerImplementations(wallet, interchainTokenServiceAddress) {
-    const implementations = [];
-
-    for (const type of ['MintBurn', 'MintBurnFrom', 'LockUnlock', 'LockUnlockFee']) {
-        const impl = await deployContract(wallet, `TokenManager${type}`, [interchainTokenServiceAddress]);
-        implementations.push(impl);
-    }
-
-    return implementations;
-}
-
 async function deployAll(
     wallet,
     chainName,
@@ -96,11 +87,13 @@ async function deployAll(
         .then((d) => d.deployed());
     const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
-    const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-    const interchainToken = await deployContract(wallet, 'InterchainToken');
-    const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
+
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-    const tokenManagerImplementations = await deployTokenManagerImplementations(wallet, interchainTokenServiceAddress);
+    const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
+    const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
+    const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
+    const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
+    const tokenHandler = await deployContract(wallet, 'TokenHandler', []);
 
     const interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey);
 
@@ -112,7 +105,8 @@ async function deployAll(
         gateway.address,
         gasService.address,
         interchainTokenFactoryAddress,
-        tokenManagerImplementations.map((impl) => impl.address),
+        tokenManager.address,
+        tokenHandler.address,
         chainName,
         evmChains,
         deploymentKey,
@@ -130,7 +124,6 @@ async function deployAll(
 module.exports = {
     deployContract,
     deployMockGateway,
-    deployTokenManagerImplementations,
     deployGasService,
     deployInterchainTokenService,
     deployAll,

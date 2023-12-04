@@ -1,6 +1,7 @@
 'use strict';
 
-const { ethers, network } = require('hardhat');
+const fs = require('fs');
+const { ethers, network, config } = require('hardhat');
 const { expect } = require('chai');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 
@@ -61,6 +62,44 @@ const waitFor = async (timeDelay) => {
     }
 };
 
+const gasReports = {};
+let gasReportScheduled = false;
+
+const writeGasReport = () => {
+    const report = Object.entries(gasReports)
+        .flatMap(([contract, report]) => [
+            `## ${contract} gas report:`,
+            ...Object.entries(report).map(([key, value]) => `  |> ${key}\n  ==${value.toLocaleString().padStart(10)} gas`),
+        ])
+        .join('\n\n');
+
+    fs.writeFileSync('gas.report.log', report);
+};
+
+const gasReporter = (contact) => (tx, message) => {
+    if (process.env.REPORT_GAS === undefined) return tx;
+
+    if (message) {
+        tx.then((tx) =>
+            tx.wait().then((receipt) => {
+                if (!gasReports[contact]) gasReports[contact] = {};
+                gasReports[contact][message] = receipt.gasUsed.toNumber();
+            }),
+        );
+    }
+
+    if (!gasReportScheduled) {
+        gasReportScheduled = true;
+        process.on('exit', writeGasReport);
+    }
+
+    return tx;
+};
+
+const getEVMVersion = () => {
+    return config.solidity.compilers[0].settings.evmVersion;
+};
+
 module.exports = {
     getRandomBytes32,
     isHardhat,
@@ -69,4 +108,6 @@ module.exports = {
     expectRevert,
     getPayloadAndProposalHash,
     waitFor,
+    gasReporter,
+    getEVMVersion,
 };

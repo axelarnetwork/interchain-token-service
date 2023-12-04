@@ -5,24 +5,20 @@ const { ethers } = require('hardhat');
 const {
     utils: { keccak256, toUtf8Bytes, defaultAbiCoder },
     constants: { AddressZero },
-    getContractAt,
 } = ethers;
 const { expect } = chai;
-const { expectRevert, getRandomBytes32 } = require('./utils');
-const { deployContract, deployAll } = require('../scripts/deploy');
+const { expectRevert, getEVMVersion } = require('./utils');
+const { deployContract } = require('../scripts/deploy');
 
 describe('Token Manager', () => {
     const FLOW_LIMITER_ROLE = 2;
-    let owner, user, token, service;
-    let TestTokenManager, tokenManagerLockUnlock, tokenManagerMintBurn, tokenManagerLockUnlockFeeOnTransfer;
+    let owner, token, service;
+    let TestTokenManager;
 
     before(async () => {
-        [owner, user, token, service] = await ethers.getSigners();
+        [owner, token, service] = await ethers.getSigners();
 
         TestTokenManager = await deployContract(owner, `TestTokenManager`, [service.address]);
-        tokenManagerLockUnlock = await deployContract(owner, `TokenManagerLockUnlock`, [service.address]);
-        tokenManagerMintBurn = await deployContract(owner, `TokenManagerMintBurn`, [service.address]);
-        tokenManagerLockUnlockFeeOnTransfer = await deployContract(owner, `TokenManagerLockUnlockFee`, [service.address]);
     });
 
     it('Should revert on token manager deployment with invalid service address', async () => {
@@ -44,52 +40,6 @@ describe('Token Manager', () => {
         await expectRevert((gasOptions) => TestTokenManager.setup(params, gasOptions), TestTokenManager, 'NotProxy');
     });
 
-    it('Should revert on transmitInterchainTransfer if not called by the token', async () => {
-        const [service] = await deployAll(owner, 'Test');
-        const salt = getRandomBytes32();
-        const MINT_BURN = 0;
-
-        const params = defaultAbiCoder.encode(['bytes', 'address'], [owner.address, token.address]);
-        await service.deployTokenManager(salt, '', MINT_BURN, params, 0);
-        const tokenManagerAddress = await service.tokenManagerAddress(await service.interchainTokenId(owner.address, salt));
-        const tokenManager = await getContractAt('ITokenManager', tokenManagerAddress, owner);
-
-        const sender = owner.address;
-        const destinationChain = 'Dest Chain';
-        const destinationAddress = toUtf8Bytes(user.address);
-        const amount = 10;
-        const metadata = '0x00000000';
-
-        await expectRevert(
-            (gasOptions) =>
-                tokenManager.transmitInterchainTransfer(sender, destinationChain, destinationAddress, amount, metadata, gasOptions),
-            tokenManagerLockUnlock,
-            'NotToken',
-            [sender],
-        );
-    });
-
-    it('Should revert on giveToken if not called by the service', async () => {
-        const destinationAddress = user.address;
-        const amount = 10;
-
-        await expectRevert(
-            (gasOptions) => TestTokenManager.giveToken(destinationAddress, amount, gasOptions),
-            TestTokenManager,
-            'NotService',
-            [owner.address],
-        );
-    });
-
-    it('Should revert on takeToken if not called by the service', async () => {
-        const sourceAddress = user.address;
-        const amount = 10;
-
-        await expectRevert((gasOptions) => TestTokenManager.takeToken(sourceAddress, amount, gasOptions), TestTokenManager, 'NotService', [
-            owner.address,
-        ]);
-    });
-
     it('Should revert on setFlowLimit if not called by the operator', async () => {
         const flowLimit = 100;
 
@@ -99,38 +49,37 @@ describe('Token Manager', () => {
         ]);
     });
 
-    it('Should revert on addFlowLimiter if flow limiter address is invalid', async () => {
-        await TestTokenManager.addOperator(owner.address).then((tx) => tx.wait());
-
-        await expectRevert((gasOptions) => TestTokenManager.addFlowLimiter(AddressZero, gasOptions), TestTokenManager, 'ZeroAddress', []);
+    it('Should revert on addFlowIn when calling directly', async () => {
+        await expectRevert((gasOptions) => TestTokenManager.addFlowIn(0, gasOptions), TestTokenManager, 'NotService', [owner.address]);
     });
 
-    it('Should revert on removeFlowLimiter if flow limiter address is invalid', async () => {
-        await TestTokenManager.addOperator(owner.address).then((tx) => tx.wait());
-
-        await expectRevert(
-            (gasOptions) => TestTokenManager.removeFlowLimiter(AddressZero, gasOptions),
-            TestTokenManager,
-            'ZeroAddress',
-            [],
-        );
+    it('Should revert on addFlowOut when calling directly', async () => {
+        await expectRevert((gasOptions) => TestTokenManager.addFlowOut(0, gasOptions), TestTokenManager, 'NotService', [owner.address]);
     });
 
-    it('Should return the correct parameters for lock/unlock token manager', async () => {
+    it('Should revert on approveService when calling directly', async () => {
+        await expectRevert((gasOptions) => TestTokenManager.approveService(gasOptions), TestTokenManager, 'NotService', [owner.address]);
+    });
+
+    it('Should return the correct parameters for a token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
-        const params = await tokenManagerLockUnlock.params(toUtf8Bytes(owner.address), token.address);
+        const params = await TestTokenManager.params(toUtf8Bytes(owner.address), token.address);
         expect(expectedParams).to.eq(params);
     });
 
-    it('Should return the correct parameters for mint/burn token manager', async () => {
-        const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
-        const params = await tokenManagerMintBurn.params(toUtf8Bytes(owner.address), token.address);
-        expect(expectedParams).to.eq(params);
-    });
+    describe('Bytecode checks [ @skip-on-coverage ]', () => {
+        it('Should preserve the same proxy bytecode for each EVM', async () => {
+            const proxyFactory = await ethers.getContractFactory('TokenManagerProxy', owner);
+            const proxyBytecode = proxyFactory.bytecode;
+            const proxyBytecodeHash = keccak256(proxyBytecode);
 
-    it('Should return the correct parameters for fee on transfer token manager', async () => {
-        const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
-        const params = await tokenManagerLockUnlockFeeOnTransfer.params(toUtf8Bytes(owner.address), token.address);
-        expect(expectedParams).to.eq(params);
+            const expected = {
+                istanbul: '0x8e833c9efc444489f636e5582be33991c73273049065a071e414b3fc6e64bb54',
+                berlin: '0x6e1fe42f41fb15015c4fc5b702747255296568a52b019b8f061c000921433aa3',
+                london: '0x6ff5905df915a3661814814739766a16d87576480c270fda42c04c25955716ad',
+            }[getEVMVersion()];
+
+            expect(proxyBytecodeHash).to.be.equal(expected);
+        });
     });
 });
