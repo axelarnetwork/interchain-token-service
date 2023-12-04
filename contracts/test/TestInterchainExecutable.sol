@@ -6,13 +6,22 @@ import { InterchainTokenExpressExecutable } from '../executable/InterchainTokenE
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 
 contract TestInterchainExecutable is InterchainTokenExpressExecutable {
-    event MessageReceived(string sourceChain, bytes sourceAddress, address receiver, string message, bytes32 tokenId, uint256 amount);
+    event MessageReceived(
+        bytes32 commandId,
+        string sourceChain,
+        bytes sourceAddress,
+        address receiver,
+        string message,
+        bytes32 tokenId,
+        uint256 amount
+    );
 
     constructor(address interchainTokenService_) InterchainTokenExpressExecutable(interchainTokenService_) {}
 
     string public lastMessage;
 
     function _executeWithInterchainToken(
+        bytes32 commandId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
         bytes calldata data,
@@ -22,7 +31,7 @@ contract TestInterchainExecutable is InterchainTokenExpressExecutable {
     ) internal override {
         (address receiver, string memory message) = abi.decode(data, (address, string));
         lastMessage = message;
-        emit MessageReceived(sourceChain, sourceAddress, receiver, message, tokenId, amount);
+        emit MessageReceived(commandId, sourceChain, sourceAddress, receiver, message, tokenId, amount);
         IERC20(token).transfer(receiver, amount);
     }
 }

@@ -1688,7 +1688,7 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, sourceAddressForService, destAddress, amount, keccak256(data))
                 .and.to.emit(executable, 'MessageReceived')
-                .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
+                .withArgs(commandId, sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1717,7 +1717,7 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, sourceAddressForService, destAddress, amount, keccak256(data))
                 .and.to.emit(executable, 'MessageReceived')
-                .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
+                .withArgs(commandId, sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1741,7 +1741,7 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, sourceAddressForService, destAddress, amount - 10, keccak256(data))
                 .and.to.emit(executable, 'MessageReceived')
-                .withArgs(sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount - 10);
+                .withArgs(commandId, sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount - 10);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -1941,7 +1941,16 @@ describe('Interchain Token Service', () => {
         it('Should revert on executeWithInterchainToken when not called by the service', async () => {
             await expectRevert(
                 (gasOptions) =>
-                    executable.executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, token.address, amount, gasOptions),
+                    executable.executeWithInterchainToken(
+                        commandId,
+                        sourceChain,
+                        sourceAddress,
+                        data,
+                        tokenId,
+                        token.address,
+                        amount,
+                        gasOptions,
+                    ),
                 executable,
                 'NotService',
                 [wallet.address],
@@ -1952,6 +1961,7 @@ describe('Interchain Token Service', () => {
             await expectRevert(
                 (gasOptions) =>
                     executable.expressExecuteWithInterchainToken(
+                        commandId,
                         sourceChain,
                         sourceAddress,
                         data,
@@ -2021,7 +2031,7 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(executable.address, destinationAddress, amount)
                 .and.to.emit(executable, 'MessageReceived')
-                .withArgs(sourceChain, sourceAddress, destinationAddress, message, tokenId, amount);
+                .withArgs(commandId, sourceChain, sourceAddress, destinationAddress, message, tokenId, amount);
         });
     });
 

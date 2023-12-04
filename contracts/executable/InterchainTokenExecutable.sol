@@ -38,6 +38,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
     /**
      * @notice Executes logic in the context of an interchain token transfer.
      * @dev Only callable by the interchain token service.
+     * @param commandId The message id for the call.
      * @param sourceChain The source chain of the token transfer.
      * @param sourceAddress The source address of the token transfer.
      * @param data The data associated with the token transfer.
@@ -47,6 +48,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
      * @return bytes32 Hash indicating success of the execution.
      */
     function executeWithInterchainToken(
+        bytes32 commandId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
         bytes calldata data,
@@ -54,7 +56,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
         address token,
         uint256 amount
     ) external virtual onlyService returns (bytes32) {
-        _executeWithInterchainToken(sourceChain, sourceAddress, data, tokenId, token, amount);
+        _executeWithInterchainToken(commandId, sourceChain, sourceAddress, data, tokenId, token, amount);
         return EXECUTE_SUCCESS;
     }
 
@@ -69,6 +71,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
      * @param amount The amount of tokens being transferred.
      */
     function _executeWithInterchainToken(
+        bytes32 commandId,
         string calldata sourceChain,
         bytes calldata sourceAddress,
         bytes calldata data,
