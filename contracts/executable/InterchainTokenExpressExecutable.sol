@@ -23,7 +23,7 @@ abstract contract InterchainTokenExpressExecutable is IInterchainTokenExpressExe
     /**
      * @notice Executes express logic in the context of an interchain token transfer.
      * @dev Only callable by the interchain token service.
-     * @param commandId The message id for the call.
+     * @param commandId The unique message id.
      * @param sourceChain The source chain of the token transfer.
      * @param sourceAddress The source address of the token transfer.
      * @param data The data associated with the token transfer.
