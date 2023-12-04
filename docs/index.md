@@ -812,14 +812,6 @@ function _giveToken(bytes32 tokenId, address to, uint256 amount) internal return
 
 _Gives token to recipient via the token service._
 
-### _giveTokenFrom
-
-```solidity
-function _giveTokenFrom(uint256 tokenManagerType, address tokenAddress, address from, address to, uint256 amount) internal returns (uint256)
-```
-
-_Gives tokens to a recipient from a provided address._
-
 ## TokenHandler
 
 This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
@@ -827,12 +819,10 @@ This interface is responsible for handling tokens before initiating an interchai
 ### giveToken
 
 ```solidity
-function giveToken(uint256 tokenManagerType, address tokenAddress, address from, address to, uint256 amount) external payable returns (uint256)
+function giveToken(uint256 tokenManagerType, address tokenAddress, address tokenManager, address to, uint256 amount) external payable returns (uint256)
 ```
 
-This function gives token to a specified address.
-
-_Can only be called by the service._
+This function gives token to a specified address from the token manager.
 
 #### Parameters
 
@@ -840,25 +830,47 @@ _Can only be called by the service._
 | ---- | ---- | ----------- |
 | tokenManagerType | uint256 | The token manager type. |
 | tokenAddress | address | The address of the token to give. |
-| from | address | The address of the sender (usually token manager). |
-| to | address | The address of the recepient. |
-| amount | uint256 |  |
+| tokenManager | address | The address of the token manager. |
+| to | address | The address to give tokens to. |
+| amount | uint256 | The amount of tokens to give. |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | amount The amount of tokens actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee. |
+| [0] | uint256 | uint256 The amount of token actually given, which could be different for certain token type. |
 
 ### takeToken
 
 ```solidity
-function takeToken(uint256 tokenManagerType, address tokenAddress, address to, address from, uint256 amount) external payable returns (uint256)
+function takeToken(uint256 tokenManagerType, address tokenAddress, address tokenManager, address from, uint256 amount) external payable returns (uint256)
 ```
 
-This function gives token to a specified address.
+This function takes token from a specified address to the token manager.
 
-_Can only be called by the service._
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerType | uint256 | The token manager type. |
+| tokenAddress | address | The address of the token to give. |
+| tokenManager | address | The address of the token manager. |
+| from | address | The address to take tokens from. |
+| amount | uint256 | The amount of token to take. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 The amount of token actually taken, which could be different for certain token type. |
+
+### transferToken
+
+```solidity
+function transferToken(uint256 tokenManagerType, address tokenAddress, address from, address to, uint256 amount) external payable returns (uint256)
+```
+
+This function transfers token from and to a specified address.
 
 #### Parameters
 
@@ -866,20 +878,20 @@ _Can only be called by the service._
 | ---- | ---- | ----------- |
 | tokenManagerType | uint256 | The token manager type. |
 | tokenAddress | address | the address of the token to give. |
-| to | address | The address of the recipient (usually the token manager). |
-| from | address | the address of the provider. |
-| amount | uint256 |  |
+| from | address | The address to transfer tokens from. |
+| to | address | The address to transfer tokens to. |
+| amount | uint256 | The amount of token to transfer. |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | amount The amount of tokens actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee. |
+| [0] | uint256 | uint256 The amount of token actually transferred, which could be different for certain token type. |
 
-### _transferTokenLockUnlock
+### _transferToken
 
 ```solidity
-function _transferTokenLockUnlock(address tokenAddress, address from, address to, uint256 amount) internal
+function _transferToken(address tokenAddress, address from, address to, uint256 amount) internal
 ```
 
 ### _transferTokenLockUnlockFee
@@ -905,160 +917,6 @@ function _takeTokenMintBurn(address tokenAddress, address from, uint256 amount) 
 ```solidity
 function _takeTokenMintBurnFrom(address tokenAddress, address from, uint256 amount) internal
 ```
-
-## InterchainTokenExecutable
-
-Abstract contract that defines an interface for executing arbitrary logic
-in the context of interchain token operations.
-
-_This contract should be inherited by contracts that intend to execute custom
-logic in response to interchain token actions such as transfers. This contract
-will only be called by the interchain token service._
-
-### NotService
-
-```solidity
-error NotService(address caller)
-```
-
-### interchainTokenService
-
-```solidity
-address interchainTokenService
-```
-
-### EXECUTE_SUCCESS
-
-```solidity
-bytes32 EXECUTE_SUCCESS
-```
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) internal
-```
-
-Creates a new InterchainTokenExecutable contract.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| interchainTokenService_ | address | The address of the interchain token service that will call this contract. |
-
-### onlyService
-
-```solidity
-modifier onlyService()
-```
-
-Modifier to restrict function execution to the interchain token service.
-
-### executeWithInterchainToken
-
-```solidity
-function executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external virtual returns (bytes32)
-```
-
-Executes logic in the context of an interchain token transfer.
-
-_Only callable by the interchain token service._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| commandId | bytes32 | The message id for the call. |
-| sourceChain | string | The source chain of the token transfer. |
-| sourceAddress | bytes | The source address of the token transfer. |
-| data | bytes | The data associated with the token transfer. |
-| tokenId | bytes32 | The token ID. |
-| token | address | The token address. |
-| amount | uint256 | The amount of tokens being transferred. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bytes32 | bytes32 Hash indicating success of the execution. |
-
-### _executeWithInterchainToken
-
-```solidity
-function _executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal virtual
-```
-
-Internal function containing the logic to be executed with interchain token transfer.
-
-_Logic must be implemented by derived contracts._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| commandId | bytes32 |  |
-| sourceChain | string | The source chain of the token transfer. |
-| sourceAddress | bytes | The source address of the token transfer. |
-| data | bytes | The data associated with the token transfer. |
-| tokenId | bytes32 | The token ID. |
-| token | address | The token address. |
-| amount | uint256 | The amount of tokens being transferred. |
-
-## InterchainTokenExpressExecutable
-
-Abstract contract that defines an interface for executing express logic in the context of interchain token operations.
-
-_This contract extends `InterchainTokenExecutable` to provide express execution capabilities. It is intended to be inherited by contracts
-that implement express logic for interchain token actions. This contract will only be called by the interchain token service._
-
-### EXPRESS_EXECUTE_SUCCESS
-
-```solidity
-bytes32 EXPRESS_EXECUTE_SUCCESS
-```
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) internal
-```
-
-Creates a new InterchainTokenExpressExecutable contract.
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| interchainTokenService_ | address | The address of the interchain token service that will call this contract. |
-
-### expressExecuteWithInterchainToken
-
-```solidity
-function expressExecuteWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external virtual returns (bytes32)
-```
-
-Executes express logic in the context of an interchain token transfer.
-
-_Only callable by the interchain token service._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| commandId | bytes32 | The message id for the call. |
-| sourceChain | string | The source chain of the token transfer. |
-| sourceAddress | bytes | The source address of the token transfer. |
-| data | bytes | The data associated with the token transfer. |
-| tokenId | bytes32 | The token ID. |
-| token | address | The token address. |
-| amount | uint256 | The amount of tokens to be transferred. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bytes32 | bytes32 Hash indicating success of the express execution. |
 
 ## IAddressTracker
 
@@ -1485,6 +1343,12 @@ error TakeTokenFailed(bytes data)
 
 ```solidity
 error GiveTokenFailed(bytes data)
+```
+
+### TokenHandlerFailed
+
+```solidity
+error TokenHandlerFailed(bytes data)
 ```
 
 ### InterchainTransfer
@@ -1976,58 +1840,78 @@ error UnsupportedTokenManagerType(uint256 tokenManagerType)
 ### giveToken
 
 ```solidity
-function giveToken(uint256 tokenManagerType, address tokenAddress, address tokenManager, address destinationAddress, uint256 amount) external payable returns (uint256)
+function giveToken(uint256 tokenManagerType, address tokenAddress, address tokenManager, address to, uint256 amount) external payable returns (uint256)
 ```
 
-This function gives token to a specified address.
-
-_Can only be called by the service._
+This function gives token to a specified address from the token manager.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenManagerType | uint256 |  |
-| tokenAddress | address |  |
-| tokenManager | address |  |
-| destinationAddress | address | The address to give tokens to. |
+| tokenManagerType | uint256 | The token manager type. |
+| tokenAddress | address | The address of the token to give. |
+| tokenManager | address | The address of the token manager. |
+| to | address | The address to give tokens to. |
 | amount | uint256 | The amount of tokens to give. |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | uint256 The amount of tokens actually given, which will only be different than `amount` in cases where the token takes some on-transfer fee. |
+| [0] | uint256 | uint256 The amount of token actually given, which could be different for certain token type. |
 
 ### takeToken
 
 ```solidity
-function takeToken(uint256 tokenManagerType, address tokenAddress, address tokenManager, address sourceAddress, uint256 amount) external payable returns (uint256)
+function takeToken(uint256 tokenManagerType, address tokenAddress, address tokenManager, address from, uint256 amount) external payable returns (uint256)
 ```
 
-This function takes token to from a specified address.
-
-_Can only be called by the service._
+This function takes token from a specified address to the token manager.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenManagerType | uint256 |  |
-| tokenAddress | address |  |
-| tokenManager | address |  |
-| sourceAddress | address | The address to take tokens from. |
+| tokenManagerType | uint256 | The token manager type. |
+| tokenAddress | address | The address of the token to give. |
+| tokenManager | address | The address of the token manager. |
+| from | address | The address to take tokens from. |
 | amount | uint256 | The amount of token to take. |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | uint256 The amount of token actually taken, which will onle be differen than `amount` in cases where the token takes some on-transfer fee. |
+| [0] | uint256 | uint256 The amount of token actually taken, which could be different for certain token type. |
+
+### transferToken
+
+```solidity
+function transferToken(uint256 tokenManagerType, address tokenAddress, address from, address to, uint256 amount) external payable returns (uint256)
+```
+
+This function transfers token from and to a specified address.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenManagerType | uint256 | The token manager type. |
+| tokenAddress | address | the address of the token to give. |
+| from | address | The address to transfer tokens from. |
+| to | address | The address to transfer tokens to. |
+| amount | uint256 | The amount of token to transfer. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 The amount of token actually transferred, which could be different for certain token type. |
 
 ## ITokenManager
 
-This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
+This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
 
 ### TokenLinkerZeroAddress
 
@@ -2352,48 +2236,6 @@ enum TokenManagerType {
 }
 ```
 
-## TestInterchainExecutable
-
-### MessageReceived
-
-```solidity
-event MessageReceived(bytes32 commandId, string sourceChain, bytes sourceAddress, address receiver, string message, bytes32 tokenId, uint256 amount)
-```
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) public
-```
-
-### lastMessage
-
-```solidity
-string lastMessage
-```
-
-### _executeWithInterchainToken
-
-```solidity
-function _executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal
-```
-
-Internal function containing the logic to be executed with interchain token transfer.
-
-_Logic must be implemented by derived contracts._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| commandId | bytes32 |  |
-| sourceChain | string | The source chain of the token transfer. |
-| sourceAddress | bytes | The source address of the token transfer. |
-| data | bytes | The data associated with the token transfer. |
-| tokenId | bytes32 | The token ID. |
-| token | address | The token address. |
-| amount | uint256 | The amount of tokens being transferred. |
-
 ## TestInterchainTokenService
 
 ### constructor
@@ -2407,94 +2249,6 @@ constructor(address tokenManagerDeployer_, address interchainTokenDeployer_, add
 ```solidity
 function setupTest(bytes params) external
 ```
-
-## TestInvalidInterchainExecutable
-
-### EXECUTE_FAILURE
-
-```solidity
-bytes32 EXECUTE_FAILURE
-```
-
-### EXPRESS_EXECUTE_FAILURE
-
-```solidity
-bytes32 EXPRESS_EXECUTE_FAILURE
-```
-
-### MessageReceived
-
-```solidity
-event MessageReceived(bytes32 commandId, string sourceChain, bytes sourceAddress, address receiver, string message, bytes32 tokenId, uint256 amount)
-```
-
-### constructor
-
-```solidity
-constructor(address interchainTokenService_) public
-```
-
-### lastMessage
-
-```solidity
-string lastMessage
-```
-
-### executeWithInterchainToken
-
-```solidity
-function executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external returns (bytes32)
-```
-
-### expressExecuteWithInterchainToken
-
-```solidity
-function expressExecuteWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external returns (bytes32)
-```
-
-Executes express logic in the context of an interchain token transfer.
-
-_Only callable by the interchain token service._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| commandId | bytes32 | The message id for the call. |
-| sourceChain | string | The source chain of the token transfer. |
-| sourceAddress | bytes | The source address of the token transfer. |
-| data | bytes | The data associated with the token transfer. |
-| tokenId | bytes32 | The token ID. |
-| token | address | The token address. |
-| amount | uint256 | The amount of tokens to be transferred. |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bytes32 | bytes32 Hash indicating success of the express execution. |
-
-### _executeWithInterchainToken
-
-```solidity
-function _executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal
-```
-
-Internal function containing the logic to be executed with interchain token transfer.
-
-_Logic must be implemented by derived contracts._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| commandId | bytes32 |  |
-| sourceChain | string | The source chain of the token transfer. |
-| sourceAddress | bytes | The source address of the token transfer. |
-| data | bytes | The data associated with the token transfer. |
-| tokenId | bytes32 | The token ID. |
-| token | address | The token address. |
-| amount | uint256 | The amount of tokens being transferred. |
 
 ## Operatable
 
@@ -2921,7 +2675,7 @@ Allows tokens to be transferred from the sender to the contract.
 function tokenApprove(bytes32 tokenId, uint256 amount) external payable
 ```
 
-Approves a specified amount of tokens to the token manager.
+Approves a specified amount of tokens to the service.
 
 #### Parameters
 
@@ -2955,6 +2709,160 @@ Checks if a given token is a gateway token.
 ```solidity
 function _setDeployerTokenBalance(bytes32 tokenId, address deployer, uint256 deployerBalance) internal
 ```
+
+## InterchainTokenExecutable
+
+Abstract contract that defines an interface for executing arbitrary logic
+in the context of interchain token operations.
+
+_This contract should be inherited by contracts that intend to execute custom
+logic in response to interchain token actions such as transfers. This contract
+will only be called by the interchain token service._
+
+### NotService
+
+```solidity
+error NotService(address caller)
+```
+
+### interchainTokenService
+
+```solidity
+address interchainTokenService
+```
+
+### EXECUTE_SUCCESS
+
+```solidity
+bytes32 EXECUTE_SUCCESS
+```
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) internal
+```
+
+Creates a new InterchainTokenExecutable contract.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| interchainTokenService_ | address | The address of the interchain token service that will call this contract. |
+
+### onlyService
+
+```solidity
+modifier onlyService()
+```
+
+Modifier to restrict function execution to the interchain token service.
+
+### executeWithInterchainToken
+
+```solidity
+function executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external virtual returns (bytes32)
+```
+
+Executes logic in the context of an interchain token transfer.
+
+_Only callable by the interchain token service._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| commandId | bytes32 | The message id for the call. |
+| sourceChain | string | The source chain of the token transfer. |
+| sourceAddress | bytes | The source address of the token transfer. |
+| data | bytes | The data associated with the token transfer. |
+| tokenId | bytes32 | The token ID. |
+| token | address | The token address. |
+| amount | uint256 | The amount of tokens being transferred. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bytes32 | bytes32 Hash indicating success of the execution. |
+
+### _executeWithInterchainToken
+
+```solidity
+function _executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal virtual
+```
+
+Internal function containing the logic to be executed with interchain token transfer.
+
+_Logic must be implemented by derived contracts._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| commandId | bytes32 |  |
+| sourceChain | string | The source chain of the token transfer. |
+| sourceAddress | bytes | The source address of the token transfer. |
+| data | bytes | The data associated with the token transfer. |
+| tokenId | bytes32 | The token ID. |
+| token | address | The token address. |
+| amount | uint256 | The amount of tokens being transferred. |
+
+## InterchainTokenExpressExecutable
+
+Abstract contract that defines an interface for executing express logic in the context of interchain token operations.
+
+_This contract extends `InterchainTokenExecutable` to provide express execution capabilities. It is intended to be inherited by contracts
+that implement express logic for interchain token actions. This contract will only be called by the interchain token service._
+
+### EXPRESS_EXECUTE_SUCCESS
+
+```solidity
+bytes32 EXPRESS_EXECUTE_SUCCESS
+```
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) internal
+```
+
+Creates a new InterchainTokenExpressExecutable contract.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| interchainTokenService_ | address | The address of the interchain token service that will call this contract. |
+
+### expressExecuteWithInterchainToken
+
+```solidity
+function expressExecuteWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external virtual returns (bytes32)
+```
+
+Executes express logic in the context of an interchain token transfer.
+
+_Only callable by the interchain token service._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| commandId | bytes32 | The message id for the call. |
+| sourceChain | string | The source chain of the token transfer. |
+| sourceAddress | bytes | The source address of the token transfer. |
+| data | bytes | The data associated with the token transfer. |
+| tokenId | bytes32 | The token ID. |
+| token | address | The token address. |
+| amount | uint256 | The amount of tokens to be transferred. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bytes32 | bytes32 Hash indicating success of the express execution. |
 
 ## BaseInterchainToken
 
@@ -4490,6 +4398,48 @@ Requirements:
 - `recipient` cannot be the zero address.
 - `sender` must have a balance of at least `amount`._
 
+## TestInterchainExecutable
+
+### MessageReceived
+
+```solidity
+event MessageReceived(bytes32 commandId, string sourceChain, bytes sourceAddress, address receiver, string message, bytes32 tokenId, uint256 amount)
+```
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) public
+```
+
+### lastMessage
+
+```solidity
+string lastMessage
+```
+
+### _executeWithInterchainToken
+
+```solidity
+function _executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal
+```
+
+Internal function containing the logic to be executed with interchain token transfer.
+
+_Logic must be implemented by derived contracts._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| commandId | bytes32 |  |
+| sourceChain | string | The source chain of the token transfer. |
+| sourceAddress | bytes | The source address of the token transfer. |
+| data | bytes | The data associated with the token transfer. |
+| tokenId | bytes32 | The token ID. |
+| token | address | The token address. |
+| amount | uint256 | The amount of tokens being transferred. |
+
 ## Invalid
 
 ```solidity
@@ -4509,6 +4459,94 @@ string placeholder
 ```solidity
 constructor() public
 ```
+
+## TestInvalidInterchainExecutable
+
+### EXECUTE_FAILURE
+
+```solidity
+bytes32 EXECUTE_FAILURE
+```
+
+### EXPRESS_EXECUTE_FAILURE
+
+```solidity
+bytes32 EXPRESS_EXECUTE_FAILURE
+```
+
+### MessageReceived
+
+```solidity
+event MessageReceived(bytes32 commandId, string sourceChain, bytes sourceAddress, address receiver, string message, bytes32 tokenId, uint256 amount)
+```
+
+### constructor
+
+```solidity
+constructor(address interchainTokenService_) public
+```
+
+### lastMessage
+
+```solidity
+string lastMessage
+```
+
+### executeWithInterchainToken
+
+```solidity
+function executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external returns (bytes32)
+```
+
+### expressExecuteWithInterchainToken
+
+```solidity
+function expressExecuteWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) external returns (bytes32)
+```
+
+Executes express logic in the context of an interchain token transfer.
+
+_Only callable by the interchain token service._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| commandId | bytes32 | The message id for the call. |
+| sourceChain | string | The source chain of the token transfer. |
+| sourceAddress | bytes | The source address of the token transfer. |
+| data | bytes | The data associated with the token transfer. |
+| tokenId | bytes32 | The token ID. |
+| token | address | The token address. |
+| amount | uint256 | The amount of tokens to be transferred. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bytes32 | bytes32 Hash indicating success of the express execution. |
+
+### _executeWithInterchainToken
+
+```solidity
+function _executeWithInterchainToken(bytes32 commandId, string sourceChain, bytes sourceAddress, bytes data, bytes32 tokenId, address token, uint256 amount) internal
+```
+
+Internal function containing the logic to be executed with interchain token transfer.
+
+_Logic must be implemented by derived contracts._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| commandId | bytes32 |  |
+| sourceChain | string | The source chain of the token transfer. |
+| sourceAddress | bytes | The source address of the token transfer. |
+| data | bytes | The data associated with the token transfer. |
+| tokenId | bytes32 | The token ID. |
+| token | address | The token address. |
+| amount | uint256 | The amount of tokens being transferred. |
 
 ## TestMintableBurnableERC20
 
@@ -4802,7 +4840,7 @@ function operatorRole() external pure returns (uint8)
 
 ## TokenManager
 
-This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
+This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
 
 ### UINT256_MAX
 
