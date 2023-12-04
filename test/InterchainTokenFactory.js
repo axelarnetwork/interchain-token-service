@@ -257,6 +257,18 @@ describe('InterchainTokenFactory', () => {
         const mintAmount = 1234;
         const distributor = new Wallet(getRandomBytes32()).address;
 
+        const checkRoles = async (tokenManager, distributor) => {
+            const token = await getContractAt('InterchainToken', await tokenManager.tokenAddress(), wallet);
+            expect(await token.isDistributor(distributor)).to.be.true;
+            expect(await token.isDistributor(service.address)).to.be.true;
+
+            expect(await tokenManager.isOperator(distributor)).to.be.true;
+            expect(await tokenManager.isOperator(service.address)).to.be.true;
+
+            expect(await tokenManager.isFlowLimiter(distributor)).to.be.true;
+            expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
+        };
+
         it('Should register a token if the mint amount is zero', async () => {
             const salt = keccak256('0x1234');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
@@ -269,6 +281,8 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenId, tokenAddress, distributor, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
+
+            await checkRoles(tokenManager, distributor);
         });
 
         it('Should register a token if the mint amount is zero and distributor is the zero address', async () => {
@@ -284,6 +298,8 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenId, tokenAddress, AddressZero, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
+
+            await checkRoles(tokenManager, AddressZero);
         });
 
         it('Should register a token if the mint amount is greater than zero and the distributor is the zero address', async () => {
@@ -298,6 +314,8 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
+
+            await checkRoles(tokenManager, AddressZero);
         });
 
         it('Should register a token', async () => {
@@ -334,6 +352,8 @@ describe('InterchainTokenFactory', () => {
 
             expect(await token.balanceOf(tokenFactory.address)).to.equal(0);
             expect(await token.balanceOf(distributor)).to.equal(mintAmount);
+
+            await checkRoles(tokenManager, distributor);
         });
 
         it('Should initiate a remote interchain token deployment with the same distributor', async () => {
