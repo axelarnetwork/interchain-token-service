@@ -371,10 +371,11 @@ contract InterchainTokenService is
         address expressExecutor = msg.sender;
         bytes32 payloadHash = keccak256(payload);
 
-        _setExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
-        _expressExecute(commandId, sourceChain, payload);
-
         emit ExpressExecuted(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
+
+        _setExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
+
+        _expressExecute(commandId, sourceChain, payload);
     }
 
     /**
