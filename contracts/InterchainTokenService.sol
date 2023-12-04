@@ -397,7 +397,7 @@ contract InterchainTokenService is
 
             (bool success, bytes memory returnData) = tokenHandler.delegatecall(
                 abi.encodeWithSelector(
-                    ITokenHandler.transferToken.selector,
+                    ITokenHandler.transferTokenFrom.selector,
                     tokenManager_.implementationType(),
                     address(token),
                     msg.sender,

@@ -52,7 +52,7 @@ interface ITokenHandler {
      * @param amount The amount of token to transfer.
      * @return uint256 The amount of token actually transferred, which could be different for certain token type.
      */
-    function transferToken(
+    function transferTokenFrom(
         uint256 tokenManagerType,
         address tokenAddress,
         address from,

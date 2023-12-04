@@ -104,7 +104,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
      * @return uint256 The amount of token actually transferred, which could be different for certain token type.
      */
     // slither-disable-next-line locked-ether
-    function transferToken(
+    function transferTokenFrom(
         uint256 tokenManagerType,
         address tokenAddress,
         address from,
