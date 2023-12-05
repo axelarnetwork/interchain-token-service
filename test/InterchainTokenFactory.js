@@ -265,7 +265,7 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, minter, mintAmount)
+                .withArgs(AddressZero, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
                 .withArgs(minter, 1 << FLOW_LIMITER_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
@@ -280,7 +280,7 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
             expect(await token.balanceOf(tokenFactory.address)).to.equal(0);
-            expect(await token.balanceOf(minter)).to.equal(mintAmount);
+            expect(await token.balanceOf(wallet.address)).to.equal(mintAmount);
 
             await checkRoles(tokenManager, minter);
         });
