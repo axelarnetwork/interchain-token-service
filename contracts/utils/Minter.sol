@@ -28,7 +28,7 @@ contract Minter is IMinter, RolesBase, RolesConstants {
      * @dev Can only be called by the current minter.
      * @param minter_ The address of the new minter.
      */
-    function transferMinterRole(address minter_) external onlyRole(uint8(Roles.MINTER)) {
+    function transferMintership(address minter_) external onlyRole(uint8(Roles.MINTER)) {
         _transferRole(msg.sender, minter_, uint8(Roles.MINTER));
     }
 
@@ -37,7 +37,7 @@ contract Minter is IMinter, RolesBase, RolesConstants {
      * @dev Can only be called by the current minter.
      * @param minter_ The address of the new minter.
      */
-    function proposeMinterRole(address minter_) external onlyRole(uint8(Roles.MINTER)) {
+    function proposeMintership(address minter_) external onlyRole(uint8(Roles.MINTER)) {
         _proposeRole(msg.sender, minter_, uint8(Roles.MINTER));
     }
 
@@ -46,7 +46,7 @@ contract Minter is IMinter, RolesBase, RolesConstants {
      * @dev Can only be called by the proposed minter.
      * @param fromMinter The previous minter.
      */
-    function acceptMinterRole(address fromMinter) external {
+    function acceptMintership(address fromMinter) external {
         _acceptRole(fromMinter, msg.sender, uint8(Roles.MINTER));
     }
 

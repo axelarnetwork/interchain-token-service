@@ -24,7 +24,7 @@ import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecuta
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 
-import { Operatable } from './utils/Operatable.sol';
+import { Operator } from './utils/Operator.sol';
 
 /**
  * @title The Interchain Token Service
@@ -35,7 +35,7 @@ import { Operatable } from './utils/Operatable.sol';
  */
 contract InterchainTokenService is
     Upgradable,
-    Operatable,
+    Operator,
     Pausable,
     Multicall,
     Create3Address,

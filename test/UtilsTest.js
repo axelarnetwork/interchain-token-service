@@ -20,12 +20,12 @@ before(async () => {
     otherWallet = wallets[1];
 });
 
-describe('Operatable', () => {
+describe('Operator', () => {
     let test;
     let operatorRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'TestOperatable', [ownerWallet.address]);
+        test = await deployContract(ownerWallet, 'TestOperator', [ownerWallet.address]);
         operatorRole = await test.operatorRole();
     });
 
@@ -119,7 +119,7 @@ describe('Minter', () => {
     it('Should be able to change the minter only as the minter', async () => {
         expect(await test.hasRole(ownerWallet.address, minterRole)).to.be.true;
 
-        await expect(test.transferMinterRole(otherWallet.address))
+        await expect(test.transferMintership(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
             .withArgs(ownerWallet.address, 1 << minterRole)
             .to.emit(test, 'RolesAdded')
@@ -127,7 +127,7 @@ describe('Minter', () => {
 
         expect(await test.hasRole(otherWallet.address, minterRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.transferMinterRole(otherWallet.address, gasOptions), test, 'MissingRole', [
+        await expectRevert((gasOptions) => test.transferMintership(otherWallet.address, gasOptions), test, 'MissingRole', [
             ownerWallet.address,
             minterRole,
         ]);
@@ -137,13 +137,13 @@ describe('Minter', () => {
         expect(await test.hasRole(otherWallet.address, minterRole)).to.be.true;
 
         await expectRevert(
-            (gasOptions) => test.connect(ownerWallet).proposeMinterRole(ownerWallet.address, gasOptions),
+            (gasOptions) => test.connect(ownerWallet).proposeMintership(ownerWallet.address, gasOptions),
             test,
             'MissingRole',
             [ownerWallet.address, minterRole],
         );
 
-        await expect(test.connect(otherWallet).proposeMinterRole(ownerWallet.address))
+        await expect(test.connect(otherWallet).proposeMintership(ownerWallet.address))
             .to.emit(test, 'RolesProposed')
             .withArgs(otherWallet.address, ownerWallet.address, 1 << minterRole);
     });
@@ -152,12 +152,12 @@ describe('Minter', () => {
         expect(await test.hasRole(otherWallet.address, minterRole)).to.be.true;
 
         await expectRevert(
-            (gasOptions) => test.connect(otherWallet).acceptMinterRole(otherWallet.address, gasOptions),
+            (gasOptions) => test.connect(otherWallet).acceptMintership(otherWallet.address, gasOptions),
             test,
             'InvalidProposedRoles',
         );
 
-        await expect(test.connect(ownerWallet).acceptMinterRole(otherWallet.address))
+        await expect(test.connect(ownerWallet).acceptMintership(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
             .withArgs(otherWallet.address, 1 << minterRole)
             .to.emit(test, 'RolesAdded')

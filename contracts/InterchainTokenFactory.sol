@@ -150,7 +150,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             _setDeployerTokenBalance(tokenId, sender, initialSupply);
             token.mint(address(this), initialSupply);
 
-            token.transferMinterRole(minter);
+            token.transferMintership(minter);
 
             tokenManager.removeFlowLimiter(address(this));
 

@@ -330,7 +330,7 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferMinterRole(newAddress))
+            await expect(token.transferMintership(newAddress))
                 .to.emit(token, 'RolesRemoved')
                 .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .to.emit(token, 'RolesAdded')
@@ -420,7 +420,7 @@ describe('Interchain Token Service Full Flow', () => {
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferMinterRole(service.address))
+            await expect(token.transferMintership(service.address))
                 .to.emit(token, 'RolesRemoved')
                 .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .to.emit(token, 'RolesAdded')

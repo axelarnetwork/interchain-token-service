@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import { Operatable } from '../../utils/Operatable.sol';
+import { Operator } from '../../utils/Operator.sol';
 
-contract TestOperatable is Operatable {
+contract TestOperator is Operator {
     uint256 public nonce;
 
     constructor(address operator) {

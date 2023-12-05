@@ -11,14 +11,14 @@ import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
-import { Operatable } from '../utils/Operatable.sol';
+import { Operator } from '../utils/Operator.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
 
 /**
  * @title TokenManager
  * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
  */
-contract TokenManager is ITokenManager, Operatable, FlowLimit, Implementation {
+contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation {
     using AddressBytes for bytes;
     using SafeTokenCall for IERC20;
 

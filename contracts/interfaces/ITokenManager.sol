@@ -5,14 +5,14 @@ pragma solidity ^0.8.0;
 import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
 
 import { IBaseTokenManager } from './IBaseTokenManager.sol';
-import { IOperatable } from './IOperatable.sol';
+import { IOperator } from './IOperator.sol';
 import { IFlowLimit } from './IFlowLimit.sol';
 
 /**
  * @title ITokenManager Interface
  * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
  */
-interface ITokenManager is IBaseTokenManager, IOperatable, IFlowLimit, IImplementation {
+interface ITokenManager is IBaseTokenManager, IOperator, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
     error NotService(address caller);
     error TakeTokenFailed();

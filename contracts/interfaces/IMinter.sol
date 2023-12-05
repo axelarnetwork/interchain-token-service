@@ -15,21 +15,21 @@ interface IMinter is IRolesBase {
      * @dev Can only be called by the current minter.
      * @param minter_ The address of the new minter.
      */
-    function transferMinterRole(address minter_) external;
+    function transferMintership(address minter_) external;
 
     /**
      * @notice Proposed a change of the minter of the contract.
      * @dev Can only be called by the current minter.
      * @param minter_ The address of the new minter.
      */
-    function proposeMinterRole(address minter_) external;
+    function proposeMintership(address minter_) external;
 
     /**
      * @notice Accept a change of the minter of the contract.
      * @dev Can only be called by the proposed minter.
      * @param fromMinter The previous minter.
      */
-    function acceptMinterRole(address fromMinter) external;
+    function acceptMintership(address fromMinter) external;
 
     /**
      * @notice Query if an address is a minter

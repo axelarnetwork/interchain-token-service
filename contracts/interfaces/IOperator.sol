@@ -5,11 +5,11 @@ pragma solidity ^0.8.0;
 import { IRolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IRolesBase.sol';
 
 /**
- * @title IOperatable Interface
+ * @title IOperator Interface
  * @notice An interface for a contract module which provides a basic access control mechanism, where
  * there is an account (a operator) that can be granted exclusive access to specific functions.
  */
-interface IOperatable is IRolesBase {
+interface IOperator is IRolesBase {
     /**
      * @notice Change the operator of the contract.
      * @dev Can only be called by the current operator.
