@@ -132,7 +132,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     ) external payable {
         address sender = msg.sender;
         salt = interchainTokenSalt(chainNameHash, sender, salt);
-        bytes memory minterBytes;
+        bytes memory minterBytes = new bytes(0);
 
         if (initialSupply > 0) {
             minterBytes = address(this).toBytes();
@@ -179,7 +179,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string memory tokenName;
         string memory tokenSymbol;
         uint8 tokenDecimals;
-        bytes memory minter_;
+        bytes memory minter_ = new bytes(0);
 
         {
             bytes32 chainNameHash_;
