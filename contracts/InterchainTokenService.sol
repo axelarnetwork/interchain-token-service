@@ -73,6 +73,7 @@ contract InterchainTokenService is
     /**
      * @dev The message types that are sent between InterchainTokenService on different chains.
      */
+
     uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
     uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
@@ -81,12 +82,18 @@ contract InterchainTokenService is
      * @dev Tokens and token managers deployed via the Token Factory contract use a special deployer address.
      * This removes the dependency on the address the token factory was deployed too to be able to derive the same tokenId.
      */
-    address private constant TOKEN_FACTORY_DEPLOYER = address(0);
+    address internal constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     /**
      * @dev Latest version of metadata that's supported.
      */
-    uint32 private constant LATEST_METADATA_VERSION = 0;
+
+    enum MetadataVersion {
+        CONTRACT_CALL,
+        EXPRESS_CALL
+    }
+
+    uint32 internal constant LATEST_METADATA_VERSION = 1;
 
     /**
      * @notice Constructor for the Interchain Token Service.
@@ -453,7 +460,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         (amount, ) = _takeToken(tokenId, msg.sender, amount);
 
-        (uint32 metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+        (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
         _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data);
     }
@@ -475,12 +482,12 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         (amount, ) = _takeToken(tokenId, msg.sender, amount);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, LATEST_METADATA_VERSION, data);
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, MetadataVersion.CONTRACT_CALL, data);
     }
 
-    /*********************\
+    /******************\
     TOKEN ONLY FUNCTIONS
-    \*********************/
+    \******************/
 
     /**
      * @notice Transmit an interchain transfer for the given tokenId.
@@ -507,7 +514,7 @@ contract InterchainTokenService is
 
         if (sender != tokenAddress) revert NotToken(sender, tokenAddress);
 
-        (uint32 metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+        (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
         _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data);
     }
@@ -750,18 +757,33 @@ contract InterchainTokenService is
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
+    function _callContract(
+        string calldata destinationChain,
+        bytes memory payload,
+        MetadataVersion metadataVersion,
+        uint256 gasValue
+    ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         if (gasValue > 0) {
-            gasService.payNativeGasForContractCall{ value: gasValue }(
-                address(this),
-                destinationChain,
-                destinationAddress,
-                payload, // solhint-disable-next-line avoid-tx-origin
-                tx.origin
-            );
+            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                gasService.payNativeGasForContractCall{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload, // solhint-disable-next-line avoid-tx-origin
+                    tx.origin
+                );
+            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                gasService.payNativeGasForExpressCall{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload, // solhint-disable-next-line avoid-tx-origin
+                    tx.origin
+                );
+            }
         }
 
         gateway.callContract(destinationChain, destinationAddress, payload);
@@ -789,7 +811,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
 
-        _callContract(destinationChain, payload, gasValue);
+        _callContract(destinationChain, payload, MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -819,7 +841,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter);
 
-        _callContract(destinationChain, payload, gasValue);
+        _callContract(destinationChain, payload, MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -898,10 +920,13 @@ contract InterchainTokenService is
      * @return version The version number extracted from the metadata.
      * @return data The data bytes extracted from the metadata.
      */
-    function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes memory data) {
-        if (metadata.length < 4) return (LATEST_METADATA_VERSION, data);
+    function _decodeMetadata(bytes calldata metadata) internal pure returns (MetadataVersion version, bytes memory data) {
+        if (metadata.length < 4) return (MetadataVersion.CONTRACT_CALL, data);
 
-        version = uint32(bytes4(metadata[:4]));
+        uint32 versionUint = uint32(bytes4(metadata[:4]));
+        if (versionUint > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(versionUint);
+
+        version = MetadataVersion(versionUint);
 
         if (metadata.length == 4) return (version, data);
 
@@ -924,11 +949,9 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes memory destinationAddress,
         uint256 amount,
-        uint32 metadataVersion,
+        MetadataVersion metadataVersion,
         bytes memory data
     ) internal {
-        if (metadataVersion > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(metadataVersion);
-
         // slither-disable-next-line reentrancy-events
         emit InterchainTransfer(
             tokenId,
@@ -948,7 +971,7 @@ contract InterchainTokenService is
             data
         );
 
-        _callContract(destinationChain, payload, msg.value);
+        _callContract(destinationChain, payload, metadataVersion, msg.value);
     }
 
     /**

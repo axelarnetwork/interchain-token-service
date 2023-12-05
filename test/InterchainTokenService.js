@@ -1644,12 +1644,13 @@ describe('Interchain Token Service', () => {
         it(`Should revert on interchainTransfer function with invalid metadata version`, async () => {
             const [, , tokenId] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
 
-            const metadata = '0x00000001';
+            const metadata = '0x00000002';
 
             await expectRevert(
                 (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasOptions),
                 service,
                 'InvalidMetadataVersion',
+                [Number(metadata)],
             );
         });
     });
