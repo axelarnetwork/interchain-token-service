@@ -86,7 +86,9 @@ contract InterchainTokenService is
     /**
      * @dev Latest version of metadata that's supported.
      */
-    uint32 private constant LATEST_METADATA_VERSION = 0;
+    uint32 private constant LATEST_METADATA_VERSION = 1;
+    uint32 private constant CONTRACT_CALL = 0;
+    uint32 private constant EXPRESS_CALL = 1;
 
     /**
      * @notice Constructor for the Interchain Token Service.
@@ -750,18 +752,28 @@ contract InterchainTokenService is
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _callContract(string calldata destinationChain, bytes memory payload, uint256 gasValue) internal {
+    function _callContract(string calldata destinationChain, bytes memory payload, uint32 metadataVersion, uint256 gasValue) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         if (gasValue > 0) {
-            gasService.payNativeGasForContractCall{ value: gasValue }(
-                address(this),
-                destinationChain,
-                destinationAddress,
-                payload, // solhint-disable-next-line avoid-tx-origin
-                tx.origin
-            );
+            if(metadataVersion == CONTRACT_CALL) {
+                gasService.payNativeGasForContractCall{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload, // solhint-disable-next-line avoid-tx-origin
+                    tx.origin
+                );
+            } else if(metadataVersion == EXPRESS_CALL) {
+                gasService.payNativeGasForExpressCall{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload, // solhint-disable-next-line avoid-tx-origin
+                    tx.origin
+                );
+            }
         }
 
         gateway.callContract(destinationChain, destinationAddress, payload);
@@ -789,7 +801,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
 
-        _callContract(destinationChain, payload, gasValue);
+        _callContract(destinationChain, payload, CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -819,7 +831,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor);
 
-        _callContract(destinationChain, payload, gasValue);
+        _callContract(destinationChain, payload, CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -956,7 +968,7 @@ contract InterchainTokenService is
             data
         );
 
-        _callContract(destinationChain, payload, msg.value);
+        _callContract(destinationChain, payload, metadataVersion, msg.value);
     }
 
     /**
