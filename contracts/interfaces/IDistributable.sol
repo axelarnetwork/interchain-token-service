@@ -7,34 +7,34 @@ import { IRolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/in
 /**
  * @title IDistributable Interface
  * @notice An interface for a contract module which provides a basic access control mechanism, where
- * there is an account (a distributor) that can be granted exclusive access to specific functions.
+ * there is an account (a minter) that can be granted exclusive access to specific functions.
  */
 interface IDistributable is IRolesBase {
     /**
-     * @notice Change the distributor of the contract.
-     * @dev Can only be called by the current distributor.
-     * @param distributor_ The address of the new distributor.
+     * @notice Change the minter of the contract.
+     * @dev Can only be called by the current minter.
+     * @param minter_ The address of the new minter.
      */
-    function transferDistributorship(address distributor_) external;
+    function transferMinterRole(address minter_) external;
 
     /**
-     * @notice Proposed a change of the distributor of the contract.
-     * @dev Can only be called by the current distributor.
-     * @param distributor_ The address of the new distributor.
+     * @notice Proposed a change of the minter of the contract.
+     * @dev Can only be called by the current minter.
+     * @param minter_ The address of the new minter.
      */
-    function proposeDistributorship(address distributor_) external;
+    function proposeMinterRole(address minter_) external;
 
     /**
-     * @notice Accept a change of the distributor of the contract.
-     * @dev Can only be called by the proposed distributor.
-     * @param fromDistributor The previous distributor.
+     * @notice Accept a change of the minter of the contract.
+     * @dev Can only be called by the proposed minter.
+     * @param fromMinter The previous minter.
      */
-    function acceptDistributorship(address fromDistributor) external;
+    function acceptMinterRole(address fromMinter) external;
 
     /**
-     * @notice Query if an address is a distributor
+     * @notice Query if an address is a minter
      * @param addr the address to query for
-     * @return bool Boolean value representing whether or not the address is a distributor.
+     * @return bool Boolean value representing whether or not the address is a minter.
      */
-    function isDistributor(address addr) external view returns (bool);
+    function isMinter(address addr) external view returns (bool);
 }

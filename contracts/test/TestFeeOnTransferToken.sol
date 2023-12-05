@@ -19,7 +19,7 @@ contract TestFeeOnTransferToken is BaseInterchainToken, Distributable, IERC20Min
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
-        _addDistributor(msg.sender);
+        _addMinter(msg.sender);
         service = service_;
         tokenId = tokenId_;
     }
@@ -55,11 +55,11 @@ contract TestFeeOnTransferToken is BaseInterchainToken, Distributable, IERC20Min
         tokenManagerRequiresApproval_ = requiresApproval;
     }
 
-    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _mint(account, amount);
     }
 
-    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _burn(account, amount);
     }
 

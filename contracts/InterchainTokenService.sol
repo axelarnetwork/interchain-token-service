@@ -291,14 +291,14 @@ contract InterchainTokenService is
     /**
      * @notice Used to deploy an interchain token alongside a TokenManager in another chain.
      * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
-     * part of a multicall involving multiple functions that could make remote contract calls. If the `distributor` parameter is empty bytes then
+     * part of a multicall involving multiple functions that could make remote contract calls. If the `minter` parameter is empty bytes then
      * a mint/burn TokenManager is used, otherwise a lock/unlock TokenManager is used.
      * @param salt The salt to be used during deployment.
      * @param destinationChain The name of the destination chain to deploy to.
      * @param name The name of the token to be deployed.
      * @param symbol The symbol of the token to be deployed.
      * @param decimals The decimals of the token to be deployed.
-     * @param distributor The address that will be able to mint and burn the deployed token.
+     * @param minter The address that will be able to mint and burn the deployed token.
      * @param gasValue The amount of native tokens to be used to pay for gas for the remote deployment.
      */
     function deployInterchainToken(
@@ -307,7 +307,7 @@ contract InterchainTokenService is
         string memory name,
         string memory symbol,
         uint8 decimals,
-        bytes memory distributor,
+        bytes memory minter,
         uint256 gasValue
     ) external payable whenNotPaused {
         address deployer = msg.sender;
@@ -317,11 +317,11 @@ contract InterchainTokenService is
         bytes32 tokenId = interchainTokenId(deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
-            address tokenAddress = _deployInterchainToken(tokenId, distributor, name, symbol, decimals);
+            address tokenAddress = _deployInterchainToken(tokenId, minter, name, symbol, decimals);
 
-            _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(distributor, tokenAddress));
+            _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(minter, tokenAddress));
         } else {
-            _deployRemoteInterchainToken(tokenId, name, symbol, decimals, distributor, destinationChain, gasValue);
+            _deployRemoteInterchainToken(tokenId, name, symbol, decimals, minter, destinationChain, gasValue);
         }
     }
 
@@ -733,15 +733,15 @@ contract InterchainTokenService is
      * @param payload The encoded data payload to be processed.
      */
     function _processDeployInterchainTokenPayload(bytes calldata payload) internal {
-        (, bytes32 tokenId, string memory name, string memory symbol, uint8 decimals, bytes memory distributorBytes) = abi.decode(
+        (, bytes32 tokenId, string memory name, string memory symbol, uint8 decimals, bytes memory minterBytes) = abi.decode(
             payload,
             (uint256, bytes32, string, string, uint8, bytes)
         );
         address tokenAddress;
 
-        tokenAddress = _deployInterchainToken(tokenId, distributorBytes, name, symbol, decimals);
+        tokenAddress = _deployInterchainToken(tokenId, minterBytes, name, symbol, decimals);
 
-        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(distributorBytes, tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(minterBytes, tokenAddress));
     }
 
     /**
@@ -798,7 +798,7 @@ contract InterchainTokenService is
      * @param name The name of the token.
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals of the token.
-     * @param distributor The distributor address for the token.
+     * @param minter The minter address for the token.
      * @param destinationChain The destination chain where the token will be deployed.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
@@ -807,7 +807,7 @@ contract InterchainTokenService is
         string memory name,
         string memory symbol,
         uint8 decimals,
-        bytes memory distributor,
+        bytes memory minter,
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
@@ -815,9 +815,9 @@ contract InterchainTokenService is
         validTokenManagerAddress(tokenId);
 
         // slither-disable-next-line reentrancy-events
-        emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, distributor, destinationChain);
+        emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, minter, destinationChain);
 
-        bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, distributor);
+        bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter);
 
         _callContract(destinationChain, payload, gasValue);
     }
@@ -859,33 +859,25 @@ contract InterchainTokenService is
     /**
      * @notice Deploys an interchain token.
      * @param tokenId The ID of the token.
-     * @param distributorBytes The distributor address for the token.
+     * @param minterBytes The minter address for the token.
      * @param name The name of the token.
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals of the token.
      */
     function _deployInterchainToken(
         bytes32 tokenId,
-        bytes memory distributorBytes,
+        bytes memory minterBytes,
         string memory name,
         string memory symbol,
         uint8 decimals
     ) internal returns (address tokenAddress) {
         bytes32 salt = _getInterchainTokenSalt(tokenId);
 
-        address distributor;
-        if (bytes(distributorBytes).length != 0) distributor = distributorBytes.toAddress();
+        address minter;
+        if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
 
         (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
-            abi.encodeWithSelector(
-                IInterchainTokenDeployer.deployInterchainToken.selector,
-                salt,
-                tokenId,
-                distributor,
-                name,
-                symbol,
-                decimals
-            )
+            abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, salt, tokenId, minter, name, symbol, decimals)
         );
         if (!success) {
             revert InterchainTokenDeploymentFailed(returnData);
@@ -896,7 +888,7 @@ contract InterchainTokenService is
         }
 
         // slither-disable-next-line reentrancy-events
-        emit InterchainTokenDeployed(tokenId, tokenAddress, distributor, name, symbol, decimals);
+        emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
     }
 
     /**

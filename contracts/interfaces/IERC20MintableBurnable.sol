@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
 interface IERC20MintableBurnable {
     /**
      * @notice Function to mint new tokens.
-     * @dev Can only be called by the distributor address.
+     * @dev Can only be called by the minter address.
      * @param to The address that will receive the minted tokens.
      * @param amount The amount of tokens to mint.
      */
@@ -17,7 +17,7 @@ interface IERC20MintableBurnable {
 
     /**
      * @notice Function to burn tokens.
-     * @dev Can only be called by the distributor address.
+     * @dev Can only be called by the minter address.
      * @param from The address that will have its tokens burnt.
      * @param amount The amount of tokens to burn.
      */

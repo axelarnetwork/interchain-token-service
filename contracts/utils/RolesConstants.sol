@@ -8,7 +8,7 @@ pragma solidity ^0.8.0;
  */
 contract RolesConstants {
     enum Roles {
-        DISTRIBUTOR,
+        MINTER,
         OPERATOR,
         FLOW_LIMITER
     }

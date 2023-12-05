@@ -34,16 +34,10 @@ interface IInterchainToken is IInterchainTokenStandard, IDistributable, IERC20Mi
     /**
      * @notice Setup function to initialize contract parameters.
      * @param tokenId_ The tokenId of the token.
-     * @param distributor The address of the token distributor.
+     * @param minter The address of the token minter.
      * @param tokenName The name of the token.
      * @param tokenSymbol The symbopl of the token.
      * @param tokenDecimals The decimals of the token.
      */
-    function init(
-        bytes32 tokenId_,
-        address distributor,
-        string calldata tokenName,
-        string calldata tokenSymbol,
-        uint8 tokenDecimals
-    ) external;
+    function init(bytes32 tokenId_, address minter, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals) external;
 }

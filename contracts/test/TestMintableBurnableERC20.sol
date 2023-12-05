@@ -15,14 +15,14 @@ contract TestMintableBurnableERC20 is ERC20, Distributable, IERC20MintableBurnab
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
-        _addDistributor(msg.sender);
+        _addMinter(msg.sender);
     }
 
-    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _mint(account, amount);
     }
 
-    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _burn(account, amount);
     }
 }

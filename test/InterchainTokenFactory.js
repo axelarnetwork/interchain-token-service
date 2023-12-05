@@ -20,7 +20,7 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 const LOCK_UNLOCK = 2;
 const MINT_BURN = 0;
 
-const DISTRIBUTOR_ROLE = 0;
+const MINTER_ROLE = 0;
 const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
 
@@ -255,17 +255,17 @@ describe('InterchainTokenFactory', () => {
     describe('Interchain Token Factory', async () => {
         let tokenId;
         const mintAmount = 1234;
-        const distributor = new Wallet(getRandomBytes32()).address;
+        const minter = new Wallet(getRandomBytes32()).address;
 
-        const checkRoles = async (tokenManager, distributor) => {
+        const checkRoles = async (tokenManager, minter) => {
             const token = await getContractAt('InterchainToken', await tokenManager.tokenAddress(), wallet);
-            expect(await token.isDistributor(distributor)).to.be.true;
-            expect(await token.isDistributor(service.address)).to.be.true;
+            expect(await token.isMinter(minter)).to.be.true;
+            expect(await token.isMinter(service.address)).to.be.true;
 
-            expect(await tokenManager.isOperator(distributor)).to.be.true;
+            expect(await tokenManager.isOperator(minter)).to.be.true;
             expect(await tokenManager.isOperator(service.address)).to.be.true;
 
-            expect(await tokenManager.isFlowLimiter(distributor)).to.be.true;
+            expect(await tokenManager.isFlowLimiter(minter)).to.be.true;
             expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
         };
 
@@ -273,24 +273,24 @@ describe('InterchainTokenFactory', () => {
             const salt = keccak256('0x1234');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [distributor, tokenAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [minter, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
-            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, distributor))
+            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, minter))
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, distributor, name, symbol, decimals)
+                .withArgs(tokenId, tokenAddress, minter, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
 
-            await checkRoles(tokenManager, distributor);
+            await checkRoles(tokenManager, minter);
         });
 
-        it('Should register a token if the mint amount is zero and distributor is the zero address', async () => {
+        it('Should register a token if the mint amount is zero and minter is the zero address', async () => {
             const salt = keccak256('0x123456');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
-            const distributorBytes = new Uint8Array();
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [distributorBytes, tokenAddress]);
+            const minterBytes = new Uint8Array();
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [minterBytes, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
             await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, AddressZero))
@@ -302,7 +302,7 @@ describe('InterchainTokenFactory', () => {
             await checkRoles(tokenManager, AddressZero);
         });
 
-        it('Should register a token if the mint amount is greater than zero and the distributor is the zero address', async () => {
+        it('Should register a token if the mint amount is greater than zero and the minter is the zero address', async () => {
             const salt = keccak256('0x12345678');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
@@ -326,7 +326,7 @@ describe('InterchainTokenFactory', () => {
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
-            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, distributor))
+            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, minter))
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
@@ -334,29 +334,29 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, tokenFactory.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
-                .withArgs(distributor, 1 << FLOW_LIMITER_ROLE)
+                .withArgs(minter, 1 << FLOW_LIMITER_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
-                .withArgs(distributor, 1 << OPERATOR_ROLE)
+                .withArgs(minter, 1 << OPERATOR_ROLE)
                 .and.to.emit(token, 'RolesAdded')
-                .withArgs(distributor, 1 << DISTRIBUTOR_ROLE)
+                .withArgs(minter, 1 << MINTER_ROLE)
                 .and.to.emit(token, 'RolesRemoved')
-                .withArgs(tokenFactory.address, 1 << DISTRIBUTOR_ROLE)
+                .withArgs(tokenFactory.address, 1 << MINTER_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            await expect(tokenFactory.interchainTransfer(tokenId, '', distributor, mintAmount, 0))
+            await expect(tokenFactory.interchainTransfer(tokenId, '', minter, mintAmount, 0))
                 .to.emit(token, 'Transfer')
-                .withArgs(tokenFactory.address, distributor, mintAmount);
+                .withArgs(tokenFactory.address, minter, mintAmount);
 
             expect(await token.balanceOf(tokenFactory.address)).to.equal(0);
-            expect(await token.balanceOf(distributor)).to.equal(mintAmount);
+            expect(await token.balanceOf(minter)).to.equal(mintAmount);
 
-            await checkRoles(tokenManager, distributor);
+            await checkRoles(tokenManager, minter);
         });
 
-        it('Should initiate a remote interchain token deployment with the same distributor', async () => {
+        it('Should initiate a remote interchain token deployment with the same minter', async () => {
             const gasValue = 1234;
             const mintAmount = 5678;
 
@@ -375,13 +375,13 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, tokenFactory.address, mintAmount)
                 .and.to.emit(token, 'RolesAdded')
-                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
                 .withArgs(wallet.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
                 .withArgs(wallet.address, 1 << FLOW_LIMITER_ROLE)
                 .and.to.emit(token, 'RolesRemoved')
-                .withArgs(tokenFactory.address, 1 << DISTRIBUTOR_ROLE)
+                .withArgs(tokenFactory.address, 1 << MINTER_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
@@ -400,7 +400,7 @@ describe('InterchainTokenFactory', () => {
                         value: gasValue,
                     }),
                 tokenFactory,
-                'NotDistributor',
+                'NotMinter',
                 [otherWallet.address],
             );
 
@@ -429,7 +429,7 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
-        it('Should initiate a remote interchain token deployment without the same distributor', async () => {
+        it('Should initiate a remote interchain token deployment without the same minter', async () => {
             const gasValue = 1234;
 
             const salt = keccak256('0x1245');
@@ -447,13 +447,13 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, tokenFactory.address, mintAmount)
                 .and.to.emit(token, 'RolesAdded')
-                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
                 .withArgs(wallet.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
                 .withArgs(wallet.address, 1 << FLOW_LIMITER_ROLE)
                 .and.to.emit(token, 'RolesRemoved')
-                .withArgs(tokenFactory.address, 1 << DISTRIBUTOR_ROLE)
+                .withArgs(tokenFactory.address, 1 << MINTER_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')

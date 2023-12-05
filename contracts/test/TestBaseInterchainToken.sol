@@ -20,7 +20,7 @@ contract TestBaseInterchainToken is BaseInterchainToken, Distributable, IERC20Mi
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
-        _addDistributor(msg.sender);
+        _addMinter(msg.sender);
         service = service_;
         tokenId = tokenId_;
     }
@@ -56,15 +56,15 @@ contract TestBaseInterchainToken is BaseInterchainToken, Distributable, IERC20Mi
         tokenManagerRequiresApproval_ = requiresApproval;
     }
 
-    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _mint(account, amount);
     }
 
-    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _burn(account, amount);
     }
 
-    function burnFrom(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function burnFrom(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         uint256 currentAllowance = allowance[account][msg.sender];
         if (currentAllowance < amount) revert AllowanceExceeded();
         _approve(account, msg.sender, currentAllowance - amount);

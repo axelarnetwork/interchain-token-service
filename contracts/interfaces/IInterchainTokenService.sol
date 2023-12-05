@@ -70,14 +70,14 @@ interface IInterchainTokenService is
         string tokenName,
         string tokenSymbol,
         uint8 tokenDecimals,
-        bytes distributor,
+        bytes minter,
         string destinationChain
     );
     event TokenManagerDeployed(bytes32 indexed tokenId, address tokenManager, TokenManagerType indexed tokenManagerType, bytes params);
     event InterchainTokenDeployed(
         bytes32 indexed tokenId,
         address tokenAddress,
-        address indexed distributor,
+        address indexed minter,
         string name,
         string symbol,
         uint8 decimals
@@ -174,7 +174,7 @@ interface IInterchainTokenService is
      * @param name The name of the interchain tokens.
      * @param symbol The symbol of the interchain tokens.
      * @param decimals The number of decimals for the interchain tokens.
-     * @param distributor The distributor data for mint/burn operations.
+     * @param minter The minter data for mint/burn operations.
      * @param gasValue The gas value for deployment.
      */
     function deployInterchainToken(
@@ -183,7 +183,7 @@ interface IInterchainTokenService is
         string memory name,
         string memory symbol,
         uint8 decimals,
-        bytes memory distributor,
+        bytes memory minter,
         uint256 gasValue
     ) external payable;
 

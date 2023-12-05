@@ -47,12 +47,12 @@ describe('InterchainToken', () => {
             const implementation = await getContractAt('InterchainToken', implementationAddress, owner);
 
             const tokenId = getRandomBytes32();
-            const distributor = owner.address;
+            const minter = owner.address;
             const tokenName = 'name';
             const tokenSymbol = 'symbol';
             const tokenDecimals = 7;
             await expectRevert(
-                (gasOptions) => implementation.init(tokenId, distributor, tokenName, tokenSymbol, tokenDecimals, gasOptions),
+                (gasOptions) => implementation.init(tokenId, minter, tokenName, tokenSymbol, tokenDecimals, gasOptions),
                 implementation,
                 'AlreadyInitialized',
             );
@@ -71,10 +71,9 @@ describe('InterchainToken', () => {
             const implementation = await getContractAt('InterchainToken', implementationAddress, owner);
 
             const salt = getRandomBytes32();
-            const distributor = owner.address;
+            const minter = owner.address;
             await expectRevert(
-                (gasOptions) =>
-                    interchainTokenDeployer.deployInterchainToken(salt, HashZero, distributor, name, symbol, decimals, gasOptions),
+                (gasOptions) => interchainTokenDeployer.deployInterchainToken(salt, HashZero, minter, name, symbol, decimals, gasOptions),
                 implementation,
                 'TokenIdZero',
             );
@@ -86,9 +85,9 @@ describe('InterchainToken', () => {
 
             const salt = getRandomBytes32();
             const tokenId = getRandomBytes32();
-            const distributor = owner.address;
+            const minter = owner.address;
             await expectRevert(
-                (gasOptions) => interchainTokenDeployer.deployInterchainToken(salt, tokenId, distributor, '', symbol, decimals, gasOptions),
+                (gasOptions) => interchainTokenDeployer.deployInterchainToken(salt, tokenId, minter, '', symbol, decimals, gasOptions),
                 implementation,
                 'TokenNameEmpty',
             );

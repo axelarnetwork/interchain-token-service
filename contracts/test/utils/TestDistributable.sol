@@ -7,15 +7,15 @@ import { Distributable } from '../../utils/Distributable.sol';
 contract TestDistributable is Distributable {
     uint256 public nonce;
 
-    constructor(address distributor) {
-        _addDistributor(distributor);
+    constructor(address minter) {
+        _addMinter(minter);
     }
 
-    function testDistributable() external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function testDistributable() external onlyRole(uint8(Roles.MINTER)) {
         nonce++;
     }
 
-    function distributorRole() external pure returns (uint8) {
-        return uint8(Roles.DISTRIBUTOR);
+    function minterRole() external pure returns (uint8) {
+        return uint8(Roles.MINTER);
     }
 }

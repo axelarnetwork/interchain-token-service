@@ -10,52 +10,52 @@ import { RolesConstants } from './RolesConstants.sol';
 /**
  * @title Distributable Contract
  * @notice A contract module which provides a basic access control mechanism, where
- * there is an account (a distributor) that can be granted exclusive access to
+ * there is an account (a minter) that can be granted exclusive access to
  * specific functions.
  * @dev This module is used through inheritance.
  */
 contract Distributable is IDistributable, RolesBase, RolesConstants {
     /**
-     * @notice Internal function that stores the new distributor address in the correct storage slot.
-     * @param distributor_ The address of the new distributor.
+     * @notice Internal function that stores the new minter address in the correct storage slot.
+     * @param minter_ The address of the new minter.
      */
-    function _addDistributor(address distributor_) internal {
-        _addRole(distributor_, uint8(Roles.DISTRIBUTOR));
+    function _addMinter(address minter_) internal {
+        _addRole(minter_, uint8(Roles.MINTER));
     }
 
     /**
-     * @notice Changes the distributor of the contract.
-     * @dev Can only be called by the current distributor.
-     * @param distributor_ The address of the new distributor.
+     * @notice Changes the minter of the contract.
+     * @dev Can only be called by the current minter.
+     * @param minter_ The address of the new minter.
      */
-    function transferDistributorship(address distributor_) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
-        _transferRole(msg.sender, distributor_, uint8(Roles.DISTRIBUTOR));
+    function transferMinterRole(address minter_) external onlyRole(uint8(Roles.MINTER)) {
+        _transferRole(msg.sender, minter_, uint8(Roles.MINTER));
     }
 
     /**
-     * @notice Proposes a change of the distributor of the contract.
-     * @dev Can only be called by the current distributor.
-     * @param distributor_ The address of the new distributor.
+     * @notice Proposes a change of the minter of the contract.
+     * @dev Can only be called by the current minter.
+     * @param minter_ The address of the new minter.
      */
-    function proposeDistributorship(address distributor_) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
-        _proposeRole(msg.sender, distributor_, uint8(Roles.DISTRIBUTOR));
+    function proposeMinterRole(address minter_) external onlyRole(uint8(Roles.MINTER)) {
+        _proposeRole(msg.sender, minter_, uint8(Roles.MINTER));
     }
 
     /**
-     * @notice Accept a change of the distributor of the contract.
-     * @dev Can only be called by the proposed distributor.
-     * @param fromDistributor The previous distributor.
+     * @notice Accept a change of the minter of the contract.
+     * @dev Can only be called by the proposed minter.
+     * @param fromMinter The previous minter.
      */
-    function acceptDistributorship(address fromDistributor) external {
-        _acceptRole(fromDistributor, msg.sender, uint8(Roles.DISTRIBUTOR));
+    function acceptMinterRole(address fromMinter) external {
+        _acceptRole(fromMinter, msg.sender, uint8(Roles.MINTER));
     }
 
     /**
-     * @notice Query if an address is a distributor
+     * @notice Query if an address is a minter
      * @param addr the address to query for
-     * @return bool Boolean value representing whether or not the address is a distributor.
+     * @return bool Boolean value representing whether or not the address is a minter.
      */
-    function isDistributor(address addr) external view returns (bool) {
-        return hasRole(addr, uint8(Roles.DISTRIBUTOR));
+    function isMinter(address addr) external view returns (bool) {
+        return hasRole(addr, uint8(Roles.MINTER));
     }
 }
