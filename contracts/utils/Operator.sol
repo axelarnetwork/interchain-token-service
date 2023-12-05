@@ -4,18 +4,18 @@ pragma solidity ^0.8.0;
 
 import { RolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/RolesBase.sol';
 
-import { IOperatable } from '../interfaces/IOperatable.sol';
+import { IOperator } from '../interfaces/IOperator.sol';
 
 import { RolesConstants } from './RolesConstants.sol';
 
 /**
- * @title Operatable Contract
+ * @title Operator Contract
  * @notice A contract module which provides a basic access control mechanism, where
  * there is an account (a operator) that can be granted exclusive access to
  * specific functions.
  * @dev This module is used through inheritance.
  */
-contract Operatable is IOperatable, RolesBase, RolesConstants {
+contract Operator is IOperator, RolesBase, RolesConstants {
     /**
      * @notice Internal function that stores the new operator address in the correct storage slot
      * @param operator The address of the new operator

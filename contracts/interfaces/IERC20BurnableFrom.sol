@@ -10,7 +10,7 @@ interface IERC20BurnableFrom {
     /**
      * @notice Function to burn tokens.
      * @dev Requires the caller to have allowance for `amount` on `from`.
-     * Can only be called by the distributor address.
+     * Can only be called by the minter address.
      * @param from The address that will have its tokens burnt.
      * @param amount The amount of tokens to burn.
      */

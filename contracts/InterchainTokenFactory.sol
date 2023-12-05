@@ -114,13 +114,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Deploys a new interchain token with specified parameters.
-     * @dev Creates a new token and optionally mints an initial amount to a specified distributor.
+     * @dev Creates a new token and optionally mints an initial amount to a specified minter.
      * @param salt The unique salt for deploying the token.
      * @param name The name of the token.
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals for the token.
      * @param initialSupply The amount of tokens to mint initially (can be zero).
-     * @param distributor The address to receive the initially minted tokens.
+     * @param minter The address to receive the initially minted tokens.
      */
     function deployInterchainToken(
         bytes32 salt,
@@ -128,19 +128,19 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string calldata symbol,
         uint8 decimals,
         uint256 initialSupply,
-        address distributor
+        address minter
     ) external payable {
         address sender = msg.sender;
         salt = interchainTokenSalt(chainNameHash, sender, salt);
-        bytes memory distributorBytes = new bytes(0);
+        bytes memory minterBytes = new bytes(0);
 
         if (initialSupply > 0) {
-            distributorBytes = address(this).toBytes();
-        } else if (distributor != address(0)) {
-            distributorBytes = distributor.toBytes();
+            minterBytes = address(this).toBytes();
+        } else if (minter != address(0)) {
+            minterBytes = minter.toBytes();
         }
 
-        _deployInterchainToken(salt, '', name, symbol, decimals, distributorBytes, 0);
+        _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, 0);
 
         if (initialSupply > 0) {
             bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
@@ -150,14 +150,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             _setDeployerTokenBalance(tokenId, sender, initialSupply);
             token.mint(address(this), initialSupply);
 
-            token.transferDistributorship(distributor);
+            token.transferMintership(minter);
 
             tokenManager.removeFlowLimiter(address(this));
 
-            // If distributor == address(0), we still set it as a flow limiter for consistency with the remote token manager.
-            tokenManager.addFlowLimiter(distributor);
+            // If minter == address(0), we still set it as a flow limiter for consistency with the remote token manager.
+            tokenManager.addFlowLimiter(minter);
 
-            tokenManager.transferOperatorship(distributor);
+            tokenManager.transferOperatorship(minter);
         }
     }
 
@@ -165,21 +165,21 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param originalChainName The name of the chain where the token originally exists.
      * @param salt The unique salt for deploying the token.
-     * @param distributor The address to distribute the token on the destination chain.
+     * @param minter The address to distribute the token on the destination chain.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      */
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
-        address distributor,
+        address minter,
         string memory destinationChain,
         uint256 gasValue
     ) external payable {
         string memory tokenName;
         string memory tokenSymbol;
         uint8 tokenDecimals;
-        bytes memory distributor_ = new bytes(0);
+        bytes memory minter_ = new bytes(0);
 
         {
             bytes32 chainNameHash_;
@@ -199,14 +199,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             tokenSymbol = token.symbol();
             tokenDecimals = token.decimals();
 
-            if (distributor != address(0)) {
-                if (!token.isDistributor(distributor)) revert NotDistributor(distributor);
+            if (minter != address(0)) {
+                if (!token.isMinter(minter)) revert NotMinter(minter);
 
-                distributor_ = distributor.toBytes();
+                minter_ = minter.toBytes();
             }
         }
 
-        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor_, gasValue);
+        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
     }
 
     /**
@@ -216,7 +216,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param tokenName The name of the token.
      * @param tokenSymbol The symbol of the token.
      * @param tokenDecimals The number of decimals for the token.
-     * @param distributor The address to receive the initially minted tokens.
+     * @param minter The address to receive the initially minted tokens.
      * @param gasValue The amount of gas to send for the transfer.
      */
     function _deployInterchainToken(
@@ -225,19 +225,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string memory tokenName,
         string memory tokenSymbol,
         uint8 tokenDecimals,
-        bytes memory distributor,
+        bytes memory minter,
         uint256 gasValue
     ) internal {
         // slither-disable-next-line arbitrary-send-eth
-        service.deployInterchainToken{ value: gasValue }(
-            salt,
-            destinationChain,
-            tokenName,
-            tokenSymbol,
-            tokenDecimals,
-            distributor,
-            gasValue
-        );
+        service.deployInterchainToken{ value: gasValue }(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue);
     }
 
     /**

@@ -25,7 +25,7 @@ const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
 const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
 
-// const DISTRIBUTOR_ROLE = 0;
+// const MINTER_ROLE = 0;
 const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
 
@@ -142,7 +142,7 @@ describe('Interchain Token Service', () => {
                 await (await token.mint(wallet.address, mintAmount)).wait();
             }
 
-            await (await token.transferDistributorship(service.address)).wait();
+            await (await token.transferMintership(service.address)).wait();
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             await (await service.deployTokenManager(salt, '', type, params, 0)).wait();
@@ -586,8 +586,8 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
 
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
-            expect(await token.isDistributor(wallet.address)).to.be.true;
-            expect(await token.isDistributor(service.address)).to.be.true;
+            expect(await token.isMinter(wallet.address)).to.be.true;
+            expect(await token.isMinter(service.address)).to.be.true;
         });
 
         it('Should revert when registering an interchain token when service is paused', async () => {
@@ -638,7 +638,7 @@ describe('Interchain Token Service', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
-        const distributor = '0x12345678';
+        const minter = '0x12345678';
         const gasValue = 1234;
         let salt;
 
@@ -652,19 +652,19 @@ describe('Interchain Token Service', () => {
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter],
             );
 
             await expect(
                 reportGas(
-                    service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, gasValue, {
+                    service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue, {
                         value: gasValue,
                     }),
                     'Send deployInterchainToken to remote chain',
                 ),
             )
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, destinationChain)
+                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, minter, destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -680,7 +680,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.deployInterchainToken(salt, 'untrusted chain', tokenName, tokenSymbol, tokenDecimals, distributor, gasValue, {
+                    service.deployInterchainToken(salt, 'untrusted chain', tokenName, tokenSymbol, tokenDecimals, minter, gasValue, {
                         ...gasOptions,
                         value: gasValue,
                     }),
@@ -697,7 +697,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, distributor, gasValue, {
+                    service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue, {
                         ...gasOptions,
                         value: gasValue,
                     }),
@@ -722,11 +722,11 @@ describe('Interchain Token Service', () => {
 
         it('Should revert on receiving a remote interchain token deployment if not approved by the gateway', async () => {
             const tokenId = getRandomBytes32();
-            const distributor = wallet.address;
+            const minter = wallet.address;
             const commandId = getRandomBytes32();
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter],
             );
 
             await expectRevert(
@@ -738,7 +738,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive a remote interchain token deployment with a mint/burn token manager', async () => {
             const tokenId = getRandomBytes32();
-            const distributor = wallet.address;
+            const minter = wallet.address;
             const operator = wallet.address;
 
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -746,13 +746,13 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_INTERCHAIN_TOKEN'))
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, distributor, tokenName, tokenSymbol, tokenDecimals)
+                .withArgs(tokenId, tokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
 
@@ -762,16 +762,16 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
         });
 
-        it('Should be able to receive a remote interchain token deployment with a mint/burn token manager with empty distributor and operator', async () => {
+        it('Should be able to receive a remote interchain token deployment with a mint/burn token manager with empty minter and operator', async () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const distributor = '0x';
+            const minter = '0x';
             const operator = '0x';
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, distributor, operator],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 

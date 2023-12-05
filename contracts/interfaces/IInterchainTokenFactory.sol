@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
 interface IInterchainTokenFactory {
     error ZeroAddress();
     error InvalidChainName();
-    error NotDistributor(address distributor);
+    error NotMinter(address minter);
     error NotOperator(address operator);
     error InsufficientBalance(bytes32 tokenId, address deployer, uint256 balance);
     error ApproveFailed();
@@ -53,7 +53,7 @@ interface IInterchainTokenFactory {
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals for the token.
      * @param initialSupply The amount of tokens to mint initially (can be zero).
-     * @param distributor The address to receive the initially minted tokens.
+     * @param minter The address to receive the initially minted tokens.
      */
     function deployInterchainToken(
         bytes32 salt,
@@ -61,21 +61,21 @@ interface IInterchainTokenFactory {
         string calldata symbol,
         uint8 decimals,
         uint256 initialSupply,
-        address distributor
+        address minter
     ) external payable;
 
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param originalChainName The name of the chain where the token originally exists.
      * @param salt The unique salt for deploying the token.
-     * @param distributor The address to distribute the token on the destination chain.
+     * @param minter The address to distribute the token on the destination chain.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      */
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
-        address distributor,
+        address minter,
         string memory destinationChain,
         uint256 gasValue
     ) external payable;

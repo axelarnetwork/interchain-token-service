@@ -20,12 +20,12 @@ before(async () => {
     otherWallet = wallets[1];
 });
 
-describe('Operatable', () => {
+describe('Operator', () => {
     let test;
     let operatorRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'TestOperatable', [ownerWallet.address]);
+        test = await deployContract(ownerWallet, 'TestOperator', [ownerWallet.address]);
         operatorRole = await test.operatorRole();
     });
 
@@ -94,74 +94,74 @@ describe('Operatable', () => {
     });
 });
 
-describe('Distributable', () => {
+describe('Minter', () => {
     let test;
-    let distributorRole;
+    let minterRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'TestDistributable', [ownerWallet.address]);
-        distributorRole = await test.distributorRole();
+        test = await deployContract(ownerWallet, 'TestMinter', [ownerWallet.address]);
+        minterRole = await test.minterRole();
     });
 
-    it('Should be able to run the onlyDistributor function as the distributor', async () => {
-        await (await test.testDistributable()).wait();
+    it('Should be able to run the onlyMinter function as the minter', async () => {
+        await (await test.testMinter()).wait();
 
         expect(await test.nonce()).to.equal(1);
     });
 
-    it('Should not be able to run the onlyDistributor function as not the distributor', async () => {
-        await expectRevert((gasOptions) => test.connect(otherWallet).testDistributable(gasOptions), test, 'MissingRole', [
+    it('Should not be able to run the onlyMinter function as not the minter', async () => {
+        await expectRevert((gasOptions) => test.connect(otherWallet).testMinter(gasOptions), test, 'MissingRole', [
             otherWallet.address,
-            distributorRole,
+            minterRole,
         ]);
     });
 
-    it('Should be able to change the distributor only as the distributor', async () => {
-        expect(await test.hasRole(ownerWallet.address, distributorRole)).to.be.true;
+    it('Should be able to change the minter only as the minter', async () => {
+        expect(await test.hasRole(ownerWallet.address, minterRole)).to.be.true;
 
-        await expect(test.transferDistributorship(otherWallet.address))
+        await expect(test.transferMintership(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(ownerWallet.address, 1 << distributorRole)
+            .withArgs(ownerWallet.address, 1 << minterRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(otherWallet.address, 1 << distributorRole);
+            .withArgs(otherWallet.address, 1 << minterRole);
 
-        expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
+        expect(await test.hasRole(otherWallet.address, minterRole)).to.be.true;
 
-        await expectRevert((gasOptions) => test.transferDistributorship(otherWallet.address, gasOptions), test, 'MissingRole', [
+        await expectRevert((gasOptions) => test.transferMintership(otherWallet.address, gasOptions), test, 'MissingRole', [
             ownerWallet.address,
-            distributorRole,
+            minterRole,
         ]);
     });
 
-    it('Should be able to propose a new distributor only as distributor', async () => {
-        expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
+    it('Should be able to propose a new minter only as minter', async () => {
+        expect(await test.hasRole(otherWallet.address, minterRole)).to.be.true;
 
         await expectRevert(
-            (gasOptions) => test.connect(ownerWallet).proposeDistributorship(ownerWallet.address, gasOptions),
+            (gasOptions) => test.connect(ownerWallet).proposeMintership(ownerWallet.address, gasOptions),
             test,
             'MissingRole',
-            [ownerWallet.address, distributorRole],
+            [ownerWallet.address, minterRole],
         );
 
-        await expect(test.connect(otherWallet).proposeDistributorship(ownerWallet.address))
+        await expect(test.connect(otherWallet).proposeMintership(ownerWallet.address))
             .to.emit(test, 'RolesProposed')
-            .withArgs(otherWallet.address, ownerWallet.address, 1 << distributorRole);
+            .withArgs(otherWallet.address, ownerWallet.address, 1 << minterRole);
     });
 
-    it('Should be able to accept distributorship only as the proposed distributor', async () => {
-        expect(await test.hasRole(otherWallet.address, distributorRole)).to.be.true;
+    it('Should be able to accept minterRole only as the proposed minter', async () => {
+        expect(await test.hasRole(otherWallet.address, minterRole)).to.be.true;
 
         await expectRevert(
-            (gasOptions) => test.connect(otherWallet).acceptDistributorship(otherWallet.address, gasOptions),
+            (gasOptions) => test.connect(otherWallet).acceptMintership(otherWallet.address, gasOptions),
             test,
             'InvalidProposedRoles',
         );
 
-        await expect(test.connect(ownerWallet).acceptDistributorship(otherWallet.address))
+        await expect(test.connect(ownerWallet).acceptMintership(otherWallet.address))
             .to.emit(test, 'RolesRemoved')
-            .withArgs(otherWallet.address, 1 << distributorRole)
+            .withArgs(otherWallet.address, 1 << minterRole)
             .to.emit(test, 'RolesAdded')
-            .withArgs(ownerWallet.address, 1 << distributorRole);
+            .withArgs(ownerWallet.address, 1 << minterRole);
     });
 });
 
@@ -262,7 +262,7 @@ describe('InterchainTokenDeployer', () => {
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const decimals = 18;
-    const DISTRIBUTOR_ROLE = 0;
+    const MINTER_ROLE = 0;
 
     before(async () => {
         interchainToken = await deployContract(ownerWallet, 'InterchainToken', [service]);
@@ -286,15 +286,15 @@ describe('InterchainTokenDeployer', () => {
 
         await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals))
             .to.emit(token, 'RolesAdded')
-            .withArgs(service, 1 << DISTRIBUTOR_ROLE)
+            .withArgs(service, 1 << MINTER_ROLE)
             .and.to.emit(token, 'RolesAdded')
-            .withArgs(ownerWallet.address, 1 << DISTRIBUTOR_ROLE);
+            .withArgs(ownerWallet.address, 1 << MINTER_ROLE);
 
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);
-        expect(await token.hasRole(service, DISTRIBUTOR_ROLE)).to.be.true;
-        expect(await token.hasRole(ownerWallet.address, DISTRIBUTOR_ROLE)).to.be.true;
+        expect(await token.hasRole(service, MINTER_ROLE)).to.be.true;
+        expect(await token.hasRole(ownerWallet.address, MINTER_ROLE)).to.be.true;
         expect(await token.interchainTokenId()).to.equal(tokenId);
         expect(await token.interchainTokenService()).to.equal(service);
 

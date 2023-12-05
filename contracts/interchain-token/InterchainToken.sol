@@ -8,14 +8,14 @@ import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { BaseInterchainToken } from './BaseInterchainToken.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
-import { Distributable } from '../utils/Distributable.sol';
+import { Minter } from '../utils/Minter.sol';
 
 /**
  * @title InterchainToken
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
- * @dev This contract also inherits Distributable and Implementation logic.
+ * @dev This contract also inherits Minter and Implementation logic.
  */
-contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IInterchainToken {
+contract InterchainToken is BaseInterchainToken, ERC20Permit, Minter, IInterchainToken {
     using AddressBytes for bytes;
 
     string public name;
@@ -77,18 +77,12 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
     /**
      * @notice Setup function to initialize contract parameters.
      * @param tokenId_ The tokenId of the token.
-     * @param distributor The address of the token distributor.
+     * @param minter The address of the token minter.
      * @param tokenName The name of the token.
      * @param tokenSymbol The symbopl of the token.
      * @param tokenDecimals The decimals of the token.
      */
-    function init(
-        bytes32 tokenId_,
-        address distributor,
-        string calldata tokenName,
-        string calldata tokenSymbol,
-        uint8 tokenDecimals
-    ) external {
+    function init(bytes32 tokenId_, address minter, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals) external {
         if (_isInitialized()) revert AlreadyInitialized();
 
         _initialize();
@@ -102,33 +96,33 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IIn
         tokenId = tokenId_;
 
         /**
-         * @dev Set the token service as a distributor to allow it to mint and burn tokens.
-         * Also add the provided address as a distributor. If `address(0)` was provided,
-         * add it as a distributor to allow anyone to easily check that no custom distributor was set.
+         * @dev Set the token service as a minter to allow it to mint and burn tokens.
+         * Also add the provided address as a minter. If `address(0)` was provided,
+         * add it as a minter to allow anyone to easily check that no custom minter was set.
          */
-        _addDistributor(interchainTokenService_);
-        _addDistributor(distributor);
+        _addMinter(interchainTokenService_);
+        _addMinter(minter);
 
         _setNameHash(tokenName);
     }
 
     /**
      * @notice Function to mint new tokens.
-     * @dev Can only be called by the distributor address.
+     * @dev Can only be called by the minter address.
      * @param account The address that will receive the minted tokens.
      * @param amount The amount of tokens to mint.
      */
-    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function mint(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _mint(account, amount);
     }
 
     /**
      * @notice Function to burn tokens.
-     * @dev Can only be called by the distributor address.
+     * @dev Can only be called by the minter address.
      * @param account The address that will have its tokens burnt.
      * @param amount The amount of tokens to burn.
      */
-    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.DISTRIBUTOR)) {
+    function burn(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _burn(account, amount);
     }
 }

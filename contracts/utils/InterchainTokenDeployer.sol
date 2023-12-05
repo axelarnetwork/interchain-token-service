@@ -28,7 +28,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
      * @notice Deploys a new instance of the InterchainTokenProxy contract.
      * @param salt The salt used by Create3Deployer.
      * @param tokenId TokenId for the token.
-     * @param distributor Address of the distributor.
+     * @param minter Address of the minter.
      * @param name Name of the token.
      * @param symbol Symbol of the token.
      * @param decimals Decimals of the token.
@@ -37,7 +37,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
     function deployInterchainToken(
         bytes32 salt,
         bytes32 tokenId,
-        address distributor,
+        address minter,
         string calldata name,
         string calldata symbol,
         uint8 decimals
@@ -61,7 +61,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
         tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
 
-        IInterchainToken(tokenAddress).init(tokenId, distributor, name, symbol, decimals);
+        IInterchainToken(tokenAddress).init(tokenId, minter, name, symbol, decimals);
     }
 
     /**

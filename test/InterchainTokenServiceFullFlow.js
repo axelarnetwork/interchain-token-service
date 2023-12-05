@@ -19,7 +19,7 @@ const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
 
-const DISTRIBUTOR_ROLE = 0;
+const MINTER_ROLE = 0;
 
 const MINT_BURN = 0;
 const LOCK_UNLOCK = 2;
@@ -321,28 +321,28 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         /**
-         * Change the distributor/minter to another address
+         * Change the minter/minter to another address
          */
-        it('Should be able to change the token distributor', async () => {
+        it('Should be able to change the token minter', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
 
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(newAddress))
+            await expect(token.transferMintership(newAddress))
                 .to.emit(token, 'RolesRemoved')
-                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .to.emit(token, 'RolesAdded')
-                .withArgs(newAddress, 1 << DISTRIBUTOR_ROLE);
+                .withArgs(newAddress, 1 << MINTER_ROLE);
 
             await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
                 wallet.address,
-                DISTRIBUTOR_ROLE,
+                MINTER_ROLE,
             ]);
             await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole', [
                 wallet.address,
-                DISTRIBUTOR_ROLE,
+                MINTER_ROLE,
             ]);
         });
     });
@@ -351,7 +351,7 @@ describe('Interchain Token Service Full Flow', () => {
      * This test creates a token link between pre-existing tokens by giving mint/burn permission to ITS.
      * - Deploy a normal mint/burn ERC20 registered with an owner
      * - Deploy a mint/burn token manager for the token on all chains
-     * - Transfer mint/burn permission (distributor role) to ITS
+     * - Transfer mint/burn permission (minter role) to ITS
      * - Transfer tokens via ITS between chains
      */
     describe('Pre-existing Token as Mint/Burn', () => {
@@ -411,28 +411,28 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         /**
-         * Transfer the distributor to ITS on all chains to allow it to mint/burn
+         * Transfer the minter to ITS on all chains to allow it to mint/burn
          */
-        it('Should be able to change the token distributor', async () => {
+        it('Should be able to change the token minter', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
 
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferDistributorship(service.address))
+            await expect(token.transferMintership(service.address))
                 .to.emit(token, 'RolesRemoved')
-                .withArgs(wallet.address, 1 << DISTRIBUTOR_ROLE)
+                .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .to.emit(token, 'RolesAdded')
-                .withArgs(service.address, 1 << DISTRIBUTOR_ROLE);
+                .withArgs(service.address, 1 << MINTER_ROLE);
 
             await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
                 wallet.address,
-                DISTRIBUTOR_ROLE,
+                MINTER_ROLE,
             ]);
             await expectRevert((gasOptions) => token.burn(newAddress, amount, gasOptions), token, 'MissingRole', [
                 wallet.address,
-                DISTRIBUTOR_ROLE,
+                MINTER_ROLE,
             ]);
         });
 
