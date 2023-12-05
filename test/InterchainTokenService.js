@@ -1646,9 +1646,12 @@ describe('Interchain Token Service', () => {
 
             const metadata = '0x00000002';
 
-            await expect(
-                service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata)
-            ).to.be.reverted;
+            await expectRevert(
+                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasOptions),
+                service,
+                'InvalidMetadataVersion',
+                [Number(metadata)],
+            );
         });
     });
 

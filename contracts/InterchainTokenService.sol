@@ -82,7 +82,7 @@ contract InterchainTokenService is
      * @dev Tokens and token managers deployed via the Token Factory contract use a special deployer address.
      * This removes the dependency on the address the token factory was deployed too to be able to derive the same tokenId.
      */
-    address private constant TOKEN_FACTORY_DEPLOYER = address(0);
+    address internal constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     /**
      * @dev Latest version of metadata that's supported.
@@ -92,6 +92,8 @@ contract InterchainTokenService is
         CONTRACT_CALL,
         EXPRESS_CALL
     }
+
+    uint32 internal constant LATEST_METADATA_VERSION = 1;
 
     /**
      * @notice Constructor for the Interchain Token Service.
@@ -755,7 +757,12 @@ contract InterchainTokenService is
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _callContract(string calldata destinationChain, bytes memory payload, MetadataVersion metadataVersion, uint256 gasValue) internal {
+    function _callContract(
+        string calldata destinationChain,
+        bytes memory payload,
+        MetadataVersion metadataVersion,
+        uint256 gasValue
+    ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
@@ -924,7 +931,10 @@ contract InterchainTokenService is
     function _decodeMetadata(bytes calldata metadata) internal pure returns (MetadataVersion version, bytes memory data) {
         if (metadata.length < 4) return (MetadataVersion.CONTRACT_CALL, data);
 
-        version = MetadataVersion(uint32(bytes4(metadata[:4])));
+        uint32 versionUint = uint32(bytes4(metadata[:4]));
+        if (versionUint > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(versionUint);
+
+        version = MetadataVersion(versionUint);
 
         if (metadata.length == 4) return (version, data);
 
