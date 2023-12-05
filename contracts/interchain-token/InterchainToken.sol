@@ -8,14 +8,14 @@ import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { BaseInterchainToken } from './BaseInterchainToken.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
-import { Distributable } from '../utils/Distributable.sol';
+import { Minter } from '../utils/Minter.sol';
 
 /**
  * @title InterchainToken
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
- * @dev This contract also inherits Distributable and Implementation logic.
+ * @dev This contract also inherits Minter and Implementation logic.
  */
-contract InterchainToken is BaseInterchainToken, ERC20Permit, Distributable, IInterchainToken {
+contract InterchainToken is BaseInterchainToken, ERC20Permit, Minter, IInterchainToken {
     using AddressBytes for bytes;
 
     string public name;

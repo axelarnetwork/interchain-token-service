@@ -3,15 +3,15 @@
 pragma solidity ^0.8.0;
 
 import { IInterchainTokenStandard } from './IInterchainTokenStandard.sol';
-import { IDistributable } from './IDistributable.sol';
+import { IMinter } from './IMinter.sol';
 import { IERC20MintableBurnable } from './IERC20MintableBurnable.sol';
 import { IERC20Named } from './IERC20Named.sol';
 
 /**
  * @title IInterchainToken interface
- * @dev Extends IInterchainTokenStandard and IDistributable.
+ * @dev Extends IInterchainTokenStandard and IMinter.
  */
-interface IInterchainToken is IInterchainTokenStandard, IDistributable, IERC20MintableBurnable, IERC20Named {
+interface IInterchainToken is IInterchainTokenStandard, IMinter, IERC20MintableBurnable, IERC20Named {
     error InterchainTokenServiceAddressZero();
     error TokenIdZero();
     error TokenNameEmpty();

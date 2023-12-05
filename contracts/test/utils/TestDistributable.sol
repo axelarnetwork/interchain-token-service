@@ -2,16 +2,16 @@
 
 pragma solidity ^0.8.0;
 
-import { Distributable } from '../../utils/Distributable.sol';
+import { Minter } from '../../utils/Minter.sol';
 
-contract TestDistributable is Distributable {
+contract TestMinter is Minter {
     uint256 public nonce;
 
     constructor(address minter) {
         _addMinter(minter);
     }
 
-    function testDistributable() external onlyRole(uint8(Roles.MINTER)) {
+    function testMinter() external onlyRole(uint8(Roles.MINTER)) {
         nonce++;
     }
 

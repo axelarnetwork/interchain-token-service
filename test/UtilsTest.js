@@ -94,23 +94,23 @@ describe('Operatable', () => {
     });
 });
 
-describe('Distributable', () => {
+describe('Minter', () => {
     let test;
     let minterRole;
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'TestDistributable', [ownerWallet.address]);
+        test = await deployContract(ownerWallet, 'TestMinter', [ownerWallet.address]);
         minterRole = await test.minterRole();
     });
 
     it('Should be able to run the onlyMinter function as the minter', async () => {
-        await (await test.testDistributable()).wait();
+        await (await test.testMinter()).wait();
 
         expect(await test.nonce()).to.equal(1);
     });
 
     it('Should not be able to run the onlyMinter function as not the minter', async () => {
-        await expectRevert((gasOptions) => test.connect(otherWallet).testDistributable(gasOptions), test, 'MissingRole', [
+        await expectRevert((gasOptions) => test.connect(otherWallet).testMinter(gasOptions), test, 'MissingRole', [
             otherWallet.address,
             minterRole,
         ]);

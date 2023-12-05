@@ -3,10 +3,10 @@
 pragma solidity ^0.8.0;
 
 import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol';
-import { Distributable } from '../utils/Distributable.sol';
+import { Minter } from '../utils/Minter.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
-contract TestBaseInterchainToken is BaseInterchainToken, Distributable, IERC20MintableBurnable {
+contract TestBaseInterchainToken is BaseInterchainToken, Minter, IERC20MintableBurnable {
     address internal service;
     bytes32 internal tokenId;
     bool internal tokenManagerRequiresApproval_ = true;

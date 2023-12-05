@@ -2,19 +2,19 @@
 
 pragma solidity ^0.8.0;
 
-import { IDistributable } from '../interfaces/IDistributable.sol';
+import { IMinter } from '../interfaces/IMinter.sol';
 
 import { RolesBase } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/RolesBase.sol';
 import { RolesConstants } from './RolesConstants.sol';
 
 /**
- * @title Distributable Contract
+ * @title Minter Contract
  * @notice A contract module which provides a basic access control mechanism, where
  * there is an account (a minter) that can be granted exclusive access to
  * specific functions.
  * @dev This module is used through inheritance.
  */
-contract Distributable is IDistributable, RolesBase, RolesConstants {
+contract Minter is IMinter, RolesBase, RolesConstants {
     /**
      * @notice Internal function that stores the new minter address in the correct storage slot.
      * @param minter_ The address of the new minter.
