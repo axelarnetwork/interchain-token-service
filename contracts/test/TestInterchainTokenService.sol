@@ -29,7 +29,7 @@ contract TestInterchainTokenService is InterchainTokenService {
         )
     {
         if (LATEST_METADATA_VERSION != uint32(type(MetadataVersion).max))
-            revert LatestMetadataVersionMissmatch(LATEST_METADATA_VERSION, uint32(type(MetadataVersion).max));
+            revert LatestMetadataVersionMismatch(LATEST_METADATA_VERSION, uint32(type(MetadataVersion).max));
     }
 
     function setupTest(bytes calldata params) external {
