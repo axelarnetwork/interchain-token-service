@@ -757,7 +757,7 @@ contract InterchainTokenService is
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         if (gasValue > 0) {
-            if(metadataVersion == CONTRACT_CALL) {
+            if (metadataVersion == CONTRACT_CALL) {
                 gasService.payNativeGasForContractCall{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -765,7 +765,7 @@ contract InterchainTokenService is
                     payload, // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
-            } else if(metadataVersion == EXPRESS_CALL) {
+            } else if (metadataVersion == EXPRESS_CALL) {
                 gasService.payNativeGasForExpressCall{ value: gasValue }(
                     address(this),
                     destinationChain,
