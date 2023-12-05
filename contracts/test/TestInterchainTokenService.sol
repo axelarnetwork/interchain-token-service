@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import { InterchainTokenService } from '../InterchainTokenService.sol';
 
 contract TestInterchainTokenService is InterchainTokenService {
-    error LatestMetadataVersionMissmatch(uint32 const, uint32 calculated);
+    error LatestMetadataVersionMismatch(uint32 const, uint32 calculated);
 
     constructor(
         address tokenManagerDeployer_,
