@@ -477,12 +477,12 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         (amount, ) = _takeToken(tokenId, msg.sender, amount);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, LATEST_METADATA_VERSION, data);
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, CONTRACT_CALL, data);
     }
 
-    /*********************\
+    /******************\
     TOKEN ONLY FUNCTIONS
-    \*********************/
+    \******************/
 
     /**
      * @notice Transmit an interchain transfer for the given tokenId.
@@ -919,7 +919,7 @@ contract InterchainTokenService is
      * @return data The data bytes extracted from the metadata.
      */
     function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes memory data) {
-        if (metadata.length < 4) return (LATEST_METADATA_VERSION, data);
+        if (metadata.length < 4) return (CONTRACT_CALL, data);
 
         version = uint32(bytes4(metadata[:4]));
 
