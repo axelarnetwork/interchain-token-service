@@ -32,7 +32,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
-    bytes32 internal constant PREFIX_DEPLOYER_BALANCE = keccak256('deployer-balance');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     /**
@@ -105,13 +104,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenAddress = service.interchainTokenAddress(interchainTokenId(deployer, salt));
     }
 
-    function deployerTokenBalance(bytes32 tokenId, address deployer) public view returns (uint256 deployerBalance) {
-        bytes32 balanceKey = keccak256(abi.encode(PREFIX_DEPLOYER_BALANCE, tokenId, deployer));
-        assembly {
-            deployerBalance := sload(balanceKey)
-        }
-    }
-
     /**
      * @notice Deploys a new interchain token with specified parameters.
      * @dev Creates a new token and optionally mints an initial amount to a specified minter.
@@ -147,11 +139,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
             ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
 
-            _setDeployerTokenBalance(tokenId, sender, initialSupply);
-            token.mint(address(this), initialSupply);
+            token.mint(minter != address(0) ? minter : sender, initialSupply);
 
             token.transferMintership(minter);
-
             tokenManager.removeFlowLimiter(address(this));
 
             // If minter == address(0), we still set it as a flow limiter for consistency with the remote token manager.
@@ -284,64 +274,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     /**
-     * @notice Transfers an interchain token to a specified destination chain and address.
-     * @param tokenId The identifier of the interchain token.
-     * @param destinationChain The name of the destination chain.
-     * @param destinationAddress The address on the destination chain to receive the token.
-     * @param amount The amount of tokens to transfer.
-     * @param gasValue The amount of gas to send for the transfer.
-     */
-    function interchainTransfer(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        uint256 gasValue
-    ) external payable {
-        address sender = msg.sender;
-        uint256 balance = deployerTokenBalance(tokenId, sender);
-
-        if (amount > balance) revert InsufficientBalance(tokenId, sender, balance);
-
-        _setDeployerTokenBalance(tokenId, sender, balance - amount);
-
-        if (bytes(destinationChain).length == 0) {
-            address tokenAddress = service.interchainTokenAddress(tokenId);
-            IInterchainToken token = IInterchainToken(tokenAddress);
-            token.safeTransfer(destinationAddress.toAddress(), amount);
-        } else {
-            // slither-disable-next-line arbitrary-send-eth
-            service.interchainTransfer{ value: gasValue }(tokenId, destinationChain, destinationAddress, amount, new bytes(0));
-        }
-    }
-
-    /**
-     * @notice Allows tokens to be transferred from the sender to the contract.
-     * @param tokenId The identifier of the interchain token.
-     * @param amount The amount of tokens to transfer.
-     */
-    function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable {
-        address tokenAddress = service.validTokenAddress(tokenId);
-        IInterchainToken token = IInterchainToken(tokenAddress);
-
-        _setDeployerTokenBalance(tokenId, msg.sender, deployerTokenBalance(tokenId, msg.sender) + amount);
-
-        token.safeTransferFrom(msg.sender, address(this), amount);
-    }
-
-    /**
-     * @notice Approves a specified amount of tokens to the service.
-     * @param tokenId The identifier of the interchain token.
-     * @param amount The amount of tokens to approve.
-     */
-    function tokenApprove(bytes32 tokenId, uint256 amount) external payable {
-        address tokenAddress = service.validTokenAddress(tokenId);
-        IInterchainToken token = IInterchainToken(tokenAddress);
-
-        token.safeCall(abi.encodeWithSelector(token.approve.selector, service, amount));
-    }
-
-    /**
      * @notice Checks if a given token is a gateway token.
      * @param token The address of the token to check.
      * @return bool True if the token is a gateway token, false otherwise.
@@ -349,12 +281,5 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     function _isGatewayToken(address token) internal view returns (bool) {
         string memory symbol = IInterchainToken(token).symbol();
         return token == gateway.tokenAddresses(symbol);
-    }
-
-    function _setDeployerTokenBalance(bytes32 tokenId, address deployer, uint256 deployerBalance) internal {
-        bytes32 balanceKey = keccak256(abi.encode(PREFIX_DEPLOYER_BALANCE, tokenId, deployer));
-        assembly {
-            sstore(balanceKey, deployerBalance)
-        }
     }
 }
