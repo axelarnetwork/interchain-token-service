@@ -3,7 +3,7 @@ const {
     Contract,
     utils: { defaultAbiCoder },
 } = ethers;
-const Proxy = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Proxy.sol/Proxy.json');
+const Proxy = require('../artifacts/contracts/proxies/InterchainProxy.sol/InterchainProxy.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 

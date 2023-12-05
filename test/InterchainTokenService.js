@@ -2490,14 +2490,14 @@ describe('Interchain Token Service', () => {
 
     describe('Bytecode checks [ @skip-on-coverage ]', () => {
         it('Should preserve the same proxy bytecode for each EVM', async () => {
-            const proxyFactory = await ethers.getContractFactory('Proxy', wallet);
+            const proxyFactory = await ethers.getContractFactory('InterchainProxy', wallet);
             const proxyBytecode = proxyFactory.bytecode;
             const proxyBytecodeHash = keccak256(proxyBytecode);
 
             const expected = {
-                istanbul: '0x4e164bfb56555d2b7bfec101a5bae5aa87fcfbcdd2c895a5c3cccbd68047ed27',
-                berlin: '0x5b973f3ea8aada2c5a451b77fbed9d668ef176c3ef0d0e4be24fda1347a2df68',
-                london: '0x5ab26238fc73053542097bf88cf7661d41b25c17d3f08f1c1fb9872d4476ce9d',
+                istanbul: '0xe34488afdc40be5785cd2ced1d556dd36f06e85051fd6abbe24a7a4113e65029',
+                berlin: '0x5e22c190b045bb6624fb81593bf85fb16e796584dae46135477646d8717f9cde',
+                london: '0x4d2205cadd23843bf9bcd83fd3a29c0f0bb789c183188c4c04360a45b6ab8142',
             }[getEVMVersion()];
 
             expect(proxyBytecodeHash).to.be.equal(expected);

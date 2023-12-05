@@ -215,7 +215,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Getter function for TokenManager implementations. This will mainly be called by TokenManager proxies
+     * @notice Getter function for TokenManager implementation. This will mainly be called by TokenManager proxies
      * to figure out their implementations.
      * @return tokenManagerAddress The address of the TokenManager implementation.
      */
@@ -486,7 +486,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Transmit an interchain transfer for the given tokenId.
-     * @dev Only callable by a token registerred under tokenId.
+     * @dev Only callable by a token registered under tokenId.
      * @param tokenId The tokenId of the TokenManager (which must be the msg.sender).
      * @param sourceAddress The address where the token is coming from, which will also be used for reimbursement of gas.
      * @param destinationChain The name of the chain to send tokens to.
