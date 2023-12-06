@@ -113,6 +113,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param decimals The number of decimals for the token.
      * @param initialSupply The amount of tokens to mint initially (can be zero).
      * @param minter The address to receive the initially minted tokens.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployInterchainToken(
         bytes32 salt,
@@ -121,7 +122,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint8 decimals,
         uint256 initialSupply,
         address minter
-    ) external payable {
+    ) external payable returns (bytes32 tokenId) {
         address sender = msg.sender;
         salt = interchainTokenSalt(chainNameHash, sender, salt);
         bytes memory minterBytes = new bytes(0);
@@ -132,10 +133,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             minterBytes = minter.toBytes();
         }
 
-        _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, 0);
+        tokenId = _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, 0);
 
         if (initialSupply > 0) {
-            bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
             ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
 
@@ -158,6 +158,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param minter The address to distribute the token on the destination chain.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteInterchainToken(
         string calldata originalChainName,
@@ -165,7 +166,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         address minter,
         string memory destinationChain,
         uint256 gasValue
-    ) external payable {
+    ) external payable returns (bytes32 tokenId) {
         string memory tokenName;
         string memory tokenSymbol;
         uint8 tokenDecimals;
@@ -181,7 +182,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
             address sender = msg.sender;
             salt = interchainTokenSalt(chainNameHash_, sender, salt);
-            bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+            tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
 
             IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
 
@@ -196,7 +197,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             }
         }
 
-        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
+        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
     }
 
     /**
@@ -208,6 +209,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param tokenDecimals The number of decimals for the token.
      * @param minter The address to receive the initially minted tokens.
      * @param gasValue The amount of gas to send for the transfer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function _deployInterchainToken(
         bytes32 salt,
@@ -217,15 +219,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint8 tokenDecimals,
         bytes memory minter,
         uint256 gasValue
-    ) internal {
+    ) internal returns (bytes32 tokenId) {
         // slither-disable-next-line arbitrary-send-eth
-        service.deployInterchainToken{ value: gasValue }(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue);
+        tokenId = service.deployInterchainToken{ value: gasValue }(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue);
     }
 
     /**
      * @notice Registers a canonical token as an interchain token and deploys its token manager.
      * @param tokenAddress The address of the canonical token.
-     * @return tokenId The unique identifier of the registered interchain token.
+     * @return tokenId The tokenId corresponding to the register canonical token.
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
@@ -242,13 +244,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param originalTokenAddress The address of the original token on the original chain.
      * @param destinationChain The name of the chain where the token will be deployed.
      * @param gasValue The gas amount to be sent for deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteCanonicalInterchainToken(
         string calldata originalChain,
         address originalTokenAddress,
         string calldata destinationChain,
         uint256 gasValue
-    ) external payable {
+    ) external payable returns (bytes32 tokenId) {
         bytes32 salt;
         IInterchainToken token;
 
@@ -261,7 +264,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             }
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
             salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);
-            bytes32 tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+            tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
             token = IInterchainToken(service.validTokenAddress(tokenId));
         }
 
@@ -270,7 +273,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string memory tokenSymbol = token.symbol();
         uint8 tokenDecimals = token.decimals();
 
-        _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
+        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
     }
 
     /**

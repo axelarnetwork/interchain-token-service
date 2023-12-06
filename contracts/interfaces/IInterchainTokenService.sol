@@ -179,6 +179,7 @@ interface IInterchainTokenService is
      * @param decimals The number of decimals for the interchain tokens.
      * @param minter The minter data for mint/burn operations.
      * @param gasValue The gas value for deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployInterchainToken(
         bytes32 salt,
@@ -188,7 +189,7 @@ interface IInterchainTokenService is
         uint8 decimals,
         bytes memory minter,
         uint256 gasValue
-    ) external payable;
+    ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Initiates an interchain transfer of a specified token to a destination chain.

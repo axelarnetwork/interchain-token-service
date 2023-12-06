@@ -271,7 +271,7 @@ contract InterchainTokenService is
      * @param tokenManagerType The type of TokenManager to be deployed.
      * @param params The params that will be used to initialize the TokenManager.
      * @param gasValue The amount of native tokens to be used to pay for gas for the remote deployment.
-     * @return tokenId The tokenId corresponding to the deployed remote TokenManager.
+     * @return tokenId The tokenId corresponding to the deployed TokenManager.
      */
     function deployTokenManager(
         bytes32 salt,
@@ -307,6 +307,7 @@ contract InterchainTokenService is
      * @param decimals The decimals of the token to be deployed.
      * @param minter The address that will be able to mint and burn the deployed token.
      * @param gasValue The amount of native tokens to be used to pay for gas for the remote deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployInterchainToken(
         bytes32 salt,
@@ -316,12 +317,12 @@ contract InterchainTokenService is
         uint8 decimals,
         bytes memory minter,
         uint256 gasValue
-    ) external payable whenNotPaused {
+    ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer = msg.sender;
 
         if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
 
-        bytes32 tokenId = interchainTokenId(deployer, salt);
+        tokenId = interchainTokenId(deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
             address tokenAddress = _deployInterchainToken(tokenId, minter, name, symbol, decimals);
