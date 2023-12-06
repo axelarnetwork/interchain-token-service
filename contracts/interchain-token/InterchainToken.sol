@@ -6,7 +6,7 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
-import { BaseInterchainToken } from './BaseInterchainToken.sol';
+import { InterchainTokenStandard } from './InterchainTokenStandard.sol';
 import { ERC20 } from './ERC20.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
 import { Minter } from '../utils/Minter.sol';
@@ -16,7 +16,7 @@ import { Minter } from '../utils/Minter.sol';
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
  * @dev This contract also inherits Minter and Implementation logic.
  */
-contract InterchainToken is BaseInterchainToken, ERC20, ERC20Permit, Minter, IInterchainToken {
+contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter, IInterchainToken {
     using AddressBytes for bytes;
 
     string public name;
@@ -63,7 +63,7 @@ contract InterchainToken is BaseInterchainToken, ERC20, ERC20Permit, Minter, IIn
      * @notice Returns the interchain token service
      * @return address The interchain token service contract
      */
-    function interchainTokenService() public view override(BaseInterchainToken, IInterchainToken) returns (address) {
+    function interchainTokenService() public view override(InterchainTokenStandard, IInterchainToken) returns (address) {
         return interchainTokenService_;
     }
 
@@ -71,7 +71,7 @@ contract InterchainToken is BaseInterchainToken, ERC20, ERC20Permit, Minter, IIn
      * @notice Returns the tokenId for this token.
      * @return bytes32 The token manager contract.
      */
-    function interchainTokenId() public view override(BaseInterchainToken, IInterchainToken) returns (bytes32) {
+    function interchainTokenId() public view override(InterchainTokenStandard, IInterchainToken) returns (bytes32) {
         return tokenId;
     }
 

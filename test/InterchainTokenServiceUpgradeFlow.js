@@ -42,7 +42,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
-        const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+        const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
             tokenName,
             tokenSymbol,
             tokenDecimals,

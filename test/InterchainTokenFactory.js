@@ -59,7 +59,13 @@ describe('InterchainTokenFactory', () => {
         const tokenCap = BigInt(1e18);
 
         async function deployToken() {
-            token = await deployContract(wallet, 'TestBaseInterchainToken', [name, symbol, decimals, service.address, getRandomBytes32()]);
+            token = await deployContract(wallet, 'TestInterchainTokenStandard', [
+                name,
+                symbol,
+                decimals,
+                service.address,
+                getRandomBytes32(),
+            ]);
             tokenId = await tokenFactory.canonicalInterchainTokenId(token.address);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await (await token.mint(wallet.address, tokenCap)).wait();

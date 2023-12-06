@@ -9,7 +9,7 @@ import { ITransmitInterchainToken } from '../interfaces/ITransmitInterchainToken
  * @title An example implementation of the IInterchainTokenStandard.
  * @notice The is an abstract contract that needs to be extended with an ERC20 implementation. See `InterchainToken` for an example implementation.
  */
-abstract contract BaseInterchainToken is IInterchainTokenStandard {
+abstract contract InterchainTokenStandard is IInterchainTokenStandard {
     /**
      * @notice Getter for the tokenId used for this token.
      * @dev Needs to be overwritten.
