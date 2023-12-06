@@ -52,6 +52,7 @@ interface IInterchainTokenFactory {
      * @param decimals The number of decimals for the token.
      * @param initialSupply The amount of tokens to mint initially (can be zero).
      * @param minter The address to receive the initially minted tokens.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployInterchainToken(
         bytes32 salt,
@@ -60,7 +61,7 @@ interface IInterchainTokenFactory {
         uint8 decimals,
         uint256 initialSupply,
         address minter
-    ) external payable;
+    ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
@@ -69,6 +70,7 @@ interface IInterchainTokenFactory {
      * @param minter The address to distribute the token on the destination chain.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteInterchainToken(
         string calldata originalChainName,
@@ -76,7 +78,7 @@ interface IInterchainTokenFactory {
         address minter,
         string memory destinationChain,
         uint256 gasValue
-    ) external payable;
+    ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Calculates the salt for a canonical interchain token.
@@ -96,7 +98,7 @@ interface IInterchainTokenFactory {
     /**
      * @notice Registers a canonical token as an interchain token and deploys its token manager.
      * @param tokenAddress The address of the canonical token.
-     * @return tokenId The unique identifier of the registered interchain token.
+     * @return tokenId The tokenId corresponding to the registered canonical token.
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId);
 
@@ -106,11 +108,12 @@ interface IInterchainTokenFactory {
      * @param originalTokenAddress The address of the original token on the original chain.
      * @param destinationChain The name of the chain where the token will be deployed.
      * @param gasValue The gas amount to be sent for deployment.
+     * @return tokenId The tokenId corresponding to the deployed canonical InterchainToken.
      */
     function deployRemoteCanonicalInterchainToken(
         string calldata originalChain,
         address originalTokenAddress,
         string calldata destinationChain,
         uint256 gasValue
-    ) external payable;
+    ) external payable returns (bytes32 tokenId);
 }
