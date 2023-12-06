@@ -50,7 +50,7 @@ describe('Interchain Token Service', () => {
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
-        const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+        const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
             tokenName,
             tokenSymbol,
             tokenDecimals,
@@ -128,7 +128,7 @@ describe('Interchain Token Service', () => {
         async function deployNewMintBurn(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,
@@ -159,7 +159,13 @@ describe('Interchain Token Service', () => {
         otherWallet = wallets[1];
         [service, gateway, gasService] = await deployAll(wallet, 'Test', [sourceChain, destinationChain]);
 
-        testToken = await deployContract(wallet, 'TestBaseInterchainToken', ['Test Token', 'TST', 18, service.address, getRandomBytes32()]);
+        testToken = await deployContract(wallet, 'TestInterchainTokenStandard', [
+            'Test Token',
+            'TST',
+            18,
+            service.address,
+            getRandomBytes32(),
+        ]);
     });
 
     describe('Interchain Token Service Deployment', () => {
@@ -794,7 +800,7 @@ describe('Interchain Token Service', () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,
@@ -823,7 +829,7 @@ describe('Interchain Token Service', () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,
@@ -863,7 +869,7 @@ describe('Interchain Token Service', () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,
@@ -901,7 +907,7 @@ describe('Interchain Token Service', () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,
@@ -980,7 +986,7 @@ describe('Interchain Token Service', () => {
             const tokenDecimals = 13;
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,
@@ -1011,7 +1017,7 @@ describe('Interchain Token Service', () => {
             const tokenDecimals = 13;
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,
@@ -1185,7 +1191,7 @@ describe('Interchain Token Service', () => {
             const tokenDecimals = 13;
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,
@@ -1216,7 +1222,7 @@ describe('Interchain Token Service', () => {
             const tokenDecimals = 13;
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestBaseInterchainToken', [
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
                 tokenDecimals,

@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol';
+import { InterchainTokenStandard } from '../interchain-token/InterchainTokenStandard.sol';
 import { ERC20 } from '../interchain-token/ERC20.sol';
 import { Minter } from '../utils/Minter.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
-contract TestFeeOnTransferToken is BaseInterchainToken, ERC20, Minter, IERC20MintableBurnable {
+contract TestFeeOnTransferToken is InterchainTokenStandard, ERC20, Minter, IERC20MintableBurnable {
     address public immutable service;
     bytes32 public tokenId;
     bool internal tokenManagerRequiresApproval_ = true;
