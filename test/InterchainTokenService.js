@@ -1659,7 +1659,7 @@ describe('Interchain Token Service', () => {
                 await expect(
                     reportGas(
                         service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }),
-                        `Call service.interchainTransfer with metadata ${type}`,
+                        `Call service.interchainTransfer with metadata ${type} (express call)`,
                     ),
                 )
                     .to.emit(token, 'Transfer')
@@ -1836,6 +1836,25 @@ describe('Interchain Token Service', () => {
                 .withArgs(commandId, sourceChain, sourceAddressForService, wallet.address, msg, tokenId, amount);
 
             expect(await executable.lastMessage()).to.equal(msg);
+        });
+
+        it('Should be able to receive lock/unlock token with empty data and not call destination contract', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
+            (await token.transfer(tokenManager.address, amount)).wait();
+
+            const data = '0x';
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(tokenManager.address, destAddress, amount)
+                .and.to.emit(service, 'InterchainTransferReceived')
+                .withArgs(commandId, tokenId, sourceChain, sourceAddressForService, destAddress, amount, HashZero)
+                .and.to.not.emit(executable, 'MessageReceived');
         });
 
         it('Should be able to receive mint/burn token', async () => {
