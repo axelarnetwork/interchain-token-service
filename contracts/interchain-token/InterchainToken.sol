@@ -7,6 +7,7 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { BaseInterchainToken } from './BaseInterchainToken.sol';
+import { ERC20 } from './ERC20.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
 import { Minter } from '../utils/Minter.sol';
 
@@ -15,7 +16,7 @@ import { Minter } from '../utils/Minter.sol';
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
  * @dev This contract also inherits Minter and Implementation logic.
  */
-contract InterchainToken is BaseInterchainToken, ERC20Permit, Minter, IInterchainToken {
+contract InterchainToken is BaseInterchainToken, ERC20, ERC20Permit, Minter, IInterchainToken {
     using AddressBytes for bytes;
 
     string public name;
@@ -124,5 +125,17 @@ contract InterchainToken is BaseInterchainToken, ERC20Permit, Minter, IInterchai
      */
     function burn(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
         _burn(account, amount);
+    }
+
+    /**
+     * @notice A method to be overwritten that will decrease the allowance of the `spender` from `sender` by `amount`.
+     * @dev Needs to be overwritten. This provides flexibility for the choice of ERC20 implementation used. Must revert if allowance is not sufficient.
+     */
+    function _spendAllowance(address sender, address spender, uint256 amount) internal override {
+        uint256 _allowance = allowance[sender][spender];
+
+        if (_allowance != UINT256_MAX) {
+            _approve(sender, spender, _allowance - amount);
+        }
     }
 }

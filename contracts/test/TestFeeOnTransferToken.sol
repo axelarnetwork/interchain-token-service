@@ -3,10 +3,11 @@
 pragma solidity ^0.8.0;
 
 import { BaseInterchainToken } from '../interchain-token/BaseInterchainToken.sol';
+import { ERC20 } from '../interchain-token/ERC20.sol';
 import { Minter } from '../utils/Minter.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
-contract TestFeeOnTransferToken is BaseInterchainToken, Minter, IERC20MintableBurnable {
+contract TestFeeOnTransferToken is BaseInterchainToken, ERC20, Minter, IERC20MintableBurnable {
     address public immutable service;
     bytes32 public tokenId;
     bool internal tokenManagerRequiresApproval_ = true;
@@ -48,6 +49,14 @@ contract TestFeeOnTransferToken is BaseInterchainToken, Minter, IERC20MintableBu
             }
 
             _approve(sender, serviceAddress, allowance_ + amount);
+        }
+    }
+
+    function _spendAllowance(address sender, address spender, uint256 amount) internal override {
+        uint256 _allowance = allowance[sender][spender];
+
+        if (_allowance != UINT256_MAX) {
+            _approve(sender, spender, _allowance - amount);
         }
     }
 

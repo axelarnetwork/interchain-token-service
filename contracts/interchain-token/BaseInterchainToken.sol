@@ -5,14 +5,11 @@ pragma solidity ^0.8.0;
 import { IInterchainTokenStandard } from '../interfaces/IInterchainTokenStandard.sol';
 import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
-import { ERC20 } from './ERC20.sol';
-
 /**
  * @title An example implementation of the IInterchainTokenStandard.
- * @notice The implementation ERC20 can be done in any way, however this example assumes that an _approve internal function exists
- * that can be used to create approvals, and that `allowance` is a mapping.
+ * @notice The is an abstract contract that needs to be extended with an ERC20 implementation. See `InterchainToken` for an example implementation.
  */
-abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
+abstract contract BaseInterchainToken is IInterchainTokenStandard {
     /**
      * @notice Getter for the tokenId used for this token.
      * @dev Needs to be overwritten.
@@ -48,6 +45,7 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
         _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
         IInterchainTokenService service = IInterchainTokenService(interchainTokenService());
+
         service.transmitInterchainTransfer{ value: msg.value }(interchainTokenId(), sender, destinationChain, recipient, amount, metadata);
     }
 
@@ -68,15 +66,12 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
         uint256 amount,
         bytes calldata metadata
     ) external payable {
-        uint256 _allowance = allowance[sender][msg.sender];
-
-        if (_allowance != UINT256_MAX) {
-            _approve(sender, msg.sender, _allowance - amount);
-        }
+        _spendAllowance(sender, msg.sender, amount);
 
         _beforeInterchainTransfer(sender, destinationChain, recipient, amount, metadata);
 
         IInterchainTokenService service = IInterchainTokenService(interchainTokenService());
+
         service.transmitInterchainTransfer{ value: msg.value }(interchainTokenId(), sender, destinationChain, recipient, amount, metadata);
     }
 
@@ -96,4 +91,10 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard, ERC20 {
         uint256 amount,
         bytes calldata metadata
     ) internal virtual {}
+
+    /**
+     * @notice A method to be overwritten that will decrease the allowance of the `spender` from `sender` by `amount`.
+     * @dev Needs to be overwritten. This provides flexibility for the choice of ERC20 implementation used. Must revert if allowance is not sufficient.
+     */
+    function _spendAllowance(address sender, address spender, uint256 amount) internal virtual;
 }
