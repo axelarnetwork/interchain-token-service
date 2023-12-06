@@ -1307,7 +1307,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
         });
 
-        it(`Should revert on transmit send token when not called by token manager`, async () => {
+        it(`Should revert on transmit send token when not called by interchain token`, async () => {
             const [token, , tokenId] = await deployFunctions.lockUnlock(`Test Token lockUnlock`, 'TT', 12, amount);
 
             await expectRevert(

@@ -458,7 +458,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable whenNotPaused {
-        (amount, ) = _takeToken(tokenId, msg.sender, amount);
+        amount = _takeToken(tokenId, address(0), msg.sender, amount);
 
         (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
@@ -480,7 +480,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes memory data
     ) external payable whenNotPaused {
-        (amount, ) = _takeToken(tokenId, msg.sender, amount);
+        amount = _takeToken(tokenId, address(0), msg.sender, amount);
 
         _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, MetadataVersion.CONTRACT_CALL, data);
     }
@@ -507,12 +507,12 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable whenNotPaused {
-        address tokenAddress;
+        address tokenAddress = interchainTokenAddress(tokenId);
         address sender = msg.sender;
 
-        (amount, tokenAddress) = _takeToken(tokenId, sourceAddress, amount);
-
         if (sender != tokenAddress) revert NotToken(sender, tokenAddress);
+
+        amount = _takeToken(tokenId, tokenAddress, sourceAddress, amount);
 
         (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
@@ -975,12 +975,17 @@ contract InterchainTokenService is
     }
 
     /**
-     * @dev Takes token from a sender via the token service.
+     * @dev Takes token from a sender via the token service. Takes a token address optionally to save gas.
      */
-    function _takeToken(bytes32 tokenId, address from, uint256 amount) internal returns (uint256, address tokenAddress) {
+    function _takeToken(bytes32 tokenId, address tokenAddress, address from, uint256 amount) internal returns (uint256) {
         address tokenManager_ = tokenManagerAddress(tokenId);
         uint256 tokenManagerType;
-        (tokenManagerType, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
+
+        if (tokenAddress != address(0)) {
+            tokenManagerType = ITokenManagerProxy(tokenManager_).implementationType();
+        } else {
+            (tokenManagerType, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
+        }
 
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenManagerType, tokenAddress, tokenManager_, from, amount)
@@ -991,7 +996,7 @@ contract InterchainTokenService is
         /// @dev Track the flow amount being sent out as a message
         ITokenManager(tokenManager_).addFlowOut(amount);
 
-        return (amount, tokenAddress);
+        return amount;
     }
 
     /**
