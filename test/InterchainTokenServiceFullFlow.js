@@ -130,7 +130,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .to.emit(token, 'Approval')
                     .withArgs(wallet.address, service.address, amount);
 
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, tokenManagerAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -248,7 +248,7 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -396,7 +396,7 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
