@@ -449,7 +449,7 @@ contract InterchainTokenService is
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The address on the destination chain to send the tokens to.
      * @param amount The amount of tokens to be transferred.
-     * @param metadata Additional data to be passed along with the transfer. If provided with a bytes4(0) version prefix, it will execute the destination contract.
+     * @param metadata Optional metadata for the call for additional effects (such as calling a destination contract).
      */
     function interchainTransfer(
         bytes32 tokenId,
@@ -502,13 +502,13 @@ contract InterchainTokenService is
 
     /**
      * @notice Transmit an interchain transfer for the given tokenId.
-     * @dev Only callable by a token registered under tokenId.
-     * @param tokenId The tokenId of the TokenManager (which must be the msg.sender).
-     * @param sourceAddress The address where the token is coming from, which will also be used for reimbursement of gas.
+     * @dev Only callable by a token registered under a tokenId.
+     * @param tokenId The tokenId of the token (which must be the msg.sender).
+     * @param sourceAddress The address where the token is coming from.
      * @param destinationChain The name of the chain to send tokens to.
      * @param destinationAddress The destinationAddress for the interchainTransfer.
      * @param amount The amount of token to give.
-     * @param metadata The data to be passed to the destination.
+     * @param metadata Optional metadata for the call for additional effects (such as calling a destination contract).
      */
     function transmitInterchainTransfer(
         bytes32 tokenId,
