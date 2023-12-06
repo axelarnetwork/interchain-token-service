@@ -64,11 +64,6 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const mintAmount = Math.floor(tokenCap / otherChains.length);
-            const totalMint = mintAmount * otherChains.length;
-
-            await token.approve(factory.address, totalMint).then((tx) => tx.wait());
-
             tokenId = await factory.canonicalInterchainTokenId(token.address);
 
             let tx = await factory.populateTransaction.registerCanonicalInterchainToken(token.address);
@@ -80,31 +75,6 @@ describe('Interchain Token Service Full Flow', () => {
                     chainName,
                     token.address,
                     otherChains[i],
-                    gasValues[i],
-                );
-                calls.push(tx.data);
-                value += gasValues[i];
-            }
-
-            // Transfer total mint amount to the factory contract
-            tx = await factory.populateTransaction.tokenTransferFrom(tokenId, totalMint);
-            calls.push(tx.data);
-
-            // Optional. Reset approval from the factory to ITS. This is only needed for tokens like USDT that don't allow overriding existing approvals.
-            tx = await factory.populateTransaction.tokenApprove(tokenId, 0);
-            calls.push(tx.data);
-
-            // Approve total mint amount from the factory to ITS
-            tx = await factory.populateTransaction.tokenApprove(tokenId, totalMint);
-            calls.push(tx.data);
-
-            // Transfer tokens from factory contract to the user on remote chains.
-            for (const i in otherChains) {
-                tx = await factory.populateTransaction.interchainTransfer(
-                    tokenId,
-                    otherChains[i],
-                    wallet.address,
-                    mintAmount,
                     gasValues[i],
                 );
                 calls.push(tx.data);
@@ -134,13 +104,7 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(wallet.address, factory.address, totalMint)
-                .and.to.emit(token, 'Approval')
-                .withArgs(factory.address, service.address, totalMint)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(factory.address, expectedTokenManagerAddress, mintAmount);
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
         });
 
         describe('Interchain transfer', () => {
@@ -166,7 +130,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .to.emit(token, 'Approval')
                     .withArgs(wallet.address, service.address, amount);
 
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, tokenManagerAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -202,8 +166,7 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            const mintAmount = Math.floor(tokenCap / (otherChains.length + 1));
-            const totalMint = mintAmount * (otherChains.length + 1);
+            const totalMint = tokenCap;
 
             // Deploy a new Interchain token on the local chain.
             // The initial mint occurs on the factory contract, so it can be moved to other chains within the same multicall.
@@ -218,23 +181,6 @@ describe('Interchain Token Service Full Flow', () => {
                     salt,
                     wallet.address,
                     otherChains[i],
-                    gasValues[i],
-                );
-                calls.push(tx.data);
-                value += gasValues[i];
-            }
-
-            // Transfer tokens from factory contract to the user on local chain.
-            tx = await factory.populateTransaction.interchainTransfer(tokenId, '', wallet.address, mintAmount, 0);
-            calls.push(tx.data);
-
-            // Transfer tokens from factory contract to the user on remote chains.
-            for (const i in otherChains) {
-                tx = await factory.populateTransaction.interchainTransfer(
-                    tokenId,
-                    otherChains[i],
-                    wallet.address,
-                    mintAmount,
                     gasValues[i],
                 );
                 calls.push(tx.data);
@@ -266,16 +212,10 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, factory.address, totalMint)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(factory.address, wallet.address, mintAmount)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(factory.address, AddressZero, mintAmount);
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
 
             // Only tokens minted for the local chain should be left, remaining should be burned.
-            expect(await token.balanceOf(wallet.address)).to.equal(mintAmount);
+            expect(await token.balanceOf(wallet.address)).to.equal(totalMint);
 
             expect(await service.validTokenManagerAddress(tokenId)).to.equal(expectedTokenManagerAddress);
         });
@@ -308,7 +248,7 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -456,7 +396,7 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', { value: gasValue }))
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')

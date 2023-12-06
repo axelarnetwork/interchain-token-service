@@ -200,7 +200,8 @@ interface IInterchainTokenService is
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata metadata
+        bytes calldata metadata,
+        uint256 gasValue
     ) external payable;
 
     /**
@@ -216,7 +217,8 @@ interface IInterchainTokenService is
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata data
+        bytes calldata data,
+        uint256 gasValue
     ) external payable;
 
     /**
