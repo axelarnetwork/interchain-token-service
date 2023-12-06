@@ -783,6 +783,8 @@ contract InterchainTokenService is
                     payload, // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
+            } else {
+                revert InvalidMetadataVersion(uint32(metadataVersion));
             }
         }
 

@@ -4,16 +4,16 @@ const chai = require('chai');
 const { expect } = chai;
 const { ethers } = require('hardhat');
 const {
+    Wallet,
     constants: { MaxUint256, AddressZero, HashZero },
     utils: { defaultAbiCoder, solidityPack, keccak256, toUtf8Bytes, hexlify, id },
     getContractAt,
 } = ethers;
-const { Wallet } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const { getRandomBytes32, expectRevert, gasReporter, getEVMVersion } = require('./utils');
-const { deployAll, deployContract, deployMockGateway, deployGasService, deployInterchainTokenService } = require('../scripts/deploy');
+const { deployAll, deployContract, deployInterchainTokenService } = require('../scripts/deploy');
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
@@ -25,7 +25,6 @@ const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
 const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
 
-// const MINTER_ROLE = 0;
 const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
 
@@ -34,6 +33,20 @@ const reportGas = gasReporter('Interchain Token Service');
 describe('Interchain Token Service', () => {
     let wallet, otherWallet;
     let service, gateway, gasService, testToken;
+
+    let create3Deployer;
+    let tokenManagerDeployer;
+    let interchainToken;
+    let interchainTokenDeployer;
+    let interchainTokenServiceAddress;
+    let tokenManager;
+    let tokenHandler;
+    let interchainTokenFactoryAddress;
+    let serviceTest;
+
+    const chainName = 'Test';
+    const deploymentKey = 'InterchainTokenService';
+    const factoryDeploymentKey = 'factoryKey';
 
     const deployFunctions = {};
     const destinationChain = 'destination chain';
@@ -160,52 +173,32 @@ describe('Interchain Token Service', () => {
         [service, gateway, gasService] = await deployAll(wallet, 'Test', [sourceChain, destinationChain]);
 
         testToken = await deployContract(wallet, 'TestBaseInterchainToken', ['Test Token', 'TST', 18, service.address, getRandomBytes32()]);
+
+        create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
+            .deploy()
+            .then((d) => d.deployed());
+
+        interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
+        tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
+        interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
+        interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
+        interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey);
+        tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
+        tokenHandler = await deployContract(wallet, 'TokenHandler', []);
+        serviceTest = await deployContract(wallet, 'TestInterchainTokenService', [
+            tokenManagerDeployer.address,
+            interchainTokenDeployer.address,
+            gateway.address,
+            gasService.address,
+            interchainTokenFactoryAddress,
+            chainName,
+            tokenManager.address,
+            tokenHandler.address,
+        ]);
     });
 
     describe('Interchain Token Service Deployment', () => {
-        let create3Deployer;
-        let gateway;
-        let gasService;
-        let tokenManagerDeployer;
-        let interchainToken;
-        let interchainTokenDeployer;
-        let interchainTokenServiceAddress;
-        let tokenManager;
-        let tokenHandler;
-        let interchainTokenFactoryAddress;
-
-        const chainName = 'Test';
-        const deploymentKey = 'InterchainTokenService';
-        const factoryDeploymentKey = 'factoryKey';
-
-        before(async () => {
-            create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
-                .deploy()
-                .then((d) => d.deployed());
-            gateway = await deployMockGateway(wallet);
-            gasService = await deployGasService(wallet);
-
-            interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-            tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-            interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
-            interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
-            interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey);
-            tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
-            tokenHandler = await deployContract(wallet, 'TokenHandler', []);
-        });
-
         it('Should test setup revert cases', async () => {
-            const serviceTest = await deployContract(wallet, 'TestInterchainTokenService', [
-                tokenManagerDeployer.address,
-                interchainTokenDeployer.address,
-                gateway.address,
-                gasService.address,
-                interchainTokenFactoryAddress,
-                chainName,
-                tokenManager.address,
-                tokenHandler.address,
-            ]);
-
             const operator = wallet.address;
             const trustedChainNames = ['ChainA', 'ChainB'];
             const trustedAddresses = [wallet.address, wallet.address];
