@@ -7,6 +7,7 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { BaseInterchainToken } from './BaseInterchainToken.sol';
+import { ERC20 } from './ERC20.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
 import { Minter } from '../utils/Minter.sol';
 
@@ -15,7 +16,7 @@ import { Minter } from '../utils/Minter.sol';
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
  * @dev This contract also inherits Minter and Implementation logic.
  */
-contract InterchainToken is BaseInterchainToken, ERC20Permit, Minter, IInterchainToken {
+contract InterchainToken is BaseInterchainToken, ERC20, ERC20Permit, Minter, IInterchainToken {
     using AddressBytes for bytes;
 
     string public name;

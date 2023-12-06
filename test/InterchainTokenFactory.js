@@ -6,7 +6,7 @@ const { ethers } = require('hardhat');
 const {
     getContractAt,
     Wallet,
-    constants: { AddressZero, HashZero },
+    constants: { AddressZero },
     utils: { defaultAbiCoder, keccak256, toUtf8Bytes },
 } = ethers;
 
@@ -133,8 +133,6 @@ describe('InterchainTokenFactory', () => {
         });
 
         it('Should transfer some tokens to the factory', async () => {
-            const amount = 123456;
-
             await deployToken();
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
@@ -142,71 +140,6 @@ describe('InterchainTokenFactory', () => {
             await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
-
-            await token.approve(tokenFactory.address, amount).then((tx) => tx.wait());
-
-            await expect(tokenFactory.tokenTransferFrom(tokenId, amount))
-                .to.emit(token, 'Transfer')
-                .withArgs(wallet.address, tokenFactory.address, amount);
-        });
-
-        it('Should approve some tokens from the factory to the token manager', async () => {
-            const amount = 123456;
-
-            await deployToken();
-
-            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
-
-            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
-
-            tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
-
-            await expect(tokenFactory.tokenApprove(tokenId, amount))
-                .to.emit(token, 'Approval')
-                .withArgs(tokenFactory.address, service.address, amount);
-        });
-
-        it('Should transfer some tokens through the factory as the deployer', async () => {
-            const amount = 123456;
-            const destinationAddress = '0x57689403';
-            const gasValue = 45960;
-
-            await deployToken();
-
-            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
-
-            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
-
-            await token.approve(tokenFactory.address, amount).then((tx) => tx.wait());
-
-            tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
-
-            const txs = [];
-
-            txs.push(await tokenFactory.populateTransaction.tokenTransferFrom(tokenId, amount));
-            txs.push(await tokenFactory.populateTransaction.tokenApprove(tokenId, amount));
-            txs.push(
-                await tokenFactory.populateTransaction.interchainTransfer(tokenId, destinationChain, destinationAddress, amount, gasValue),
-            );
-
-            await expect(
-                tokenFactory.multicall(
-                    txs.map((tx) => tx.data),
-                    { value: gasValue },
-                ),
-            )
-                .to.emit(token, 'Transfer')
-                .withArgs(wallet.address, tokenFactory.address, amount)
-                .and.to.emit(token, 'Approval')
-                .withArgs(tokenFactory.address, service.address, amount)
-                .and.to.emit(token, 'Transfer')
-                .withArgs(tokenFactory.address, tokenManagerAddress, amount)
-                .and.to.emit(service, 'InterchainTransfer')
-                .withArgs(tokenId, tokenFactory.address, destinationChain, destinationAddress, amount, HashZero);
         });
 
         it('Should revert when trying to register a canonical lock/unlock gateway token', async () => {
@@ -332,7 +265,7 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, tokenFactory.address, mintAmount)
+                .withArgs(AddressZero, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
                 .withArgs(minter, 1 << FLOW_LIMITER_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
@@ -346,12 +279,8 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            await expect(tokenFactory.interchainTransfer(tokenId, '', minter, mintAmount, 0))
-                .to.emit(token, 'Transfer')
-                .withArgs(tokenFactory.address, minter, mintAmount);
-
             expect(await token.balanceOf(tokenFactory.address)).to.equal(0);
-            expect(await token.balanceOf(minter)).to.equal(mintAmount);
+            expect(await token.balanceOf(wallet.address)).to.equal(mintAmount);
 
             await checkRoles(tokenManager, minter);
         });
@@ -363,7 +292,7 @@ describe('InterchainTokenFactory', () => {
             const salt = keccak256('0x12');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
-            let params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
@@ -373,7 +302,7 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, tokenFactory.address, mintAmount)
+                .withArgs(AddressZero, wallet.address, mintAmount)
                 .and.to.emit(token, 'RolesAdded')
                 .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
@@ -387,7 +316,6 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, wallet.address.toLowerCase()],
@@ -435,7 +363,7 @@ describe('InterchainTokenFactory', () => {
             const salt = keccak256('0x1245');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
-            let params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
@@ -445,7 +373,7 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
                 .and.to.emit(token, 'Transfer')
-                .withArgs(AddressZero, tokenFactory.address, mintAmount)
+                .withArgs(AddressZero, wallet.address, mintAmount)
                 .and.to.emit(token, 'RolesAdded')
                 .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .and.to.emit(tokenManager, 'RolesAdded')
@@ -459,7 +387,6 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
