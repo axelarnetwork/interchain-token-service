@@ -2,7 +2,7 @@
 
 const { ethers } = require('hardhat');
 const {
-    constants: { AddressZero, HashZero },
+    constants: { AddressZero, HashZero, MaxUint256 },
     getContractAt,
 } = ethers;
 const { expect } = require('chai');
@@ -18,12 +18,14 @@ describe('InterchainToken', () => {
     const mintAmount = 123;
 
     let token;
-
+    let tokenTest;
     let owner;
+    let user;
 
     before(async () => {
         const wallets = await ethers.getSigners();
         owner = wallets[0];
+        user = wallets[1];
 
         interchainToken = await deployContract(owner, 'InterchainToken', [owner.address]);
         interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [interchainToken.address]);
@@ -42,6 +44,10 @@ describe('InterchainToken', () => {
     });
 
     describe('Interchain Token', () => {
+        it('Should calculate hardcoded constants correctly', async () => {
+            await expect(deployContract(owner, `TestInterchainToken`, [])).to.not.be.reverted;
+        });
+
         it('revert on init if not called by the proxy', async () => {
             const implementationAddress = await interchainTokenDeployer.implementationAddress();
             const implementation = await getContractAt('InterchainToken', implementationAddress, owner);
@@ -91,6 +97,40 @@ describe('InterchainToken', () => {
                 implementation,
                 'TokenNameEmpty',
             );
+        });
+
+        it('should subtract from the spender allowance', async () => {
+            tokenTest = await deployContract(owner, 'TestInterchainToken', []);
+
+            const sender = owner.address;
+            const spender = user.address;
+            const amount = 100;
+
+            await tokenTest.approve(spender, amount).then((tx) => tx.wait());
+            const initialAllowance = await tokenTest.allowance(sender, spender);
+            expect(initialAllowance).to.eq(amount);
+
+            await expect(tokenTest.spendAllowance(sender, spender, amount)).to.emit(tokenTest, 'Approval').withArgs(sender, spender, 0);
+
+            const finalAllowance = await tokenTest.allowance(sender, spender);
+            expect(finalAllowance).to.eq(0);
+        });
+
+        it('should not subtract from the spender allowance if allowance is max uint', async () => {
+            tokenTest = await deployContract(owner, 'TestInterchainToken', []);
+
+            const sender = owner.address;
+            const spender = user.address;
+            const amount = MaxUint256;
+
+            await tokenTest.approve(spender, amount).then((tx) => tx.wait());
+            const initialAllowance = await tokenTest.allowance(sender, spender);
+            expect(initialAllowance).to.eq(amount);
+
+            await expect(tokenTest.spendAllowance(sender, spender, amount)).to.not.emit(tokenTest, 'Approval');
+
+            const finalAllowance = await tokenTest.allowance(sender, spender);
+            expect(finalAllowance).to.eq(initialAllowance);
         });
     });
 });

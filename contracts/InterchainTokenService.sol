@@ -482,6 +482,8 @@ contract InterchainTokenService is
         bytes memory data,
         uint256 gasValue
     ) external payable whenNotPaused {
+        if (data.length == 0) revert EmptyData();
+
         amount = _takeToken(tokenId, msg.sender, amount, false);
 
         _transmitInterchainTransfer(
@@ -789,6 +791,8 @@ contract InterchainTokenService is
                     payload, // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
+            } else {
+                revert InvalidMetadataVersion(uint32(metadataVersion));
             }
         }
 

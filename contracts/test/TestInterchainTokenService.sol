@@ -35,4 +35,13 @@ contract TestInterchainTokenService is InterchainTokenService {
     function setupTest(bytes calldata params) external {
         _setup(params);
     }
+
+    function callContract(
+        string calldata destinationChain,
+        bytes memory payload,
+        MetadataVersion metadataVersion,
+        uint256 gasValue
+    ) external payable {
+        _callContract(destinationChain, payload, metadataVersion, gasValue);
+    }
 }
