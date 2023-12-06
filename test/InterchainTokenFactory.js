@@ -285,18 +285,6 @@ describe('InterchainTokenFactory', () => {
             await checkRoles(tokenManager, minter);
         });
 
-        it('Should revert on interchain transfer if the sender has insufficient balance', async () => {
-            const salt = keccak256('0x');
-            tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-
-            await expectRevert(
-                (gasOptions) => tokenFactory.interchainTransfer(tokenId, '', minter, mintAmount, 0, gasOptions),
-                tokenFactory,
-                'InsufficientBalance',
-                [tokenId, wallet.address, 0],
-            );
-        });
-
         it('Should initiate a remote interchain token deployment with the same minter', async () => {
             const gasValue = 1234;
             const mintAmount = 5678;

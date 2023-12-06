@@ -43,6 +43,7 @@ interface IInterchainTokenService is
     error TakeTokenFailed(bytes data);
     error GiveTokenFailed(bytes data);
     error TokenHandlerFailed(bytes data);
+    error EmptyData();
 
     event InterchainTransfer(
         bytes32 indexed tokenId,

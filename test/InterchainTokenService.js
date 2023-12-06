@@ -1570,7 +1570,7 @@ describe('Interchain Token Service', () => {
         const data = '0x1234';
         const gasValue = 90;
 
-        before(() => {
+        before(async () => {
             sourceAddress = wallet.address;
         });
 
@@ -1615,7 +1615,7 @@ describe('Interchain Token Service', () => {
 
                 await expect(
                     reportGas(
-                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, { value: gasValue }),
+                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }),
                         `Call service.interchainTransfer with metadata ${type}`,
                     ),
                 )
@@ -1652,7 +1652,7 @@ describe('Interchain Token Service', () => {
 
                 await expect(
                     reportGas(
-                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, { value: gasValue }),
+                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }),
                         `Call service.interchainTransfer with metadata ${type}`,
                     ),
                 )
@@ -1738,6 +1738,18 @@ describe('Interchain Token Service', () => {
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, keccak256(data));
             });
         }
+
+        it(`Should revert on callContractWithInterchainToken if data is empty`, async () => {
+            const tokenId = HashZero;
+            const invalidData = '0x';
+
+            await expectRevert(
+                (gasOptions) =>
+                    service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, invalidData, 0, gasOptions),
+                service,
+                'EmptyData',
+            );
+        });
 
         it(`Should revert on callContractWithInterchainToken function when service is paused`, async () => {
             const tokenId = HashZero;
