@@ -484,7 +484,16 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         (amount, ) = _takeToken(tokenId, msg.sender, amount);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, MetadataVersion.CONTRACT_CALL, data, gasValue);
+        _transmitInterchainTransfer(
+            tokenId,
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            MetadataVersion.CONTRACT_CALL,
+            data,
+            gasValue
+        );
     }
 
     /******************\

@@ -1283,7 +1283,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, { ...gasOptions, value: gasValue }),
+                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'TakeTokenFailed',
                 [revertData],
@@ -1298,7 +1301,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, { ...gasOptions, value: gasValue }),
+                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'Pause',
             );
@@ -1499,7 +1505,8 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
 
             await expectRevert(
-                (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, gasOptions),
+                (gasOptions) =>
+                    service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, gasOptions),
                 service,
                 'Pause',
             );
@@ -1621,7 +1628,8 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
 
             await expectRevert(
-                (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, gasOptions),
+                (gasOptions) =>
+                    service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, gasOptions),
                 service,
                 'Pause',
             );
