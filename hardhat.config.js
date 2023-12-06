@@ -28,7 +28,7 @@ const optimizerSettings = {
     },
 };
 const compilerSettings = {
-    version: '0.8.19',
+    version: '0.8.21',
     settings: {
         evmVersion: process.env.EVM_VERSION || 'london',
         optimizer: optimizerSettings,
@@ -55,9 +55,11 @@ module.exports = {
     },
     gasReporter: {
         enabled: process.env.REPORT_GAS !== undefined,
+        excludeContracts: ['contracts/test'],
     },
     contractSizer: {
         runOnCompile: process.env.CHECK_CONTRACT_SIZE,
         strict: process.env.CHECK_CONTRACT_SIZE,
+        except: ['contracts/test'],
     },
 };
