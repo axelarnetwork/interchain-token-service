@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IInterchainTokenStandard } from '../interfaces/IInterchainTokenStandard.sol';
-import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
+import { ITransmitInterchainToken } from '../interfaces/ITransmitInterchainToken.sol';
 
 /**
  * @title An example implementation of the IInterchainTokenStandard.
@@ -44,9 +44,14 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard {
 
         _beforeInterchainTransfer(msg.sender, destinationChain, recipient, amount, metadata);
 
-        IInterchainTokenService service = IInterchainTokenService(interchainTokenService());
-
-        service.transmitInterchainTransfer{ value: msg.value }(interchainTokenId(), sender, destinationChain, recipient, amount, metadata);
+        ITransmitInterchainToken(interchainTokenService()).transmitInterchainTransfer{ value: msg.value }(
+            interchainTokenId(),
+            sender,
+            destinationChain,
+            recipient,
+            amount,
+            metadata
+        );
     }
 
     /**
@@ -70,9 +75,14 @@ abstract contract BaseInterchainToken is IInterchainTokenStandard {
 
         _beforeInterchainTransfer(sender, destinationChain, recipient, amount, metadata);
 
-        IInterchainTokenService service = IInterchainTokenService(interchainTokenService());
-
-        service.transmitInterchainTransfer{ value: msg.value }(interchainTokenId(), sender, destinationChain, recipient, amount, metadata);
+        ITransmitInterchainToken(interchainTokenService()).transmitInterchainTransfer{ value: msg.value }(
+            interchainTokenId(),
+            sender,
+            destinationChain,
+            recipient,
+            amount,
+            metadata
+        );
     }
 
     /**

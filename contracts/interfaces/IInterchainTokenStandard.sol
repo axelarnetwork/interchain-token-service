@@ -14,8 +14,7 @@ interface IInterchainTokenStandard {
      * @param destinationChain The destination chain identifier.
      * @param recipient The bytes representation of the address of the recipient.
      * @param amount The amount of token to be transferred.
-     * @param metadata Either empty, to just facilitate an interchain transfer, or the data can be passed for an interchain contract
-     * call with transfer as per semantics defined by the token service.
+     * @param metadata Optional metadata for the call for additional effects (such as calling a destination contract).
      */
     function interchainTransfer(
         string calldata destinationChain,
@@ -32,7 +31,7 @@ interface IInterchainTokenStandard {
      * @param destinationChain The string representation of the destination chain.
      * @param recipient The bytes representation of the address of the recipient.
      * @param amount The amount of token to be transferred.
-     * @param metadata Either empty, to just facilitate an interchain transfer, or the data to be passed to an interchain contract call and transfer.
+     * @param metadata Optional metadata for the call for additional effects (such as calling a destination contract.)
      */
     function interchainTransferFrom(
         address sender,

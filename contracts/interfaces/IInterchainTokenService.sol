@@ -7,6 +7,7 @@ import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/con
 import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 
+import { ITransmitInterchainToken } from './ITransmitInterchainToken.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 import { IAddressTracker } from './IAddressTracker.sol';
@@ -16,6 +17,7 @@ import { IAddressTracker } from './IAddressTracker.sol';
  * @notice Interface for the Interchain Token Service
  */
 interface IInterchainTokenService is
+    ITransmitInterchainToken,
     ITokenManagerType,
     ITokenManagerImplementation,
     IAxelarValuedExpressExecutable,
@@ -193,7 +195,7 @@ interface IInterchainTokenService is
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The address on the destination chain to send the tokens to.
      * @param amount The amount of tokens to be transferred.
-     * @param metadata Additional metadata to be passed along with the transfer.
+     * @param metadata Optional metadata for the call for additional effects (such as calling a destination contract).
      */
     function interchainTransfer(
         bytes32 tokenId,
@@ -217,25 +219,6 @@ interface IInterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
-    ) external payable;
-
-    /**
-     * @notice Initiates an interchain token transfer.
-     * @dev Only callable by TokenManagers.
-     * @param tokenId The tokenId of the token to be transmitted.
-     * @param sourceAddress The source address of the token.
-     * @param destinationChain The name of the destination chain.
-     * @param destinationAddress The destination address on the destination chain.
-     * @param amount The amount of tokens to transmit.
-     * @param metadata The metadata associated with the transmission.
-     */
-    function transmitInterchainTransfer(
-        bytes32 tokenId,
-        address sourceAddress,
-        string calldata destinationChain,
-        bytes memory destinationAddress,
-        uint256 amount,
-        bytes calldata metadata
     ) external payable;
 
     /**
