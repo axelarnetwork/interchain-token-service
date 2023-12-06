@@ -221,13 +221,21 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {
         // slither-disable-next-line arbitrary-send-eth
-        tokenId = service.deployInterchainToken{ value: gasValue }(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue);
+        tokenId = service.deployInterchainToken{ value: gasValue }(
+            salt,
+            destinationChain,
+            tokenName,
+            tokenSymbol,
+            tokenDecimals,
+            minter,
+            gasValue
+        );
     }
 
     /**
      * @notice Registers a canonical token as an interchain token and deploys its token manager.
      * @param tokenAddress The address of the canonical token.
-     * @return tokenId The tokenId corresponding to the register canonical token.
+     * @return tokenId The tokenId corresponding to the registered canonical token.
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
