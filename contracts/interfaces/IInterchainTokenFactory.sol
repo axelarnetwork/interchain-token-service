@@ -11,8 +11,6 @@ interface IInterchainTokenFactory {
     error InvalidChainName();
     error NotMinter(address minter);
     error NotOperator(address operator);
-    error InsufficientBalance(bytes32 tokenId, address deployer, uint256 balance);
-    error ApproveFailed();
     error GatewayToken(address tokenAddress);
 
     /**
@@ -115,34 +113,4 @@ interface IInterchainTokenFactory {
         string calldata destinationChain,
         uint256 gasValue
     ) external payable;
-
-    /**
-     * @notice Transfers an interchain token to a specified destination chain and address.
-     * @param tokenId The identifier of the interchain token.
-     * @param destinationChain The name of the destination chain.
-     * @param destinationAddress The address on the destination chain to receive the token.
-     * @param amount The amount of tokens to transfer.
-     * @param gasValue The amount of gas to send for the transfer.
-     */
-    function interchainTransfer(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        uint256 gasValue
-    ) external payable;
-
-    /**
-     * @notice Allows tokens to be transferred from the sender to the contract.
-     * @param tokenId The identifier of the interchain token.
-     * @param amount The amount of tokens to transfer.
-     */
-    function tokenTransferFrom(bytes32 tokenId, uint256 amount) external payable;
-
-    /**
-     * @notice Approves a specified amount of tokens to the token manager.
-     * @param tokenId The identifier of the interchain token.
-     * @param amount The amount of tokens to approve.
-     */
-    function tokenApprove(bytes32 tokenId, uint256 amount) external payable;
 }

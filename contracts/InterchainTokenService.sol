@@ -456,13 +456,14 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes calldata metadata
+        bytes calldata metadata,
+        uint256 gasValue
     ) external payable whenNotPaused {
         (amount, ) = _takeToken(tokenId, msg.sender, amount);
 
         (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data);
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
     }
 
     /**
@@ -478,11 +479,21 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        bytes memory data
+        bytes memory data,
+        uint256 gasValue
     ) external payable whenNotPaused {
         (amount, ) = _takeToken(tokenId, msg.sender, amount);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, MetadataVersion.CONTRACT_CALL, data);
+        _transmitInterchainTransfer(
+            tokenId,
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            MetadataVersion.CONTRACT_CALL,
+            data,
+            gasValue
+        );
     }
 
     /******************\
@@ -516,7 +527,7 @@ contract InterchainTokenService is
 
         (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data);
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data, msg.value);
     }
 
     /*************\
@@ -952,7 +963,8 @@ contract InterchainTokenService is
         bytes memory destinationAddress,
         uint256 amount,
         MetadataVersion metadataVersion,
-        bytes memory data
+        bytes memory data,
+        uint256 gasValue
     ) internal {
         // slither-disable-next-line reentrancy-events
         emit InterchainTransfer(
@@ -973,7 +985,7 @@ contract InterchainTokenService is
             data
         );
 
-        _callContract(destinationChain, payload, metadataVersion, msg.value);
+        _callContract(destinationChain, payload, metadataVersion, gasValue);
     }
 
     /**
