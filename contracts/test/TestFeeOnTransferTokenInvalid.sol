@@ -16,6 +16,6 @@ contract TestFeeOnTransferTokenInvalid is TestFeeOnTransferToken {
 
     // reeentrant call
     function _transfer(address, address, uint256 amount) internal override {
-        IInterchainTokenService(msg.sender).interchainTransfer(interchainTokenId(), '', new bytes(0), amount, new bytes(0));
+        IInterchainTokenService(msg.sender).interchainTransfer(interchainTokenId(), '', new bytes(0), amount, new bytes(0), msg.value);
     }
 }

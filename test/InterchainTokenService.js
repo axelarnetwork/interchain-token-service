@@ -1265,7 +1265,7 @@ describe('Interchain Token Service', () => {
 
             const transferToAddress = tokenManager.address;
 
-            await expect(service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', { value: gasValue }))
+            await expect(service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, transferToAddress, amount)
                 .and.to.emit(gateway, 'ContractCall')
@@ -1283,7 +1283,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', { ...gasOptions, value: gasValue }),
+                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, { ...gasOptions, value: gasValue }),
                 service,
                 'TakeTokenFailed',
                 [revertData],
@@ -1298,7 +1298,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', { ...gasOptions, value: gasValue }),
+                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, { ...gasOptions, value: gasValue }),
                 service,
                 'Pause',
             );
@@ -1499,7 +1499,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
 
             await expectRevert(
-                (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, gasOptions),
+                (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, gasOptions),
                 service,
                 'Pause',
             );
@@ -1527,7 +1527,7 @@ describe('Interchain Token Service', () => {
 
                 await expect(
                     reportGas(
-                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata),
+                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, 0),
                         `Call service.interchainTransfer with metadata ${type}`,
                     ),
                 )
@@ -1558,7 +1558,7 @@ describe('Interchain Token Service', () => {
 
                 await expect(
                     reportGas(
-                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata),
+                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, 0),
                         `Call service.interchainTransfer with metadata ${type}`,
                     ),
                 )
@@ -1601,7 +1601,7 @@ describe('Interchain Token Service', () => {
 
                 await expect(
                     reportGas(
-                        service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data),
+                        service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0),
                         `Call service.callContractWithInterchainToken ${type}`,
                     ),
                 )
@@ -1621,7 +1621,7 @@ describe('Interchain Token Service', () => {
             await txPaused.wait();
 
             await expectRevert(
-                (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, gasOptions),
+                (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, gasOptions),
                 service,
                 'Pause',
             );
@@ -1632,7 +1632,7 @@ describe('Interchain Token Service', () => {
             const tokenId = HashZero;
 
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasOptions),
+                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, 0, gasOptions),
                 service,
                 'Pause',
             );
@@ -1647,7 +1647,7 @@ describe('Interchain Token Service', () => {
             const metadata = '0x00000002';
 
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasOptions),
+                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, 0, gasOptions),
                 service,
                 'InvalidMetadataVersion',
                 [Number(metadata)],
@@ -2268,9 +2268,9 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
-            await (await service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x')).wait();
+            await (await service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x', 0)).wait();
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x', gasOptions),
+                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x', 0, gasOptions),
                 tokenManager,
                 'FlowLimitExceeded',
                 [flowLimit, 2 * sendAmount, tokenManager.address],
