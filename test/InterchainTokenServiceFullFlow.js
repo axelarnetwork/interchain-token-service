@@ -408,4 +408,160 @@ describe('Interchain Token Service Full Flow', () => {
             });
         });
     });
+
+    describe.only('Fixed Supply Interchain Token', () => {
+        let token;
+        let tokenId;
+        const salt = getRandomBytes32();
+        const gasValues = [1234, 5678];
+        const tokenCap = 1e9;
+
+        before(async () => {
+            tokenId = await factory.interchainTokenId(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
+            token = await getContractAt('InterchainToken', tokenAddress, wallet);
+        });
+
+        // To get a fixed supply InterchainToken, simply set the distributor to address(0) during deployment.
+        it('Should register the token and initiate its deployment on other chains', async () => {
+            // We mint enough tokens to accomodate all three chains.
+            const totalMint = 3 * tokenCap;
+
+            // Deploy a new Interchain token on the local chain.
+            // The initial mint occurs on the factory contract, so it can be moved to other chains within the same multicall.
+            let tx = await factory.populateTransaction.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero);
+            const calls = [tx.data];
+            let value = 0;
+
+            // Deploy a linked Interchain token to remote chains.
+            for (const i in otherChains) {
+                tx = await factory.populateTransaction.deployRemoteInterchainToken(
+                    chainName,
+                    salt,
+                    AddressZero,
+                    otherChains[i],
+                    gasValues[i],
+                );
+                calls.push(tx.data);
+                value += gasValues[i];
+            }
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [factory.address, token.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
+            );
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
+
+            const multicall = await factory.multicall(calls, { value });
+            await expect(multicall)
+                .to.emit(service, 'InterchainTokenDeployed')
+                .withArgs(tokenId, expectedTokenAddress, factory.address, name, symbol, decimals)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
+                .and.to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[0])
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[0], service.address, keccak256(payload), gasValues[0], wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[0], service.address, keccak256(payload), payload)
+                .and.to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[1])
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[1], service.address, keccak256(payload), payload);
+
+            // Only tokens minted for the local chain should be left, remaining should be burned.
+            expect(await token.balanceOf(wallet.address)).to.equal(totalMint);
+
+            expect(await service.validTokenManagerAddress(tokenId)).to.equal(expectedTokenManagerAddress);
+        });
+
+        // After the remote deployments are complete we transfer the initial supply to them.
+        it('Should transfer the initial supply to both other chains', async() => {
+            const calls = [];
+            const destAddress = arrayify(wallet.address);
+            let value = 0;
+
+            for (const i in otherChains) {
+                const tx = await service.populateTransaction.interchainTransfer(
+                    tokenId,
+                    otherChains[i],
+                    destAddress,
+                    tokenCap,
+                    '0x',
+                    gasValues[i],
+                );
+                calls.push(tx.data);
+                value += gasValues[i];
+            }
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, wallet.address, destAddress, tokenCap, '0x'],
+            );
+            const payloadHash = keccak256(payload);
+
+            const multicall = await service.multicall(calls, { value });
+            await expect(multicall)
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, AddressZero, tokenCap)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[0], service.address, payloadHash, payload)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[0], service.address, payloadHash, gasValues[0], wallet.address)
+                .and.to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, wallet.address, otherChains[0], destAddress, tokenCap, HashZero)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, AddressZero, tokenCap)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, otherChains[1], service.address, payloadHash, payload)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, otherChains[1], service.address, payloadHash, gasValues[1], wallet.address)
+                .and.to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, wallet.address, otherChains[1], destAddress, tokenCap, HashZero);
+        });
+
+        describe('Interchain transfer', () => {
+            const amount = 1234;
+            const destAddress = '0x1234';
+            const destChain = otherChains[0];
+            const gasValue = 6789;
+            let payload, payloadHash;
+
+            before(async () => {
+                payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, arrayify(wallet.address), destAddress, amount, '0x'],
+                );
+                payloadHash = keccak256(payload);
+            });
+
+            it('Should send some tokens to another chain via the token', async () => {
+                await expect(token.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, AddressZero, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
+            });
+
+            it('Should send some tokens to another chain via ITS', async () => {
+                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
+                    .to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, AddressZero, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destChain, service.address, payloadHash, gasValue, wallet.address)
+                    .and.to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
+            });
+        });
+    })
 });
