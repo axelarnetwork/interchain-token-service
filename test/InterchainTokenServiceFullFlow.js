@@ -14,6 +14,7 @@ const {
 
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
+const { approveContractCall } = require('../scripts/utils');
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
@@ -569,6 +570,59 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
+        });
+    });
+
+    /**
+     * This test deploys an InterchainToken and an InterchainExecutable, which then receives an InterchainTransfer with data
+     * - Deploy an InterchainToken and the Executable
+     * - Simmulates a contract call approval on the gateway
+     * - Executes the service, which in turn executes the InterchainExecutable, causing an event and a transfer.
+     * Look at contracts/tests/TestInterchainExecutable.sol for details
+     */
+    describe('Executable Example', () => {
+        let token, tokenId, executable;
+        const totalMint = 1e9;
+        before(async () => {
+            const salt = getRandomBytes32();
+            tokenId = await factory.interchainTokenId(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [factory.address, tokenAddress]);
+
+            await expect(factory.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero))
+                .to.emit(service, 'InterchainTokenDeployed')
+                .withArgs(tokenId, tokenAddress, factory.address, name, symbol, decimals)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+
+            token = await getContractAt('InterchainToken', tokenAddress, wallet);
+            executable = await deployContract(wallet, 'TestInterchainExecutable', [service.address]);
+        });
+
+        it('Should receive an interchain transfer with data', async () => {
+            const sourceChain = otherChains[0];
+            const sourceAddress = arrayify(wallet.address);
+            const amount = 1234;
+
+            const message = 'Hello World!';
+            const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, message]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, executable.address, amount, data],
+            );
+            const commandId = getRandomBytes32();
+            await approveContractCall(gateway, sourceChain, service.address, service.address, payload, getRandomBytes32(), 0, commandId);
+
+            await expect(service.execute(commandId, sourceChain, service.address, payload))
+                .to.emit(service, 'InterchainTransferReceived')
+                .withArgs(commandId, tokenId, sourceChain, sourceAddress, executable.address, amount, keccak256(data))
+                .and.to.emit(token, 'Transfer')
+                .withArgs(AddressZero, executable.address, amount)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(executable.address, wallet.address, amount)
+                .and.to.emit(executable, 'MessageReceived')
+                .withArgs(commandId, sourceChain, sourceAddress, wallet.address, message, tokenId, amount);
         });
     });
 });
