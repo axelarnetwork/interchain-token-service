@@ -409,7 +409,14 @@ describe('Interchain Token Service Full Flow', () => {
         });
     });
 
-    describe.only('Fixed Supply Interchain Token', () => {
+    /**
+     * This test deploys a fixed suply InterchainToken with a supply in every chain
+     * - Deploy an InterchainToken without a distributor and a fixed supply to accomodate the sum of the supply in all chains
+     * - Also deploy the same InterchainToken to additional chains
+     * - Transfer the initial supply to additional chains
+     * - Transfer tokens via ITS between chains
+     */
+    describe('Fixed Supply Interchain Token', () => {
         let token;
         let tokenId;
         const salt = getRandomBytes32();
@@ -480,7 +487,7 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         // After the remote deployments are complete we transfer the initial supply to them.
-        it('Should transfer the initial supply to both other chains', async() => {
+        it('Should transfer the initial supply to both other chains', async () => {
             const calls = [];
             const destAddress = arrayify(wallet.address);
             let value = 0;
@@ -563,5 +570,5 @@ describe('Interchain Token Service Full Flow', () => {
                     .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
         });
-    })
+    });
 });
