@@ -9,7 +9,6 @@ import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
-import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 import { Operator } from '../utils/Operator.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
@@ -24,14 +23,9 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation {
 
     uint256 internal constant UINT256_MAX = 2 ** 256 - 1;
 
-    IInterchainTokenService public immutable interchainTokenService;
+    address public immutable interchainTokenService;
 
     bytes32 private constant CONTRACT_ID = keccak256('token-manager');
-
-    /**
-     * @dev Latest version of metadata that's supported.
-     */
-    uint32 private constant LATEST_METADATA_VERSION = 0;
 
     /**
      * @notice Constructs the TokenManager contract.
@@ -40,14 +34,14 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation {
     constructor(address interchainTokenService_) {
         if (interchainTokenService_ == address(0)) revert TokenLinkerZeroAddress();
 
-        interchainTokenService = IInterchainTokenService(interchainTokenService_);
+        interchainTokenService = interchainTokenService_;
     }
 
     /**
      * @notice A modifier that allows only the interchain token service to execute the function.
      */
     modifier onlyService() {
-        if (msg.sender != address(interchainTokenService)) revert NotService(msg.sender);
+        if (msg.sender != interchainTokenService) revert NotService(msg.sender);
         _;
     }
 
@@ -115,7 +109,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation {
         // This allows anyone to easily check if a custom operator was set on the token manager.
         _addAccountRoles(operator, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
         // Add operator and flow limiter role to the service. The operator can remove the flow limiter role if they so chose and the service has no way to use the operator role for now.
-        _addAccountRoles(address(interchainTokenService), (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
+        _addAccountRoles(interchainTokenService, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
     }
 
     function addFlowIn(uint256 amount) external onlyService {

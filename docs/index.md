@@ -177,7 +177,7 @@ Retrieves the address of an interchain token based on the deployer and a salt.
 ### deployInterchainToken
 
 ```solidity
-function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 decimals, uint256 initialSupply, address minter) external payable
+function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 decimals, uint256 initialSupply, address minter) external payable returns (bytes32 tokenId)
 ```
 
 Deploys a new interchain token with specified parameters.
@@ -195,10 +195,16 @@ _Creates a new token and optionally mints an initial amount to a specified minte
 | initialSupply | uint256 | The amount of tokens to mint initially (can be zero). |
 | minter | address | The address to receive the initially minted tokens. |
 
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed InterchainToken. |
+
 ### deployRemoteInterchainToken
 
 ```solidity
-function deployRemoteInterchainToken(string originalChainName, bytes32 salt, address minter, string destinationChain, uint256 gasValue) external payable
+function deployRemoteInterchainToken(string originalChainName, bytes32 salt, address minter, string destinationChain, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Deploys a remote interchain token on a specified destination chain.
@@ -213,10 +219,16 @@ Deploys a remote interchain token on a specified destination chain.
 | destinationChain | string | The name of the destination chain. |
 | gasValue | uint256 | The amount of gas to send for the deployment. |
 
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed InterchainToken. |
+
 ### _deployInterchainToken
 
 ```solidity
-function _deployInterchainToken(bytes32 salt, string destinationChain, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes minter, uint256 gasValue) internal
+function _deployInterchainToken(bytes32 salt, string destinationChain, string tokenName, string tokenSymbol, uint8 tokenDecimals, bytes minter, uint256 gasValue) internal returns (bytes32 tokenId)
 ```
 
 Deploys a new interchain token with specified parameters.
@@ -232,6 +244,12 @@ Deploys a new interchain token with specified parameters.
 | tokenDecimals | uint8 | The number of decimals for the token. |
 | minter | bytes | The address to receive the initially minted tokens. |
 | gasValue | uint256 | The amount of gas to send for the transfer. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed InterchainToken. |
 
 ### registerCanonicalInterchainToken
 
@@ -251,12 +269,12 @@ Registers a canonical token as an interchain token and deploys its token manager
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenId | bytes32 | The unique identifier of the registered interchain token. |
+| tokenId | bytes32 | The tokenId corresponding to the registered canonical token. |
 
 ### deployRemoteCanonicalInterchainToken
 
 ```solidity
-function deployRemoteCanonicalInterchainToken(string originalChain, address originalTokenAddress, string destinationChain, uint256 gasValue) external payable
+function deployRemoteCanonicalInterchainToken(string originalChain, address originalTokenAddress, string destinationChain, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Deploys a canonical interchain token on a remote chain.
@@ -269,6 +287,12 @@ Deploys a canonical interchain token on a remote chain.
 | originalTokenAddress | address | The address of the original token on the original chain. |
 | destinationChain | string | The name of the chain where the token will be deployed. |
 | gasValue | uint256 | The gas amount to be sent for deployment. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed InterchainToken. |
 
 ### _isGatewayToken
 
@@ -673,12 +697,12 @@ part of a multicall involving multiple functions that could make remote contract
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenId | bytes32 | The tokenId corresponding to the deployed remote TokenManager. |
+| tokenId | bytes32 | The tokenId corresponding to the deployed TokenManager. |
 
 ### deployInterchainToken
 
 ```solidity
-function deployInterchainToken(bytes32 salt, string destinationChain, string name, string symbol, uint8 decimals, bytes minter, uint256 gasValue) external payable
+function deployInterchainToken(bytes32 salt, string destinationChain, string name, string symbol, uint8 decimals, bytes minter, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Used to deploy an interchain token alongside a TokenManager in another chain.
@@ -698,6 +722,12 @@ a mint/burn TokenManager is used, otherwise a lock/unlock TokenManager is used._
 | decimals | uint8 | The decimals of the token to be deployed. |
 | minter | bytes | The address that will be able to mint and burn the deployed token. |
 | gasValue | uint256 | The amount of native tokens to be used to pay for gas for the remote deployment. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed InterchainToken. |
 
 ### contractCallValue
 
@@ -2550,7 +2580,7 @@ Retrieves the address of an interchain token based on the deployer and a salt.
 ### deployInterchainToken
 
 ```solidity
-function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 decimals, uint256 initialSupply, address minter) external payable
+function deployInterchainToken(bytes32 salt, string name, string symbol, uint8 decimals, uint256 initialSupply, address minter) external payable returns (bytes32 tokenId)
 ```
 
 Deploys a new interchain token with specified parameters.
@@ -2566,10 +2596,16 @@ Deploys a new interchain token with specified parameters.
 | initialSupply | uint256 | The amount of tokens to mint initially (can be zero). |
 | minter | address | The address to receive the initially minted tokens. |
 
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed InterchainToken. |
+
 ### deployRemoteInterchainToken
 
 ```solidity
-function deployRemoteInterchainToken(string originalChainName, bytes32 salt, address minter, string destinationChain, uint256 gasValue) external payable
+function deployRemoteInterchainToken(string originalChainName, bytes32 salt, address minter, string destinationChain, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Deploys a remote interchain token on a specified destination chain.
@@ -2583,6 +2619,12 @@ Deploys a remote interchain token on a specified destination chain.
 | minter | address | The address to distribute the token on the destination chain. |
 | destinationChain | string | The name of the destination chain. |
 | gasValue | uint256 | The amount of gas to send for the deployment. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed InterchainToken. |
 
 ### canonicalInterchainTokenSalt
 
@@ -2643,12 +2685,12 @@ Registers a canonical token as an interchain token and deploys its token manager
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenId | bytes32 | The unique identifier of the registered interchain token. |
+| tokenId | bytes32 | The tokenId corresponding to the registered canonical token. |
 
 ### deployRemoteCanonicalInterchainToken
 
 ```solidity
-function deployRemoteCanonicalInterchainToken(string originalChain, address originalTokenAddress, string destinationChain, uint256 gasValue) external payable
+function deployRemoteCanonicalInterchainToken(string originalChain, address originalTokenAddress, string destinationChain, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Deploys a canonical interchain token on a remote chain.
@@ -2661,6 +2703,12 @@ Deploys a canonical interchain token on a remote chain.
 | originalTokenAddress | address | The address of the original token on the original chain. |
 | destinationChain | string | The name of the chain where the token will be deployed. |
 | gasValue | uint256 | The gas amount to be sent for deployment. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed canonical InterchainToken. |
 
 ## IInterchainTokenService
 
@@ -2766,6 +2814,12 @@ error GiveTokenFailed(bytes data)
 
 ```solidity
 error TokenHandlerFailed(bytes data)
+```
+
+### EmptyData
+
+```solidity
+error EmptyData()
 ```
 
 ### InterchainTransfer
@@ -3008,7 +3062,7 @@ Deploys a custom token manager contract on a remote chain.
 ### deployInterchainToken
 
 ```solidity
-function deployInterchainToken(bytes32 salt, string destinationChain, string name, string symbol, uint8 decimals, bytes minter, uint256 gasValue) external payable
+function deployInterchainToken(bytes32 salt, string destinationChain, string name, string symbol, uint8 decimals, bytes minter, uint256 gasValue) external payable returns (bytes32 tokenId)
 ```
 
 Deploys and registers an interchain token on a remote chain.
@@ -3024,6 +3078,12 @@ Deploys and registers an interchain token on a remote chain.
 | decimals | uint8 | The number of decimals for the interchain tokens. |
 | minter | bytes | The minter data for mint/burn operations. |
 | gasValue | uint256 | The gas value for deployment. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | bytes32 | The tokenId corresponding to the deployed InterchainToken. |
 
 ### interchainTransfer
 
@@ -4175,6 +4235,12 @@ string placeholder
 constructor() public
 ```
 
+### spendAllowance
+
+```solidity
+function spendAllowance(address sender, address spender, uint256 amount) external
+```
+
 ## TestInterchainTokenService
 
 ### LatestMetadataVersionMismatch
@@ -4193,6 +4259,12 @@ constructor(address tokenManagerDeployer_, address interchainTokenDeployer_, add
 
 ```solidity
 function setupTest(bytes params) external
+```
+
+### callContract
+
+```solidity
+function callContract(string destinationChain, bytes payload, enum InterchainTokenService.MetadataVersion metadataVersion, uint256 gasValue) external payable
 ```
 
 ## TestInterchainTokenStandard
@@ -4714,7 +4786,7 @@ uint256 UINT256_MAX
 ### interchainTokenService
 
 ```solidity
-contract IInterchainTokenService interchainTokenService
+address interchainTokenService
 ```
 
 ### constructor
