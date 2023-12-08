@@ -6,10 +6,12 @@ import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-s
 import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
 import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
+import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
 
 import { ITransmitInterchainToken } from './ITransmitInterchainToken.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
+import { IOperator } from './IOperator.sol';
 import { IAddressTracker } from './IAddressTracker.sol';
 
 /**
@@ -21,10 +23,12 @@ interface IInterchainTokenService is
     ITokenManagerType,
     ITokenManagerImplementation,
     IAxelarValuedExpressExecutable,
+    IOperator,
     IPausable,
     IMulticall,
     IContractIdentifier,
-    IAddressTracker
+    IAddressTracker,
+    IUpgradable
 {
     error InvalidTokenManagerImplementationType(address implementation);
     error InvalidChainName();
