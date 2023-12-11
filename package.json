@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@axelar-network/axelar-chains-config": "~0.1.2",
-    "@axelarjs/evm": "^0.2.0",
+    "@axelarjs/evm": "^0.2.1",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@tsconfig/strictest": "^2.0.2",
     "chai": "^4.3.7",
