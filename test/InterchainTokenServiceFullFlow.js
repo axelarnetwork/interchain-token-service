@@ -471,7 +471,6 @@ describe('Interchain Token Service Full Flow', () => {
 
         // To get a fixed supply InterchainToken, simply set the minter to address(0) during deployment.
         it('Should deploy the token and deploy on other chains', async () => {
-
             // Deploy a new Interchain token on the local chain.
             // The initial mint occurs on the factory contract, so it can be moved to other chains within the same multicall.
             let tx = await factory.populateTransaction.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero);
@@ -617,7 +616,9 @@ describe('Interchain Token Service Full Flow', () => {
             const commandId = getRandomBytes32();
 
             // Initiate the contract call with transfer
-            await expect(service.interchainTransfer(tokenId, destChain, executable.address, amount, metadata, gasValue, { value: gasValue }))
+            await expect(
+                service.interchainTransfer(tokenId, destChain, executable.address, amount, metadata, gasValue, { value: gasValue }),
+            )
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, AddressZero, amount)
                 .and.to.emit(gateway, 'ContractCall')
