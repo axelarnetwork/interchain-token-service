@@ -9,6 +9,10 @@ function getRandomBytes32() {
     return keccak256(defaultAbiCoder.encode(['uint256'], [Math.floor(new Date().getTime() * Math.random())]));
 }
 
+const getRandomInt = (max) => {
+    return Math.floor(Math.random() * max);
+};
+
 const isHardhat = network.name === 'hardhat';
 
 const getGasOptions = () => {
@@ -102,6 +106,7 @@ const getEVMVersion = () => {
 
 module.exports = {
     getRandomBytes32,
+    getRandomInt,
     isHardhat,
     getChainId,
     getGasOptions,

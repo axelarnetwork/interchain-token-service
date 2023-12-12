@@ -118,7 +118,19 @@ async function deployAll(
         interchainTokenServiceAddress,
         factoryDeploymentKey,
     );
-    return [service, gateway, gasService, factory];
+
+    return [
+        service,
+        gateway,
+        gasService,
+        factory,
+        create3Deployer,
+        tokenManagerDeployer,
+        interchainToken,
+        interchainTokenDeployer,
+        tokenManager,
+        tokenHandler,
+    ];
 }
 
 module.exports = {
