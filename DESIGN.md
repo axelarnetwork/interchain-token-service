@@ -38,3 +38,44 @@ Most current bridge designs aim to get a pre-existing, popular token to differen
 ## Interchain Tokens
 
 We designed an [interface](./contracts/interfaces/IInterchainTokenStandard.sol) allong a [example implementation](./contracts/interchain-token/InterchainTokenStandard.sol) of an ERC20 that can use the `InterchainTokenService` internally. This has the main benefit that for `TokenManagers` that require user approval (Lock/Unlock, Lock/Unlock Fee and Mint/BurnFrom) the token can provide this approval within the same call, providing better UX for users, and saving them some gas.
+
+## Interchain Communication Spec
+
+The messages going through the Axelar Network between `InterchainTokenServices` need to have a certain format to be understood properly. We chose to use `abi` encoding as it is easy to use in EVM chains, which are front and center of the programmable bockchains, and they are easy to implement in other ecosystems which tend to be more gas efficient usually. There are currently three supported message types: `INTERHCAIN_TRANSFER`, `DEPLOY_INTERCHAIN_TOKEN`, `DEPLOY_TOKEN_MANAGER`.
+
+### `INTERCHAIN_TRANSFER`
+
+This message has the following data encoded and should only be sent afer the proper tokens have been procurred by the service. It should result in the proper funds being transferred to the user at the destionation chain.
+
+| Name | Type | Description |
+| --- | --- | --- |
+| selector | `uint256` | Will always have a value of `0` |
+| tokenId | `bytes32` | The `interchainTokenId` of the token being transferred |
+| source address | `bytes` | The address of the sender, encoded as bytes to account for different chain architectures |
+| destination address | `bytes` | The address of the sender, encoded as bytes as well |
+| amount | `uint256` | The amount of token being send, not accounting for decimals (1 `ETH` would be 10<sup>18</sup>) |
+| data | `bytes` | Either empty, for just a transfer, or any data to be passed to the destination address as a contract call |
+
+### `DEPLOY_INTERCHAIN_TOKEN`
+
+This message has the following data encoded and should only be sent afer the `interchainTokenId` has been properly produced (each user should not be able to clain any `interchainTokenId`)
+
+| Name | Type | Description |
+| --- | --- | --- |
+| selector | `uint256` | Will always have a value of `1` |
+| tokenId | `bytes32` | The `interchainTokenId` of the token being deployed |
+| name | `string` | The name for the token |
+| symbol | `string` | The symbol for the token |
+| decimals | `uint8` | The decimals for the token |
+| minter | `bytes` | An address on the destination chain that can mint/burn the deployed token on the destination chain, empty for no minter |
+
+### `DEPLOY_TOKEN_MANAGER`
+
+This message has the following data encoded and should only be sent afer the proper tokens have been procurred by the service. It should result in the proper funds being transferred to the user at the destionation chain.
+
+| Name | Type | Description |
+| --- | --- | --- |
+| selector | `uint256` | Will always have a value of `2` |
+| tokenId | `bytes32` | The `interchainTokenId` of the token being deployed |
+| token manager type | `uint256` | The type of the token manager, look at the [code](./contracts/interfaces/ITokenManagerType.sol) for details on EVM, but it could be different for different architectures |
+| params | `bytes` | The parameters for the token manager deployments, look [here](./contracts/token-manager/TokenManager.sol#L179) for details on EVM chain parameters |
