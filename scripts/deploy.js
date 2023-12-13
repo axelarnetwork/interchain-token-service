@@ -112,25 +112,25 @@ async function deployAll(
         deploymentKey,
     );
 
-    const factory = await deployInterchainTokenFactory(
+    const tokenFactory = await deployInterchainTokenFactory(
         wallet,
         create3Deployer.address,
         interchainTokenServiceAddress,
         factoryDeploymentKey,
     );
 
-    return [
+    return {
         service,
         gateway,
         gasService,
-        factory,
+        tokenFactory,
         create3Deployer,
         tokenManagerDeployer,
         interchainToken,
         interchainTokenDeployer,
         tokenManager,
         tokenHandler,
-    ];
+    };
 }
 
 module.exports = {
