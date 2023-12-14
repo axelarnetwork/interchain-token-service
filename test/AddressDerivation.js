@@ -2,20 +2,20 @@
 
 const chai = require('chai');
 const { expect } = chai;
-const { ethers, network } = require('hardhat');
+const { ethers } = require('hardhat');
 const {
     constants: { AddressZero },
     utils: { defaultAbiCoder },
 } = ethers;
 const { deployAll } = require('../scripts/deploy');
 const { approveContractCall } = require('../scripts/utils');
-const { getRandomBytes32, getSaltFromKey } = require('./utils');
+const { getRandomBytes32, getSaltFromKey, isHardhat } = require('./utils');
 const { create3DeployContract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const Token = require('../artifacts/contracts/test/TestInterchainTokenStandard.sol/TestInterchainTokenStandard.json');
 const MINT_BURN = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 
-if (network.name === 'hardhat') {
+if (isHardhat) {
     describe('Token Address Derivation [ @skip-on-coverage ]', () => {
         let wallet;
         let service;
