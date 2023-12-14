@@ -21,7 +21,7 @@ if (isHardhat) {
         let service;
         let gateway;
         let create3Deployer;
-        let factory;
+        let tokenFactory;
         let token;
         let sourceAddress;
 
@@ -35,7 +35,7 @@ if (isHardhat) {
             const wallets = await ethers.getSigners();
             wallet = wallets[0];
 
-            [service, gateway, , factory, create3Deployer] = await deployAll(wallet, 'Test', [sourceChain, destinationChain]);
+            ({ service, gateway, tokenFactory, create3Deployer } = await deployAll(wallet, 'Test', [sourceChain, destinationChain]));
             token = await create3DeployContract(create3Deployer.address, wallet, Token, 'Test', [
                 tokenName,
                 tokenSymbol,
@@ -116,23 +116,23 @@ if (isHardhat) {
 
             it('Should derive the correct token address for interchain token deployment on source chain', async () => {
                 const salt = getSaltFromKey('deployInterchainToken');
-                const tokenId = await factory.interchainTokenId(wallet.address, salt);
+                const tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
 
                 const expectedTokenAddress = '0xD48F12c4b65135575495C476977B893D8e817B4b';
                 const expectedTokenManagerAddress = '0xcb7DEA0Aeb34A992451717C0537b5C4eA1635A54';
 
-                const params = defaultAbiCoder.encode(['bytes', 'address'], [factory.address, expectedTokenAddress]);
+                const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, expectedTokenAddress]);
 
-                await expect(factory.deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, initialSupply, wallet.address))
+                await expect(tokenFactory.deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, initialSupply, wallet.address))
                     .to.emit(service, 'InterchainTokenDeployed')
-                    .withArgs(tokenId, expectedTokenAddress, factory.address, tokenName, tokenSymbol, tokenDecimals)
+                    .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, tokenName, tokenSymbol, tokenDecimals)
                     .to.emit(service, 'TokenManagerDeployed')
                     .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
             });
 
             it('Should derive the correct token address for remote interchain token deployment', async () => {
                 const salt = getSaltFromKey('deployRemoteInterchainToken');
-                const tokenId = await factory.interchainTokenId(wallet.address, salt);
+                const tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
                 const minter = wallet.address;
                 const operator = wallet.address;
 
@@ -156,7 +156,7 @@ if (isHardhat) {
 
             it('Should derive the correct token address for remote interchain token deployment with empty minter and operator', async () => {
                 const salt = getSaltFromKey('deployRemoteInterchainTokenEmpty');
-                const tokenId = await factory.interchainTokenId(wallet.address, salt);
+                const tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
                 const minter = AddressZero;
                 const operator = '0x';
 
@@ -179,7 +179,7 @@ if (isHardhat) {
             });
 
             it('Should derive the correct token address for remote canonical token deployment', async () => {
-                const tokenId = await factory.canonicalInterchainTokenId(token.address);
+                const tokenId = await tokenFactory.canonicalInterchainTokenId(token.address);
                 const minter = wallet.address;
                 const operator = wallet.address;
 
