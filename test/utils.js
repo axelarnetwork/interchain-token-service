@@ -9,6 +9,10 @@ function getRandomBytes32() {
     return keccak256(defaultAbiCoder.encode(['uint256'], [Math.floor(new Date().getTime() * Math.random())]));
 }
 
+const getSaltFromKey = (key) => {
+    return keccak256(defaultAbiCoder.encode(['string'], [key.toString()]));
+};
+
 const getRandomInt = (max) => {
     return Math.floor(Math.random() * max);
 };
@@ -106,6 +110,7 @@ const getEVMVersion = () => {
 
 module.exports = {
     getRandomBytes32,
+    getSaltFromKey,
     getRandomInt,
     isHardhat,
     getChainId,
