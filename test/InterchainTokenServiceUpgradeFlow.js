@@ -17,7 +17,7 @@ const AxelarServiceGovernance = require('@axelar-network/axelar-gmp-sdk-solidity
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 
 describe('Interchain Token Service Upgrade Flow', () => {
-    let wallet, otherWallet, signer1, signer2, signer3;
+    let wallet, otherWallet, signer;
     let service, gateway, gasService;
     let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler;
     let interchainTokenFactoryAddress;
@@ -57,8 +57,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
     }
 
     before(async () => {
-        [wallet, otherWallet, signer1, signer2, signer3] = await ethers.getSigners();
-        const signers = [signer1, signer2, signer3];
+        [wallet, otherWallet, signer] = await ethers.getSigners();
+        const signers = [wallet, otherWallet, signer];
         governanceAddress = otherWallet.address;
 
         buffer = isHardhat ? 10 * 60 * 60 : 10;
@@ -223,11 +223,11 @@ describe('Interchain Token Service Upgrade Flow', () => {
             .withArgs(proposalHash, target, calldata, nativeValue);
 
         await axelarServiceGovernance
-            .connect(signer1)
+            .connect(wallet)
             .executeMultisigProposal(target, calldata, nativeValue)
             .then((tx) => tx.wait());
 
-        await expect(axelarServiceGovernance.connect(signer2).executeMultisigProposal(target, calldata, nativeValue))
+        await expect(axelarServiceGovernance.connect(otherWallet).executeMultisigProposal(target, calldata, nativeValue))
             .to.emit(axelarServiceGovernance, 'MultisigExecuted')
             .withArgs(proposalHash, target, calldata, nativeValue)
             .and.to.emit(service, 'Upgraded')
