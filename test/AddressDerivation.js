@@ -9,9 +9,9 @@ const {
 } = ethers;
 const { deployAll } = require('../scripts/deploy');
 const { approveContractCall } = require('../scripts/utils');
-const { getRandomBytes32, getSaltFromKey, isHardhat } = require('./utils');
+const { getRandomBytes32, getSaltFromKey, isHardhat, getContractJSON } = require('./utils');
 const { create3DeployContract } = require('@axelar-network/axelar-gmp-sdk-solidity');
-const Token = require('../artifacts/contracts/test/TestInterchainTokenStandard.sol/TestInterchainTokenStandard.json');
+const Token = getContractJSON('TestInterchainTokenStandard');
 const MINT_BURN = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 
