@@ -73,29 +73,34 @@ describe('InterchainToken', () => {
         });
 
         it('revert on init if tokenId is 0', async () => {
-            const implementationAddress = await interchainTokenDeployer.implementationAddress();
-            const implementation = await getContractAt('InterchainToken', implementationAddress, owner);
-
             const salt = getRandomBytes32();
             const minter = owner.address;
             await expectRevert(
                 (gasOptions) => interchainTokenDeployer.deployInterchainToken(salt, HashZero, minter, name, symbol, decimals, gasOptions),
-                implementation,
+                interchainToken,
                 'TokenIdZero',
             );
         });
 
         it('revert on init if token name is invalid', async () => {
-            const implementationAddress = await interchainTokenDeployer.implementationAddress();
-            const implementation = await getContractAt('InterchainToken', implementationAddress, owner);
-
             const salt = getRandomBytes32();
             const tokenId = getRandomBytes32();
             const minter = owner.address;
             await expectRevert(
                 (gasOptions) => interchainTokenDeployer.deployInterchainToken(salt, tokenId, minter, '', symbol, decimals, gasOptions),
-                implementation,
+                interchainToken,
                 'TokenNameEmpty',
+            );
+        });
+
+        it('revert on init if token symbol is invalid', async () => {
+            const salt = getRandomBytes32();
+            const tokenId = getRandomBytes32();
+            const minter = owner.address;
+            await expectRevert(
+                (gasOptions) => interchainTokenDeployer.deployInterchainToken(salt, tokenId, minter, name, '', decimals, gasOptions),
+                interchainToken,
+                'TokenSymbolEmpty',
             );
         });
 

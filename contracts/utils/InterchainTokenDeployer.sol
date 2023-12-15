@@ -42,6 +42,8 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
         string calldata symbol,
         uint8 decimals
     ) external returns (address tokenAddress) {
+        // Use a minimal proxy for cheap token deployment and auto-verification on explorers
+        // https://eips.ethereum.org/EIPS/eip-1167
         // The minimal proxy bytecode is the same as https://github.com/OpenZeppelin/openzeppelin-contracts/blob/94697be8a3f0dfcd95dfb13ffbd39b5973f5c65d/contracts/proxy/Clones.sol#L28
         // The minimal proxy bytecode is 0x37 = 55 bytes long
         bytes memory bytecode = new bytes(0x37);
