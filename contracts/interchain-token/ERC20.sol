@@ -34,7 +34,7 @@ contract ERC20 is IERC20 {
     mapping(address => mapping(address => uint256)) public override allowance;
 
     uint256 public override totalSupply;
-    uint256 internal constant UINT256_MAX = 2 ** 256 - 1;
+    uint256 internal constant UINT256_MAX = type(uint256).max;
 
     /**
      * @dev See {IERC20-transfer}.

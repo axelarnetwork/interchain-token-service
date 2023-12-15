@@ -21,7 +21,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation {
     using AddressBytes for bytes;
     using SafeTokenCall for IERC20;
 
-    uint256 internal constant UINT256_MAX = 2 ** 256 - 1;
+    uint256 internal constant UINT256_MAX = type(uint256).max;
 
     address public immutable interchainTokenService;
 
