@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx hardhat clean && npx hardhat compile && npm run copy:interfaces",
-    "codegen:ts": "npm run clean:ts && npx @axelarjs/evm codegen --src artifacts/contracts --out typescript/contracts --exclude test",
+    "codegen:ts": "npm run clean:ts && npx tsx node_modules/@axelarjs/evm/scripts/codegen --src artifacts/contracts --out typescript/contracts --exclude test",
     "clean:ts": "rm -rf typescript",
     "build:ts": "npm run codegen:ts && tsc",
     "test": "npx hardhat test",
