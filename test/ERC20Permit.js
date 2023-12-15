@@ -26,9 +26,7 @@ describe('ERC20 Permit', () => {
         const wallets = await ethers.getSigners();
         owner = wallets[0];
         user = wallets[1];
-    });
 
-    beforeEach(async () => {
         interchainToken = await deployContract(owner, 'InterchainToken', [owner.address]);
         interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [interchainToken.address]);
 

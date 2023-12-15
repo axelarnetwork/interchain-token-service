@@ -12,13 +12,13 @@ const { deployContract } = require('../scripts/deploy');
 
 describe('Token Manager', () => {
     const FLOW_LIMITER_ROLE = 2;
-    let owner, token, service;
+    let owner, other;
     let TestTokenManager;
 
     before(async () => {
-        [owner, token, service] = await ethers.getSigners();
+        [owner, other] = await ethers.getSigners();
 
-        TestTokenManager = await deployContract(owner, `TestTokenManager`, [service.address]);
+        TestTokenManager = await deployContract(owner, `TestTokenManager`, [other.address]);
     });
 
     it('Should revert on token manager deployment with invalid service address', async () => {
@@ -62,8 +62,8 @@ describe('Token Manager', () => {
     });
 
     it('Should return the correct parameters for a token manager', async () => {
-        const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), token.address]);
-        const params = await TestTokenManager.params(toUtf8Bytes(owner.address), token.address);
+        const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), other.address]);
+        const params = await TestTokenManager.params(toUtf8Bytes(owner.address), other.address);
         expect(expectedParams).to.eq(params);
     });
 
