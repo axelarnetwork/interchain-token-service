@@ -27,7 +27,7 @@ const LOCK_UNLOCK = 2;
 
 describe('Interchain Token Service Full Flow', () => {
     let wallet;
-    let service, gateway, gasService, factory, tokenId;
+    let service, gateway, gasService, tokenFactory, tokenId;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const otherChains = ['chain 1', 'chain 2'];
@@ -37,7 +37,7 @@ describe('Interchain Token Service Full Flow', () => {
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
-        [service, gateway, gasService, factory] = await deployAll(wallet, chainName, otherChains);
+        ({ service, gateway, gasService, tokenFactory } = await deployAll(wallet, chainName, otherChains));
     });
 
     /**
@@ -61,14 +61,14 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
-            tokenId = await factory.canonicalInterchainTokenId(token.address);
+            tokenId = await tokenFactory.canonicalInterchainTokenId(token.address);
 
-            let tx = await factory.populateTransaction.registerCanonicalInterchainToken(token.address);
+            let tx = await tokenFactory.populateTransaction.registerCanonicalInterchainToken(token.address);
             const calls = [tx.data];
             let value = 0;
 
             for (const i in otherChains) {
-                tx = await factory.populateTransaction.deployRemoteCanonicalInterchainToken(
+                tx = await tokenFactory.populateTransaction.deployRemoteCanonicalInterchainToken(
                     chainName,
                     token.address,
                     otherChains[i],
@@ -85,7 +85,7 @@ describe('Interchain Token Service Full Flow', () => {
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            const multicall = await factory.multicall(calls, { value });
+            const multicall = await tokenFactory.multicall(calls, { value });
 
             await expect(multicall)
                 .to.emit(service, 'TokenManagerDeployed')
@@ -156,7 +156,7 @@ describe('Interchain Token Service Full Flow', () => {
         const tokenCap = 1e9;
 
         before(async () => {
-            tokenId = await factory.interchainTokenId(wallet.address, salt);
+            tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
         });
@@ -166,13 +166,13 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a new Interchain token on the local chain.
             // The initial mint occurs on the factory contract, so it can be moved to other chains within the same multicall.
-            let tx = await factory.populateTransaction.deployInterchainToken(salt, name, symbol, decimals, totalMint, wallet.address);
+            let tx = await tokenFactory.populateTransaction.deployInterchainToken(salt, name, symbol, decimals, totalMint, wallet.address);
             const calls = [tx.data];
             let value = 0;
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await factory.populateTransaction.deployRemoteInterchainToken(
+                tx = await tokenFactory.populateTransaction.deployRemoteInterchainToken(
                     chainName,
                     salt,
                     wallet.address,
@@ -183,7 +183,7 @@ describe('Interchain Token Service Full Flow', () => {
                 value += gasValues[i];
             }
 
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [factory.address, token.address]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, wallet.address],
@@ -191,10 +191,10 @@ describe('Interchain Token Service Full Flow', () => {
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
 
-            const multicall = await factory.multicall(calls, { value });
+            const multicall = await tokenFactory.multicall(calls, { value });
             await expect(multicall)
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, expectedTokenAddress, factory.address, name, symbol, decimals)
+                .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
@@ -300,7 +300,7 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         /**
-         * Change the minter/minter to another address
+         * Change the minter to another address
          */
         it('Should be able to change the token minter', async () => {
             const newAddress = new Wallet(getRandomBytes32()).address;
@@ -464,7 +464,7 @@ describe('Interchain Token Service Full Flow', () => {
         const totalMint = (1 + otherChains.length) * tokenCap;
 
         before(async () => {
-            tokenId = await factory.interchainTokenId(wallet.address, salt);
+            tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
         });
@@ -473,13 +473,13 @@ describe('Interchain Token Service Full Flow', () => {
         it('Should deploy the token and deploy on other chains', async () => {
             // Deploy a new Interchain token on the local chain.
             // The initial mint occurs on the factory contract, so it can be moved to other chains within the same multicall.
-            let tx = await factory.populateTransaction.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero);
+            let tx = await tokenFactory.populateTransaction.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero);
             const calls = [tx.data];
             let value = 0;
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await factory.populateTransaction.deployRemoteInterchainToken(
+                tx = await tokenFactory.populateTransaction.deployRemoteInterchainToken(
                     chainName,
                     salt,
                     AddressZero,
@@ -490,7 +490,7 @@ describe('Interchain Token Service Full Flow', () => {
                 value += gasValues[i];
             }
 
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [factory.address, token.address]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
@@ -498,10 +498,10 @@ describe('Interchain Token Service Full Flow', () => {
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
 
-            const multicall = await factory.multicall(calls, { value });
+            const multicall = await tokenFactory.multicall(calls, { value });
             await expect(multicall)
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, expectedTokenAddress, factory.address, name, symbol, decimals)
+                .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
@@ -583,14 +583,14 @@ describe('Interchain Token Service Full Flow', () => {
 
         before(async () => {
             const salt = getRandomBytes32();
-            tokenId = await factory.interchainTokenId(wallet.address, salt);
+            tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [factory.address, tokenAddress]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
 
-            await expect(factory.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero))
+            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero))
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, factory.address, name, symbol, decimals)
+                .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
 

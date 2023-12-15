@@ -9,13 +9,10 @@ const {
     constants: { AddressZero },
     utils: { defaultAbiCoder, keccak256, toUtf8Bytes },
 } = ethers;
-
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32, expectRevert } = require('./utils');
 
-// const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
-// const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
 
 const LOCK_UNLOCK = 2;
 const MINT_BURN = 0;
@@ -35,7 +32,7 @@ describe('InterchainTokenFactory', () => {
 
     before(async () => {
         [wallet, otherWallet] = await ethers.getSigners();
-        [service, gateway, gasService, tokenFactory] = await deployAll(wallet, chainName, [destinationChain]);
+        ({ service, gateway, gasService, tokenFactory } = await deployAll(wallet, chainName, [destinationChain]));
     });
 
     describe('Token Factory Deployment', async () => {
@@ -72,9 +69,11 @@ describe('InterchainTokenFactory', () => {
             await (await token.setTokenId(tokenId)).wait();
         }
 
-        it('Should register a token', async () => {
+        before(async () => {
             await deployToken();
+        });
 
+        it('Should register a token', async () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
 
             await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
@@ -84,18 +83,10 @@ describe('InterchainTokenFactory', () => {
 
         it('Should initiate a remote interchain token deployment with no original chain name provided', async () => {
             const gasValue = 1234;
-
-            await deployToken();
-
-            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
             );
-
-            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
             await expect(
                 tokenFactory.deployRemoteCanonicalInterchainToken('', token.address, destinationChain, gasValue, {
@@ -112,18 +103,10 @@ describe('InterchainTokenFactory', () => {
 
         it('Should initiate a remote interchain token deployment', async () => {
             const gasValue = 1234;
-
-            await deployToken();
-
-            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
             );
-
-            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
             await expect(
                 tokenFactory.deployRemoteCanonicalInterchainToken(chainName, token.address, destinationChain, gasValue, {
@@ -138,19 +121,7 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
-        it('Should transfer some tokens to the factory', async () => {
-            await deployToken();
-
-            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
-
-            await expect(tokenFactory.registerCanonicalInterchainToken(token.address))
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
-        });
-
         it('Should revert when trying to register a canonical lock/unlock gateway token', async () => {
-            await deployToken();
-
             const tokenCap = 0;
             const mintLimit = 0;
             const tokenAddress = token.address;
