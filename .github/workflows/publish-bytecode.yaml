@@ -13,8 +13,10 @@ jobs:
         os:
           - ubuntu-latest
     runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -27,7 +29,21 @@ jobs:
       - name: Build
         run: npm run build
 
-      - uses: actions/upload-artifact@v4
+      - name: Flatten contracts
+        run: npm run flatten
+
+      - name: Clean artifacts
+        run: npm run clean:artifacts
+
+      - name: Create zip file
+        working-directory: ./artifacts
+        run: |
+          zip -r Bytecode-${GITHUB_REF#refs/tags/}.zip *
+
+      - name: Upload Bytecode to release
+        uses: svenstaro/upload-release-action@v2
         with:
-          name: Bytecode-${GITHUB_REF#refs/tags/}
-          path: artifacts/
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./artifacts/Bytecode-${GITHUB_REF#refs/tags/}.zip
+          tag: ${GITHUB_REF#refs/tags/}
+          overwrite: true
