@@ -15,6 +15,7 @@ interface IInterchainToken is IInterchainTokenStandard, IMinter, IERC20MintableB
     error InterchainTokenServiceAddressZero();
     error TokenIdZero();
     error TokenNameEmpty();
+    error TokenSymbolEmpty();
     error AlreadyInitialized();
 
     /**

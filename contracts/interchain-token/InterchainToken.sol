@@ -90,6 +90,7 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
 
         if (tokenId_ == bytes32(0)) revert TokenIdZero();
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();
+        if (bytes(tokenSymbol).length == 0) revert TokenSymbolEmpty();
 
         name = tokenName;
         symbol = tokenSymbol;
