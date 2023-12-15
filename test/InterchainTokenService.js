@@ -49,6 +49,7 @@ describe('Interchain Token Service', () => {
     const deployFunctions = {};
     const destinationChain = 'destination chain';
     const sourceChain = 'source chain';
+    const gasValue = 12;
 
     deployFunctions.lockUnlock = async function deployNewLockUnlock(
         tokenName,
@@ -376,7 +377,7 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should revert on invalid token manager', async () => {
+        it('Should revert on invalid token manager implementation', async () => {
             await expectRevert(
                 (gasOptions) =>
                     deployInterchainTokenService(
@@ -400,29 +401,6 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on invalid token handler', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    deployInterchainTokenService(
-                        wallet,
-                        create3Deployer.address,
-                        tokenManagerDeployer.address,
-                        interchainTokenDeployer.address,
-                        gateway.address,
-                        gasService.address,
-                        interchainTokenFactoryAddress,
-                        tokenManager.address,
-                        AddressZero,
-                        chainName,
-                        [],
-                        deploymentKey,
-                        gasOptions,
-                    ),
-                service,
-                'ZeroAddress',
-            );
-        });
-
-        it('Should revert on invalid token manager', async () => {
             await expectRevert(
                 (gasOptions) =>
                     deployInterchainTokenService(
@@ -656,7 +634,6 @@ describe('Interchain Token Service', () => {
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
         const minter = '0x12345678';
-        const gasValue = 1234;
         let salt;
 
         before(async () => {
@@ -813,15 +790,19 @@ describe('Interchain Token Service', () => {
             ]);
         });
 
+        it('Should revert on deploying an invalid token manager', async () => {
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+            await expectRevert((gasOptions) => service.deployTokenManager(salt, '', 5, params, 0, gasOptions));
+        });
+
         it('Should deploy a lock/unlock token manager', async () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
-            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-
             await expect(reportGas(service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0), 'Call deployTokenManager on source chain'))
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
             expect(tokenManagerAddress).to.not.equal(AddressZero);
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
@@ -1003,7 +984,6 @@ describe('Interchain Token Service', () => {
             ).wait();
 
             const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const gasValue = 1e6;
             const params = '0x1234';
             const type = LOCK_UNLOCK;
             const payload = defaultAbiCoder.encode(
@@ -1034,7 +1014,6 @@ describe('Interchain Token Service', () => {
         it('Should revert on a remote custom token manager deployment if the token manager does does not exist', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const gasValue = 1e6;
             const params = '0x1234';
             const type = LOCK_UNLOCK;
 
@@ -1047,7 +1026,6 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(true).then((tx) => tx.wait());
 
             const salt = getRandomBytes32();
-            const gasValue = 1e6;
             const params = '0x1234';
             const type = LOCK_UNLOCK;
 
@@ -1134,7 +1112,6 @@ describe('Interchain Token Service', () => {
     describe('Send Token', () => {
         const amount = 1234;
         const destAddress = '0x5678';
-        const gasValue = 90;
         let token, tokenId;
 
         before(async () => {
@@ -1372,7 +1349,6 @@ describe('Interchain Token Service', () => {
         const amount = 1234;
         const destAddress = '0x5678';
         const data = '0x1234';
-        const gasValue = 90;
         let sourceAddress;
         let token, tokenManager, tokenId;
 
@@ -1408,11 +1384,6 @@ describe('Interchain Token Service', () => {
                 const payloadHash = keccak256(payload);
 
                 const metadataExpress = '0x00000001';
-                const payloadExpress = defaultAbiCoder.encode(
-                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
-                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
-                );
-                const payloadHashExpress = keccak256(payloadExpress);
 
                 let transferToAddress = AddressZero;
 
@@ -1435,6 +1406,8 @@ describe('Interchain Token Service', () => {
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
 
@@ -1449,7 +1422,9 @@ describe('Interchain Token Service', () => {
                     .to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHashExpress, payloadExpress)
+                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .and.to.emit(gasService, 'NativeGasPaidForExpressCall')
+                    .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
             });
@@ -1763,7 +1738,6 @@ describe('Interchain Token Service', () => {
     describe('Send Interchain Token', () => {
         const amount = 1234;
         const destAddress = '0x5678';
-        const gasValue = 90;
         const metadata = '0x';
         let token, tokenManager, tokenId;
 
@@ -1852,7 +1826,6 @@ describe('Interchain Token Service', () => {
     describe('Send Interchain Token With Data', () => {
         const amount = 1234;
         const destAddress = '0x5678';
-        const gasValue = 90;
         let sourceAddress;
         const data = '0x1234';
 
