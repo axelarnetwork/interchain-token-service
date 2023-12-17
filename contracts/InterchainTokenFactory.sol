@@ -25,7 +25,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     using SafeTokenTransferFrom for IInterchainToken;
     using SafeTokenCall for IInterchainToken;
 
-    IInterchainTokenService public immutable service;
+    IInterchainTokenService public immutable interchainTokenService;
     bytes32 public immutable chainNameHash;
     IAxelarGateway public immutable gateway;
 
@@ -36,14 +36,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Constructs the InterchainTokenFactory contract.
-     * @param interchainTokenServiceAddress The address of the interchain token service.
+     * @param interchainTokenService_ The address of the interchain token service.
      */
-    constructor(address interchainTokenServiceAddress) {
-        if (interchainTokenServiceAddress == address(0)) revert ZeroAddress();
-        service = IInterchainTokenService(interchainTokenServiceAddress);
+    constructor(address interchainTokenService_) {
+        if (interchainTokenService_ == address(0)) revert ZeroAddress();
 
-        chainNameHash = service.chainNameHash();
-        gateway = service.gateway();
+        interchainTokenService = IInterchainTokenService(interchainTokenService_);
+
+        chainNameHash = interchainTokenService.chainNameHash();
+        gateway = interchainTokenService.gateway();
     }
 
     /**
@@ -82,7 +83,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @return tokenId The ID of the interchain token.
      */
     function interchainTokenId(address deployer, bytes32 salt) public view returns (bytes32 tokenId) {
-        tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, interchainTokenSalt(chainNameHash, deployer, salt));
+        tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, interchainTokenSalt(chainNameHash, deployer, salt));
     }
 
     /**
@@ -91,7 +92,10 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @return tokenId The ID of the canonical interchain token.
      */
     function canonicalInterchainTokenId(address tokenAddress) public view returns (bytes32 tokenId) {
-        tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, canonicalInterchainTokenSalt(chainNameHash, tokenAddress));
+        tokenId = interchainTokenService.interchainTokenId(
+            TOKEN_FACTORY_DEPLOYER,
+            canonicalInterchainTokenSalt(chainNameHash, tokenAddress)
+        );
     }
 
     /**
@@ -101,7 +105,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @return tokenAddress The address of the interchain token.
      */
     function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
-        tokenAddress = service.interchainTokenAddress(interchainTokenId(deployer, salt));
+        tokenAddress = interchainTokenService.interchainTokenAddress(interchainTokenId(deployer, salt));
     }
 
     /**
@@ -136,8 +140,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenId = _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, 0);
 
         if (initialSupply > 0) {
-            IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
-            ITokenManager tokenManager = ITokenManager(service.tokenManagerAddress(tokenId));
+            IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
+            ITokenManager tokenManager = ITokenManager(interchainTokenService.tokenManagerAddress(tokenId));
 
             token.mint(sender, initialSupply);
 
@@ -182,9 +186,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
             address sender = msg.sender;
             salt = interchainTokenSalt(chainNameHash_, sender, salt);
-            tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+            tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
 
-            IInterchainToken token = IInterchainToken(service.interchainTokenAddress(tokenId));
+            IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
 
             tokenName = token.name();
             tokenSymbol = token.symbol();
@@ -221,7 +225,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {
         // slither-disable-next-line arbitrary-send-eth
-        tokenId = service.deployInterchainToken{ value: gasValue }(
+        tokenId = interchainTokenService.deployInterchainToken{ value: gasValue }(
             salt,
             destinationChain,
             tokenName,
@@ -243,7 +247,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         if (_isGatewayToken(tokenAddress)) revert GatewayToken(tokenAddress);
 
         bytes32 salt = canonicalInterchainTokenSalt(chainNameHash, tokenAddress);
-        tokenId = service.deployTokenManager(salt, '', TokenManagerType.LOCK_UNLOCK, params, 0);
+        tokenId = interchainTokenService.deployTokenManager(salt, '', TokenManagerType.LOCK_UNLOCK, params, 0);
     }
 
     /**
@@ -272,8 +276,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             }
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
             salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);
-            tokenId = service.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
-            token = IInterchainToken(service.validTokenAddress(tokenId));
+            tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+            token = IInterchainToken(interchainTokenService.validTokenAddress(tokenId));
         }
 
         // The 3 lines below will revert if the token does not exist.
