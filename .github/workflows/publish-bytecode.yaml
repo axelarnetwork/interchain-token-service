@@ -1,4 +1,4 @@
-name: Publish Compiled Bytecode
+name: 'Publish Bytecode'
 
 on:
   release:
@@ -36,17 +36,19 @@ jobs:
         run: npm run clean:artifacts
 
       - name: Get release tag
-        run: echo "release_tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
+        run: |
+          TAG=${{ github.ref }}
+          echo "release_tag=${TAG#refs/tags/}" >> "$GITHUB_ENV"
 
       - name: Create zip file
         working-directory: ./artifacts
         run: |
-          zip -r Bytecode-${release_tag}.zip *
+          zip -r Bytecode-${{ release_tag }}.zip *
 
       - name: Upload Bytecode to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./artifacts/Bytecode-${release_tag}.zip
-          tag: ${release_tag}
+          file: ./artifacts/Bytecode-${{ release_tag }}.zip
+          tag: ${{ release_tag }}
           overwrite: true
