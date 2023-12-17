@@ -4,11 +4,18 @@
 
 This contract is responsible for deploying new interchain tokens and managing their token managers.
 
-### service
+### interchainTokenService
 
 ```solidity
-contract IInterchainTokenService service
+contract IInterchainTokenService interchainTokenService
 ```
+
+Returns the address of the interchain token service.
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 
 ### chainNameHash
 
@@ -44,7 +51,7 @@ bytes32 PREFIX_INTERCHAIN_TOKEN_SALT
 ### constructor
 
 ```solidity
-constructor(address interchainTokenServiceAddress) public
+constructor(address interchainTokenService_) public
 ```
 
 Constructs the InterchainTokenFactory contract.
@@ -53,7 +60,7 @@ Constructs the InterchainTokenFactory contract.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| interchainTokenServiceAddress | address | The address of the interchain token service. |
+| interchainTokenService_ | address | The address of the interchain token service. |
 
 ### contractId
 
@@ -339,6 +346,13 @@ contract IAxelarGasService gasService
 ```solidity
 address interchainTokenFactory
 ```
+
+Returns the address of the interchain token factory.
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 
 ### chainNameHash
 
@@ -2270,6 +2284,12 @@ error TokenIdZero()
 error TokenNameEmpty()
 ```
 
+### TokenSymbolEmpty
+
+```solidity
+error TokenSymbolEmpty()
+```
+
 ### AlreadyInitialized
 
 ```solidity
@@ -2498,6 +2518,20 @@ error NotOperator(address operator)
 ```solidity
 error GatewayToken(address tokenAddress)
 ```
+
+### interchainTokenService
+
+```solidity
+function interchainTokenService() external view returns (contract IInterchainTokenService)
+```
+
+Returns the address of the interchain token service.
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | contract IInterchainTokenService | IInterchainTokenService The address of the interchain token service. |
 
 ### chainNameHash
 
@@ -2919,6 +2953,20 @@ Returns the address of TokenHandler implementation.
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenHandlerAddress | address | The address of the token handler contract. |
+
+### interchainTokenFactory
+
+```solidity
+function interchainTokenFactory() external view returns (address)
+```
+
+Returns the address of the interchain token factory.
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | address | address The address of the interchain token factory. |
 
 ### chainNameHash
 
