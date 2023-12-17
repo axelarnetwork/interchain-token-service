@@ -1,7 +1,9 @@
-name: Publish Compiled Bytecode
+name: 'Publish Bytecode'
 
 on:
   workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   publish-bytecode:
