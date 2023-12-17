@@ -38,15 +38,18 @@ jobs:
       - name: Get release tag
         run: echo "release_tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
 
+      - name: show release tag
+        run: echo "${release_tag}"
+
       - name: Create zip file
         working-directory: ./artifacts
         run: |
           zip -r Bytecode-${release_tag}.zip *
 
-      - name: Upload Bytecode to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./artifacts/Bytecode-${release_tag}.zip
-          tag: ${release_tag}
-          overwrite: true
+      # - name: Upload Bytecode to release
+      #   uses: svenstaro/upload-release-action@v2
+      #   with:
+      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+      #     file: ./artifacts/Bytecode-${release_tag}.zip
+      #     tag: ${release_tag}
+      #     overwrite: true
