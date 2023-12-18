@@ -3,6 +3,11 @@ name: 'Publish Bytecode'
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      TAG:
+        description: 'Release Tag'
+        required: true
 
 jobs:
   publish-bytecode:
@@ -17,6 +22,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.TAG || github.ref }}
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -37,18 +44,18 @@ jobs:
 
       - name: Get release tag
         run: |
-          TAG=${{ github.ref }}
+          TAG=${{ github.event.inputs.TAG || github.ref }}
           echo "release_tag=${TAG#refs/tags/}" >> "$GITHUB_ENV"
 
       - name: Create zip file
         working-directory: ./artifacts
         run: |
-          zip -r Bytecode-${{ release_tag }}.zip *
+          zip -r Bytecode-${{ env.release_tag }}.zip *
 
       - name: Upload Bytecode to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./artifacts/Bytecode-${{ release_tag }}.zip
-          tag: ${{ release_tag }}
+          file: ./artifacts/Bytecode-${{ env.release_tag }}.zip
+          tag: ${{ env.release_tag }}
           overwrite: true

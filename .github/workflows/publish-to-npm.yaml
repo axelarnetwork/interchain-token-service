@@ -1,9 +1,13 @@
 name: 'Publish to npm'
 
 on:
-  workflow_dispatch:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      TAG:
+        description: 'Release Tag'
+        required: true
 
 jobs:
   publish-to-npm:
@@ -12,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.TAG || github.ref }}
 
       - name: Install Node.js
         uses: actions/setup-node@v3
