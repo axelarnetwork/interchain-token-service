@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarValuedExpressExecutable.sol';
-import { IContractIdentifier } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IContractIdentifier.sol';
 import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
@@ -26,7 +25,6 @@ interface IInterchainTokenService is
     IOperator,
     IPausable,
     IMulticall,
-    IContractIdentifier,
     IAddressTracker,
     IUpgradable
 {
@@ -114,6 +112,12 @@ interface IInterchainTokenService is
      * @return tokenHandlerAddress The address of the token handler contract.
      */
     function tokenHandler() external view returns (address tokenHandlerAddress);
+
+    /**
+     * @notice Returns the address of the interchain token factory.
+     * @return address The address of the interchain token factory.
+     */
+    function interchainTokenFactory() external view returns (address);
 
     /**
      * @notice Returns the hash of the chain name.

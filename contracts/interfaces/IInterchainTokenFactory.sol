@@ -2,16 +2,27 @@
 
 pragma solidity ^0.8.0;
 
+import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
+import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
+
+import { IInterchainTokenService } from './IInterchainTokenService.sol';
+
 /**
  * @title IInterchainTokenFactory Interface
  * @notice This interface defines functions for deploying new interchain tokens and managing their token managers.
  */
-interface IInterchainTokenFactory {
+interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error ZeroAddress();
     error InvalidChainName();
     error NotMinter(address minter);
     error NotOperator(address operator);
     error GatewayToken(address tokenAddress);
+
+    /**
+     * @notice Returns the address of the interchain token service.
+     * @return IInterchainTokenService The address of the interchain token service.
+     */
+    function interchainTokenService() external view returns (IInterchainTokenService);
 
     /**
      * @notice Returns the hash of the chain name.
