@@ -8,6 +8,7 @@ pragma solidity ^0.8.0;
  */
 interface ITokenHandler {
     error UnsupportedTokenManagerType(uint256 tokenManagerType);
+    error AddressZero();
 
     /**
      * @notice This function gives token to a specified address from the token manager.

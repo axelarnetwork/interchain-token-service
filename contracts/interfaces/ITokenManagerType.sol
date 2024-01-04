@@ -11,6 +11,7 @@ interface ITokenManagerType {
         MINT_BURN,
         MINT_BURN_FROM,
         LOCK_UNLOCK,
-        LOCK_UNLOCK_FEE
+        LOCK_UNLOCK_FEE,
+        GATEWAY
     }
 }

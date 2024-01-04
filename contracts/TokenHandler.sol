@@ -19,6 +19,13 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     using SafeTokenTransferFrom for IERC20;
     using SafeTokenCall for IERC20;
 
+    address immutable gateway;
+
+    constructor(address gateway_) {
+        if(gateway_ == address(0)) revert AddressZero();
+        gateway = gateway_;
+    }
+
     /**
      * @notice This function gives token to a specified address from the token manager.
      * @param tokenManagerType The token manager type.
@@ -41,7 +48,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
             return amount;
         }
 
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             _transferTokenFrom(tokenAddress, tokenManager, to, amount);
             return amount;
         }
@@ -88,6 +95,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _transferTokenFromWithFee(tokenAddress, from, tokenManager, amount);
+            return amount;
+        }
+
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
+            _transferTokenFrom(tokenAddress, from, tokenManager, amount);
+            _approveGateway(tokenAddress, amount);
             return amount;
         }
 
@@ -161,5 +174,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
 
     function _takeTokenMintBurnFrom(address tokenAddress, address from, uint256 amount) internal {
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
+    }
+
+    function _approveGateway(address tokenAddress, uint256 amount) internal {
+        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20.approve.selector, gateway, amount));
     }
 }

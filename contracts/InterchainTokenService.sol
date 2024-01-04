@@ -23,6 +23,7 @@ import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
+import { IERC20Named } from './interfaces/IERC20Named.sol';
 
 import { Operator } from './utils/Operator.sol';
 
@@ -368,7 +369,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external payable whenNotPaused {
+    ) public payable whenNotPaused {
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidExpressMessageType(messageType);
@@ -460,11 +461,12 @@ contract InterchainTokenService is
         bytes calldata metadata,
         uint256 gasValue
     ) external payable whenNotPaused {
-        amount = _takeToken(tokenId, msg.sender, amount, false);
+        string memory symbol;
+        (amount, symbol) = _takeToken(tokenId, msg.sender, amount, false);
 
         (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, symbol, gasValue);
     }
 
     /**
@@ -484,8 +486,8 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused {
         if (data.length == 0) revert EmptyData();
-
-        amount = _takeToken(tokenId, msg.sender, amount, false);
+        string memory symbol;
+        (amount, symbol) = _takeToken(tokenId, msg.sender, amount, false);
 
         _transmitInterchainTransfer(
             tokenId,
@@ -495,6 +497,7 @@ contract InterchainTokenService is
             amount,
             MetadataVersion.CONTRACT_CALL,
             data,
+            symbol,
             gasValue
         );
     }
@@ -521,11 +524,12 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable whenNotPaused {
-        amount = _takeToken(tokenId, sourceAddress, amount, true);
+        string memory symbol;
+        (amount, symbol) = _takeToken(tokenId, sourceAddress, amount, true);
 
         (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data, msg.value);
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data, symbol, msg.value);
     }
 
     /*************\
@@ -612,7 +616,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+    ) public onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
@@ -646,25 +650,25 @@ contract InterchainTokenService is
     }
 
     function expressExecuteWithToken(
-        bytes32 /*commandId*/,
-        string calldata /*sourceChain*/,
-        string calldata /*sourceAddress*/,
-        bytes calldata /*payload*/,
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
         string calldata /*tokenSymbol*/,
         uint256 /*amount*/
     ) external payable {
-        revert ExecuteWithTokenNotSupported();
+        expressExecute(commandId, sourceChain, sourceAddress, payload);
     }
 
     function executeWithToken(
-        bytes32 /*commandId*/,
-        string calldata /*sourceChain*/,
-        string calldata /*sourceAddress*/,
-        bytes calldata /*payload*/,
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
         string calldata /*tokenSymbol*/,
         uint256 /*amount*/
-    ) external pure {
-        revert ExecuteWithTokenNotSupported();
+    ) external {
+        execute(commandId, sourceChain, sourceAddress, payload);
     }
 
     /**
@@ -798,6 +802,52 @@ contract InterchainTokenService is
         }
 
         gateway.callContract(destinationChain, destinationAddress, payload);
+    }
+
+    /**
+     * @notice Calls a contract on a specific destination chain with the given payload
+     * @param destinationChain The target chain where the contract will be called.
+     * @param payload The data payload for the transaction.
+     * @param gasValue The amount of gas to be paid for the transaction.
+     */
+    function _callContractWithToken(
+        string calldata destinationChain,
+        bytes memory payload,
+        string memory symbol,
+        uint256 amount,
+        MetadataVersion metadataVersion,
+        uint256 gasValue
+    ) internal {
+        string memory destinationAddress = trustedAddress(destinationChain);
+        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+
+        if (gasValue > 0) {
+            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload, // solhint-disable-next-line avoid-tx-origin
+                    symbol,
+                    amount,
+                    tx.origin
+                );
+            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                gasService.payNativeGasForExpressCallWithToken{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload, // solhint-disable-next-line avoid-tx-origin
+                    symbol,
+                    amount,
+                    tx.origin
+                );
+            } else {
+                revert InvalidMetadataVersion(uint32(metadataVersion));
+            }
+        }
+
+        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
 
     /**
@@ -962,6 +1012,7 @@ contract InterchainTokenService is
         uint256 amount,
         MetadataVersion metadataVersion,
         bytes memory data,
+        string memory symbol,
         uint256 gasValue
     ) internal {
         // slither-disable-next-line reentrancy-events
@@ -982,14 +1033,17 @@ contract InterchainTokenService is
             amount,
             data
         );
-
-        _callContract(destinationChain, payload, metadataVersion, gasValue);
+        if(bytes(symbol).length > 0) {
+            _callContractWithToken(destinationChain, payload, symbol, amount, metadataVersion, gasValue);
+        } else {
+            _callContract(destinationChain, payload, metadataVersion, gasValue);
+        }
     }
 
     /**
      * @dev Takes token from a sender via the token service. `tokenOnly` indicates if the caller should be restricted to the token only.
      */
-    function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256) {
+    function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256, string memory symbol) {
         address tokenManager_ = tokenManagerAddress(tokenId);
         uint256 tokenManagerType;
         address tokenAddress;
@@ -1006,8 +1060,8 @@ contract InterchainTokenService is
 
         /// @dev Track the flow amount being sent out as a message
         ITokenManager(tokenManager_).addFlowOut(amount);
-
-        return amount;
+        if(tokenManagerType == uint256(TokenManagerType.GATEWAY)) symbol = IERC20Named(tokenAddress).symbol();
+        return (amount, symbol);
     }
 
     /**
