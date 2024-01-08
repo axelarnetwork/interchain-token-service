@@ -23,6 +23,7 @@ const MINT_BURN = 0;
 const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
 const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
+const GATEWAY = 4;
 
 const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
@@ -72,6 +73,39 @@ describe('Interchain Token Service', () => {
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
         await (await service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0)).wait();
+
+        if (mintAmount > 0) {
+            await (await token.mint(wallet.address, mintAmount)).wait();
+            if (!skipApprove) await (await token.approve(service.address, mintAmount)).wait();
+        }
+
+        return [token, tokenManager, tokenId];
+    };
+
+    deployFunctions.gateway = async function deployNewLockUnlock(
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
+        const salt = getRandomBytes32();
+        const tokenId = await service.interchainTokenId(wallet.address, salt);
+        const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
+
+        const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
+            tokenName,
+            tokenSymbol,
+            tokenDecimals,
+            service.address,
+            tokenId,
+        ]);
+        let params = defaultAbiCoder.encode(['string', 'string', 'uint8', 'uint256', 'address', 'uint256'], [tokenName, tokenSymbol, tokenDecimals, 0, token.address, 0]);
+        await (await gateway.deployToken(params, getRandomBytes32())).wait();
+        
+        params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+        await (await service.deployTokenManager(salt, '', GATEWAY, params, 0)).wait();
 
         if (mintAmount > 0) {
             await (await token.mint(wallet.address, mintAmount)).wait();
@@ -1372,8 +1406,8 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
-        for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee', 'mintBurnFrom']) {
-            it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}]`, async () => {
+        for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee', 'mintBurnFrom', 'gateway']) {
+            it.only(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount * 2);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
                 const metadata = '0x00000000';

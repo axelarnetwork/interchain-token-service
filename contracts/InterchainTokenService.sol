@@ -1034,7 +1034,7 @@ contract InterchainTokenService is
             data
         );
         if(bytes(symbol).length > 0) {
-            _callContractWithToken(destinationChain, payload, symbol, amount, metadataVersion, gasValue);
+            //_callContractWithToken(destinationChain, payload, symbol, amount, metadataVersion, gasValue);
         } else {
             _callContract(destinationChain, payload, metadataVersion, gasValue);
         }
