@@ -508,7 +508,7 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Token Handler', () => {
-        const tokenManagerType = 4;
+        const tokenManagerType = 5;
         const amount = 1234;
 
         it('Should revert on give token with unsupported token type', async () => {
@@ -2448,22 +2448,6 @@ describe('Interchain Token Service', () => {
         it('Should revert on contractCallWithTokenValue', async () => {
             await expectRevert(
                 (gasOptions) => service.contractCallWithTokenValue(sourceChain, sourceAddress, payload, symbol, amount, gasOptions),
-                service,
-                'ExecuteWithTokenNotSupported',
-            );
-        });
-
-        it('Should revert on expressExecuteWithToken', async () => {
-            await expectRevert(
-                (gasOptions) => service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount, gasOptions),
-                service,
-                'ExecuteWithTokenNotSupported',
-            );
-        });
-
-        it('Should revert on executeWithToken', async () => {
-            await expectRevert(
-                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount, gasOptions),
                 service,
                 'ExecuteWithTokenNotSupported',
             );
