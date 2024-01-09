@@ -10,7 +10,7 @@ const {
     getContractAt,
 } = ethers;
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
-const { approveContractCall } = require('../scripts/utils');
+const { approveContractCall, approveContractCallWithMint } = require('../scripts/utils');
 const { getRandomBytes32, getRandomInt, expectRevert, gasReporter, getEVMVersion } = require('./utils');
 const { deployAll, deployContract, deployInterchainTokenService } = require('../scripts/deploy');
 
@@ -1377,6 +1377,29 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount, HashZero);
         });
+
+
+        it('Should be able to receive gateway token', async () => {
+            const symbol = 'TT5';
+            const [token, , tokenId] = await deployFunctions.gateway(`Test Token Lock Unlock`, symbol, 12, amount);
+            (await token.transfer(gateway.address, amount)).wait();
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
+            );
+            const commandId = await approveContractCallWithMint(gateway, sourceChain, sourceAddress, service.address, payload, symbol, amount);
+
+            await expect(
+                reportGas(service.executeWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount), 'Receive GMP INTERCHAIN_TRANSFER lock/unlock'),
+                )
+                .to.emit(token, 'Transfer')
+                .withArgs(service.address, destAddress, amount)
+                .to.emit(token, 'Transfer')
+                .withArgs(gateway.address, service.address, amount)
+                .and.to.emit(service, 'InterchainTransferReceived')
+                .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount, HashZero);
+        });
     });
 
     describe('Send Token With Data', () => {
@@ -1406,8 +1429,8 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
-        for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee', 'mintBurnFrom', 'gateway']) {
-            it.only(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}]`, async () => {
+        for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee', 'mintBurnFrom']) {
+            it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount * 2);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
                 const metadata = '0x00000000';
@@ -1463,6 +1486,54 @@ describe('Interchain Token Service', () => {
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
             });
         }
+
+        it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [gateway]`, async () => {
+            const symbol = 'TT1';
+            const [token, , tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount * 2);
+            const sendAmount = amount;
+            const metadata = '0x00000000';
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
+            );
+            const payloadHash = keccak256(payload);
+
+            const metadataExpress = '0x00000001';
+
+            let transferToAddress = service.address;
+
+            await expect(
+                reportGas(
+                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }),
+                    `Call service.interchainTransfer with metadata gateway`,
+                ),
+            )
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, payload, symbol, amount)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, symbol, amount, gasValue, wallet.address)
+                .to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+
+            await expect(
+                reportGas(
+                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadataExpress, gasValue, {
+                        value: gasValue,
+                    }),
+                    `Call service.interchainTransfer with metadata gateway (express call)`,
+                ),
+            )
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, payload, symbol, amount)
+                .and.to.emit(gasService, 'NativeGasPaidForExpressCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, symbol, amount, gasValue, wallet.address)
+                .to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+        });
 
         for (const type of ['lockUnlock', 'lockUnlockFee']) {
             it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}]`, async () => {
@@ -1855,6 +1926,51 @@ describe('Interchain Token Service', () => {
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, sender.address, destinationChain, destAddress, sendAmount, HashZero);
         });
+
+        it(`Should be able to initiate an interchain token transfer via interchainTransfer & interchainTransferFrom [gateway]`, async () => {
+            const symbol = 'TT2';
+            [token, tokenManager, tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount * 3, true);
+            const sendAmount = amount;
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x'],
+            );
+            const payloadHash = keccak256(payload);
+
+            let transferToAddress = service.address;
+
+            await expect(
+                reportGas(
+                    token.connect(wallet).interchainTransfer(destinationChain, destAddress, amount, metadata, { value: gasValue }),
+                    `Call token.interchainTransfer gateway`,
+                ),
+            )
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, payload, symbol, amount)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, symbol, amount, gasValue, wallet.address)
+                .to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
+
+            await token.approve(otherWallet.address, amount).then((tx) => tx.wait());
+
+            await expect(
+                token
+                    .connect(otherWallet)
+                    .interchainTransferFrom(wallet.address, destinationChain, destAddress, amount, metadata, { value: gasValue }),
+            )
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, payload, symbol, amount)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, symbol, amount, gasValue, otherWallet.address)
+                .to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
+        });
+
     });
 
     describe('Send Interchain Token With Data', () => {
@@ -1896,6 +2012,31 @@ describe('Interchain Token Service', () => {
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, keccak256(data));
             });
         }
+
+        it(`Should be able to initiate an interchain token transfer [gateway]`, async () => {
+            const symbol = 'TT3';
+            const [token, , tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount, false);
+            const sendAmount = amount;
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, data],
+            );
+            const payloadHash = keccak256(payload);
+
+            const transferToAddress = service.address;
+
+            const metadata = solidityPack(['uint32', 'bytes'], [0, data]);
+            await expect(token.interchainTransfer(destinationChain, destAddress, amount, metadata, { value: gasValue }))
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, payload, symbol, amount)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCallWithToken')
+                .withArgs(service.address, destinationChain, service.address, payloadHash, symbol, amount, gasValue, wallet.address)
+                .to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, keccak256(data));
+        });
     });
 
     describe('Express Execute', () => {
@@ -2187,6 +2328,31 @@ describe('Interchain Token Service', () => {
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
+                .and.to.emit(service, 'ExpressExecutionFulfilled')
+                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+        });
+
+        it('Should be able to receive mint/burn token', async () => {
+            const symbol = 'TT4';
+            const [token, , tokenId] = await deployFunctions.gateway(`Test Token Mint Burn`, symbol, 12, 2 * amount);
+
+            await (await token.approve(service.address, amount)).wait();
+            await (await token.transfer(gateway.address, amount)).wait();
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
+            );
+
+            const commandId = getRandomBytes32();
+            await (await service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount)).wait();
+            await approveContractCallWithMint(gateway, sourceChain, sourceAddress, service.address, payload, symbol, amount, getRandomBytes32(), 0, commandId);
+
+            await expect(service.executeWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount))
+                .to.emit(token, 'Transfer')
+                .withArgs(gateway.address, service.address, amount)
+                .to.emit(token, 'Transfer')
+                .withArgs(service.address, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
                 .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
         });

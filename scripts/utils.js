@@ -26,6 +26,27 @@ async function approveContractCall(
     return commandId;
 }
 
+async function approveContractCallWithMint(
+    gateway,
+    sourceChain,
+    sourceAddress,
+    contractAddress,
+    payload,
+    symbol,
+    amount,
+    sourceTxHash = getRandomBytes32(),
+    sourceEventIndex = 0,
+    commandId = getRandomBytes32(),
+) {
+    const params = defaultAbiCoder.encode(
+        ['string', 'string', 'address', 'bytes32', 'string', 'uint256', 'bytes32', 'uint256'],
+        [sourceChain, sourceAddress, contractAddress, keccak256(payload), symbol, amount, sourceTxHash, sourceEventIndex],
+    );
+    await (await gateway.approveContractCallWithMint(params, commandId)).wait();
+
+    return commandId;
+}
+
 async function deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals, walletForExternal) {
     let tokenAddress = AddressZero;
 
@@ -45,5 +66,6 @@ async function deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals
 module.exports = {
     getRandomBytes32,
     approveContractCall,
+    approveContractCallWithMint,
     deployGatewayToken,
 };

@@ -621,22 +621,7 @@ contract InterchainTokenService is
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
 
-        uint256 messageType = abi.decode(payload, (uint256));
-        if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
-
-            _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
-
-            if (expressExecutor != address(0)) {
-                emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
-            }
-        } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
-            _processDeployTokenManagerPayload(payload);
-        } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
-            _processDeployInterchainTokenPayload(payload);
-        } else {
-            revert InvalidMessageType(messageType);
-        }
+        _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
     }
 
     function contractCallWithTokenValue(
@@ -665,10 +650,14 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload,
-        string calldata /*tokenSymbol*/,
-        uint256 /*amount*/
-    ) external {
-        execute(commandId, sourceChain, sourceAddress, payload);
+        string calldata tokenSymbol,
+        uint256 amount
+    ) external {        
+        bytes32 payloadHash = keccak256(payload);
+
+        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount)) revert NotApprovedByGateway();
+
+        _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
     }
 
     /**
@@ -849,7 +838,31 @@ contract InterchainTokenService is
 
         gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
+    
+    function _execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        bytes32 payloadHash
+    ) internal {
+        uint256 messageType = abi.decode(payload, (uint256));
+        if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
+            address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
 
+            _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
+
+            if (expressExecutor != address(0)) {
+                emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
+            }
+        } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
+            _processDeployTokenManagerPayload(payload);
+        } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
+            _processDeployInterchainTokenPayload(payload);
+        } else {
+            revert InvalidMessageType(messageType);
+        }
+    }
     /**
      * @notice Deploys a token manager on a destination chain.
      * @param tokenId The ID of the token.
@@ -1034,7 +1047,7 @@ contract InterchainTokenService is
             data
         );
         if(bytes(symbol).length > 0) {
-            //_callContractWithToken(destinationChain, payload, symbol, amount, metadataVersion, gasValue);
+            _callContractWithToken(destinationChain, payload, symbol, amount, metadataVersion, gasValue);
         } else {
             _callContract(destinationChain, payload, metadataVersion, gasValue);
         }
