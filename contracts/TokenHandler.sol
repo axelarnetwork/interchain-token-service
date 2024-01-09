@@ -20,10 +20,10 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     using SafeTokenCall for IERC20;
     using SafeTokenTransfer for IERC20;
 
-    address immutable gateway;
+    address public immutable gateway;
 
     constructor(address gateway_) {
-        if(gateway_ == address(0)) revert AddressZero();
+        if (gateway_ == address(0)) revert AddressZero();
         gateway = gateway_;
     }
 
@@ -59,7 +59,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
             return amount;
         }
 
-        if(tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             _transferToken(tokenAddress, to, amount);
             return amount;
         }

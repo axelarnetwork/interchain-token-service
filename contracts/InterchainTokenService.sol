@@ -466,7 +466,17 @@ contract InterchainTokenService is
 
         (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, symbol, gasValue);
+        _transmitInterchainTransfer(
+            tokenId,
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            metadataVersion,
+            data,
+            symbol,
+            gasValue
+        );
     }
 
     /**
@@ -529,7 +539,17 @@ contract InterchainTokenService is
 
         (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data, symbol, msg.value);
+        _transmitInterchainTransfer(
+            tokenId,
+            sourceAddress,
+            destinationChain,
+            destinationAddress,
+            amount,
+            metadataVersion,
+            data,
+            symbol,
+            msg.value
+        );
     }
 
     /*************\
@@ -652,10 +672,11 @@ contract InterchainTokenService is
         bytes calldata payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) external {        
+    ) external {
         bytes32 payloadHash = keccak256(payload);
 
-        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount)) revert NotApprovedByGateway();
+        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+            revert NotApprovedByGateway();
 
         _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
     }
@@ -838,7 +859,7 @@ contract InterchainTokenService is
 
         gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
-    
+
     function _execute(
         bytes32 commandId,
         string calldata sourceChain,
@@ -863,6 +884,7 @@ contract InterchainTokenService is
             revert InvalidMessageType(messageType);
         }
     }
+
     /**
      * @notice Deploys a token manager on a destination chain.
      * @param tokenId The ID of the token.
@@ -1046,7 +1068,7 @@ contract InterchainTokenService is
             amount,
             data
         );
-        if(bytes(symbol).length > 0) {
+        if (bytes(symbol).length > 0) {
             _callContractWithToken(destinationChain, payload, symbol, amount, metadataVersion, gasValue);
         } else {
             _callContract(destinationChain, payload, metadataVersion, gasValue);
@@ -1073,7 +1095,7 @@ contract InterchainTokenService is
 
         /// @dev Track the flow amount being sent out as a message
         ITokenManager(tokenManager_).addFlowOut(amount);
-        if(tokenManagerType == uint256(TokenManagerType.GATEWAY)) symbol = IERC20Named(tokenAddress).symbol();
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) symbol = IERC20Named(tokenAddress).symbol();
         return (amount, symbol);
     }
 

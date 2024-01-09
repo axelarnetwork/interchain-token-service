@@ -100,9 +100,12 @@ describe('Interchain Token Service', () => {
             service.address,
             tokenId,
         ]);
-        let params = defaultAbiCoder.encode(['string', 'string', 'uint8', 'uint256', 'address', 'uint256'], [tokenName, tokenSymbol, tokenDecimals, 0, token.address, 0]);
+        let params = defaultAbiCoder.encode(
+            ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
+            [tokenName, tokenSymbol, tokenDecimals, 0, token.address, 0],
+        );
         await (await gateway.deployToken(params, getRandomBytes32())).wait();
-        
+
         params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
         await (await service.deployTokenManager(salt, '', GATEWAY, params, 0)).wait();
@@ -1378,7 +1381,6 @@ describe('Interchain Token Service', () => {
                 .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount, HashZero);
         });
 
-
         it('Should be able to receive gateway token', async () => {
             const symbol = 'TT5';
             const [token, , tokenId] = await deployFunctions.gateway(`Test Token Lock Unlock`, symbol, 12, amount);
@@ -1388,11 +1390,22 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-            const commandId = await approveContractCallWithMint(gateway, sourceChain, sourceAddress, service.address, payload, symbol, amount);
+            const commandId = await approveContractCallWithMint(
+                gateway,
+                sourceChain,
+                sourceAddress,
+                service.address,
+                payload,
+                symbol,
+                amount,
+            );
 
             await expect(
-                reportGas(service.executeWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount), 'Receive GMP INTERCHAIN_TRANSFER lock/unlock'),
-                )
+                reportGas(
+                    service.executeWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount),
+                    'Receive GMP INTERCHAIN_TRANSFER lock/unlock',
+                ),
+            )
                 .to.emit(token, 'Transfer')
                 .withArgs(service.address, destAddress, amount)
                 .to.emit(token, 'Transfer')
@@ -1500,7 +1513,7 @@ describe('Interchain Token Service', () => {
 
             const metadataExpress = '0x00000001';
 
-            let transferToAddress = service.address;
+            const transferToAddress = service.address;
 
             await expect(
                 reportGas(
@@ -1937,7 +1950,7 @@ describe('Interchain Token Service', () => {
             );
             const payloadHash = keccak256(payload);
 
-            let transferToAddress = service.address;
+            const transferToAddress = service.address;
 
             await expect(
                 reportGas(
@@ -1970,7 +1983,6 @@ describe('Interchain Token Service', () => {
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
         });
-
     });
 
     describe('Send Interchain Token With Data', () => {
@@ -2346,7 +2358,18 @@ describe('Interchain Token Service', () => {
 
             const commandId = getRandomBytes32();
             await (await service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount)).wait();
-            await approveContractCallWithMint(gateway, sourceChain, sourceAddress, service.address, payload, symbol, amount, getRandomBytes32(), 0, commandId);
+            await approveContractCallWithMint(
+                gateway,
+                sourceChain,
+                sourceAddress,
+                service.address,
+                payload,
+                symbol,
+                amount,
+                getRandomBytes32(),
+                0,
+                commandId,
+            );
 
             await expect(service.executeWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount))
                 .to.emit(token, 'Transfer')
@@ -2638,7 +2661,6 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Unsupported functions', () => {
-        const commandId = HashZero;
         const sourceChain = 'Source chain';
         const sourceAddress = 'Source address';
         const payload = '0x';
