@@ -874,9 +874,8 @@ contract InterchainTokenService is
             if (expressExecutor != address(0)) {
                 emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
             }
-            
-            _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
 
+            _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {

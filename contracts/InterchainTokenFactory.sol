@@ -315,7 +315,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      */
     function registerGatewayToken(bytes32 salt, string calldata symbol) external onlyServiceOwner {
         address tokenAddress = gateway.tokenAddresses(symbol);
-        if(tokenAddress == address(0)) revert NotGatewayToken(symbol);
+        if (tokenAddress == address(0)) revert NotGatewayToken(symbol);
         bytes memory params = abi.encode('', tokenAddress);
         interchainTokenService.deployTokenManager(salt, '', TokenManagerType.GATEWAY, params, 0);
     }
