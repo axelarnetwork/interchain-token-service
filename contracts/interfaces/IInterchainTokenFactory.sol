@@ -17,6 +17,8 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error NotMinter(address minter);
     error NotOperator(address operator);
     error GatewayToken(address tokenAddress);
+    error NotServiceOwner(address sender);
+    error NotGatewayToken(string symbol);
 
     /**
      * @notice Returns the address of the interchain token service.

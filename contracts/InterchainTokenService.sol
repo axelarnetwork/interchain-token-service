@@ -871,11 +871,12 @@ contract InterchainTokenService is
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
 
-            _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
-
             if (expressExecutor != address(0)) {
                 emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
             }
+            
+            _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
+
         } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
