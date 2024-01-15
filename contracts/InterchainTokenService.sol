@@ -8,7 +8,7 @@ import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
-import { SafeTokenTransferFrom } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
@@ -49,6 +49,7 @@ contract InterchainTokenService is
     using AddressBytes for bytes;
     using AddressBytes for address;
     using SafeTokenTransferFrom for IERC20;
+    using SafeTokenCall for IERC20;
 
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
@@ -70,6 +71,8 @@ contract InterchainTokenService is
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-service');
     bytes32 private constant EXECUTE_SUCCESS = keccak256('its-execute-success');
     bytes32 private constant EXPRESS_EXECUTE_SUCCESS = keccak256('its-express-execute-success');
+
+    uint256 internal constant UINT256_MAX = type(uint256).max;
 
     /**
      * @dev The message types that are sent between InterchainTokenService on different chains.
@@ -662,6 +665,7 @@ contract InterchainTokenService is
         string calldata /*tokenSymbol*/,
         uint256 /*amount*/
     ) external payable {
+        // It should be ok to ignore the symbol and amount since this info exists on the payload.
         expressExecute(commandId, sourceChain, sourceAddress, payload);
     }
 
@@ -837,9 +841,9 @@ contract InterchainTokenService is
                     address(this),
                     destinationChain,
                     destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
+                    payload,
                     symbol,
-                    amount,
+                    amount, // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
@@ -847,9 +851,9 @@ contract InterchainTokenService is
                     address(this),
                     destinationChain,
                     destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
+                    payload,
                     symbol,
-                    amount,
+                    amount, // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
             } else {
@@ -1095,7 +1099,9 @@ contract InterchainTokenService is
 
         /// @dev Track the flow amount being sent out as a message
         ITokenManager(tokenManager_).addFlowOut(amount);
-        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) symbol = IERC20Named(tokenAddress).symbol();
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
+            symbol = IERC20Named(tokenAddress).symbol();
+        }
         return (amount, symbol);
     }
 

@@ -32,7 +32,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
-    bytes32 internal constant PREFIX_GATEWAY_TOKEN_SALT = keccak256('gateway-token-salt');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     /**
@@ -46,15 +45,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
         chainNameHash = interchainTokenService.chainNameHash();
         gateway = interchainTokenService.gateway();
-    }
-
-    /**
-     * @notice This modifier is used to ensure that only a the owner of the interchain token service can call a function.
-     */
-    modifier onlyServiceOwner() {
-        if (msg.sender != interchainTokenService.owner()) revert NotServiceOwner(msg.sender);
-
-        _;
     }
 
     /**
@@ -84,16 +74,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      */
     function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash_, tokenAddress));
-    }
-
-    /**
-     * @notice Calculates the salt for a canonical interchain token.
-     * @param chainNameHash_ The hash of the chain name.
-     * @param symbol The symbol of the address in the gateway.
-     * @return salt The calculated salt for the interchain token.
-     */
-    function gatewayInterchainTokenSalt(bytes32 chainNameHash_, string calldata symbol) public pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash_, symbol));
     }
 
     /**
@@ -309,15 +289,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     /**
-     * @notice Enables the service oweners to register 'canonical' gateway tokens. The need to pass the same salt for the same token.
+     * @notice Register 'canonical' gateway tokens. The same salt needs to be used for the same gateway token on every chain.
      * @param salt The salt to be used for the token registration. Should be the same for all tokens and something that will not have collisions with any of the other salts used by the factory.
      * @param symbol The symbol of the token to register.
      */
-    function registerGatewayToken(bytes32 salt, string calldata symbol) external onlyServiceOwner {
+    function registerGatewayToken(bytes32 salt, string calldata symbol) external onlyOwner returns (bytes32 tokenId) {
         address tokenAddress = gateway.tokenAddresses(symbol);
         if (tokenAddress == address(0)) revert NotGatewayToken(symbol);
         bytes memory params = abi.encode('', tokenAddress);
-        interchainTokenService.deployTokenManager(salt, '', TokenManagerType.GATEWAY, params, 0);
+        tokenId = interchainTokenService.deployTokenManager(salt, '', TokenManagerType.GATEWAY, params, 0);
     }
 
     /**
