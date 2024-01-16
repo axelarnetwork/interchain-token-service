@@ -72,8 +72,6 @@ contract InterchainTokenService is
     bytes32 private constant EXECUTE_SUCCESS = keccak256('its-execute-success');
     bytes32 private constant EXPRESS_EXECUTE_SUCCESS = keccak256('its-express-execute-success');
 
-    uint256 internal constant UINT256_MAX = type(uint256).max;
-
     /**
      * @dev The message types that are sent between InterchainTokenService on different chains.
      */
@@ -851,7 +849,7 @@ contract InterchainTokenService is
                     address(this),
                     destinationChain,
                     destinationAddress,
-                    payload,
+                    payload, 
                     symbol,
                     amount, // solhint-disable-next-line avoid-tx-origin
                     tx.origin
@@ -961,9 +959,10 @@ contract InterchainTokenService is
             tokenManager_ := mload(add(returnData, 0x20))
         }
 
-        if (tokenManagerType == TokenManagerType.LOCK_UNLOCK || tokenManagerType == TokenManagerType.LOCK_UNLOCK_FEE) {
-            ITokenManager(tokenManager_).approveService();
-        }
+        (success, returnData) = tokenHandler.delegatecall(
+            abi.encodeWithSelector(ITokenHandler.postTokenManagerDeploy.selector, tokenManagerType, tokenManager_)
+        );
+        if (!success) revert PostDeployFailed(returnData);
 
         // slither-disable-next-line reentrancy-events
         emit TokenManagerDeployed(tokenId, tokenManager_, tokenManagerType, params);

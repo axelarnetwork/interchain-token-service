@@ -8,6 +8,7 @@ import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
+import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 
@@ -21,6 +22,8 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     using SafeTokenTransfer for IERC20;
 
     address public immutable gateway;
+
+    uint256 internal constant UINT256_MAX = type(uint256).max;
 
     constructor(address gateway_) {
         if (gateway_ == address(0)) revert AddressZero();
@@ -148,6 +151,24 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         revert UnsupportedTokenManagerType(tokenManagerType);
     }
 
+    /**
+     * @notice This function prepares a token manager after it is deployed
+     * @param tokenManagerType The token manager type.
+     * @param tokenManager The address of the token manager.
+     */
+    // slither-disable-next-line locked-ether
+    function postTokenManagerDeploy(uint256 tokenManagerType, address tokenManager) external payable {
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+            ITokenManager(tokenManager).approveService();
+        }
+
+        // Approve the gateway here.
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
+            IERC20 token = IERC20(ITokenManager(tokenManager).tokenAddress());
+            token.safeCall(abi.encodeWithSelector(IERC20.approve.selector, gateway, UINT256_MAX));
+        }
+    }
+
     function _transferTokenFrom(address tokenAddress, address from, address to, uint256 amount) internal {
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(tokenAddress).safeTransferFrom(from, to, amount);
@@ -191,4 +212,5 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     function _approveGateway(address tokenAddress, uint256 amount) internal {
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20.approve.selector, gateway, amount));
     }
+
 }

@@ -60,4 +60,6 @@ interface ITokenHandler {
         address to,
         uint256 amount
     ) external payable returns (uint256);
+
+    function postTokenManagerDeploy(uint256 tokenManagerType, address tokenManager) external payable;
 }
