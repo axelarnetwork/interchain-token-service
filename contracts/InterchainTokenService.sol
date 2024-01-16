@@ -849,7 +849,7 @@ contract InterchainTokenService is
                     address(this),
                     destinationChain,
                     destinationAddress,
-                    payload, 
+                    payload,
                     symbol,
                     amount, // solhint-disable-next-line avoid-tx-origin
                     tx.origin

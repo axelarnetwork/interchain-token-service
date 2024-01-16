@@ -190,7 +190,7 @@ describe('InterchainTokenFactory', () => {
 
             tokenId = await service.interchainTokenId(AddressZero, salt);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            
+
             if (lockUnlock) {
                 await (await token.mint(wallet.address, tokenCap)).wait();
                 await (await token.setTokenId(tokenId)).wait();
