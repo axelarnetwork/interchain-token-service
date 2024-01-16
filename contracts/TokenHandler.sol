@@ -109,7 +109,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
 
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             _transferTokenFrom(tokenAddress, from, address(this), amount);
-            _approveGateway(tokenAddress, amount);
             return amount;
         }
 
@@ -165,7 +164,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         // Approve the gateway here.
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             IERC20 token = IERC20(ITokenManager(tokenManager).tokenAddress());
-            token.safeCall(abi.encodeWithSelector(IERC20.approve.selector, gateway, UINT256_MAX));
+            _approveGateway(tokenAddress, amount);
         }
     }
 
