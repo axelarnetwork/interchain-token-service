@@ -163,7 +163,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
 
         // Approve the gateway here.
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
-            IERC20 token = IERC20(ITokenManager(tokenManager).tokenAddress());
+            address token = ITokenManager(tokenManager).tokenAddress();
             _approveGateway(token, UINT256_MAX);
         }
     }
