@@ -817,7 +817,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Calls a contract on a specific destination chain with the given payload
+     * @notice Calls a contract on a specific destination chain with the given payload and gateway token
      * @param destinationChain The target chain where the contract will be called.
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
