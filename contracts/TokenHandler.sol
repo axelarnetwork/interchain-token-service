@@ -161,7 +161,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
             ITokenManager(tokenManager).approveService();
         }
 
-        // Approve the gateway here.
+        // Approve the gateway here. One-time infinite approval works for gateway wrapped tokens, and for most origin tokens. Approval can be refreshed in the future if needed for certain tokens.
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             address token = ITokenManager(tokenManager).tokenAddress();
             _approveGateway(token, UINT256_MAX);
