@@ -186,14 +186,14 @@ describe('InterchainTokenFactory', () => {
                 [name, symbol, decimals, 0, tokenAddress, 0],
             );
 
-            await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait());
+            await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait);
 
             tokenId = await service.interchainTokenId(AddressZero, salt);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
             if (lockUnlock) {
-                await token.mint(wallet.address, tokenCap).then((tx) => tx.wait());
-                await token.setTokenId(tokenId).then((tx) => tx.wait());
+                await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
+                await token.setTokenId(tokenId).then((tx) => tx.wait);
             } else {
                 tokenAddress = await gateway.tokenAddresses(symbol);
                 token = await getContractAt('IERC20', tokenAddress);
@@ -202,7 +202,7 @@ describe('InterchainTokenFactory', () => {
                         defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, wallet.address, tokenCap]),
                         getRandomBytes32(),
                     )
-                    .then((tx) => tx.wait());
+                    .then((tx) => tx.wait);
             }
         }
 

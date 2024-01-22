@@ -37,7 +37,7 @@ describe('ERC20 Permit', () => {
 
         token = await getContractAt('InterchainToken', tokenAddress, owner);
 
-        await interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait());
+        await interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait);
 
         await token.mint(owner.address, mintAmount).then((tx) => tx.wait);
         expect(await token.interchainTokenId()).to.equal(tokenId);

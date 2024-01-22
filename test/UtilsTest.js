@@ -244,9 +244,9 @@ describe('FlowLimit', async () => {
 
     it('Should revert if single flow amount exceeds the flow limit', async () => {
         const excessiveFlowAmount = flowLimit + 1;
-        await test.setFlowLimit(flowLimit).then((tx) => tx.wait());
+        await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
 
-        await test.addFlowIn(flowLimit - 1).then((tx) => tx.wait());
+        await test.addFlowIn(flowLimit - 1).then((tx) => tx.wait);
 
         await expectRevert((gasOptions) => test.addFlowIn(excessiveFlowAmount, gasOptions), test, 'FlowLimitExceeded', [
             flowLimit,

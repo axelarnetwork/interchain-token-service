@@ -225,7 +225,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         await axelarServiceGovernance
             .connect(wallet)
             .executeMultisigProposal(target, calldata, nativeValue)
-            .then((tx) => tx.wait());
+            .then((tx) => tx.wait);
 
         await expect(axelarServiceGovernance.connect(otherWallet).executeMultisigProposal(target, calldata, nativeValue))
             .to.emit(axelarServiceGovernance, 'MultisigExecuted')
