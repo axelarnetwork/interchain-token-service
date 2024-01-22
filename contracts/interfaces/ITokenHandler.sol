@@ -11,6 +11,12 @@ interface ITokenHandler {
     error AddressZero();
 
     /**
+     * @notice Returns the address of the axelar gateway on this chain.
+     * @return gateway_ The address of the axelar gateway contract.
+     */
+    function gateway() external view returns (address gateway_);
+
+    /**
      * @notice This function gives token to a specified address from the token manager.
      * @param tokenManagerType The token manager type.
      * @param tokenAddress The address of the token to give.
@@ -61,5 +67,10 @@ interface ITokenHandler {
         uint256 amount
     ) external payable returns (uint256);
 
+    /**
+     * @notice This function prepares a token manager after it is deployed
+     * @param tokenManagerType The token manager type.
+     * @param tokenManager The address of the token manager.
+     */
     function postTokenManagerDeploy(uint256 tokenManagerType, address tokenManager) external payable;
 }
