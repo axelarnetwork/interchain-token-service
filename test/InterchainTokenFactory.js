@@ -197,10 +197,12 @@ describe('InterchainTokenFactory', () => {
             } else {
                 tokenAddress = await gateway.tokenAddresses(symbol);
                 token = await getContractAt('IERC20', tokenAddress);
-                await gateway.mintToken(
-                    defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, wallet.address, tokenCap]),
-                    getRandomBytes32(),
-                ).then((tx) => tx.wait());;
+                await gateway
+                    .mintToken(
+                        defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, wallet.address, tokenCap]),
+                        getRandomBytes32(),
+                    )
+                    .then((tx) => tx.wait());
             }
         }
 
