@@ -37,9 +37,9 @@ describe('InterchainToken', () => {
 
         token = await getContractAt('InterchainToken', tokenAddress, owner);
 
-        await interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait());
+        await interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait);
 
-        await (await token.mint(owner.address, mintAmount)).wait();
+        await token.mint(owner.address, mintAmount).then((tx) => tx.wait);
         expect(await token.interchainTokenId()).to.equal(tokenId);
     });
 
@@ -111,7 +111,7 @@ describe('InterchainToken', () => {
             const spender = user.address;
             const amount = 100;
 
-            await tokenTest.approve(spender, amount).then((tx) => tx.wait());
+            await tokenTest.approve(spender, amount).then((tx) => tx.wait);
             const initialAllowance = await tokenTest.allowance(sender, spender);
             expect(initialAllowance).to.eq(amount);
 
@@ -128,7 +128,7 @@ describe('InterchainToken', () => {
             const spender = user.address;
             const amount = MaxUint256;
 
-            await tokenTest.approve(spender, amount).then((tx) => tx.wait());
+            await tokenTest.approve(spender, amount).then((tx) => tx.wait);
             const initialAllowance = await tokenTest.allowance(sender, spender);
             expect(initialAllowance).to.eq(amount);
 

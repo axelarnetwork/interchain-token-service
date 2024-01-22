@@ -289,6 +289,18 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     /**
+     * @notice Register 'canonical' gateway tokens. The same salt needs to be used for the same gateway token on every chain.
+     * @param salt The salt to be used for the token registration. Should be the same for all tokens and something that will not have collisions with any of the other salts used by the factory.
+     * @param symbol The symbol of the token to register.
+     */
+    function registerGatewayToken(bytes32 salt, string calldata symbol) external onlyOwner returns (bytes32 tokenId) {
+        address tokenAddress = gateway.tokenAddresses(symbol);
+        if (tokenAddress == address(0)) revert NotGatewayToken(symbol);
+        bytes memory params = abi.encode('', tokenAddress);
+        tokenId = interchainTokenService.deployTokenManager(salt, '', TokenManagerType.GATEWAY, params, 0);
+    }
+
+    /**
      * @notice Checks if a given token is a gateway token.
      * @param token The address of the token to check.
      * @return bool True if the token is a gateway token, false otherwise.

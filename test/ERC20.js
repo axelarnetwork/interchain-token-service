@@ -35,9 +35,9 @@ describe('ERC20', () => {
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
         token = await getContractAt('InterchainToken', tokenAddress, owner);
 
-        await interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait());
+        await interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait);
 
-        await (await token.mint(owner.address, mintAmount)).wait();
+        await token.mint(owner.address, mintAmount).then((tx) => tx.wait);
         expect(await token.interchainTokenId()).to.equal(tokenId);
     });
 

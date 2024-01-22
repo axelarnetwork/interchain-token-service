@@ -21,7 +21,28 @@ async function approveContractCall(
         ['string', 'string', 'address', 'bytes32', 'bytes32', 'uint256'],
         [sourceChain, sourceAddress, contractAddress, keccak256(payload), sourceTxHash, sourceEventIndex],
     );
-    await (await gateway.approveContractCall(params, commandId)).wait();
+    await gateway.approveContractCall(params, commandId).then((tx) => tx.wait);
+
+    return commandId;
+}
+
+async function approveContractCallWithMint(
+    gateway,
+    sourceChain,
+    sourceAddress,
+    contractAddress,
+    payload,
+    symbol,
+    amount,
+    sourceTxHash = getRandomBytes32(),
+    sourceEventIndex = 0,
+    commandId = getRandomBytes32(),
+) {
+    const params = defaultAbiCoder.encode(
+        ['string', 'string', 'address', 'bytes32', 'string', 'uint256', 'bytes32', 'uint256'],
+        [sourceChain, sourceAddress, contractAddress, keccak256(payload), symbol, amount, sourceTxHash, sourceEventIndex],
+    );
+    await gateway.approveContractCallWithMint(params, commandId).then((tx) => tx.wait);
 
     return commandId;
 }
@@ -39,11 +60,12 @@ async function deployGatewayToken(gateway, tokenName, tokenSymbol, tokenDecimals
         [tokenName, tokenSymbol, tokenDecimals, 0, tokenAddress, 0],
     );
     const commandId = getRandomBytes32();
-    await (await gateway.deployToken(params, commandId)).wait();
+    await gateway.deployToken(params, commandId).then((tx) => tx.wait);
 }
 
 module.exports = {
     getRandomBytes32,
     approveContractCall,
+    approveContractCallWithMint,
     deployGatewayToken,
 };

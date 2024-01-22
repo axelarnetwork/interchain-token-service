@@ -73,7 +73,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
         interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
         tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
-        tokenHandler = await deployContract(wallet, 'TokenHandler', []);
+        tokenHandler = await deployContract(wallet, 'TokenHandler', [gateway.address]);
         interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey + 'Factory');
 
         axelarServiceGovernanceFactory = await ethers.getContractFactory(
@@ -225,7 +225,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         await axelarServiceGovernance
             .connect(wallet)
             .executeMultisigProposal(target, calldata, nativeValue)
-            .then((tx) => tx.wait());
+            .then((tx) => tx.wait);
 
         await expect(axelarServiceGovernance.connect(otherWallet).executeMultisigProposal(target, calldata, nativeValue))
             .to.emit(axelarServiceGovernance, 'MultisigExecuted')

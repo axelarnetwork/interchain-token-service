@@ -46,6 +46,7 @@ interface IInterchainTokenService is
     error GiveTokenFailed(bytes data);
     error TokenHandlerFailed(bytes data);
     error EmptyData();
+    error PostDeployFailed(bytes data);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,

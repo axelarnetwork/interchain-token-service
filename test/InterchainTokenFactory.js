@@ -16,6 +16,7 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 
 const LOCK_UNLOCK = 2;
 const MINT_BURN = 0;
+const GATEWAY = 4;
 
 const MINTER_ROLE = 0;
 const OPERATOR_ROLE = 1;
@@ -65,8 +66,8 @@ describe('InterchainTokenFactory', () => {
             ]);
             tokenId = await tokenFactory.canonicalInterchainTokenId(token.address);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await (await token.mint(wallet.address, tokenCap)).wait();
-            await (await token.setTokenId(tokenId)).wait();
+            await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
+            await token.setTokenId(tokenId).then((tx) => tx.wait);
         }
 
         before(async () => {
@@ -130,7 +131,7 @@ describe('InterchainTokenFactory', () => {
                 ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
                 [name, symbol, decimals, tokenCap, tokenAddress, mintLimit],
             );
-            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+            await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait);
 
             await expectRevert(
                 (gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenAddress, gasOptions),
@@ -149,7 +150,7 @@ describe('InterchainTokenFactory', () => {
                 ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
                 [name, newSymbol, decimals, tokenCap, tokenAddress, mintLimit],
             );
-            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+            await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait);
 
             tokenAddress = await gateway.tokenAddresses(newSymbol);
 
@@ -159,6 +160,79 @@ describe('InterchainTokenFactory', () => {
                 'GatewayToken',
                 [tokenAddress],
             );
+        });
+    });
+
+    describe('Gateway Interchain Token Factory', async () => {
+        let token, tokenId, tokenManagerAddress, symbol;
+        const tokenCap = BigInt(1e18);
+
+        async function deployToken(salt, lockUnlock = true) {
+            let tokenAddress = AddressZero;
+
+            if (lockUnlock) {
+                token = await deployContract(wallet, 'TestInterchainTokenStandard', [
+                    name,
+                    symbol,
+                    decimals,
+                    service.address,
+                    getRandomBytes32(),
+                ]);
+                tokenAddress = token.address;
+            }
+
+            const params = defaultAbiCoder.encode(
+                ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
+                [name, symbol, decimals, 0, tokenAddress, 0],
+            );
+
+            await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait);
+
+            tokenId = await service.interchainTokenId(AddressZero, salt);
+            tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+
+            if (lockUnlock) {
+                await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
+                await token.setTokenId(tokenId).then((tx) => tx.wait);
+            } else {
+                tokenAddress = await gateway.tokenAddresses(symbol);
+                token = await getContractAt('IERC20', tokenAddress);
+                await gateway
+                    .mintToken(
+                        defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, wallet.address, tokenCap]),
+                        getRandomBytes32(),
+                    )
+                    .then((tx) => tx.wait);
+            }
+        }
+
+        it('Should register a token lock/unlock gateway token', async () => {
+            const salt = getRandomBytes32();
+            symbol = 'TT0';
+            await deployToken(salt, true);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+
+            await expect(tokenFactory.registerGatewayToken(salt, symbol))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManagerAddress, GATEWAY, params);
+        });
+
+        it('Should register a token mint/burn gateway token', async () => {
+            const salt = getRandomBytes32();
+            symbol = 'TT1';
+            await deployToken(salt, false);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+
+            await expect(tokenFactory.registerGatewayToken(salt, symbol))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManagerAddress, GATEWAY, params);
+        });
+
+        it('Should revert when trying to register a gateway token that does not exist', async () => {
+            const salt = getRandomBytes32();
+            const symbol = 'TT2';
+
+            await expectRevert((gasOptions) => tokenFactory.registerGatewayToken(salt, symbol), tokenFactory, 'NotGatewayToken', [symbol]);
         });
     });
 

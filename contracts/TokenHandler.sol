@@ -4,10 +4,11 @@ pragma solidity ^0.8.0;
 
 import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-import { SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
 
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
+import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 
@@ -18,6 +19,16 @@ import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     using SafeTokenTransferFrom for IERC20;
     using SafeTokenCall for IERC20;
+    using SafeTokenTransfer for IERC20;
+
+    address public immutable gateway;
+
+    uint256 internal constant UINT256_MAX = type(uint256).max;
+
+    constructor(address gateway_) {
+        if (gateway_ == address(0)) revert AddressZero();
+        gateway = gateway_;
+    }
 
     /**
      * @notice This function gives token to a specified address from the token manager.
@@ -48,6 +59,11 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _transferTokenFromWithFee(tokenAddress, tokenManager, to, amount);
+            return amount;
+        }
+
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
+            _transferToken(tokenAddress, to, amount);
             return amount;
         }
 
@@ -91,6 +107,11 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
             return amount;
         }
 
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
+            _transferTokenFrom(tokenAddress, from, address(this), amount);
+            return amount;
+        }
+
         revert UnsupportedTokenManagerType(tokenManagerType);
     }
 
@@ -114,7 +135,8 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         if (
             tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) ||
             tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
-            tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM) ||
+            tokenManagerType == uint256(TokenManagerType.GATEWAY)
         ) {
             _transferTokenFrom(tokenAddress, from, to, amount);
             return amount;
@@ -128,9 +150,32 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         revert UnsupportedTokenManagerType(tokenManagerType);
     }
 
+    /**
+     * @notice This function prepares a token manager after it is deployed
+     * @param tokenManagerType The token manager type.
+     * @param tokenManager The address of the token manager.
+     */
+    // slither-disable-next-line locked-ether
+    function postTokenManagerDeploy(uint256 tokenManagerType, address tokenManager) external payable {
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+            ITokenManager(tokenManager).approveService();
+        }
+
+        // Approve the gateway here. One-time infinite approval works for gateway wrapped tokens, and for most origin tokens. Approval can be refreshed in the future if needed for certain tokens.
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
+            address token = ITokenManager(tokenManager).tokenAddress();
+            _approveGateway(token, UINT256_MAX);
+        }
+    }
+
     function _transferTokenFrom(address tokenAddress, address from, address to, uint256 amount) internal {
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(tokenAddress).safeTransferFrom(from, to, amount);
+    }
+
+    function _transferToken(address tokenAddress, address to, uint256 amount) internal {
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(tokenAddress).safeTransfer(to, amount);
     }
 
     function _transferTokenFromWithFee(
@@ -161,5 +206,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
 
     function _takeTokenMintBurnFrom(address tokenAddress, address from, uint256 amount) internal {
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
+    }
+
+    function _approveGateway(address tokenAddress, uint256 amount) internal {
+        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20.approve.selector, gateway, amount));
     }
 }
