@@ -66,8 +66,8 @@ describe('InterchainTokenFactory', () => {
             ]);
             tokenId = await tokenFactory.canonicalInterchainTokenId(token.address);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await (await token.mint(wallet.address, tokenCap)).wait();
-            await (await token.setTokenId(tokenId)).wait();
+            await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
+            await token.setTokenId(tokenId).then((tx) => tx.wait);
         }
 
         before(async () => {
@@ -131,7 +131,7 @@ describe('InterchainTokenFactory', () => {
                 ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
                 [name, symbol, decimals, tokenCap, tokenAddress, mintLimit],
             );
-            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+            await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait);
 
             await expectRevert(
                 (gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenAddress, gasOptions),
@@ -150,7 +150,7 @@ describe('InterchainTokenFactory', () => {
                 ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
                 [name, newSymbol, decimals, tokenCap, tokenAddress, mintLimit],
             );
-            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+            await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait);
 
             tokenAddress = await gateway.tokenAddresses(newSymbol);
 
@@ -186,21 +186,21 @@ describe('InterchainTokenFactory', () => {
                 [name, symbol, decimals, 0, tokenAddress, 0],
             );
 
-            await (await gateway.deployToken(params, getRandomBytes32())).wait();
+            await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait());
 
             tokenId = await service.interchainTokenId(AddressZero, salt);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
             if (lockUnlock) {
-                await (await token.mint(wallet.address, tokenCap)).wait();
-                await (await token.setTokenId(tokenId)).wait();
+                await token.mint(wallet.address, tokenCap).then((tx) => tx.wait());
+                await token.setTokenId(tokenId).then((tx) => tx.wait());
             } else {
                 tokenAddress = await gateway.tokenAddresses(symbol);
                 token = await getContractAt('IERC20', tokenAddress);
-                await await gateway.mintToken(
+                await gateway.mintToken(
                     defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, wallet.address, tokenCap]),
                     getRandomBytes32(),
-                );
+                ).then((tx) => tx.wait());;
             }
         }
 

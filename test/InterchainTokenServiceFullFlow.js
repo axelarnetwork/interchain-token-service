@@ -344,7 +344,7 @@ describe('Interchain Token Service Full Flow', () => {
             token = await deployContract(wallet, 'TestMintableBurnableERC20', [name, symbol, decimals]);
 
             tokenId = await service.interchainTokenId(wallet.address, salt);
-            await (await token.mint(wallet.address, tokenCap)).wait();
+            await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {

@@ -30,7 +30,7 @@ describe('Operator', () => {
     });
 
     it('Should be able to run the onlyOperatorable function as the operator', async () => {
-        await (await test.testOperatorable()).wait();
+        await test.testOperatorable().then((tx) => tx.wait);
 
         expect(await test.nonce()).to.equal(1);
     });
@@ -104,7 +104,7 @@ describe('Minter', () => {
     });
 
     it('Should be able to run the onlyMinter function as the minter', async () => {
-        await (await test.testMinter()).wait();
+        await test.testMinter().then((tx) => tx.wait);
 
         expect(await test.nonce()).to.equal(1);
     });
@@ -204,7 +204,7 @@ describe('FlowLimit', async () => {
         await nextEpoch();
 
         for (let i = 0; i < flowLimit; i++) {
-            await (await test.addFlowIn(1)).wait();
+            await test.addFlowIn(1).then((tx) => tx.wait);
             expect(await test.flowInAmount()).to.equal(i + 1);
         }
 
@@ -218,14 +218,14 @@ describe('FlowLimit', async () => {
 
         expect(await test.flowInAmount()).to.equal(0);
 
-        await (await test.addFlowIn(flowLimit)).wait();
+        await test.addFlowIn(flowLimit).then((tx) => tx.wait);
     });
 
     it('Should test flow out', async () => {
         await nextEpoch();
 
         for (let i = 0; i < flowLimit; i++) {
-            await (await test.addFlowOut(1)).wait();
+            await test.addFlowOut(1).then((tx) => tx.wait);
             expect(await test.flowOutAmount()).to.equal(i + 1);
         }
 
@@ -239,7 +239,7 @@ describe('FlowLimit', async () => {
 
         expect(await test.flowOutAmount()).to.equal(0);
 
-        await (await test.addFlowOut(flowLimit)).wait();
+        await test.addFlowOut(flowLimit).then((tx) => tx.wait);
     });
 
     it('Should revert if single flow amount exceeds the flow limit', async () => {
