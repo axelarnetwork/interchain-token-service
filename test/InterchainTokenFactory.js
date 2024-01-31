@@ -228,11 +228,28 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenId, tokenManagerAddress, GATEWAY, params);
         });
 
+        it('Should revert when trying to register a gateway token from non-owner address', async () => {
+            const salt = getRandomBytes32();
+            const symbol = 'TT2';
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.connect(otherWallet).registerGatewayToken(salt, symbol, gasOptions),
+                tokenFactory,
+                'NotOwner',
+                [],
+            );
+        });
+
         it('Should revert when trying to register a gateway token that does not exist', async () => {
             const salt = getRandomBytes32();
             const symbol = 'TT2';
 
-            await expectRevert((gasOptions) => tokenFactory.registerGatewayToken(salt, symbol), tokenFactory, 'NotGatewayToken', [symbol]);
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerGatewayToken(salt, symbol, gasOptions),
+                tokenFactory,
+                'NotGatewayToken',
+                [symbol],
+            );
         });
     });
 
