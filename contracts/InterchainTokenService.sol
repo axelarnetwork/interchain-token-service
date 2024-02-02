@@ -637,7 +637,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+    ) public {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
@@ -868,7 +868,7 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload,
         bytes32 payloadHash
-    ) internal {
+    ) internal onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
