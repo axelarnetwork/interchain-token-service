@@ -632,12 +632,7 @@ contract InterchainTokenService is
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
      * @param payload The encoded data payload for the transaction.
      */
-    function execute(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload
-    ) public {
+    function execute(bytes32 commandId, string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) public {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();

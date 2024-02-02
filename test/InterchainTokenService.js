@@ -1274,7 +1274,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on execute if remote address validation fails', async () => {
-            const commandId = getRandomBytes32();
+            const commandId = await approveContractCall(gateway, sourceChain, wallet.address, service.address, '0x');
 
             await expectRevert(
                 (gasOptions) => service.execute(commandId, sourceChain, wallet.address, '0x', gasOptions),
@@ -1286,7 +1286,7 @@ describe('Interchain Token Service', () => {
         it('Should revert on execute if the service is paused', async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
-            const commandId = getRandomBytes32();
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, '0x');
 
             await expectRevert((gasOptions) => service.execute(commandId, sourceChain, sourceAddress, '0x', gasOptions), service, 'Pause');
 
