@@ -655,9 +655,10 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload,
-        string calldata /*tokenSymbol*/,
-        uint256 /*amount*/
+        string calldata tokenSymbol,
+        uint256 amount
     ) external payable {
+        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
         // It should be ok to ignore the symbol and amount since this info exists on the payload.
         expressExecute(commandId, sourceChain, sourceAddress, payload);
     }
@@ -675,7 +676,37 @@ contract InterchainTokenService is
         if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
             revert NotApprovedByGateway();
 
-        _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
+        uint256 messageType = abi.decode(payload, (uint256));
+        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
+            revert InvalidExpressMessageType(messageType);
+        }
+
+        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
+
+        address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
+
+        if (expressExecutor != address(0)) {
+            emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
+        }
+
+        _processInterchainTransferPayload(
+            commandId,
+            expressExecutor,
+            sourceChain,
+            payload
+        );
+    }
+
+    function _checkPayloadAgainstGatewayData(bytes calldata payload, string calldata tokenSymbol, uint256 amount) internal view {
+        (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(
+            payload,
+            (uint256, bytes32, uint256, uint256, uint256)
+        );
+
+        if(
+            validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) ||
+            amount != amountInPayload
+        ) revert CallWithTokenMissmatch(payload, tokenSymbol, amount);
     }
 
     /**
