@@ -641,13 +641,14 @@ contract InterchainTokenService is
     }
 
     function contractCallWithTokenValue(
-        string calldata /*sourceChain*/,
-        string calldata /*sourceAddress*/,
-        bytes calldata /*payload*/,
-        string calldata /*symbol*/,
-        uint256 /*amount*/
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata symbol,
+        uint256 amount
     ) public view virtual returns (address, uint256) {
-        revert ExecuteWithTokenNotSupported();
+        _checkPayloadAgainstGatewayData(payload, symbol, amount);
+        return contractCallValue(sourceChain, sourceAddress, payload);
     }
 
     function expressExecuteWithToken(
@@ -689,24 +690,14 @@ contract InterchainTokenService is
             emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
         }
 
-        _processInterchainTransferPayload(
-            commandId,
-            expressExecutor,
-            sourceChain,
-            payload
-        );
+        _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
     }
 
     function _checkPayloadAgainstGatewayData(bytes calldata payload, string calldata tokenSymbol, uint256 amount) internal view {
-        (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(
-            payload,
-            (uint256, bytes32, uint256, uint256, uint256)
-        );
+        (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if(
-            validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) ||
-            amount != amountInPayload
-        ) revert CallWithTokenMissmatch(payload, tokenSymbol, amount);
+        if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
+            revert CallWithTokenMissmatch(payload, tokenSymbol, amount);
     }
 
     /**

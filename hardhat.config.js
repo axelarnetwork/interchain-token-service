@@ -27,11 +27,35 @@ const optimizerSettings = {
         },
     },
 };
+const itsOptimizerSettings = {
+    enabled: true,
+    runs: 750,
+    details: {
+        peephole: process.env.COVERAGE === undefined,
+        inliner: process.env.COVERAGE === undefined,
+        jumpdestRemover: true,
+        orderLiterals: true,
+        deduplicate: true,
+        cse: process.env.COVERAGE === undefined,
+        constantOptimizer: true,
+        yul: true,
+        yulDetails: {
+            stackAllocation: true,
+        },
+    },
+};
 const compilerSettings = {
     version: '0.8.21',
     settings: {
         evmVersion: process.env.EVM_VERSION || 'london',
         optimizer: optimizerSettings,
+    },
+};
+const itsCompilerSettings = {
+    version: '0.8.21',
+    settings: {
+        evmVersion: process.env.EVM_VERSION || 'london',
+        optimizer: itsOptimizerSettings,
     },
 };
 
@@ -45,6 +69,8 @@ module.exports = {
         overrides: {
             'contracts/proxies/Proxy.sol': compilerSettings,
             'contracts/proxies/TokenManagerProxy.sol': compilerSettings,
+            'contracts/InterchainTokenService.sol': itsCompilerSettings,
+            'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
         },
     },
     defaultNetwork: 'hardhat',
