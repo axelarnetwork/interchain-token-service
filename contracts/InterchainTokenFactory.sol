@@ -140,8 +140,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenId = _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, 0);
 
         if (initialSupply > 0) {
-            if(tokenId != 0x108b8ecf67eebbbdfbd5a048cf4f0122c577a636fcae935511aae85c8701849a) revert('asdasd');
-            return tokenId;
             IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
             ITokenManager tokenManager = ITokenManager(interchainTokenService.tokenManagerAddress(tokenId));
             

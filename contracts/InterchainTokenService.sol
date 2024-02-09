@@ -7,7 +7,6 @@ import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contr
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
-import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
 import { SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
@@ -24,6 +23,8 @@ import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecuta
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
+import { Create3Address } from './utils/Create3Address.sol';
+
 
 import { Operator } from './utils/Operator.sol';
 
@@ -118,7 +119,7 @@ contract InterchainTokenService is
         string memory chainName_,
         address tokenManagerImplementation_,
         address tokenHandler_
-    ) {
+    ) Create3Address(ITokenManagerDeployer(tokenManagerDeployer_).createDeployHash()) {
         if (
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||

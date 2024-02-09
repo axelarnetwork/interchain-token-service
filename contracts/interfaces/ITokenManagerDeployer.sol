@@ -22,4 +22,6 @@ interface ITokenManagerDeployer {
         uint256 implementationType,
         bytes calldata params
     ) external payable returns (address tokenManager);
+
+    function createDeployHash() external view returns (bytes32 createDeployBytecodeHash_);
 }
