@@ -349,13 +349,7 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload
     ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
-        (uint256 messageType, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
-
-        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            revert InvalidExpressMessageType(messageType);
-        }
-
-        return (validTokenAddress(tokenId), amount);
+        return _contractCallValue(payload);
     }
 
     /**
@@ -646,9 +640,9 @@ contract InterchainTokenService is
         bytes calldata payload,
         string calldata symbol,
         uint256 amount
-    ) public view virtual returns (address, uint256) {
+    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
         _checkPayloadAgainstGatewayData(payload, symbol, amount);
-        return contractCallValue(sourceChain, sourceAddress, payload);
+        return _contractCallValue(payload);
     }
 
     function expressExecuteWithToken(
@@ -1139,5 +1133,25 @@ contract InterchainTokenService is
         amount = abi.decode(data, (uint256));
 
         return (amount, tokenAddress);
+    }
+    /**
+     * @notice Returns the amount of token that this call is worth.
+     * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
+     * @param payload The payload sent with the call.
+     * @return address The token address.
+     * @return uint256 The value the call is worth.
+     */
+    function _contractCallValue(
+        bytes calldata payload
+    ) internal view returns (address, uint256) {
+        (uint256 messageType, bytes32 tokenId, , , uint256 amount) = abi.decode(
+                payload,
+                (uint256, bytes32, bytes, bytes, uint256)
+            );
+        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
+            revert InvalidExpressMessageType(messageType);
+        }
+
+        return (validTokenAddress(tokenId), amount);
     }
 }
