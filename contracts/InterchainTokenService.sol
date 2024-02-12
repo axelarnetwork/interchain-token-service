@@ -25,7 +25,6 @@ import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
 import { Create3Address } from './utils/Create3Address.sol';
 
-
 import { Operator } from './utils/Operator.sol';
 
 /**

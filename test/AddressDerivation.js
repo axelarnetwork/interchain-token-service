@@ -126,7 +126,8 @@ if (isHardhat) {
                 await expect(tokenFactory.deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, initialSupply, wallet.address))
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, tokenName, tokenSymbol, tokenDecimals)
-                    .to.emit(service, 'TokenManagerDeployed');
+                    .to.emit(service, 'TokenManagerDeployed')
+                    .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
             });
 
             it('Should derive the correct token address for remote interchain token deployment', async () => {
