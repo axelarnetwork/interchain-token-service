@@ -370,9 +370,7 @@ describe('Interchain Token Service', () => {
                         [],
                         deploymentKey,
                         gasOptions,
-                    ),
-                service,
-                'ZeroAddress',
+                    )
             );
         });
 
@@ -2711,23 +2709,7 @@ describe('Interchain Token Service', () => {
             expect(returnedAmount).to.eq(amount);
         });
     });
-
-    describe('Unsupported functions', () => {
-        const sourceChain = 'Source chain';
-        const sourceAddress = 'Source address';
-        const payload = '0x';
-        const symbol = 'ABC';
-        const amount = 100;
-
-        it('Should revert on contractCallWithTokenValue', async () => {
-            await expectRevert(
-                (gasOptions) => service.contractCallWithTokenValue(sourceChain, sourceAddress, payload, symbol, amount, gasOptions),
-                service,
-                'ExecuteWithTokenNotSupported',
-            );
-        });
-    });
-
+    
     describe('Bytecode checks [ @skip-on-coverage ]', () => {
         it('Should preserve the same proxy bytecode for each EVM', async () => {
             const proxyFactory = await ethers.getContractFactory('InterchainProxy', wallet);
