@@ -2710,7 +2710,7 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe.only('Call contract with token value', () => {
+    describe('Call contract with token value', () => {
         const trustedAddress = 'Trusted address with token';
         const name = 'Gateway Token'
         const symbol = 'GT';
@@ -2767,7 +2767,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, 'wrong symbol', amount, gasOptions),
                 service,
                 'CallWithTokenMissmatch',
-                [payload, symbol, amount],
+                [payload, 'wrong symbol', amount],
             );
         });
 
@@ -2779,7 +2779,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, symbol, amount + 1, gasOptions),
                 service,
                 'CallWithTokenMissmatch',
-                [payload, symbol, amount],
+                [payload, symbol, amount + 1],
             );
         });
 
