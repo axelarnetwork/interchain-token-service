@@ -30,7 +30,7 @@ const FLOW_LIMITER_ROLE = 2;
 
 const reportGas = gasReporter('Interchain Token Service');
 
-describe.only('Interchain Token Service', () => {
+describe('Interchain Token Service', () => {
     let wallet, otherWallet;
     let service, gateway, gasService, testToken;
 
