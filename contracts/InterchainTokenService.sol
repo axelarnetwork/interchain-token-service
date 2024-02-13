@@ -1134,6 +1134,7 @@ contract InterchainTokenService is
 
         return (amount, tokenAddress);
     }
+
     /**
      * @notice Returns the amount of token that this call is worth.
      * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
@@ -1141,13 +1142,8 @@ contract InterchainTokenService is
      * @return address The token address.
      * @return uint256 The value the call is worth.
      */
-    function _contractCallValue(
-        bytes calldata payload
-    ) internal view returns (address, uint256) {
-        (uint256 messageType, bytes32 tokenId, , , uint256 amount) = abi.decode(
-                payload,
-                (uint256, bytes32, bytes, bytes, uint256)
-            );
+    function _contractCallValue(bytes calldata payload) internal view returns (address, uint256) {
+        (uint256 messageType, bytes32 tokenId, , , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256));
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidExpressMessageType(messageType);
         }

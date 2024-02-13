@@ -82,13 +82,7 @@ describe.only('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
-    deployFunctions.gateway = async function deployNewGateway(
-        tokenName,
-        tokenSymbol,
-        tokenDecimals,
-        mintAmount = 0,
-        skipApprove = false,
-    ) {
+    deployFunctions.gateway = async function deployNewGateway(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
@@ -354,23 +348,22 @@ describe.only('Interchain Token Service', () => {
         });
 
         it('Should revert on invalid token manager deployer', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    deployInterchainTokenService(
-                        wallet,
-                        create3Deployer.address,
-                        AddressZero,
-                        interchainTokenDeployer.address,
-                        gateway.address,
-                        gasService.address,
-                        interchainTokenFactoryAddress,
-                        tokenManager.address,
-                        tokenHandler.address,
-                        chainName,
-                        [],
-                        deploymentKey,
-                        gasOptions,
-                    )
+            await expectRevert((gasOptions) =>
+                deployInterchainTokenService(
+                    wallet,
+                    create3Deployer.address,
+                    AddressZero,
+                    interchainTokenDeployer.address,
+                    gateway.address,
+                    gasService.address,
+                    interchainTokenFactoryAddress,
+                    tokenManager.address,
+                    tokenHandler.address,
+                    chainName,
+                    [],
+                    deploymentKey,
+                    gasOptions,
+                ),
             );
         });
 
@@ -2686,7 +2679,10 @@ describe.only('Interchain Token Service', () => {
             const message = 10;
             const tokenId = HashZero;
             const amount = 100;
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [message, tokenId, '0x', '0x', amount, '0x']);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [message, tokenId, '0x', '0x', amount, '0x'],
+            );
 
             await expectRevert(
                 (gasOptions) => service.contractCallValue(sourceChain, trustedAddress, payload, gasOptions),
@@ -2701,8 +2697,11 @@ describe.only('Interchain Token Service', () => {
             const [token, , tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, mintAmount);
             const message = 0;
             const amount = 100;
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [message, tokenId, '0x', '0x', amount, '0x']);
-            
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [message, tokenId, '0x', '0x', amount, '0x'],
+            );
+
             const [tokenAddress, returnedAmount] = await service.contractCallValue(sourceChain, trustedAddress, payload);
 
             expect(tokenAddress).to.eq(token.address);
@@ -2712,7 +2711,7 @@ describe.only('Interchain Token Service', () => {
 
     describe('Call contract with token value', () => {
         const trustedAddress = 'Trusted address with token';
-        const name = 'Gateway Token'
+        const name = 'Gateway Token';
         const symbol = 'GT';
         const decimals = 18;
         let tokenId;
@@ -2750,7 +2749,10 @@ describe.only('Interchain Token Service', () => {
         it('Should revert on invalid express message type', async () => {
             const message = 10;
             const amount = 100;
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [message, tokenId, '0x', '0x', amount, '0x']);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [message, tokenId, '0x', '0x', amount, '0x'],
+            );
             await expectRevert(
                 (gasOptions) => service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, symbol, amount, gasOptions),
                 service,
@@ -2762,9 +2764,13 @@ describe.only('Interchain Token Service', () => {
         it('Should revert on token missmatch', async () => {
             const message = 10;
             const amount = 100;
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [message, tokenId, '0x', '0x', amount, '0x']);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [message, tokenId, '0x', '0x', amount, '0x'],
+            );
             await expectRevert(
-                (gasOptions) => service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, 'wrong symbol', amount, gasOptions),
+                (gasOptions) =>
+                    service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, 'wrong symbol', amount, gasOptions),
                 service,
                 'CallWithTokenMissmatch',
                 [payload, 'wrong symbol', amount],
@@ -2774,7 +2780,10 @@ describe.only('Interchain Token Service', () => {
         it('Should revert on amount missmatch', async () => {
             const message = 10;
             const amount = 100;
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [message, tokenId, '0x', '0x', amount, '0x']);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [message, tokenId, '0x', '0x', amount, '0x'],
+            );
             await expectRevert(
                 (gasOptions) => service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, symbol, amount + 1, gasOptions),
                 service,
@@ -2786,9 +2795,18 @@ describe.only('Interchain Token Service', () => {
         it('Should return correct token address and amount', async () => {
             const message = 0;
             const amount = 100;
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [message, tokenId, '0x', '0x', amount, '0x']);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [message, tokenId, '0x', '0x', amount, '0x'],
+            );
 
-            const [tokenAddress, returnedAmount] = await service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, symbol, amount);
+            const [tokenAddress, returnedAmount] = await service.contractCallWithTokenValue(
+                sourceChain,
+                trustedAddress,
+                payload,
+                symbol,
+                amount,
+            );
 
             expect(tokenAddress).to.eq(await service.validTokenAddress(tokenId));
             expect(returnedAmount).to.eq(amount);
