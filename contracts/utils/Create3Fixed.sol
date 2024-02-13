@@ -15,10 +15,10 @@ import { Create3Address } from './Create3Address.sol';
 contract Create3Fixed is Create3Address, IDeploy {
     using ContractAddress for address;
 
-    bytes internal constant createDeployBytecode =
+    bytes internal constant CREATE_DEPLOY_BYTECODE =
         hex'608060405234801561001057600080fd5b50610162806100206000396000f3fe60806040526004361061001d5760003560e01c806277436014610022575b600080fd5b61003561003036600461007b565b610037565b005b8051602082016000f061004957600080fd5b50565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b60006020828403121561008d57600080fd5b813567ffffffffffffffff808211156100a557600080fd5b818401915084601f8301126100b957600080fd5b8135818111156100cb576100cb61004c565b604051601f8201601f19908116603f011681019083821181831017156100f3576100f361004c565b8160405282815287602084870101111561010c57600080fd5b82602086016020830137600092810160200192909252509594505050505056fea264697066735822122094780ce55d28f1d568f4e0ab1b9dc230b96e952b73d2e06456fbff2289fa27f464736f6c63430008150033';
 
-    constructor() Create3Address(keccak256(createDeployBytecode)) {}
+    constructor() Create3Address(keccak256(CREATE_DEPLOY_BYTECODE)) {}
 
     /**
      * @notice Deploys a new contract using the `CREATE3` method.
@@ -37,7 +37,7 @@ contract Create3Fixed is Create3Address, IDeploy {
 
         // Deploy using create2
         CreateDeploy createDeploy;
-        bytes memory createDeployBytecode_ = createDeployBytecode;
+        bytes memory createDeployBytecode_ = CREATE_DEPLOY_BYTECODE;
         uint256 length = createDeployBytecode_.length;
         assembly {
             createDeploy := create2(0, add(createDeployBytecode_, 0x20), length, deploySalt)

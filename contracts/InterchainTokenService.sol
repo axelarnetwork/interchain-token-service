@@ -668,8 +668,6 @@ contract InterchainTokenService is
     ) external {
         bytes32 payloadHash = keccak256(payload);
 
-        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
-            revert NotApprovedByGateway();
 
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
@@ -683,6 +681,9 @@ contract InterchainTokenService is
         if (expressExecutor != address(0)) {
             emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
         }
+
+            if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+        revert NotApprovedByGateway();
 
         _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
     }
