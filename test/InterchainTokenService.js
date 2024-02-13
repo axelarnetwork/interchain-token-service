@@ -1022,6 +1022,44 @@ describe('Interchain Token Service', () => {
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });
+
+        it('Should not approve on the second token manager gateway deployment', async () => {
+            const name = 'Gateway Token Approval';
+            const symbol = 'GTA';
+            const decimals = 18;
+            const [token] = await deployFunctions.gateway(name, symbol, decimals);
+            console.log(await token.allowance(service.address, gateway.address));
+
+            const salt = getRandomBytes32();
+            const tokenId = await service.interchainTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+            const tx = service.deployTokenManager(salt, '', GATEWAY, params, 0);
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            await expect(tx)
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, expectedTokenManagerAddress, GATEWAY, params)
+                .and.to.not.emit(token, 'Approval');
+
+            expect(tokenManagerAddress).to.not.equal(AddressZero);
+            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+
+            expect(await tokenManager.isOperator(wallet.address)).to.be.true;
+            expect(await tokenManager.isOperator(service.address)).to.be.true;
+            expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
+            expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
+
+            const tokenAddress = await service.validTokenAddress(tokenId);
+            expect(tokenAddress).to.eq(token.address);
+
+            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
+
+            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
+            expect(implementation).to.eq(GATEWAY);
+            expect(tokenAddressFromProxy).to.eq(token.address);
+        });
     });
 
     describe('Initialize remote custom token manager deployment', () => {

@@ -209,7 +209,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
     }
 
     function _approveGateway(address tokenAddress, uint256 amount) internal {
-        uint256 allowance = IERC20(tokenAddress).allowance(gateway, address(this));
+        uint256 allowance = IERC20(tokenAddress).allowance(address(this), gateway);
         if (allowance == 0) {
             IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20.approve.selector, gateway, amount));
         }
