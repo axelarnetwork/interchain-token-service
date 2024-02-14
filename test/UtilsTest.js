@@ -6,11 +6,13 @@ const {
     Wallet,
     getContractAt,
     constants: { AddressZero },
+    ContractFactory,
 } = ethers;
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
+const BurnableMintableCappedERC20 = require('../artifacts/contracts/test/TestMintableBurnableERC20.sol/TestMintableBurnableERC20.json');
 
 let ownerWallet, otherWallet;
 
@@ -304,5 +306,62 @@ describe('InterchainTokenDeployer', () => {
             interchainTokenDeployer,
             'AlreadyDeployed',
         );
+    });
+});
+
+describe('Create3Deployer', () => {
+    let deployerWallet;
+    let userWallet;
+
+    let deployerFactory;
+    let deployer;
+    const name = 'test';
+    const symbol = 'test';
+    const decimals = 16;
+
+    before(async () => {
+        [deployerWallet, userWallet] = await ethers.getSigners();
+
+        deployerFactory = await ethers.getContractFactory('TestCreate3Fixed', deployerWallet);
+    });
+
+    beforeEach(async () => {
+        deployer = await deployerFactory.deploy().then((d) => d.deployed());
+    });
+
+    describe('deploy', () => {
+        it('should revert on deploy with empty bytecode', async () => {
+            const salt = getRandomBytes32();
+            const bytecode = '0x';
+
+            await expect(deployer.connect(userWallet).deploy(bytecode, salt)).to.be.revertedWithCustomError(deployer, 'EmptyBytecode');
+        });
+
+        it('should deploy to the predicted address', async () => {
+            const salt = getRandomBytes32();
+
+            const address = await deployer.deployedAddress(salt);
+
+            const factory = new ContractFactory(BurnableMintableCappedERC20.abi, BurnableMintableCappedERC20.bytecode);
+            const bytecode = factory.getDeployTransaction(name, symbol, decimals).data;
+
+            await expect(deployer.deploy(bytecode, salt)).to.emit(deployer, 'Deployed').withArgs(address);
+        });
+
+        it('should not forward native value', async () => {
+            const salt = getRandomBytes32();
+
+            const address = await deployer.deployedAddress(salt);
+
+            const factory = new ContractFactory(BurnableMintableCappedERC20.abi, BurnableMintableCappedERC20.bytecode);
+            const bytecode = factory.getDeployTransaction(name, symbol, decimals).data;
+
+            await expect(deployer.deploy(bytecode, salt, { value: 10 }))
+                .to.emit(deployer, 'Deployed')
+                .withArgs(address);
+
+            expect(await ethers.provider.getBalance(address)).to.equal(0);
+            expect(await ethers.provider.getBalance(deployer.address)).to.equal(10);
+        });
     });
 });

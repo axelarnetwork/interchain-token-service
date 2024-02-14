@@ -2769,7 +2769,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) =>
                     service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, 'wrong symbol', amount, gasOptions),
                 service,
-                'CallWithTokenMissmatch',
+                'InvalidGatewayTokenTransfer',
                 [payload, 'wrong symbol', amount],
             );
         });
@@ -2782,7 +2782,7 @@ describe('Interchain Token Service', () => {
             await expectRevert(
                 (gasOptions) => service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, symbol, amount + 1, gasOptions),
                 service,
-                'CallWithTokenMissmatch',
+                'InvalidGatewayTokenTransfer',
                 [payload, symbol, amount + 1],
             );
         });

@@ -691,7 +691,7 @@ contract InterchainTokenService is
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
         if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
-            revert CallWithTokenMissmatch(payload, tokenSymbol, amount);
+            revert InvalidGatewayTokenTransfer(payload, tokenSymbol, amount);
     }
 
     /**
