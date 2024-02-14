@@ -118,7 +118,7 @@ contract InterchainTokenService is
         string memory chainName_,
         address tokenManagerImplementation_,
         address tokenHandler_
-    ) Create3Address(ITokenManagerDeployer(tokenManagerDeployer_).createDeployHash()) {
+    ) {
         if (
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||

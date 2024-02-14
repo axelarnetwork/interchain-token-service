@@ -34,8 +34,4 @@ contract TokenManagerDeployer is ITokenManagerDeployer, Create3Fixed {
 
         if (tokenManager.code.length == 0) revert TokenManagerDeploymentFailed();
     }
-
-    function createDeployHash() external view returns (bytes32 createDeployBytecodeHash_) {
-        createDeployBytecodeHash_ = createDeployBytecodeHash;
-    }
 }
