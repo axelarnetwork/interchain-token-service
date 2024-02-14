@@ -28,21 +28,8 @@ const optimizerSettings = {
     },
 };
 const itsOptimizerSettings = {
-    enabled: true,
-    runs: 750,
-    details: {
-        peephole: process.env.COVERAGE === undefined,
-        inliner: process.env.COVERAGE === undefined,
-        jumpdestRemover: true,
-        orderLiterals: true,
-        deduplicate: true,
-        cse: process.env.COVERAGE === undefined,
-        constantOptimizer: true,
-        yul: true,
-        yulDetails: {
-            stackAllocation: true,
-        },
-    },
+    ...optimizerSettings,
+    runs: 750, // Reduce runs to keep bytecode size under limit
 };
 const compilerSettings = {
     version: '0.8.21',
