@@ -121,7 +121,6 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
         _addFlowOut(amount);
     }
 
-
     /**
      * @notice This function transfers a flow limiter for this TokenManager.
      * @dev Can only be called by the operator.

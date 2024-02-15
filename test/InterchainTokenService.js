@@ -2656,7 +2656,6 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.hasRole(otherWallet.address, FLOW_LIMITER_ROLE)).to.equal(false);
         });
 
-
         it('Should be able to add a flow limiter', async () => {
             await expect(tokenManager.addFlowLimiter(otherWallet.address))
                 .to.emit(tokenManager, 'RolesAdded')
@@ -2688,12 +2687,11 @@ describe('Interchain Token Service', () => {
 
         it('Should revert when trying to transfer from an address that is not the flow limiter', async () => {
             await expectRevert(
-                (gasOptions) =>  tokenManager.transferFlowLimiter(otherWallet.address, wallet.address, gasOptions),
+                (gasOptions) => tokenManager.transferFlowLimiter(otherWallet.address, wallet.address, gasOptions),
                 tokenManager,
                 'MissingAllRoles',
                 [otherWallet.address, 1 << FLOW_LIMITER_ROLE],
-
-            )
+            );
 
             expect(await tokenManager.hasRole(wallet.address, FLOW_LIMITER_ROLE)).to.equal(true);
             expect(await tokenManager.hasRole(otherWallet.address, FLOW_LIMITER_ROLE)).to.equal(false);
