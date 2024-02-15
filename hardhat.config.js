@@ -29,7 +29,7 @@ const optimizerSettings = {
 };
 const itsOptimizerSettings = {
     ...optimizerSettings,
-    runs: 750, // Reduce runs to keep bytecode size under limit
+    runs: 600, // Reduce runs to keep bytecode size under limit
 };
 const compilerSettings = {
     version: '0.8.21',

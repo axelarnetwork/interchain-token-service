@@ -626,7 +626,12 @@ contract InterchainTokenService is
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
      * @param payload The encoded data payload for the transaction.
      */
-    function execute(bytes32 commandId, string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) public {
+    function execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) public onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
@@ -665,26 +670,8 @@ contract InterchainTokenService is
         bytes calldata payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) external {
-        bytes32 payloadHash = keccak256(payload);
-
-        uint256 messageType = abi.decode(payload, (uint256));
-        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            revert InvalidExpressMessageType(messageType);
-        }
-
-        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
-
-        address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
-
-        if (expressExecutor != address(0)) {
-            emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
-        }
-
-        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
-            revert NotApprovedByGateway();
-
-        _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
+    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+        _executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount);
     }
 
     function _checkPayloadAgainstGatewayData(bytes calldata payload, string calldata tokenSymbol, uint256 amount) internal view {
@@ -879,7 +866,7 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload,
         bytes32 payloadHash
-    ) internal onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+    ) internal {
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
@@ -896,6 +883,35 @@ contract InterchainTokenService is
         } else {
             revert InvalidMessageType(messageType);
         }
+    }
+
+    function _executeWithToken(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata tokenSymbol,
+        uint256 amount
+    ) internal {
+        bytes32 payloadHash = keccak256(payload);
+
+        uint256 messageType = abi.decode(payload, (uint256));
+        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
+            revert InvalidMessageType(messageType);
+        }
+
+        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
+
+        address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
+
+        if (expressExecutor != address(0)) {
+            emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
+        }
+
+        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+            revert NotApprovedByGateway();
+
+        _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
     }
 
     /**

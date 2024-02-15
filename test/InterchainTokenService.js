@@ -1340,6 +1340,87 @@ describe('Interchain Token Service', () => {
         });
     });
 
+    describe('Execute with token checks', () => {
+        const sourceChain = 'source chain';
+        let sourceAddress;
+        const amount = 1234;
+        let destAddress;
+        const tokenName = 'Token Name';
+        const tokenSymbol = 'TS';
+        const tokenDecimals = 16;
+
+        before(async () => {
+            sourceAddress = service.address;
+            destAddress = wallet.address;
+            await deployFunctions.gateway(tokenName, tokenSymbol, tokenDecimals);
+        });
+
+        it('Should revert on execute if remote address validation fails', async () => {
+            const commandId = await approveContractCallWithMint(
+                gateway,
+                sourceChain,
+                wallet.address,
+                service.address,
+                '0x',
+                tokenSymbol,
+                amount,
+            );
+
+            await expectRevert(
+                (gasOptions) => service.executeWithToken(commandId, sourceChain, wallet.address, '0x', tokenSymbol, amount, gasOptions),
+                service,
+                'NotRemoteService',
+            );
+        });
+
+        it('Should revert on execute if the service is paused', async () => {
+            await service.setPauseStatus(true).then((tx) => tx.wait);
+
+            const commandId = await approveContractCallWithMint(
+                gateway,
+                sourceChain,
+                sourceAddress,
+                service.address,
+                '0x',
+                tokenSymbol,
+                amount,
+            );
+
+            await expectRevert(
+                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, '0x', tokenSymbol, amount, gasOptions),
+                service,
+                'Pause',
+            );
+
+            await service.setPauseStatus(false).then((tx) => tx.wait);
+        });
+
+        it('Should revert on execute with invalid messageType', async () => {
+            const tokenId = getRandomBytes32();
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'uint256'],
+                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, destAddress, amount],
+            );
+            const commandId = await approveContractCallWithMint(
+                gateway,
+                sourceChain,
+                wallet.address,
+                service.address,
+                payload,
+                tokenSymbol,
+                amount,
+            );
+
+            await expectRevert(
+                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                service,
+                'InvalidMessageType',
+                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER],
+            );
+        });
+    });
+
     describe('Receive Remote Tokens', () => {
         let sourceAddress;
         const amount = 1234;
