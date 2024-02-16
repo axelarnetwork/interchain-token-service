@@ -62,8 +62,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param salt A unique identifier to generate the salt.
      * @return bytes32 The calculated salt for the interchain token.
      */
-    function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32) {
-        return keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, chainNameHash_, deployer, salt));
+    function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) public pure returns (bytes32 salt) {
+        salt = keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, chainNameHash_, deployer, salt));
     }
 
     /**
