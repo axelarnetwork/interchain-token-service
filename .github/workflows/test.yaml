@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Build project and capture output
-        run: npm run build > build.log 2>&1
+        run: npm run build
 
       - name: Check for build errors
         run: |
