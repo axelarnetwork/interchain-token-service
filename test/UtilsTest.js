@@ -352,7 +352,7 @@ describe('Create3Deployer', () => {
             it('should deploy to the predicted address with a know salt', async () => {
                 const salt = '0x4943fe1231449cc1baa660716a0cb38ff09af0b2c9acb63d40d9a7ba06d33d21';
 
-                const address = '0xa0523e6a9989706465F17E668Ff5A6766b58B855';
+                const address = '0x03C2D7E8Fbcc46C62B3DCBB72121818334af2565';
 
                 const factory = new ContractFactory(BurnableMintableCappedERC20.abi, BurnableMintableCappedERC20.bytecode);
                 const bytecode = factory.getDeployTransaction(name, symbol, decimals).data;
