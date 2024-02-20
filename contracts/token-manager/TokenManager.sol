@@ -7,6 +7,7 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IImplementation.sol';
 import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Implementation.sol';
 import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
+import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 
@@ -17,7 +18,7 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
  * @title TokenManager
  * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
  */
-contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation {
+contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Multicall {
     using AddressBytes for bytes;
     using SafeTokenCall for IERC20;
 
@@ -118,6 +119,16 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation {
 
     function addFlowOut(uint256 amount) external onlyService {
         _addFlowOut(amount);
+    }
+
+    /**
+     * @notice This function transfers a flow limiter for this TokenManager.
+     * @dev Can only be called by the operator.
+     * @param from the address of the old flow limiter.
+     * @param to the address of the new flow limiter.
+     */
+    function transferFlowLimiter(address from, address to) external onlyRole(uint8(Roles.OPERATOR)) {
+        _transferAccountRoles(from, to, 1 << uint8(Roles.FLOW_LIMITER));
     }
 
     /**
