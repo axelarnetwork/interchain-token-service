@@ -2420,7 +2420,8 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
             await expectRevert(
-                (gasOptions) => service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                (gasOptions) =>
+                    service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
                 service,
                 'Pause',
             );
@@ -2450,7 +2451,8 @@ describe('Interchain Token Service', () => {
             const errorData = errorSignatureHash.substring(0, 10);
 
             await expectRevert(
-                (gasOptions) => service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                (gasOptions) =>
+                    service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
                 service,
                 'TokenHandlerFailed',
                 [errorData],
@@ -2464,7 +2466,8 @@ describe('Interchain Token Service', () => {
             );
 
             await expectRevert(
-                (gasOptions) => service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                (gasOptions) =>
+                    service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
                 service,
                 'ExpressExecuteWithInterchainTokenFailed',
                 [invalidExecutable.address],

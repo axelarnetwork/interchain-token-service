@@ -10,7 +10,7 @@ import { Create3AddressFixed } from './Create3AddressFixed.sol';
 /**
  * @title Create3Fixed contract
  * @notice This contract can be used to deploy a contract with a deterministic address that depends only on
- * the deployer address and deployment salt, not the contract bytecode and constructor parameters. 
+ * the deployer address and deployment salt, not the contract bytecode and constructor parameters.
  * It uses a fixed bytecode to allow changing the compilation settings without affecting the deployment address in the future.
  */
 contract Create3Fixed is Create3AddressFixed, IDeploy {

@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 /**
  * @title Create3AddressFixed contract
  * @notice This contract can be used to predict the deterministic deployment address of a contract deployed with the `CREATE3` technique.
- * It is equivalent to the Create3Address found in axelar-sdk-solidity but uses a fixed bytecode for CreateDeploy, 
-  * which allows changing compilation options (like number of runs) without affecting the future deployment addresses.
+ * It is equivalent to the Create3Address found in axelar-sdk-solidity but uses a fixed bytecode for CreateDeploy,
+ * which allows changing compilation options (like number of runs) without affecting the future deployment addresses.
  */
 contract Create3AddressFixed {
     // slither-disable-next-line too-many-digits

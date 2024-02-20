@@ -686,7 +686,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Check that the tokenId is has a token that is registered in the gateway with the proper tokenSymbol. 
+     * @notice Check that the tokenId is has a token that is registered in the gateway with the proper tokenSymbol.
      * Also check that the amount in the payload matches the one for the call.
      * @param payload The payload for the call contract with token.
      * @param tokenSymbol The tokenSymbol for the call contract with token.
@@ -910,7 +910,7 @@ contract InterchainTokenService is
 
         address expressExecutor = _getExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
 
-       if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
             revert NotApprovedByGateway();
 
         uint256 messageType = abi.decode(payload, (uint256));
@@ -919,7 +919,7 @@ contract InterchainTokenService is
         }
 
         _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
-            
+
         _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
     }
 
@@ -1176,7 +1176,12 @@ contract InterchainTokenService is
         return (validTokenAddress(tokenId), amount);
     }
 
-    function _getExpressExecutor(bytes32 commandId, string calldata sourceChain, string calldata sourceAddress, bytes32 payloadHash) internal returns (address expressExecutor) {
+    function _getExpressExecutor(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes32 payloadHash
+    ) internal returns (address expressExecutor) {
         expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
 
         if (expressExecutor != address(0)) {
