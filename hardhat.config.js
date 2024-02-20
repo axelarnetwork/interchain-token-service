@@ -27,10 +27,6 @@ const optimizerSettings = {
         },
     },
 };
-const itsOptimizerSettings = {
-    ...optimizerSettings,
-    runs: 600, // Reduce runs to keep bytecode size under limit
-};
 const compilerSettings = {
     version: '0.8.21',
     settings: {
@@ -42,7 +38,10 @@ const itsCompilerSettings = {
     version: '0.8.21',
     settings: {
         evmVersion: process.env.EVM_VERSION || 'london',
-        optimizer: itsOptimizerSettings,
+        optimizer: {
+            ...optimizerSettings,
+            runs: 600, // Reduce runs to keep bytecode size under limit
+        },
     },
 };
 

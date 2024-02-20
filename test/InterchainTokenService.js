@@ -1019,7 +1019,6 @@ describe('Interchain Token Service', () => {
             const symbol = 'GTA';
             const decimals = 18;
             const [token] = await deployFunctions.gateway(name, symbol, decimals);
-            console.log(await token.allowance(service.address, gateway.address));
 
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
@@ -1355,7 +1354,7 @@ describe('Interchain Token Service', () => {
             await deployFunctions.gateway(tokenName, tokenSymbol, tokenDecimals);
         });
 
-        it('Should revert on execute if remote address validation fails', async () => {
+        it('Should revert on execute with token if remote address validation fails', async () => {
             const commandId = await approveContractCallWithMint(
                 gateway,
                 sourceChain,
@@ -1373,7 +1372,7 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should revert on execute if the service is paused', async () => {
+        it('Should revert on execute with token if the service is paused', async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
             const commandId = await approveContractCallWithMint(
@@ -1395,25 +1394,28 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });
 
-        it('Should revert on execute with invalid messageType', async () => {
-            const tokenId = getRandomBytes32();
+        it('Should revert on execute with token with invalid messageType', async () => {
+            const symbol = 'TS3';
+            const [token, , tokenId] = await deployFunctions.gateway('Name', symbol, 15, amount);
+
+            await token.transfer(gateway.address, amount).then((tx) => tx.wait);
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, destAddress, amount],
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256'],
+                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, sourceAddress, destAddress, amount],
             );
             const commandId = await approveContractCallWithMint(
                 gateway,
                 sourceChain,
-                wallet.address,
+                sourceAddress,
                 service.address,
                 payload,
-                tokenSymbol,
+                symbol,
                 amount,
             );
 
             await expectRevert(
-                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount, gasOptions),
                 service,
                 'InvalidMessageType',
                 [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER],
@@ -2348,6 +2350,144 @@ describe('Interchain Token Service', () => {
         });
     });
 
+    describe('Express Execute With Token', () => {
+        const commandId = getRandomBytes32();
+        const sourceAddress = '0x1234';
+        const amount = 1234;
+        const destinationAddress = new Wallet(getRandomBytes32()).address;
+        const tokenName = 'name';
+        const tokenSymbol = 'symbol';
+        const tokenDecimals = 16;
+        const message = 'message';
+        let data;
+        let tokenId;
+        let executable;
+        let invalidExecutable;
+        let token;
+
+        before(async () => {
+            [token, , tokenId] = await deployFunctions.gateway(tokenName, tokenSymbol, tokenDecimals, amount * 2, true);
+            await token.approve(service.address, amount * 2).then((tx) => tx.wait);
+            data = defaultAbiCoder.encode(['address', 'string'], [destinationAddress, message]);
+            executable = await deployContract(wallet, 'TestInterchainExecutable', [service.address]);
+            invalidExecutable = await deployContract(wallet, 'TestInvalidInterchainExecutable', [service.address]);
+        });
+
+        it('Should revert on executeWithInterchainToken when not called by the service', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    executable.executeWithInterchainToken(
+                        commandId,
+                        sourceChain,
+                        sourceAddress,
+                        data,
+                        tokenId,
+                        token.address,
+                        amount,
+                        gasOptions,
+                    ),
+                executable,
+                'NotService',
+                [wallet.address],
+            );
+        });
+
+        it('Should revert on expressExecuteWithInterchainToken when not called by the service', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    executable.expressExecuteWithInterchainToken(
+                        commandId,
+                        sourceChain,
+                        sourceAddress,
+                        data,
+                        tokenId,
+                        token.address,
+                        amount,
+                        gasOptions,
+                    ),
+                executable,
+                'NotService',
+                [wallet.address],
+            );
+        });
+
+        it('Should revert on express execute with token when service is paused', async () => {
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destinationAddress, amount, '0x'],
+            );
+
+            await service.setPauseStatus(true).then((tx) => tx.wait);
+
+            await expectRevert(
+                (gasOptions) => service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                service,
+                'Pause',
+            );
+
+            await service.setPauseStatus(false).then((tx) => tx.wait);
+        });
+
+        it('Should express execute with token', async () => {
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destinationAddress, amount, '0x'],
+            );
+            await expect(service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount))
+                .to.emit(service, 'ExpressExecuted')
+                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, destinationAddress, amount);
+        });
+
+        it('Should revert on express execute if token handler transfer token from fails', async () => {
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', ' bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, AddressZero, amount, data],
+            );
+
+            const errorSignatureHash = id('TokenTransferFailed()');
+            const errorData = errorSignatureHash.substring(0, 10);
+
+            await expectRevert(
+                (gasOptions) => service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                service,
+                'TokenHandlerFailed',
+                [errorData],
+            );
+        });
+
+        it('Should revert on express execute with token if token transfer fails on destination chain', async () => {
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', ' bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, invalidExecutable.address, amount, data],
+            );
+
+            await expectRevert(
+                (gasOptions) => service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount, gasOptions),
+                service,
+                'ExpressExecuteWithInterchainTokenFailed',
+                [invalidExecutable.address],
+            );
+        });
+
+        it('Should express execute with token', async () => {
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', ' bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, executable.address, amount, data],
+            );
+            await expect(service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount))
+                .to.emit(service, 'ExpressExecuted')
+                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(wallet.address, executable.address, amount)
+                .and.to.emit(token, 'Transfer')
+                .withArgs(executable.address, destinationAddress, amount)
+                .and.to.emit(executable, 'MessageReceived')
+                .withArgs(commandId, sourceChain, sourceAddress, destinationAddress, message, tokenId, amount);
+        });
+    });
+
     describe('Express Receive Remote Token', () => {
         let sourceAddress;
         const amount = 1234;
@@ -2840,7 +2980,7 @@ describe('Interchain Token Service', () => {
             [, , tokenId] = await deployFunctions.gateway(name, symbol, decimals);
         });
 
-        it('Should revert on contractCallValue if not called by remote service', async () => {
+        it('Should revert on contractCallWithTokenValue if not called by remote service', async () => {
             const payload = '0x';
 
             await expectRevert(
@@ -2850,7 +2990,7 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should revert on contractCallValue if service is paused', async () => {
+        it('Should revert on contractCallWithTokenValue if service is paused', async () => {
             const payload = '0x';
 
             await service.setTrustedAddress(sourceChain, trustedAddress).then((tx) => tx.wait);
@@ -2889,7 +3029,7 @@ describe('Interchain Token Service', () => {
                     service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, 'wrong symbol', amount, gasOptions),
                 service,
                 'InvalidGatewayTokenTransfer',
-                [payload, 'wrong symbol', amount],
+                [tokenId, payload, 'wrong symbol', amount],
             );
         });
 
@@ -2902,7 +3042,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.contractCallWithTokenValue(sourceChain, trustedAddress, payload, symbol, amount + 1, gasOptions),
                 service,
                 'InvalidGatewayTokenTransfer',
-                [payload, symbol, amount + 1],
+                [tokenId, payload, symbol, amount + 1],
             );
         });
 

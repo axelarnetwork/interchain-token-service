@@ -5,14 +5,15 @@ pragma solidity ^0.8.0;
 import { IDeploy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IDeploy.sol';
 import { ContractAddress } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/ContractAddress.sol';
 import { CreateDeploy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/CreateDeploy.sol';
-import { Create3Address } from './Create3Address.sol';
+import { Create3AddressFixed } from './Create3AddressFixed.sol';
 
 /**
- * @title Create3 contract
+ * @title Create3Fixed contract
  * @notice This contract can be used to deploy a contract with a deterministic address that depends only on
- * the deployer address and deployment salt, not the contract bytecode and constructor parameters.
+ * the deployer address and deployment salt, not the contract bytecode and constructor parameters. 
+ * It uses a fixed bytecode to allow changing the compilation settings without affecting the deployment address in the future.
  */
-contract Create3Fixed is Create3Address, IDeploy {
+contract Create3Fixed is Create3AddressFixed, IDeploy {
     using ContractAddress for address;
 
     /**
