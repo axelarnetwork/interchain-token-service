@@ -2700,7 +2700,7 @@ describe('Interchain Token Service', () => {
                 [otherWallet.address, OPERATOR_ROLE],
             );
         });
-        
+
         it('Should revert if trying to add a flow limiter as not the operator', async () => {
             await expectRevert(
                 (gasOptions) => tokenManager.connect(otherWallet).removeFlowLimiter(wallet.address, gasOptions),
