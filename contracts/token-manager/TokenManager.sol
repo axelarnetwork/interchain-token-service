@@ -145,7 +145,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      * @dev Can only be called by the operator.
      * @param flowLimiter the address of an existing flow limiter.
      */
-    function removeFlowLimiter(address flowLimiter) public onlyRole(uint8(Roles.OPERATOR)) {
+    function removeFlowLimiter(address flowLimiter) external onlyRole(uint8(Roles.OPERATOR)) {
         _removeRole(flowLimiter, uint8(Roles.FLOW_LIMITER));
     }
 
