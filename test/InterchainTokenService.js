@@ -2889,6 +2889,24 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.hasRole(otherWallet.address, FLOW_LIMITER_ROLE)).to.equal(true);
         });
 
+        it('Should be able to transfer a flow limiter', async () => {
+            await expect(tokenManager.transferFlowLimiter(otherWallet.address, wallet.address))
+                .to.emit(tokenManager, 'RolesAdded')
+                .withArgs(wallet.address, 1 << FLOW_LIMITER_ROLE)
+                .to.emit(tokenManager, 'RolesRemoved')
+                .withArgs(otherWallet.address, 1 << FLOW_LIMITER_ROLE);
+
+            expect(await tokenManager.hasRole(wallet.address, FLOW_LIMITER_ROLE)).to.equal(true);
+            expect(await tokenManager.hasRole(otherWallet.address, FLOW_LIMITER_ROLE)).to.equal(false);
+
+            await expectRevert(
+                (gasOptions) => tokenManager.transferFlowLimiter(otherWallet.address, wallet.address, gasOptions),
+                tokenManager,
+                'MissingAllRoles',
+                [otherWallet.address, 1 << FLOW_LIMITER_ROLE],
+            );
+        });
+
         it('Should revert if trying to add a flow limiter as not the operator', async () => {
             await expectRevert(
                 (gasOptions) => tokenManager.connect(otherWallet).addFlowLimiter(otherWallet.address, gasOptions),
@@ -2905,6 +2923,25 @@ describe('Interchain Token Service', () => {
                 'MissingRole',
                 [otherWallet.address, OPERATOR_ROLE],
             );
+        });
+
+        it('Should be able to transfer a flow limiter and the operator in one call', async () => {
+            const tx1Data = (await tokenManager.populateTransaction.transferFlowLimiter(wallet.address, otherWallet.address)).data;
+            const tx2Data = (await tokenManager.populateTransaction.transferOperatorship(otherWallet.address)).data;
+            await expect(tokenManager.multicall([tx1Data, tx2Data]))
+                .to.emit(tokenManager, 'RolesAdded')
+                .withArgs(otherWallet.address, 1 << FLOW_LIMITER_ROLE)
+                .to.emit(tokenManager, 'RolesRemoved')
+                .withArgs(wallet.address, 1 << FLOW_LIMITER_ROLE)
+                .to.emit(tokenManager, 'RolesAdded')
+                .withArgs(otherWallet.address, 1 << OPERATOR_ROLE)
+                .to.emit(tokenManager, 'RolesRemoved')
+                .withArgs(wallet.address, 1 << OPERATOR_ROLE);
+
+            expect(await tokenManager.hasRole(wallet.address, FLOW_LIMITER_ROLE)).to.equal(false);
+            expect(await tokenManager.hasRole(otherWallet.address, FLOW_LIMITER_ROLE)).to.equal(true);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.equal(false);
+            expect(await tokenManager.hasRole(otherWallet.address, OPERATOR_ROLE)).to.equal(true);
         });
     });
 
