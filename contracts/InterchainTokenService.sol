@@ -887,7 +887,7 @@ contract InterchainTokenService is
     ) internal {
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            address expressExecutor = _getExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
+            address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
             _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
@@ -908,7 +908,7 @@ contract InterchainTokenService is
     ) internal {
         bytes32 payloadHash = keccak256(payload);
 
-        address expressExecutor = _getExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
+        address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
 
         if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
             revert NotApprovedByGateway();
@@ -1176,7 +1176,7 @@ contract InterchainTokenService is
         return (validTokenAddress(tokenId), amount);
     }
 
-    function _getExpressExecutor(
+    function _getExpressExecutorAndEmitEvent(
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
