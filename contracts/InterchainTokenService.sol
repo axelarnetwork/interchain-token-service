@@ -656,7 +656,7 @@ contract InterchainTokenService is
         bytes calldata payload,
         string calldata symbol,
         uint256 amount
-    ) public view virtual returns (address, uint256) {
+    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
         _checkPayloadAgainstGatewayData(payload, symbol, amount);
         return _contractCallValue(payload);
     }

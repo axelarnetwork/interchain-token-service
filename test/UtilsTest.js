@@ -348,7 +348,8 @@ describe('Create3Deployer', () => {
             await expect(deployer.deploy(bytecode, salt)).to.emit(deployer, 'Deployed').withArgs(address);
         });
 
-        if (isHardhat) {
+        // Reintroduce this test if we know the address of the deployer.
+        /* if (isHardhat) {
             it('should deploy to the predicted address with a know salt', async () => {
                 const salt = '0x4943fe1231449cc1baa660716a0cb38ff09af0b2c9acb63d40d9a7ba06d33d21';
 
@@ -359,7 +360,7 @@ describe('Create3Deployer', () => {
 
                 await expect(deployer.deploy(bytecode, salt)).to.emit(deployer, 'Deployed').withArgs(address);
             });
-        }
+        } */
 
         it('should not forward native value', async () => {
             const salt = getRandomBytes32();
