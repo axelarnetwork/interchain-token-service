@@ -686,7 +686,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Check that the tokenId is has a token that is registered in the gateway with the proper tokenSymbol.
+     * @notice Check that the tokenId from the payload is a token that is registered in the gateway with the proper tokenSymbol, with the right amount from the payload.
      * Also check that the amount in the payload matches the one for the call.
      * @param payload The payload for the call contract with token.
      * @param tokenSymbol The tokenSymbol for the call contract with token.
