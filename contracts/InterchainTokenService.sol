@@ -660,7 +660,16 @@ contract InterchainTokenService is
         _checkPayloadAgainstGatewayData(payload, symbol, amount);
         return _contractCallValue(payload);
     }
-
+    
+    /**
+     * @notice Express executes with a gateway token operations based on the payload and selector.
+     * @param commandId The unique message id.
+     * @param sourceChain The chain where the transaction originates from.
+     * @param sourceAddress The address of the remote ITS where the transaction originates from.
+     * @param payload The encoded data payload for the transaction.
+     * @param symbol The symbol symbol for the call.
+     * @param amount The amount for the call.
+     */
     function expressExecuteWithToken(
         bytes32 commandId,
         string calldata sourceChain,
