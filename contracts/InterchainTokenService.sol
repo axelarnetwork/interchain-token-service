@@ -282,7 +282,11 @@ contract InterchainTokenService is
     ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer = msg.sender;
 
-        if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
+        if (deployer == interchainTokenFactory) {
+            deployer = TOKEN_FACTORY_DEPLOYER;
+        } else {
+            revert('');
+        }
 
         tokenId = interchainTokenId(deployer, salt);
 
@@ -733,15 +737,9 @@ contract InterchainTokenService is
 
     /**
      * @notice Processes a deploy token manager payload.
-     * @param payload The encoded data payload to be processed
      */
-    function _processDeployTokenManagerPayload(bytes calldata payload) internal {
-        (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
-            payload,
-            (uint256, bytes32, TokenManagerType, bytes)
-        );
-
-        _deployTokenManager(tokenId, tokenManagerType, params);
+    function _processDeployTokenManagerPayload(bytes calldata) internal pure {
+        revert('');
     }
 
     /**
