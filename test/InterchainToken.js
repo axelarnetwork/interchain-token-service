@@ -4,9 +4,10 @@ const { ethers } = require('hardhat');
 const {
     constants: { AddressZero, HashZero, MaxUint256 },
     getContractAt,
+    utils: { keccak256 },
 } = ethers;
 const { expect } = require('chai');
-const { getRandomBytes32, expectRevert } = require('./utils');
+const { getRandomBytes32, expectRevert, getEVMVersion } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 describe('InterchainToken', () => {
@@ -136,6 +137,20 @@ describe('InterchainToken', () => {
 
             const finalAllowance = await tokenTest.allowance(sender, spender);
             expect(finalAllowance).to.eq(initialAllowance);
+        });
+    });
+
+    describe.only('Bytecode checks [ @skip-on-coverage ]', () => {
+        it('Should preserve the same bytecode', async () => {
+            const contract = await ethers.getContractFactory('InterchainToken', owner);
+            const contractBytecode = contract.bytecode;
+            const contractBytecodeHash = keccak256(contractBytecode);
+
+            const expected = {
+                london: '0xa01cf28b0b6ce6dc3b466e995585d69486400d671fce0ea8d06beba583e6f3bb',
+            }[getEVMVersion()];
+
+            expect(contractBytecodeHash).to.be.equal(expected);
         });
     });
 });
