@@ -140,7 +140,7 @@ describe('InterchainToken', () => {
         });
     });
 
-    describe.only('Bytecode checks [ @skip-on-coverage ]', () => {
+    describe('Bytecode checks [ @skip-on-coverage ]', () => {
         it('Should preserve the same bytecode', async () => {
             const contract = await ethers.getContractFactory('InterchainToken', owner);
             const contractBytecode = contract.bytecode;
