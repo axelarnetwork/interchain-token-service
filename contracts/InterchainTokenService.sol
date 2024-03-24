@@ -268,7 +268,7 @@ contract InterchainTokenService is
      * part of a multicall involving multiple functions that could make remote contract calls.
      * @param salt The salt to be used during deployment.
      * @param destinationChain The name of the chain to deploy the TokenManager and standardized token to.
-     * @param tokenManagerType The type of TokenManager to be deployed.
+     * @param tokenManagerType The type of token manager to be deployed. Cannot be NATIVE_INTERCHAIN_TOKEN.
      * @param params The params that will be used to initialize the TokenManager.
      * @param gasValue The amount of native tokens to be used to pay for gas for the remote deployment.
      * @return tokenId The tokenId corresponding to the deployed TokenManager.
@@ -280,12 +280,13 @@ contract InterchainTokenService is
         bytes calldata params,
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
+        // Custom token managers can't be deployed with Interchain token mint burn type, which is reserved for interchain tokens
+        if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
+
         address deployer = msg.sender;
 
         if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
-        } else {
-            revert('');
         }
 
         tokenId = interchainTokenId(deployer, salt);
@@ -331,7 +332,7 @@ contract InterchainTokenService is
         if (bytes(destinationChain).length == 0) {
             address tokenAddress = _deployInterchainToken(tokenId, minter, name, symbol, decimals);
 
-            _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(minter, tokenAddress));
+            _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, abi.encode(minter, tokenAddress));
         } else {
             _deployRemoteInterchainToken(tokenId, name, symbol, decimals, minter, destinationChain, gasValue);
         }
@@ -738,8 +739,15 @@ contract InterchainTokenService is
     /**
      * @notice Processes a deploy token manager payload.
      */
-    function _processDeployTokenManagerPayload(bytes calldata) internal pure {
-        revert('');
+    function _processDeployTokenManagerPayload(bytes calldata payload) internal {
+        (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
+            payload,
+            (uint256, bytes32, TokenManagerType, bytes)
+        );
+
+        if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
+
+        _deployTokenManager(tokenId, tokenManagerType, params);
     }
 
     /**
@@ -755,7 +763,7 @@ contract InterchainTokenService is
 
         tokenAddress = _deployInterchainToken(tokenId, minterBytes, name, symbol, decimals);
 
-        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(minterBytes, tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, abi.encode(minterBytes, tokenAddress));
     }
 
     /**

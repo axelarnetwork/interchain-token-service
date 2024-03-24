@@ -46,6 +46,7 @@ interface IInterchainTokenService is
     error GiveTokenFailed(bytes data);
     error TokenHandlerFailed(bytes data);
     error EmptyData();
+    error CannotDeploy(TokenManagerType);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
@@ -165,7 +166,7 @@ interface IInterchainTokenService is
      * @notice Deploys a custom token manager contract on a remote chain.
      * @param salt The salt used for token manager deployment.
      * @param destinationChain The name of the destination chain.
-     * @param tokenManagerType The type of token manager.
+     * @param tokenManagerType The type of token manager. Cannot be NATIVE_INTERCHAIN_TOKEN.
      * @param params The deployment parameters.
      * @param gasValue The gas value for deployment.
      * @return tokenId The tokenId associated with the token manager.

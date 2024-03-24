@@ -9,6 +9,7 @@ import { Implementation } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
+import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
 import { Operator } from '../utils/Operator.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
@@ -178,5 +179,27 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation {
      */
     function params(bytes calldata operator_, address tokenAddress_) external pure returns (bytes memory params_) {
         params_ = abi.encode(operator_, tokenAddress_);
+    }
+
+    /**
+     * @notice External function to allow the service to mint tokens through the tokenManager
+     * @dev This function should revert if called by anyone but the service.
+     * @param tokenAddress_ The address of the token, since its cheaper to pass it in instead of reading it as the token manager.
+     * @param to The recipient.
+     * @param amount The amount to mint.
+     */
+    function mintToken(address tokenAddress_, address to, uint256 amount) external onlyService {
+        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
+    }
+
+    /**
+     * @notice External function to allow the service to burn tokens through the tokenManager
+     * @dev This function should revert if called by anyone but the service.
+     * @param tokenAddress_ The address of the token, since its cheaper to pass it in instead of reading it as the token manager.
+     * @param from The address to burn the token from.
+     * @param amount The amount to burn.
+     */
+    function burnToken(address tokenAddress_, address from, uint256 amount) external onlyService {
+        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
     }
 }
