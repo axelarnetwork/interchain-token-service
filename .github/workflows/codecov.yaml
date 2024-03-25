@@ -1,14 +1,19 @@
-name: Testing
+name: Coverage
 
 on:
-  - pull_request
+  pull_request:
+  push:
+    branches:
+      - main
+      - releases/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  coverage:
+    name: Code Coverage
     strategy:
       matrix:
         node-version:
@@ -16,6 +21,7 @@ jobs:
         os:
           - ubuntu-latest
     runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -27,10 +33,10 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build project and capture output
+      - name: Build
         run: npm run build > build.log 2>&1
 
-      - name: Check for build errors
+      - name: Check for build warnings
         run: |
           if grep -q -i "error" build.log || grep -q -i "warning" build.log; then
             echo "Build contains following errors or warnings..."
@@ -42,8 +48,12 @@ jobs:
             exit 0;
           fi
 
-      - name: Set environment variable
-        run: export CHECK_CONTRACT_SIZE=true
+      - name: Generate code coverage
+        run: npm run coverage
 
-      - name: Test
-        run: npm run test
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: true
