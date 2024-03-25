@@ -27,12 +27,6 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     function interchainTokenService() external view returns (IInterchainTokenService);
 
     /**
-     * @notice Returns the address of the interchain token service.
-     * @return IInterchainTokenService The address of the interchain token service.
-     */
-    function interchainTokenService() external view returns (IInterchainTokenService);
-
-    /**
      * @notice Returns the hash of the chain name.
      * @return bytes32 The hash of the chain name.
      */
