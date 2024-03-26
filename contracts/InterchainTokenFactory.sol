@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
-import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
@@ -19,11 +18,7 @@ import { IInterchainToken } from './interfaces/IInterchainToken.sol';
  * @notice This contract is responsible for deploying new interchain tokens and managing their token managers.
  */
 contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, Multicall, Upgradable {
-    using AddressBytes for bytes;
     using AddressBytes for address;
-    using SafeTokenTransfer for IInterchainToken;
-    using SafeTokenTransferFrom for IInterchainToken;
-    using SafeTokenCall for IInterchainToken;
 
     IInterchainTokenService public immutable interchainTokenService;
     bytes32 public immutable chainNameHash;
