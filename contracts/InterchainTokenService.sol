@@ -8,9 +8,7 @@ import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
-import { SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
-import { StringToBytes32, Bytes32ToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/Bytes32String.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
 import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/InterchainAddressTracker.sol';
@@ -44,12 +42,8 @@ contract InterchainTokenService is
     InterchainAddressTracker,
     IInterchainTokenService
 {
-    using StringToBytes32 for string;
-    using Bytes32ToString for bytes32;
     using AddressBytes for bytes;
     using AddressBytes for address;
-    using SafeTokenTransferFrom for IERC20;
-    using SafeTokenCall for IERC20;
 
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
