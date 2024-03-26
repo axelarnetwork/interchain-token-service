@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
+import { Create3Fixed } from './Create3Fixed.sol';
 
 import { ITokenManagerDeployer } from '../interfaces/ITokenManagerDeployer.sol';
 
@@ -12,7 +12,7 @@ import { TokenManagerProxy } from '../proxies/TokenManagerProxy.sol';
  * @title TokenManagerDeployer
  * @notice This contract is used to deploy new instances of the TokenManagerProxy contract.
  */
-contract TokenManagerDeployer is ITokenManagerDeployer, Create3 {
+contract TokenManagerDeployer is ITokenManagerDeployer, Create3Fixed {
     /**
      * @notice Deploys a new instance of the TokenManagerProxy contract
      * @param tokenId The unique identifier for the token

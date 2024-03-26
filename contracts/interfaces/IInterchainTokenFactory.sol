@@ -37,9 +37,9 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
      * @param chainNameHash_ The hash of the chain name.
      * @param deployer The address of the deployer.
      * @param salt A unique identifier to generate the salt.
-     * @return bytes32 The calculated salt for the interchain token.
+     * @return tokenSalt The calculated salt for the interchain token.
      */
-    function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) external view returns (bytes32);
+    function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) external view returns (bytes32 tokenSalt);
 
     /**
      * @notice Computes the ID for an interchain token based on the deployer and a salt.
@@ -97,9 +97,9 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
      * @notice Calculates the salt for a canonical interchain token.
      * @param chainNameHash_ The hash of the chain name.
      * @param tokenAddress The address of the token.
-     * @return salt The calculated salt for the interchain token.
+     * @return tokenSalt The calculated salt for the interchain token.
      */
-    function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) external view returns (bytes32 salt);
+    function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) external view returns (bytes32 tokenSalt);
 
     /**
      * @notice Computes the ID for a canonical interchain token based on its address.
