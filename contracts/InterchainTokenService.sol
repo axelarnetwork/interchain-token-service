@@ -53,6 +53,8 @@ contract InterchainTokenService is
     address public immutable interchainTokenDeployer;
     address public immutable tokenManagerDeployer;
 
+    string internal constant AXELAR = 'Axelar';
+
     /**
      * @dev Token manager implementation addresses
      */
@@ -73,6 +75,7 @@ contract InterchainTokenService is
     uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
     uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
+    uint256 private constant MESSAGE_TYPE_ROUTE_PAYLOAD = 10;
 
     /**
      * @dev Tokens and token managers deployed via the Token Factory contract use a special deployer address.
@@ -772,13 +775,19 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _callContract(
-        string calldata destinationChain,
+        string memory destinationChain,
         bytes memory payload,
         MetadataVersion metadataVersion,
         uint256 gasValue
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+
+        if (bytes(destinationAddress).length == 1) {
+            payload = abi.encode(MESSAGE_TYPE_ROUTE_PAYLOAD, destinationChain, payload);
+            destinationChain = AXELAR;
+            destinationAddress = trustedAddress(destinationChain);
+        }
 
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
@@ -812,7 +821,7 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _callContractWithToken(
-        string calldata destinationChain,
+        string memory destinationChain,
         bytes memory payload,
         string memory symbol,
         uint256 amount,
@@ -821,6 +830,12 @@ contract InterchainTokenService is
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+        
+        if (bytes(destinationAddress).length == 1) {
+            payload = abi.encode(MESSAGE_TYPE_ROUTE_PAYLOAD, destinationChain, payload);
+            destinationChain = AXELAR;
+            destinationAddress = trustedAddress(destinationChain);
+        }
 
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
@@ -1085,8 +1100,6 @@ contract InterchainTokenService is
         if (!success) revert TakeTokenFailed(data);
         amount = abi.decode(data, (uint256));
 
-        /// @dev Track the flow amount being sent out as a message
-        ITokenManager(tokenManager_).addFlowOut(amount);
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             symbol = IERC20Named(tokenAddress).symbol();
         }
@@ -1100,9 +1113,6 @@ contract InterchainTokenService is
         address tokenManager_ = tokenManagerAddress(tokenId);
 
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-
-        /// @dev Track the flow amount being received via the message
-        ITokenManager(tokenManager_).addFlowIn(amount);
 
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, tokenManager_, to, amount)

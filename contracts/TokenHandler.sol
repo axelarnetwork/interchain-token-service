@@ -47,6 +47,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         address to,
         uint256 amount
     ) external payable returns (uint256) {
+        /// @dev Track the flow amount being received via the message
+        ITokenManager(tokenManager).addFlowIn(amount);
+
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _giveTokenMintBurn(tokenAddress, to, amount);
             return amount;
@@ -86,7 +89,10 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         address tokenManager,
         address from,
         uint256 amount
-    ) external payable returns (uint256) {
+    ) external payable returns (uint256) {        
+        /// @dev Track the flow amount being sent out as a message
+        ITokenManager(tokenManager).addFlowOut(amount);
+
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _takeTokenMintBurn(tokenAddress, from, amount);
             return amount;
