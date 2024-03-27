@@ -15,8 +15,8 @@ const { getRandomBytes32, expectRevert } = require('./utils');
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 
 const LOCK_UNLOCK = 2;
-const MINT_BURN = 0;
 const GATEWAY = 4;
+const NATIVE_INTERCHAIN_TOKEN = 0;
 
 const MINTER_ROLE = 0;
 const OPERATOR_ROLE = 1;
@@ -281,7 +281,7 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, minter, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
+                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params);
 
             await checkRoles(tokenManager, minter);
         });
@@ -298,7 +298,7 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, AddressZero, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
+                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params);
 
             await checkRoles(tokenManager, AddressZero);
         });
@@ -314,7 +314,7 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
+                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params);
 
             await checkRoles(tokenManager, AddressZero);
         });
@@ -331,7 +331,7 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
+                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, mintAmount)
                 .and.to.emit(tokenManager, 'RolesAdded')
@@ -368,7 +368,7 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
+                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, mintAmount)
                 .and.to.emit(token, 'RolesAdded')
@@ -439,7 +439,7 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManager.address, MINT_BURN, params)
+                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, mintAmount)
                 .and.to.emit(token, 'RolesAdded')
