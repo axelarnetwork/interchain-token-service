@@ -2059,12 +2059,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    token
-                        .connect(spender)
-                        .interchainTransferFrom(sender.address, destinationChain, destAddress, 0, metadata, {
-                            value: gasValue,
-                            ...gasOptions,
-                        }),
+                    token.connect(spender).interchainTransferFrom(sender.address, destinationChain, destAddress, 0, metadata, {
+                        value: gasValue,
+                        ...gasOptions,
+                    }),
                 service,
                 'ZeroAmount',
             );
