@@ -15,7 +15,7 @@ const { getRandomBytes32, expectRevert } = require('./utils');
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 
 const LOCK_UNLOCK = 2;
-const GATEWAY = 4;
+const GATEWAY = 5;
 const NATIVE_INTERCHAIN_TOKEN = 0;
 
 const MINTER_ROLE = 0;

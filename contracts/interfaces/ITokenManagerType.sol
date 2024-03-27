@@ -12,6 +12,7 @@ interface ITokenManagerType {
         MINT_BURN_FROM, // The token will be minted/burned on transfers. The token needs to give mint permission to the token manager, but burning happens via an approval.
         LOCK_UNLOCK, // The token will be locked/unlocked at the token manager.
         LOCK_UNLOCK_FEE, // The token will be locked/unlocked at the token manager, which will account for any fee-on-transfer behaviour.
-        MINT_BURN // The token will be minted/burned on transfers. The token needs to give mint and burn permission to the token manager.
+        MINT_BURN, // The token will be minted/burned on transfers. The token needs to give mint and burn permission to the token manager.
+        GATEWAY // The token will be moved throught the AxelarGateway via callContractWithToken
     }
 }
