@@ -61,6 +61,24 @@ describe('Token Manager', () => {
         await expectRevert((gasOptions) => TestTokenManager.approveService(gasOptions), TestTokenManager, 'NotService', [owner.address]);
     });
 
+    it('Should revert on mintToken when calling directly', async () => {
+        await expectRevert(
+            (gasOptions) => TestTokenManager.mintToken(other.address, owner.address, 1234, gasOptions),
+            TestTokenManager,
+            'NotService',
+            [owner.address],
+        );
+    });
+
+    it('Should revert on burnToken when calling directly', async () => {
+        await expectRevert(
+            (gasOptions) => TestTokenManager.burnToken(other.address, owner.address, 1234, gasOptions),
+            TestTokenManager,
+            'NotService',
+            [owner.address],
+        );
+    });
+
     it('Should return the correct parameters for a token manager', async () => {
         const expectedParams = defaultAbiCoder.encode(['bytes', 'address'], [toUtf8Bytes(owner.address), other.address]);
         const params = await TestTokenManager.params(toUtf8Bytes(owner.address), other.address);

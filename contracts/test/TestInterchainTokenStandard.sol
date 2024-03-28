@@ -73,7 +73,7 @@ contract TestInterchainTokenStandard is InterchainTokenStandard, Minter, ERC20, 
         _burn(account, amount);
     }
 
-    function burnFrom(address account, uint256 amount) external onlyRole(uint8(Roles.MINTER)) {
+    function burnFrom(address account, uint256 amount) external {
         uint256 currentAllowance = allowance[account][msg.sender];
         if (currentAllowance < amount) revert AllowanceExceeded();
         _approve(account, msg.sender, currentAllowance - amount);

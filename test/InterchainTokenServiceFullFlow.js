@@ -22,7 +22,8 @@ const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
 
 const MINTER_ROLE = 0;
 
-const MINT_BURN = 0;
+const NATIVE_INTERCHAIN_TOKEN = 0;
+const MINT_BURN = 4;
 const LOCK_UNLOCK = 2;
 
 describe('Interchain Token Service Full Flow', () => {
@@ -196,7 +197,7 @@ describe('Interchain Token Service Full Flow', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
+                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -393,17 +394,18 @@ describe('Interchain Token Service Full Flow', () => {
          * Transfer the minter to ITS on all chains to allow it to mint/burn
          */
         it('Should be able to change the token minter', async () => {
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const newAddress = new Wallet(getRandomBytes32()).address;
             const amount = 1234;
 
             await expect(token.mint(newAddress, amount)).to.emit(token, 'Transfer').withArgs(AddressZero, newAddress, amount);
             await expect(token.burn(newAddress, amount)).to.emit(token, 'Transfer').withArgs(newAddress, AddressZero, amount);
 
-            await expect(token.transferMintership(service.address))
+            await expect(token.transferMintership(tokenManagerAddress))
                 .to.emit(token, 'RolesRemoved')
                 .withArgs(wallet.address, 1 << MINTER_ROLE)
                 .to.emit(token, 'RolesAdded')
-                .withArgs(service.address, 1 << MINTER_ROLE);
+                .withArgs(tokenManagerAddress, 1 << MINTER_ROLE);
 
             await expectRevert((gasOptions) => token.mint(newAddress, amount, gasOptions), token, 'MissingRole', [
                 wallet.address,
@@ -503,7 +505,7 @@ describe('Interchain Token Service Full Flow', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
+                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -592,7 +594,7 @@ describe('Interchain Token Service Full Flow', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
 
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
             executable = await deployContract(wallet, 'TestInterchainExecutable', [service.address]);

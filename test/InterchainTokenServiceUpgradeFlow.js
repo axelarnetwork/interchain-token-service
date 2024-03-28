@@ -16,6 +16,8 @@ const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
 
+const MINT_BURN = 4;
+
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, signer;
     let service, gateway, gasService;
@@ -51,9 +53,9 @@ describe('Interchain Token Service Upgrade Flow', () => {
         ]);
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
-        await expect(service.deployTokenManager(salt, '', 0, params, 0))
+        await expect(service.deployTokenManager(salt, '', MINT_BURN, params, 0))
             .to.emit(service, 'TokenManagerDeployed')
-            .withArgs(tokenId, tokenManager.address, 0, params);
+            .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
     }
 
     before(async () => {

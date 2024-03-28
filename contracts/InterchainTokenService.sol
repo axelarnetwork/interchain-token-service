@@ -14,14 +14,12 @@ import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/util
 import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/InterchainAddressTracker.sol';
 
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
-import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
 import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
-import { IERC20Named } from './interfaces/IERC20Named.sol';
 
 import { Operator } from './utils/Operator.sol';
 
@@ -264,7 +262,7 @@ contract InterchainTokenService is
      * part of a multicall involving multiple functions that could make remote contract calls.
      * @param salt The salt to be used during deployment.
      * @param destinationChain The name of the chain to deploy the TokenManager and standardized token to.
-     * @param tokenManagerType The type of TokenManager to be deployed.
+     * @param tokenManagerType The type of token manager to be deployed. Cannot be NATIVE_INTERCHAIN_TOKEN.
      * @param params The params that will be used to initialize the TokenManager.
      * @param gasValue The amount of native tokens to be used to pay for gas for the remote deployment.
      * @return tokenId The tokenId corresponding to the deployed TokenManager.
@@ -276,9 +274,14 @@ contract InterchainTokenService is
         bytes calldata params,
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
+        // Custom token managers can't be deployed with Interchain token mint burn type, which is reserved for interchain tokens
+        if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
+
         address deployer = msg.sender;
 
-        if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
+        if (deployer == interchainTokenFactory) {
+            deployer = TOKEN_FACTORY_DEPLOYER;
+        }
 
         tokenId = interchainTokenId(deployer, salt);
 
@@ -323,7 +326,7 @@ contract InterchainTokenService is
         if (bytes(destinationChain).length == 0) {
             address tokenAddress = _deployInterchainToken(tokenId, minter, name, symbol, decimals);
 
-            _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(minter, tokenAddress));
+            _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, abi.encode(minter, tokenAddress));
         } else {
             _deployRemoteInterchainToken(tokenId, name, symbol, decimals, minter, destinationChain, gasValue);
         }
@@ -396,21 +399,11 @@ contract InterchainTokenService is
 
         IERC20 token;
         {
-            ITokenManager tokenManager_ = ITokenManager(tokenManagerAddress(tokenId));
-            token = IERC20(tokenManager_.tokenAddress());
-
             (bool success, bytes memory returnData) = tokenHandler.delegatecall(
-                abi.encodeWithSelector(
-                    ITokenHandler.transferTokenFrom.selector,
-                    tokenManager_.implementationType(),
-                    address(token),
-                    msg.sender,
-                    destinationAddress,
-                    amount
-                )
+                abi.encodeWithSelector(ITokenHandler.transferTokenFrom.selector, tokenId, msg.sender, destinationAddress, amount)
             );
             if (!success) revert TokenHandlerFailed(returnData);
-            amount = abi.decode(returnData, (uint256));
+            (amount, token) = abi.decode(returnData, (uint256, IERC20));
         }
 
         // slither-disable-next-line reentrancy-events
@@ -738,13 +731,14 @@ contract InterchainTokenService is
 
     /**
      * @notice Processes a deploy token manager payload.
-     * @param payload The encoded data payload to be processed
      */
     function _processDeployTokenManagerPayload(bytes calldata payload) internal {
         (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
             payload,
             (uint256, bytes32, TokenManagerType, bytes)
         );
+
+        if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
         _deployTokenManager(tokenId, tokenManagerType, params);
     }
@@ -762,7 +756,7 @@ contract InterchainTokenService is
 
         tokenAddress = _deployInterchainToken(tokenId, minterBytes, name, symbol, decimals);
 
-        _deployTokenManager(tokenId, TokenManagerType.MINT_BURN, abi.encode(minterBytes, tokenAddress));
+        _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, abi.encode(minterBytes, tokenAddress));
     }
 
     /**
@@ -1073,44 +1067,24 @@ contract InterchainTokenService is
      * @dev Takes token from a sender via the token service. `tokenOnly` indicates if the caller should be restricted to the token only.
      */
     function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256, string memory symbol) {
-        address tokenManager_ = tokenManagerAddress(tokenId);
-        uint256 tokenManagerType;
-        address tokenAddress;
-
-        (tokenManagerType, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-
-        if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
-
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenManagerType, tokenAddress, tokenManager_, from, amount)
+            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenId, tokenOnly, from, amount)
         );
         if (!success) revert TakeTokenFailed(data);
-        amount = abi.decode(data, (uint256));
+        (amount, symbol) = abi.decode(data, (uint256, string));
 
-        /// @dev Track the flow amount being sent out as a message
-        ITokenManager(tokenManager_).addFlowOut(amount);
-        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
-            symbol = IERC20Named(tokenAddress).symbol();
-        }
         return (amount, symbol);
     }
 
     /**
      * @dev Gives token to recipient via the token service.
      */
-    function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address) {
-        address tokenManager_ = tokenManagerAddress(tokenId);
-
-        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-
-        /// @dev Track the flow amount being received via the message
-        ITokenManager(tokenManager_).addFlowIn(amount);
-
+    function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address tokenAddress) {
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, tokenManager_, to, amount)
+            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenId, to, amount)
         );
         if (!success) revert GiveTokenFailed(data);
-        amount = abi.decode(data, (uint256));
+        (amount, tokenAddress) = abi.decode(data, (uint256, address));
 
         return (amount, tokenAddress);
     }

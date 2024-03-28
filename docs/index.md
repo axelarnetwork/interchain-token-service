@@ -703,7 +703,7 @@ part of a multicall involving multiple functions that could make remote contract
 | ---- | ---- | ----------- |
 | salt | bytes32 | The salt to be used during deployment. |
 | destinationChain | string | The name of the chain to deploy the TokenManager and standardized token to. |
-| tokenManagerType | enum ITokenManagerType.TokenManagerType | The type of TokenManager to be deployed. |
+| tokenManagerType | enum ITokenManagerType.TokenManagerType | The type of token manager to be deployed. Cannot be NATIVE_INTERCHAIN_TOKEN. |
 | params | bytes | The params that will be used to initialize the TokenManager. |
 | gasValue | uint256 | The amount of native tokens to be used to pay for gas for the remote deployment. |
 
@@ -987,12 +987,6 @@ function _processDeployTokenManagerPayload(bytes payload) internal
 
 Processes a deploy token manager payload.
 
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| payload | bytes | The encoded data payload to be processed |
-
 ### _processDeployInterchainTokenPayload
 
 ```solidity
@@ -1264,22 +1258,34 @@ function _transferTokenFrom(address tokenAddress, address from, address to, uint
 function _transferTokenFromWithFee(address tokenAddress, address from, address to, uint256 amount) internal returns (uint256)
 ```
 
-### _giveTokenMintBurn
+### _giveInterchainToken
 
 ```solidity
-function _giveTokenMintBurn(address tokenAddress, address to, uint256 amount) internal
+function _giveInterchainToken(address tokenAddress, address to, uint256 amount) internal
 ```
 
-### _takeTokenMintBurn
+### _takeInterchainToken
 
 ```solidity
-function _takeTokenMintBurn(address tokenAddress, address from, uint256 amount) internal
+function _takeInterchainToken(address tokenAddress, address from, uint256 amount) internal
 ```
 
-### _takeTokenMintBurnFrom
+### _mintToken
 
 ```solidity
-function _takeTokenMintBurnFrom(address tokenAddress, address from, uint256 amount) internal
+function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal
+```
+
+### _burnToken
+
+```solidity
+function _burnToken(address tokenManager, address tokenAddress, address from, uint256 amount) internal
+```
+
+### _burnTokenFrom
+
+```solidity
+function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal
 ```
 
 ## InterchainTokenExecutable
@@ -2856,6 +2862,12 @@ error TokenHandlerFailed(bytes data)
 error EmptyData()
 ```
 
+### CannotDeploy
+
+```solidity
+error CannotDeploy(enum ITokenManagerType.TokenManagerType)
+```
+
 ### InterchainTransfer
 
 ```solidity
@@ -3097,7 +3109,7 @@ Deploys a custom token manager contract on a remote chain.
 | ---- | ---- | ----------- |
 | salt | bytes32 | The salt used for token manager deployment. |
 | destinationChain | string | The name of the destination chain. |
-| tokenManagerType | enum ITokenManagerType.TokenManagerType | The type of token manager. |
+| tokenManagerType | enum ITokenManagerType.TokenManagerType | The type of token manager. Cannot be NATIVE_INTERCHAIN_TOKEN. |
 | params | bytes | The deployment parameters. |
 | gasValue | uint256 | The gas value for deployment. |
 
@@ -3716,6 +3728,42 @@ _This function will be mainly used by frontends._
 | ---- | ---- | ----------- |
 | params_ | bytes | The resulting params to be passed to custom TokenManager deployments. |
 
+### mintToken
+
+```solidity
+function mintToken(address tokenAddress_, address to, uint256 amount) external
+```
+
+External function to allow the service to mint tokens through the tokenManager
+
+_This function should revert if called by anyone but the service._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress_ | address | The address of the token, since its cheaper to pass it in instead of reading it as the token manager. |
+| to | address | The recipient. |
+| amount | uint256 | The amount to mint. |
+
+### burnToken
+
+```solidity
+function burnToken(address tokenAddress_, address from, uint256 amount) external
+```
+
+External function to allow the service to burn tokens through the tokenManager
+
+_This function should revert if called by anyone but the service._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress_ | address | The address of the token, since its cheaper to pass it in instead of reading it as the token manager. |
+| from | address | The address to burn the token from. |
+| amount | uint256 | The amount to burn. |
+
 ## ITokenManagerDeployer
 
 This interface is used to deploy new instances of the TokenManagerProxy contract.
@@ -3853,10 +3901,11 @@ A simple interface that defines all the token manager types.
 
 ```solidity
 enum TokenManagerType {
-  MINT_BURN,
+  NATIVE_INTERCHAIN_TOKEN,
   MINT_BURN_FROM,
   LOCK_UNLOCK,
-  LOCK_UNLOCK_FEE
+  LOCK_UNLOCK_FEE,
+  MINT_BURN
 }
 ```
 
@@ -5068,6 +5117,42 @@ _This function will be mainly used by frontends._
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | params_ | bytes | The resulting params to be passed to custom TokenManager deployments. |
+
+### mintToken
+
+```solidity
+function mintToken(address tokenAddress_, address to, uint256 amount) external
+```
+
+External function to allow the service to mint tokens through the tokenManager
+
+_This function should revert if called by anyone but the service._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress_ | address | The address of the token, since its cheaper to pass it in instead of reading it as the token manager. |
+| to | address | The recipient. |
+| amount | uint256 | The amount to mint. |
+
+### burnToken
+
+```solidity
+function burnToken(address tokenAddress_, address from, uint256 amount) external
+```
+
+External function to allow the service to burn tokens through the tokenManager
+
+_This function should revert if called by anyone but the service._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress_ | address | The address of the token, since its cheaper to pass it in instead of reading it as the token manager. |
+| from | address | The address to burn the token from. |
+| amount | uint256 | The amount to burn. |
 
 ## FlowLimit
 
