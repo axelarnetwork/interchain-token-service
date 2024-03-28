@@ -401,21 +401,17 @@ contract InterchainTokenService is
 
         IERC20 token;
         {
-            ITokenManager tokenManager_ = ITokenManager(tokenManagerAddress(tokenId));
-            token = IERC20(tokenManager_.tokenAddress());
-
             (bool success, bytes memory returnData) = tokenHandler.delegatecall(
                 abi.encodeWithSelector(
                     ITokenHandler.transferTokenFrom.selector,
-                    tokenManager_.implementationType(),
-                    address(token),
+                    tokenId,
                     msg.sender,
                     destinationAddress,
                     amount
                 )
             );
             if (!success) revert TokenHandlerFailed(returnData);
-            amount = abi.decode(returnData, (uint256));
+            (amount, token) = abi.decode(returnData, (uint256, IERC20));
         }
 
         // slither-disable-next-line reentrancy-events
