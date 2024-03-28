@@ -1224,6 +1224,18 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it(`Should revert on initiate interchain token transfer with zero amount`, async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    service.interchainTransfer(tokenId, destinationChain, destAddress, 0, '0x', gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                service,
+                'ZeroAmount',
+            );
+        });
+
         it(`Should revert on initiate interchain token transfer when service is paused`, async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
@@ -1606,6 +1618,16 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, destinationChain, service.address, payloadHash, symbol, amount, gasValue, wallet.address)
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+        });
+
+        it(`Should revert on callContractWithInterchainToken function on the service if amount is 0`, async () => {
+            const [, , tokenId] = await deployFunctions.lockUnlock(`Test Token`, 'TT', 12, amount);
+
+            await expectRevert(
+                (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, 0, data, 0, gasOptions),
+                service,
+                'ZeroAmount',
+            );
         });
 
         for (const type of ['lockUnlock', 'lockUnlockFee']) {
@@ -1998,6 +2020,22 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, spender.address)
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, sender.address, destinationChain, destAddress, sendAmount, HashZero);
+        });
+
+        it(`Should revert using interchainTransferFrom with zero amount`, async () => {
+            const sender = wallet;
+            const spender = otherWallet;
+            await token.approve(spender.address, MaxUint256).then((tx) => tx.wait);
+
+            await expectRevert(
+                (gasOptions) =>
+                    token.connect(spender).interchainTransferFrom(sender.address, destinationChain, destAddress, 0, metadata, {
+                        value: gasValue,
+                        ...gasOptions,
+                    }),
+                service,
+                'ZeroAmount',
+            );
         });
 
         it(`Should be able to initiate an interchain token transfer via interchainTransfer & interchainTransferFrom [gateway]`, async () => {
