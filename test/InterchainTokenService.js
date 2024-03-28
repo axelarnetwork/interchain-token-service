@@ -192,7 +192,7 @@ describe('Interchain Token Service', () => {
                 await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
             }
 
-            await token.transferMintership(service.address).then((tx) => tx.wait);
+            await token.transferMintership(tokenManager.address).then((tx) => tx.wait);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             await service.deployTokenManager(salt, '', type, params, 0).then((tx) => tx.wait);
