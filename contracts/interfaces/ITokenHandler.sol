@@ -25,11 +25,7 @@ interface ITokenHandler {
      * @return uint256 The amount of token actually given, which could be different for certain token type.
      * @return address the address of the token.
      */
-    function giveToken(
-        bytes32 tokenId,
-        address to,
-        uint256 amount
-    ) external payable returns (uint256, address);
+    function giveToken(bytes32 tokenId, address to, uint256 amount) external payable returns (uint256, address);
 
     /**
      * @notice This function takes token from a specified address to the token manager.
@@ -58,12 +54,8 @@ interface ITokenHandler {
      * @return address The address of the token corresponding to the input tokenId.
      */
     // slither-disable-next-line locked-ether
-    function transferTokenFrom(
-        bytes32 tokenId,
-        address from,
-        address to,
-        uint256 amount
-    ) external payable returns (uint256, address);
+    function transferTokenFrom(bytes32 tokenId, address from, address to, uint256 amount) external payable returns (uint256, address);
+
     /**
      * @notice This function prepares a token manager after it is deployed
      * @param tokenManagerType The token manager type.
