@@ -132,21 +132,23 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
     /**
      * @notice This function transfers token from and to a specified address.
-     * @param tokenManagerType The token manager type.
-     * @param tokenAddress the address of the token to give.
+     * @param tokenId The token id of the token manager.
      * @param from The address to transfer tokens from.
      * @param to The address to transfer tokens to.
      * @param amount The amount of token to transfer.
      * @return uint256 The amount of token actually transferred, which could be different for certain token type.
+     * @return address The address of the token corresponding to the input tokenId.
      */
     // slither-disable-next-line locked-ether
     function transferTokenFrom(
-        uint256 tokenManagerType,
-        address tokenAddress,
+        bytes32 tokenId,
         address from,
         address to,
         uint256 amount
-    ) external payable returns (uint256) {
+    ) external payable returns (uint256, address) {
+        address tokenManager = _create3Address(tokenId);
+        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
+    
         if (
             tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) ||
             tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
@@ -154,12 +156,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
             tokenManagerType == uint256(TokenManagerType.GATEWAY)
         ) {
             _transferTokenFrom(tokenAddress, from, to, amount);
-            return amount;
+            return (amount, tokenAddress);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _transferTokenFromWithFee(tokenAddress, from, to, amount);
-            return amount;
+            return (amount, tokenAddress);
         }
 
         revert UnsupportedTokenManagerType(tokenManagerType);
