@@ -83,13 +83,7 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
-    deployFunctions.gateway = async function deployNewGateway(
-        tokenName,
-        tokenSymbol,
-        tokenDecimals,
-        mintAmount = 0,
-        skipApprove = false,
-    ) {
+    deployFunctions.gateway = async function deployNewGateway(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
@@ -1591,7 +1585,7 @@ describe('Interchain Token Service', () => {
                 'UntrustedChain',
                 [],
             );
-            
+
             await expect(
                 reportGas(
                     service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }),
