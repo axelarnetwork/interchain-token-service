@@ -1030,6 +1030,8 @@ contract InterchainTokenService is
         string memory symbol,
         uint256 gasValue
     ) internal {
+        if (amount == 0) revert ZeroAmount();
+
         // slither-disable-next-line reentrancy-events
         emit InterchainTransfer(
             tokenId,
