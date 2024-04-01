@@ -83,7 +83,7 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
-    deployFunctions.gateway = async function deployNewLockUnlock(
+    deployFunctions.gateway = async function deployNewGateway(
         tokenName,
         tokenSymbol,
         tokenDecimals,
@@ -192,7 +192,7 @@ describe('Interchain Token Service', () => {
                 await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
             }
 
-            await token.transferMintership(tokenManager.address.address).then((tx) => tx.wait);
+            await token.transferMintership(tokenManager.address).then((tx) => tx.wait);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             await service.deployTokenManager(salt, '', type, params, 0).then((tx) => tx.wait);
@@ -1568,7 +1568,8 @@ describe('Interchain Token Service', () => {
 
         it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [gateway]`, async () => {
             const symbol = 'TT1';
-            const [token, , tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount * 3);
+            const [token, tokenManager, tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount * 3);
+            console.log(await tokenManager.implementationType());
             const sendAmount = amount;
             const metadata = '0x00000000';
             const payload = defaultAbiCoder.encode(
@@ -1580,7 +1581,6 @@ describe('Interchain Token Service', () => {
             const metadataExpress = '0x00000001';
 
             const transferToAddress = service.address;
-
             await expectRevert(
                 (gasOptions) =>
                     service.interchainTransfer(tokenId, 'Untrusted Chain', destAddress, amount, metadata, gasValue, {
@@ -1591,7 +1591,7 @@ describe('Interchain Token Service', () => {
                 'UntrustedChain',
                 [],
             );
-
+            
             await expect(
                 reportGas(
                     service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }),

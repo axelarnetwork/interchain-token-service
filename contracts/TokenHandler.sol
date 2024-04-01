@@ -42,21 +42,22 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @return address the address of the token.
      */
     // slither-disable-next-line locked-ether
-    function giveToken(
-        uint256 tokenManagerType,
-        address tokenAddress,
-        address tokenManager,
-        address to,
-        uint256 amount
-    ) external payable returns (uint256) {
+    function giveToken(bytes32 tokenId, address to, uint256 amount) external payable returns (uint256, address) {
+        address tokenManager = _create3Address(tokenId);
+
+        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
+
+        /// @dev Track the flow amount being received via the message
+        ITokenManager(tokenManager).addFlowIn(amount);
+        
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             _giveInterchainToken(tokenAddress, to, amount);
-            return amount;
+            return (amount, tokenAddress);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _mintToken(tokenManager, tokenAddress, to, amount);
-            return amount;
+            return (amount, tokenAddress);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
@@ -92,20 +93,28 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         bool tokenOnly,
         address from,
         uint256 amount
-    ) external payable returns (uint256) {
+    ) external payable returns (uint256, string memory symbol) {
+        address tokenManager = _create3Address(tokenId);
+        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
+
+        if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
+
+        /// @dev Track the flow amount being sent out as a message
+        ITokenManager(tokenManager).addFlowOut(amount);
+
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             _takeInterchainToken(tokenAddress, from, amount);
-            return amount;
+            return (amount, symbol);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _burnToken(tokenManager, tokenAddress, from, amount);
-            return amount;
+            return (amount, symbol);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _burnTokenFrom(tokenAddress, from, amount);
-            return amount;
+            return (amount, symbol);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
@@ -120,6 +129,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             _transferTokenFrom(tokenAddress, from, address(this), amount);
+            symbol = IERC20Named(tokenAddress).symbol();
             return (amount, symbol);
         }
 
