@@ -14,6 +14,7 @@ import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
+
 /**
  * @title TokenHandler
  * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
@@ -32,7 +33,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         gateway = gateway_;
     }
 
-/**
+    /**
      * @notice This function gives token to a specified address from the token manager.
      * @param tokenId The token id of the tokenManager.
      * @param to The address to give tokens to.
@@ -41,11 +42,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @return address the address of the token.
      */
     // slither-disable-next-line locked-ether
-    function giveToken(
-        bytes32 tokenId,
-        address to,
-        uint256 amount
-    ) external payable returns (uint256, address) {
+    function giveToken(bytes32 tokenId, address to, uint256 amount) external payable returns (uint256, address) {
         address tokenManager = _create3Address(tokenId);
 
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
@@ -140,15 +137,10 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @return address The address of the token corresponding to the input tokenId.
      */
     // slither-disable-next-line locked-ether
-    function transferTokenFrom(
-        bytes32 tokenId,
-        address from,
-        address to,
-        uint256 amount
-    ) external payable returns (uint256, address) {
+    function transferTokenFrom(bytes32 tokenId, address from, address to, uint256 amount) external payable returns (uint256, address) {
         address tokenManager = _create3Address(tokenId);
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
-    
+
         if (
             tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) ||
             tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||

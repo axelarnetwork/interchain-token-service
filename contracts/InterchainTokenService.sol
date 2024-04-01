@@ -14,14 +14,12 @@ import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/util
 import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/InterchainAddressTracker.sol';
 
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
-import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
 import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
-import { IERC20Named } from './interfaces/IERC20Named.sol';
 
 import { Operator } from './utils/Operator.sol';
 
@@ -397,13 +395,7 @@ contract InterchainTokenService is
         IERC20 token;
         {
             (bool success, bytes memory returnData) = tokenHandler.delegatecall(
-                abi.encodeWithSelector(
-                    ITokenHandler.transferTokenFrom.selector,
-                    tokenId,
-                    msg.sender,
-                    destinationAddress,
-                    amount
-                )
+                abi.encodeWithSelector(ITokenHandler.transferTokenFrom.selector, tokenId, msg.sender, destinationAddress, amount)
             );
             if (!success) revert TokenHandlerFailed(returnData);
             (amount, token) = abi.decode(returnData, (uint256, IERC20));
@@ -1063,11 +1055,10 @@ contract InterchainTokenService is
         }
     }
 
-/**
+    /**
      * @dev Takes token from a sender via the token service. `tokenOnly` indicates if the caller should be restricted to the token only.
      */
     function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256, string memory symbol) {
-
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenId, tokenOnly, from, amount)
         );

@@ -552,45 +552,20 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe.only('Token Handler', () => {
-        const tokenManagerType = 5;
+    describe('Token Handler', () => {
         const amount = 1234;
 
         it('Should revert on give token with non existing token id', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    tokenHandler.giveToken(
-                        getRandomBytes32(),
-                        otherWallet.address,
-                        amount,
-                        gasOptions,
-                    ),
-            );
+            await expectRevert((gasOptions) => tokenHandler.giveToken(getRandomBytes32(), otherWallet.address, amount, gasOptions));
         });
 
         it('Should revert on take token with non existing token id', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    tokenHandler.takeToken(
-                        getRandomBytes32(),
-                        false,
-                        otherWallet.address,
-                        amount,
-                        gasOptions,
-                    ),
-            );
+            await expectRevert((gasOptions) => tokenHandler.takeToken(getRandomBytes32(), false, otherWallet.address, amount, gasOptions));
         });
 
         it('Should revert on transfer token from non existing token id', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    tokenHandler.transferTokenFrom(
-                        getRandomBytes32(),
-                        otherWallet.address,
-                        otherWallet.address,
-                        amount,
-                        gasOptions,
-                    ),
+            await expectRevert((gasOptions) =>
+                tokenHandler.transferTokenFrom(getRandomBytes32(), otherWallet.address, otherWallet.address, amount, gasOptions),
             );
         });
     });
@@ -1276,7 +1251,7 @@ describe('Interchain Token Service', () => {
         it(`Should revert on transmit send token when not called by interchain token`, async () => {
             const errorSignatureHash = id('NotToken(address,address)');
             const selector = errorSignatureHash.substring(0, 10);
-            const errorData = defaultAbiCoder.encode(['address', 'address'], [wallet.address, token.address])
+            const errorData = defaultAbiCoder.encode(['address', 'address'], [wallet.address, token.address]);
 
             await expectRevert(
                 (gasOptions) =>
@@ -2556,10 +2531,10 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
             await service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x', 0).then((tx) => tx.wait);
-            
+
             const errorSignatureHash = id('FlowLimitExceeded(uint256,uint256,address)');
             const selector = errorSignatureHash.substring(0, 10);
-            const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [flowLimit, 2 * sendAmount, tokenManager.address])
+            const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [flowLimit, 2 * sendAmount, tokenManager.address]);
 
             await expectRevert(
                 (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x', 0, gasOptions),
@@ -2599,14 +2574,14 @@ describe('Interchain Token Service', () => {
 
             const errorSignatureHash = id('FlowLimitExceeded(uint256,uint256,address)');
             const selector = errorSignatureHash.substring(0, 10);
-            const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [
-                (5 * sendAmount) / 2,
-                3 * sendAmount,
-                tokenManager.address,
-            ])
+            const errorData = defaultAbiCoder.encode(
+                ['uint256', 'uint256', 'address'],
+                [(5 * sendAmount) / 2, 3 * sendAmount, tokenManager.address],
+            );
 
-
-            await expectRevert((gasOptions) => receiveToken(2 * sendAmount, gasOptions), service, 'GiveTokenFailed', [selector + errorData.substring(2)]);
+            await expectRevert((gasOptions) => receiveToken(2 * sendAmount, gasOptions), service, 'GiveTokenFailed', [
+                selector + errorData.substring(2),
+            ]);
         });
 
         it('Should be able to set flow limits for each token manager', async () => {
