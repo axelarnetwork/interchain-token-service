@@ -6,17 +6,19 @@ import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
+import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
 
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
+import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
-
+import { IERC20Named } from './interfaces/IERC20Named.sol';
 /**
  * @title TokenHandler
  * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
-contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
+contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Create3Address {
     using SafeTokenTransferFrom for IERC20;
     using SafeTokenCall for IERC20;
     using SafeTokenTransfer for IERC20;
@@ -30,41 +32,44 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
         gateway = gateway_;
     }
 
-    /**
+/**
      * @notice This function gives token to a specified address from the token manager.
-     * @param tokenManagerType The token manager type.
-     * @param tokenAddress The address of the token to give.
-     * @param tokenManager The address of the token manager.
+     * @param tokenId The token id of the tokenManager.
      * @param to The address to give tokens to.
      * @param amount The amount of tokens to give.
      * @return uint256 The amount of token actually given, which could be different for certain token type.
+     * @return address the address of the token.
      */
     // slither-disable-next-line locked-ether
     function giveToken(
-        uint256 tokenManagerType,
-        address tokenAddress,
-        address tokenManager,
+        bytes32 tokenId,
         address to,
         uint256 amount
-    ) external payable returns (uint256) {
+    ) external payable returns (uint256, address) {
+        address tokenManager = _create3Address(tokenId);
+
+        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
+
+        /// @dev Track the flow amount being received via the message
+        ITokenManager(tokenManager).addFlowIn(amount);
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _giveTokenMintBurn(tokenAddress, to, amount);
-            return amount;
+            return (amount, tokenAddress);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
             _transferTokenFrom(tokenAddress, tokenManager, to, amount);
-            return amount;
+            return (amount, tokenAddress);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _transferTokenFromWithFee(tokenAddress, tokenManager, to, amount);
-            return amount;
+            return (amount, tokenAddress);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             _transferToken(tokenAddress, to, amount);
-            return amount;
+            return (amount, tokenAddress);
         }
 
         revert UnsupportedTokenManagerType(tokenManagerType);
@@ -72,44 +77,54 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard {
 
     /**
      * @notice This function takes token from a specified address to the token manager.
-     * @param tokenManagerType The token manager type.
-     * @param tokenAddress The address of the token to give.
-     * @param tokenManager The address of the token manager.
+     * @param tokenId The tokenId for the token.
+     * @param tokenOnly can onky be called from the token.
      * @param from The address to take tokens from.
      * @param amount The amount of token to take.
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
+     * @return symbol The symbol for the token, if not empty the token is a gateway token and a callContractWith token has to be made.
      */
     // slither-disable-next-line locked-ether
     function takeToken(
-        uint256 tokenManagerType,
-        address tokenAddress,
-        address tokenManager,
+        bytes32 tokenId,
+        bool tokenOnly,
         address from,
         uint256 amount
-    ) external payable returns (uint256) {
+    ) external payable returns (uint256, string memory symbol) {
+        address tokenManager = _create3Address(tokenId);
+        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
+
+        if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
+
+        /// @dev Track the flow amount being sent out as a message
+        ITokenManager(tokenManager).addFlowOut(amount);
+        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
+            symbol = IERC20Named(tokenAddress).symbol();
+        }
+
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _takeTokenMintBurn(tokenAddress, from, amount);
-            return amount;
+            return (amount, symbol);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _takeTokenMintBurnFrom(tokenAddress, from, amount);
-            return amount;
+            return (amount, symbol);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
             _transferTokenFrom(tokenAddress, from, tokenManager, amount);
-            return amount;
+            return (amount, symbol);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _transferTokenFromWithFee(tokenAddress, from, tokenManager, amount);
-            return amount;
+            return (amount, symbol);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             _transferTokenFrom(tokenAddress, from, address(this), amount);
-            return amount;
+            return (amount, symbol);
         }
 
         revert UnsupportedTokenManagerType(tokenManagerType);

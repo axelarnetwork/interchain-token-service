@@ -9,6 +9,7 @@ pragma solidity ^0.8.0;
 interface ITokenHandler {
     error UnsupportedTokenManagerType(uint256 tokenManagerType);
     error AddressZero();
+    error NotToken(address caller, address token);
 
     /**
      * @notice Returns the address of the axelar gateway on this chain.
@@ -18,37 +19,34 @@ interface ITokenHandler {
 
     /**
      * @notice This function gives token to a specified address from the token manager.
-     * @param tokenManagerType The token manager type.
-     * @param tokenAddress The address of the token to give.
-     * @param tokenManager The address of the token manager.
+     * @param tokenId The token id of the tokenManager.
      * @param to The address to give tokens to.
      * @param amount The amount of tokens to give.
      * @return uint256 The amount of token actually given, which could be different for certain token type.
+     * @return address the address of the token.
      */
     function giveToken(
-        uint256 tokenManagerType,
-        address tokenAddress,
-        address tokenManager,
+        bytes32 tokenId,
         address to,
         uint256 amount
-    ) external payable returns (uint256);
+    ) external payable returns (uint256, address);
 
     /**
      * @notice This function takes token from a specified address to the token manager.
-     * @param tokenManagerType The token manager type.
-     * @param tokenAddress The address of the token to give.
-     * @param tokenManager The address of the token manager.
+     * @param tokenId The tokenId for the token.
+     * @param tokenOnly can onky be called from the token.
      * @param from The address to take tokens from.
      * @param amount The amount of token to take.
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
+     * @return symbol The symbol for the token, if not empty the token is a gateway token and a callContractWith token has to be made.
      */
+    // slither-disable-next-line locked-ether
     function takeToken(
-        uint256 tokenManagerType,
-        address tokenAddress,
-        address tokenManager,
+        bytes32 tokenId,
+        bool tokenOnly,
         address from,
         uint256 amount
-    ) external payable returns (uint256);
+    ) external payable returns (uint256, string memory symbol);
 
     /**
      * @notice This function transfers token from and to a specified address.

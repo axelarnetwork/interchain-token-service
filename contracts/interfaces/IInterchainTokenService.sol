@@ -32,7 +32,6 @@ interface IInterchainTokenService is
     error InvalidChainName();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
-    error NotToken(address caller, address token);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error GatewayToken();

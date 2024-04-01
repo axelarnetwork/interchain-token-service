@@ -1067,48 +1067,29 @@ contract InterchainTokenService is
         }
     }
 
-    /**
+/**
      * @dev Takes token from a sender via the token service. `tokenOnly` indicates if the caller should be restricted to the token only.
      */
     function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256, string memory symbol) {
-        address tokenManager_ = tokenManagerAddress(tokenId);
-        uint256 tokenManagerType;
-        address tokenAddress;
-
-        (tokenManagerType, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-
-        if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
 
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenManagerType, tokenAddress, tokenManager_, from, amount)
+            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenId, tokenOnly, from, amount)
         );
         if (!success) revert TakeTokenFailed(data);
-        amount = abi.decode(data, (uint256));
+        (amount, symbol) = abi.decode(data, (uint256, string));
 
-        /// @dev Track the flow amount being sent out as a message
-        ITokenManager(tokenManager_).addFlowOut(amount);
-        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
-            symbol = IERC20Named(tokenAddress).symbol();
-        }
         return (amount, symbol);
     }
 
     /**
      * @dev Gives token to recipient via the token service.
      */
-    function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address) {
-        address tokenManager_ = tokenManagerAddress(tokenId);
-
-        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-
-        /// @dev Track the flow amount being received via the message
-        ITokenManager(tokenManager_).addFlowIn(amount);
-
+    function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address tokenAddress) {
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, tokenManager_, to, amount)
+            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenId, to, amount)
         );
         if (!success) revert GiveTokenFailed(data);
-        amount = abi.decode(data, (uint256));
+        (amount, tokenAddress) = abi.decode(data, (uint256, address));
 
         return (amount, tokenAddress);
     }
