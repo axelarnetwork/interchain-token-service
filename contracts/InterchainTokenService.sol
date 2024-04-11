@@ -7,7 +7,6 @@ import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contr
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
-import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
@@ -716,8 +715,8 @@ contract InterchainTokenService is
     function _processInterchainTransferPayload(
         bytes32 commandId,
         address expressExecutor,
-        string calldata sourceChain,
-        bytes calldata payload
+        string memory sourceChain,
+        bytes memory payload
     ) internal {
         bytes32 tokenId;
         bytes memory sourceAddress;
@@ -774,7 +773,7 @@ contract InterchainTokenService is
      * @notice Processes a deploy token manager payload.
      * @param payload The encoded data payload to be processed
      */
-    function _processDeployTokenManagerPayload(bytes calldata payload) internal {
+    function _processDeployTokenManagerPayload(bytes memory payload) internal {
         (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
             payload,
             (uint256, bytes32, TokenManagerType, bytes)
@@ -787,7 +786,7 @@ contract InterchainTokenService is
      * @notice Processes a deploy interchain token manager payload.
      * @param payload The encoded data payload to be processed.
      */
-    function _processDeployInterchainTokenPayload(bytes calldata payload) internal {
+    function _processDeployInterchainTokenPayload(bytes memory payload) internal {
         (, bytes32 tokenId, string memory name, string memory symbol, uint8 decimals, bytes memory minterBytes) = abi.decode(
             payload,
             (uint256, bytes32, string, string, uint8, bytes)
@@ -861,7 +860,7 @@ contract InterchainTokenService is
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
-        
+
         if (bytes(destinationAddress).length == 1) {
             payload = abi.encode(MESSAGE_TYPE_ROUTE_PAYLOAD, destinationChain, payload);
             destinationChain = AXELAR;
@@ -899,9 +898,9 @@ contract InterchainTokenService is
 
     function _execute(
         bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
+        string memory sourceChain,
+        string memory sourceAddress,
+        bytes memory payload,
         bytes32 payloadHash
     ) internal {
         uint256 messageType = abi.decode(payload, (uint256));
@@ -912,6 +911,9 @@ contract InterchainTokenService is
             _processDeployTokenManagerPayload(payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
             _processDeployInterchainTokenPayload(payload);
+        } else if (messageType == MESSAGE_TYPE_ROUTE_PAYLOAD) {
+            (, sourceChain, sourceAddress, payload) = abi.decode(payload, (uint256, string, string, bytes));
+            _execute(commandId, sourceChain, sourceAddress, payload, keccak256(payload));
         } else {
             revert InvalidMessageType(messageType);
         }
@@ -1192,8 +1194,8 @@ contract InterchainTokenService is
 
     function _getExpressExecutorAndEmitEvent(
         bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
+        string memory sourceChain,
+        string memory sourceAddress,
         bytes32 payloadHash
     ) internal returns (address expressExecutor) {
         expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
