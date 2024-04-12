@@ -13,14 +13,12 @@ import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/util
 import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/InterchainAddressTracker.sol';
 
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
-import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
 import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
-import { IERC20Named } from './interfaces/IERC20Named.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 
 import { Operator } from './utils/Operator.sol';
@@ -390,21 +388,11 @@ contract InterchainTokenService is
 
         IERC20 token;
         {
-            ITokenManager tokenManager_ = ITokenManager(tokenManagerAddress(tokenId));
-            token = IERC20(tokenManager_.tokenAddress());
-
             (bool success, bytes memory returnData) = tokenHandler.delegatecall(
-                abi.encodeWithSelector(
-                    ITokenHandler.transferTokenFrom.selector,
-                    tokenManager_.implementationType(),
-                    address(token),
-                    msg.sender,
-                    destinationAddress,
-                    amount
-                )
+                abi.encodeWithSelector(ITokenHandler.transferTokenFrom.selector, tokenId, msg.sender, destinationAddress, amount)
             );
             if (!success) revert TokenHandlerFailed(returnData);
-            amount = abi.decode(returnData, (uint256));
+            (amount, token) = abi.decode(returnData, (uint256, IERC20));
         }
 
         // slither-disable-next-line reentrancy-events
@@ -1124,44 +1112,24 @@ contract InterchainTokenService is
      * @dev Takes token from a sender via the token service. `tokenOnly` indicates if the caller should be restricted to the token only.
      */
     function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256, string memory symbol) {
-        address tokenManager_ = tokenManagerAddress(tokenId);
-        uint256 tokenManagerType;
-        address tokenAddress;
-
-        (tokenManagerType, tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-
-        if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
-
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenManagerType, tokenAddress, tokenManager_, from, amount)
+            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenId, tokenOnly, from, amount)
         );
         if (!success) revert TakeTokenFailed(data);
-        amount = abi.decode(data, (uint256));
+        (amount, symbol) = abi.decode(data, (uint256, string));
 
-        /// @dev Track the flow amount being sent out as a message
-        ITokenManager(tokenManager_).addFlowOut(amount);
-        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
-            symbol = IERC20Named(tokenAddress).symbol();
-        }
         return (amount, symbol);
     }
 
     /**
      * @dev Gives token to recipient via the token service.
      */
-    function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address) {
-        address tokenManager_ = tokenManagerAddress(tokenId);
-
-        (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager_).getImplementationTypeAndTokenAddress();
-
-        /// @dev Track the flow amount being received via the message
-        ITokenManager(tokenManager_).addFlowIn(amount);
-
+    function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address tokenAddress) {
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenManagerType, tokenAddress, tokenManager_, to, amount)
+            abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenId, to, amount)
         );
         if (!success) revert GiveTokenFailed(data);
-        amount = abi.decode(data, (uint256));
+        (amount, tokenAddress) = abi.decode(data, (uint256, address));
 
         return (amount, tokenAddress);
     }
