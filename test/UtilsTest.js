@@ -6,13 +6,11 @@ const {
     Wallet,
     getContractAt,
     constants: { AddressZero },
-    ContractFactory,
 } = ethers;
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
-const BurnableMintableCappedERC20 = require('../artifacts/contracts/test/TestMintableBurnableERC20.sol/TestMintableBurnableERC20.json');
 
 let ownerWallet, otherWallet;
 
@@ -312,6 +310,7 @@ describe('InterchainTokenDeployer', () => {
 describe('Create3Deployer', () => {
     let deployerWallet;
     let userWallet;
+    let tokenFactory;
 
     let deployerFactory;
     let deployer;
@@ -323,6 +322,7 @@ describe('Create3Deployer', () => {
         [deployerWallet, userWallet] = await ethers.getSigners();
 
         deployerFactory = await ethers.getContractFactory('TestCreate3Fixed', deployerWallet);
+        tokenFactory = await ethers.getContractFactory('TestMintableBurnableERC20', deployerWallet);
     });
 
     beforeEach(async () => {
@@ -342,21 +342,19 @@ describe('Create3Deployer', () => {
 
             const address = await deployer.deployedAddress(salt);
 
-            const factory = new ContractFactory(BurnableMintableCappedERC20.abi, BurnableMintableCappedERC20.bytecode);
-            const bytecode = factory.getDeployTransaction(name, symbol, decimals).data;
+            const bytecode = tokenFactory.getDeployTransaction(name, symbol, decimals).data;
 
             await expect(deployer.deploy(bytecode, salt)).to.emit(deployer, 'Deployed').withArgs(address);
         });
 
-        // Reintroduce this test if we know the address of the deployer.
+        // TODO: Reintroduce this test if we know the address of the deployer.
         /* if (isHardhat) {
             it('should deploy to the predicted address with a know salt', async () => {
                 const salt = '0x4943fe1231449cc1baa660716a0cb38ff09af0b2c9acb63d40d9a7ba06d33d21';
 
                 const address = '0x03C2D7E8Fbcc46C62B3DCBB72121818334af2565';
 
-                const factory = new ContractFactory(BurnableMintableCappedERC20.abi, BurnableMintableCappedERC20.bytecode);
-                const bytecode = factory.getDeployTransaction(name, symbol, decimals).data;
+                const bytecode = ERC20Factory.getDeployTransaction(name, symbol, decimals).data;
 
                 await expect(deployer.deploy(bytecode, salt)).to.emit(deployer, 'Deployed').withArgs(address);
             });
@@ -367,8 +365,7 @@ describe('Create3Deployer', () => {
 
             const address = await deployer.deployedAddress(salt);
 
-            const factory = new ContractFactory(BurnableMintableCappedERC20.abi, BurnableMintableCappedERC20.bytecode);
-            const bytecode = factory.getDeployTransaction(name, symbol, decimals).data;
+            const bytecode = tokenFactory.getDeployTransaction(name, symbol, decimals).data;
 
             await expect(deployer.deploy(bytecode, salt, { value: 10 }))
                 .to.emit(deployer, 'Deployed')
