@@ -30,7 +30,7 @@ interface ITokenHandler {
     /**
      * @notice This function takes token from a specified address to the token manager.
      * @param tokenId The tokenId for the token.
-     * @param tokenOnly can onky be called from the token.
+     * @param tokenOnly can only be called from the token.
      * @param from The address to take tokens from.
      * @param amount The amount of token to take.
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
