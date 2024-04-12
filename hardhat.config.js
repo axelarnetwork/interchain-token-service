@@ -52,12 +52,14 @@ module.exports = {
     solidity: {
         compilers: [compilerSettings],
         // Fix the Proxy bytecodes
-        overrides: {
-            'contracts/proxies/Proxy.sol': compilerSettings,
-            'contracts/proxies/TokenManagerProxy.sol': compilerSettings,
-            'contracts/InterchainTokenService.sol': itsCompilerSettings,
-            'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
-        },
+        overrides: process.env.NO_OVERRIDES
+            ? {}
+            : {
+                  'contracts/proxies/Proxy.sol': compilerSettings,
+                  'contracts/proxies/TokenManagerProxy.sol': compilerSettings,
+                  'contracts/InterchainTokenService.sol': itsCompilerSettings,
+                  'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
+              },
     },
     defaultNetwork: 'hardhat',
     networks,
