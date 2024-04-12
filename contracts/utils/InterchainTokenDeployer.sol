@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { Create3 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3.sol';
+import { Create3Fixed } from './Create3Fixed.sol';
 
 import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
@@ -11,7 +11,7 @@ import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
  * @title InterchainTokenDeployer
  * @notice This contract is used to deploy new instances of the InterchainTokenProxy contract.
  */
-contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3 {
+contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3Fixed {
     address public immutable implementationAddress;
 
     /**

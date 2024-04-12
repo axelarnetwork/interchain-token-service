@@ -7,7 +7,6 @@ import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contr
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
-import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
@@ -20,6 +19,7 @@ import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
+import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 
 import { Operator } from './utils/Operator.sol';
 
@@ -35,7 +35,7 @@ contract InterchainTokenService is
     Operator,
     Pausable,
     Multicall,
-    Create3Address,
+    Create3AddressFixed,
     ExpressExecutorTracker,
     InterchainAddressTracker,
     IInterchainTokenService
@@ -341,13 +341,7 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload
     ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
-        (uint256 messageType, bytes32 tokenId, , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, uint256));
-
-        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            revert InvalidExpressMessageType(messageType);
-        }
-
-        return (validTokenAddress(tokenId), amount);
+        return _contractCallValue(payload);
     }
 
     /**
@@ -614,7 +608,12 @@ contract InterchainTokenService is
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
      * @param payload The encoded data payload for the transaction.
      */
-    function execute(bytes32 commandId, string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) public {
+    function execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
@@ -622,24 +621,46 @@ contract InterchainTokenService is
         _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
     }
 
+    /**
+     * @notice Returns the amount of token that this call is worth.
+     * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
+     * @param sourceChain The source chain.
+     * @param sourceAddress The source address on the source chain.
+     * @param payload The payload sent with the call.
+     * @param symbol The symbol symbol for the call.
+     * @param amount The amount for the call.
+     * @return address The token address.
+     * @return uint256 The value the call is worth.
+     */
     function contractCallWithTokenValue(
-        string calldata /*sourceChain*/,
-        string calldata /*sourceAddress*/,
-        bytes calldata /*payload*/,
-        string calldata /*symbol*/,
-        uint256 /*amount*/
-    ) public view virtual returns (address, uint256) {
-        revert ExecuteWithTokenNotSupported();
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata symbol,
+        uint256 amount
+    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
+        _checkPayloadAgainstGatewayData(payload, symbol, amount);
+        return _contractCallValue(payload);
     }
 
+    /**
+     * @notice Express executes with a gateway token operations based on the payload and selector.
+     * @param commandId The unique message id.
+     * @param sourceChain The chain where the transaction originates from.
+     * @param sourceAddress The address of the remote ITS where the transaction originates from.
+     * @param payload The encoded data payload for the transaction.
+     * @param tokenSymbol The symbol symbol for the call.
+     * @param amount The amount for the call.
+     */
     function expressExecuteWithToken(
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload,
-        string calldata /*tokenSymbol*/,
-        uint256 /*amount*/
+        string calldata tokenSymbol,
+        uint256 amount
     ) external payable {
+        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
         // It should be ok to ignore the symbol and amount since this info exists on the payload.
         expressExecute(commandId, sourceChain, sourceAddress, payload);
     }
@@ -651,13 +672,22 @@ contract InterchainTokenService is
         bytes calldata payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) external {
-        bytes32 payloadHash = keccak256(payload);
+    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+        _executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount);
+    }
 
-        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
-            revert NotApprovedByGateway();
+    /**
+     * @notice Check that the tokenId from the payload is a token that is registered in the gateway with the proper tokenSymbol, with the right amount from the payload.
+     * Also check that the amount in the payload matches the one for the call.
+     * @param payload The payload for the call contract with token.
+     * @param tokenSymbol The tokenSymbol for the call contract with token.
+     * @param amount The amount for the call contract with token.
+     */
+    function _checkPayloadAgainstGatewayData(bytes calldata payload, string calldata tokenSymbol, uint256 amount) internal view {
+        (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
+        if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
+            revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
     /**
@@ -845,15 +875,10 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes calldata payload,
         bytes32 payloadHash
-    ) internal onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+    ) internal {
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            address expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
-
-            if (expressExecutor != address(0)) {
-                emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
-            }
-
+            address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
             _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
@@ -862,6 +887,32 @@ contract InterchainTokenService is
         } else {
             revert InvalidMessageType(messageType);
         }
+    }
+
+    function _executeWithToken(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata tokenSymbol,
+        uint256 amount
+    ) internal {
+        bytes32 payloadHash = keccak256(payload);
+
+        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+            revert NotApprovedByGateway();
+
+        uint256 messageType = abi.decode(payload, (uint256));
+        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
+            revert InvalidMessageType(messageType);
+        }
+
+        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
+
+        // slither-disable-next-line reentrancy-events
+        address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
+
+        _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
     }
 
     /**
@@ -1081,5 +1132,34 @@ contract InterchainTokenService is
         (amount, tokenAddress) = abi.decode(data, (uint256, address));
 
         return (amount, tokenAddress);
+    }
+
+    /**
+     * @notice Returns the amount of token that this call is worth.
+     * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
+     * @param payload The payload sent with the call.
+     * @return address The token address.
+     * @return uint256 The value the call is worth.
+     */
+    function _contractCallValue(bytes calldata payload) internal view returns (address, uint256) {
+        (uint256 messageType, bytes32 tokenId, , , uint256 amount) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256));
+        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
+            revert InvalidExpressMessageType(messageType);
+        }
+
+        return (validTokenAddress(tokenId), amount);
+    }
+
+    function _getExpressExecutorAndEmitEvent(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes32 payloadHash
+    ) internal returns (address expressExecutor) {
+        expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
+
+        if (expressExecutor != address(0)) {
+            emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
+        }
     }
 }
