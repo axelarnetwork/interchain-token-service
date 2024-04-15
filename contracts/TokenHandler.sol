@@ -6,6 +6,8 @@ import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
+import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
@@ -25,12 +27,14 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     using SafeTokenTransfer for IERC20;
 
     address public immutable gateway;
+    address public immutable gasService;
 
     uint256 internal constant UINT256_MAX = type(uint256).max;
 
-    constructor(address gateway_) {
-        if (gateway_ == address(0)) revert AddressZero();
+    constructor(address gateway_, address gasService_) {
+        if (gateway_ == address(0) || gasService_ == address(0)) revert AddressZero();
         gateway = gateway_;
+        gasService = gasService_;
     }
 
     /**
@@ -171,6 +175,76 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
             address token = ITokenManager(tokenManager).tokenAddress();
             _approveGateway(token, UINT256_MAX);
         }
+    }
+
+    function callContract(
+        string calldata destinationChain,
+        string calldata destinationAddress,
+        bytes calldata payload,
+        MetadataVersion metadataVersion,
+        uint256 gasValue
+    ) external payable {
+        if (gasValue > 0) {
+            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                IAxelarGasService(gasService).payNativeGasForContractCall{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload, // solhint-disable-next-line avoid-tx-origin
+                    tx.origin
+                );
+            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                IAxelarGasService(gasService).payNativeGasForExpressCall{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload, // solhint-disable-next-line avoid-tx-origin
+                    tx.origin
+                );
+            } else {
+                revert InvalidMetadataVersion(uint32(metadataVersion));
+            }
+        }
+
+        IAxelarGateway(gateway).callContract(destinationChain, destinationAddress, payload);
+    }
+
+    function callContractWithToken(
+        string calldata destinationChain,
+        string calldata destinationAddress,
+        bytes calldata payload,
+        string calldata symbol,
+        uint256 amount,
+        MetadataVersion metadataVersion,
+        uint256 gasValue
+    ) external payable {
+        if (gasValue > 0) {
+            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                IAxelarGasService(gasService).payNativeGasForContractCallWithToken{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload,
+                    symbol,
+                    amount, // solhint-disable-next-line avoid-tx-origin
+                    tx.origin
+                );
+            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                IAxelarGasService(gasService).payNativeGasForExpressCallWithToken{ value: gasValue }(
+                    address(this),
+                    destinationChain,
+                    destinationAddress,
+                    payload,
+                    symbol,
+                    amount, // solhint-disable-next-line avoid-tx-origin
+                    tx.origin
+                );
+            } else {
+                revert InvalidMetadataVersion(uint32(metadataVersion));
+            }
+        }
+
+        IAxelarGateway(gateway).callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
 
     function _transferTokenFrom(address tokenAddress, address from, address to, uint256 amount) internal {
