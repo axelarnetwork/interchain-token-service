@@ -11,7 +11,6 @@ import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/uti
 
 import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
-import { IERC20BurnableFrom } from '../interfaces/IERC20BurnableFrom.sol';
 
 import { Operator } from '../utils/Operator.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
@@ -213,16 +212,5 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      */
     function burnToken(address tokenAddress_, address from, uint256 amount) external onlyService {
         IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
-    }
-
-    /**
-     * @notice External function to allow the service to burn tokens through the tokenManager
-     * @dev This function should revert if called by anyone but the service.
-     * @param tokenAddress_ The address of the token, since its cheaper to pass it in instead of reading it as the token manager.
-     * @param from The address to burn the token from.
-     * @param amount The amount to burn.
-     */
-    function burnTokenFrom(address tokenAddress_, address from, uint256 amount) external onlyService {
-        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
     }
 }
