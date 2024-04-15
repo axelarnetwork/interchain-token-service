@@ -185,7 +185,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @param metadataVersion The metadata version is used to determine how to pay for gas.
      * @param gasValue how much gas to pay.
      */
-    // slither-disable-next-line locked-ether
+    // slither-disable-next-line locked-ether arbitrary-send-eth
     function callContract(
         string calldata destinationChain,
         string calldata destinationAddress,
@@ -228,7 +228,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @param amount The amount of token to send.
      * @param gasValue how much gas to pay.
      */
-    // slither-disable-next-line locked-ether
+    // slither-disable-next-line locked-ether arbitrary-send-eth
     function callContractWithToken(
         string calldata destinationChain,
         string calldata destinationAddress,
