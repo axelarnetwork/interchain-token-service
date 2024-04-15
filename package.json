@@ -33,7 +33,7 @@
     "@axelar-network/axelar-gmp-sdk-solidity": "5.6.4"
   },
   "devDependencies": {
-    "@axelar-network/axelar-chains-config": "^1.0.0",
+    "@axelar-network/axelar-chains-config": "^1.2.0",
     "@axelarjs/evm": "^0.2.1",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@tsconfig/strictest": "^2.0.2",
