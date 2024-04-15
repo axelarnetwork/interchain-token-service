@@ -177,6 +177,15 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         }
     }
 
+    /**
+     * @notice This function pays gas to the gas service and calls the gateway to transmit a CallContract.
+     * @param destinationChain The destination chain.
+     * @param destinationAddress The destination address.
+     * @param payload The payload to transmit.
+     * @param metadataVersion The metadata version is used to determine how to pay for gas.
+     * @param gasValue how much gas to pay.
+     */
+    // slither-disable-next-line locked-ether
     function callContract(
         string calldata destinationChain,
         string calldata destinationAddress,
@@ -186,6 +195,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     ) external payable {
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 IAxelarGasService(gasService).payNativeGasForContractCall{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -194,6 +204,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 IAxelarGasService(gasService).payNativeGasForExpressCall{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -209,6 +220,17 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         IAxelarGateway(gateway).callContract(destinationChain, destinationAddress, payload);
     }
 
+    /**
+     * @notice This function pays gas to the gas service and calls the gateway to transmit a CallContractWithToken.
+     * @param destinationChain The destination chain.
+     * @param destinationAddress The destination address.
+     * @param payload The payload to transmit.
+     * @param metadataVersion The metadata version is used to determine how to pay for gas.
+     * @param symbol The gateway symbol.
+     * @param amount The amount of token to send.
+     * @param gasValue how much gas to pay.
+     */
+    // slither-disable-next-line locked-ether arbitrary-send-eth
     function callContractWithToken(
         string calldata destinationChain,
         string calldata destinationAddress,
@@ -220,6 +242,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     ) external payable {
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 IAxelarGasService(gasService).payNativeGasForContractCallWithToken{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -230,6 +253,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 IAxelarGasService(gasService).payNativeGasForExpressCallWithToken{ value: gasValue }(
                     address(this),
                     destinationChain,
