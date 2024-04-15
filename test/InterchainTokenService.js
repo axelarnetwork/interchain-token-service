@@ -19,11 +19,12 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
 const INVALID_MESSAGE_TYPE = 3;
 
-const MINT_BURN = 0;
+const NATIVE_INTERCHAIN_TOKEN = 0;
 const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
 const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
-const GATEWAY = 4;
+const GATEWAY = 5;
+const MINT_BURN = 4;
 
 const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
@@ -185,7 +186,7 @@ describe('Interchain Token Service', () => {
                 await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
             }
 
-            await token.transferMintership(service.address).then((tx) => tx.wait);
+            await token.transferMintership(tokenManager.address).then((tx) => tx.wait);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             await service.deployTokenManager(salt, '', type, params, 0).then((tx) => tx.wait);
@@ -583,7 +584,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
                 .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
 
             const tokenManagerAddress = await service.validTokenManagerAddress(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
@@ -719,32 +720,6 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should be able to receive a remote interchain token deployment with a mint/burn token manager', async () => {
-            const tokenId = getRandomBytes32();
-            const minter = wallet.address;
-            const operator = wallet.address;
-
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter],
-            );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_INTERCHAIN_TOKEN'))
-                .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
-                .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
-
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-
-            expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
-            expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
-        });
-
         it('Should be able to receive a remote interchain token deployment with a mint/burn token manager with empty minter and operator', async () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -762,7 +737,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManagerAddress, MINT_BURN, params);
+                .withArgs(tokenId, tokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
@@ -791,7 +766,29 @@ describe('Interchain Token Service', () => {
         it('Should revert on deploying an invalid token manager', async () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
-            await expectRevert((gasOptions) => service.deployTokenManager(salt, '', 5, params, 0, gasOptions));
+            await expectRevert((gasOptions) => service.deployTokenManager(salt, '', 6, params, 0, gasOptions));
+        });
+
+        it('Should revert on deploying a local token manager with interchain token manager type', async () => {
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+            await expectRevert(
+                (gasOptions) => service.deployTokenManager(salt, '', NATIVE_INTERCHAIN_TOKEN, params, 0, gasOptions),
+                service,
+                'CannotDeploy',
+                [NATIVE_INTERCHAIN_TOKEN],
+            );
+        });
+
+        it('Should revert on deploying a remote token manager with interchain token manager type', async () => {
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+            await expectRevert(
+                (gasOptions) => service.deployTokenManager(salt, destinationChain, NATIVE_INTERCHAIN_TOKEN, params, 0, gasOptions),
+                service,
+                'CannotDeploy',
+                [NATIVE_INTERCHAIN_TOKEN],
+            );
         });
 
         it('Should revert on deploying a token manager if token handler post deploy fails', async () => {
@@ -1151,6 +1148,31 @@ describe('Interchain Token Service', () => {
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
+        });
+
+        it('Should not be able to receive a remote interchain token manager deployment', async () => {
+            const tokenId = getRandomBytes32();
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                service.address,
+                tokenId,
+            ]);
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, NATIVE_INTERCHAIN_TOKEN, params],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expectRevert(
+                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                service,
+                'CannotDeploy',
+                [NATIVE_INTERCHAIN_TOKEN],
+            );
         });
     });
 
@@ -1620,7 +1642,8 @@ describe('Interchain Token Service', () => {
 
         it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [gateway]`, async () => {
             const symbol = 'TT1';
-            const [token, , tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount * 3);
+            const [token, tokenManager, tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount * 3);
+            console.log(await tokenManager.implementationType());
             const sendAmount = amount;
             const metadata = '0x00000000';
             const payload = defaultAbiCoder.encode(
@@ -1632,7 +1655,6 @@ describe('Interchain Token Service', () => {
             const metadataExpress = '0x00000001';
 
             const transferToAddress = service.address;
-
             await expectRevert(
                 (gasOptions) =>
                     service.interchainTransfer(tokenId, 'Untrusted Chain', destAddress, amount, metadata, gasValue, {
@@ -2562,6 +2584,31 @@ describe('Interchain Token Service', () => {
                 .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
         });
 
+        it('Should be able to receive interchain mint/burn token', async () => {
+            const salt = getRandomBytes32();
+            await (await service.deployInterchainToken(salt, '', `Test Token Mint Burn`, 'TT', 12, wallet.address, 0)).wait();
+            const tokenId = await service.interchainTokenId(wallet.address, salt);
+            const token = await getContractAt('InterchainToken', await service.interchainTokenAddress(tokenId), wallet);
+
+            await (await token.mint(wallet.address, amount)).wait();
+            await (await token.approve(service.address, amount)).wait();
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
+            );
+
+            const commandId = getRandomBytes32();
+            await (await service.expressExecute(commandId, sourceChain, sourceAddress, payload)).wait();
+            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(AddressZero, wallet.address, amount)
+                .and.to.emit(service, 'ExpressExecutionFulfilled')
+                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+        });
+
         it('Should be able to receive mint/burn token', async () => {
             const [token, , tokenId] = await deployFunctions.mintBurn(`Test Token Mint Burn`, 'TT', 12, amount);
 
@@ -2729,6 +2776,34 @@ describe('Interchain Token Service', () => {
             expect(await executable.lastMessage()).to.equal(msg);
         });
 
+        it('Should be able to receive interchain mint/burn token', async () => {
+            const salt = getRandomBytes32();
+            await (await service.deployInterchainToken(salt, '', `Test Token Mint Burn`, 'TT', 12, wallet.address, 0)).wait();
+            const tokenId = await service.interchainTokenId(wallet.address, salt);
+            const token = await getContractAt('InterchainToken', await service.interchainTokenAddress(tokenId), wallet);
+
+            await (await token.mint(wallet.address, amount)).wait();
+            await (await token.approve(service.address, amount)).wait();
+
+            const msg = `mint/burn`;
+            const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
+            );
+
+            const commandId = getRandomBytes32();
+            await (await service.expressExecute(commandId, sourceChain, sourceAddress, payload)).wait();
+            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+
+            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+                .to.emit(token, 'Transfer')
+                .withArgs(AddressZero, wallet.address, amount)
+                .and.to.emit(service, 'ExpressExecutionFulfilled')
+                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+
+            expect(await executable.lastMessage()).to.equal(msg);
+        });
         it('Should be able to receive mint/burn token', async () => {
             const [token, , tokenId] = await deployFunctions.mintBurn(`Test Token Mint Burn`, 'TT', 12, amount);
             await token.approve(service.address, amount).then((tx) => tx.wait);
