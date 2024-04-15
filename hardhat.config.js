@@ -40,7 +40,7 @@ const itsCompilerSettings = {
         evmVersion: process.env.EVM_VERSION || 'london',
         optimizer: {
             ...optimizerSettings,
-            runs: 1000, // Reduce runs to keep bytecode size under limit
+            runs: 100, // Reduce runs to keep bytecode size under limit
         },
     },
 };
