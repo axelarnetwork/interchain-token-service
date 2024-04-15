@@ -6,13 +6,11 @@ const {
     Wallet,
     getContractAt,
     constants: { AddressZero },
-    ContractFactory,
 } = ethers;
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
-const BurnableMintableCappedERC20 = require('../artifacts/contracts/test/TestMintableBurnableERC20.sol/TestMintableBurnableERC20.json');
 
 let ownerWallet, otherWallet;
 
