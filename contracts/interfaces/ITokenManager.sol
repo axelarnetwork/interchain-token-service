@@ -92,4 +92,13 @@ interface ITokenManager is IBaseTokenManager, IOperator, IFlowLimit, IImplementa
      * @param amount The amount to burn.
      */
     function burnToken(address tokenAddress_, address from, uint256 amount) external;
+
+    /**
+     * @notice External function to allow the service to burn tokens through the tokenManager
+     * @dev This function should revert if called by anyone but the service.
+     * @param tokenAddress_ The address of the token, since its cheaper to pass it in instead of reading it as the token manager.
+     * @param from The address to burn the token from.
+     * @param amount The amount to burn.
+     */
+    function burnTokenFrom(address tokenAddress_, address from, uint256 amount) external;
 }

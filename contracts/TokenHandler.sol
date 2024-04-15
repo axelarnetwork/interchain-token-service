@@ -12,7 +12,6 @@ import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
-import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
 
 /**
@@ -105,9 +104,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             _takeInterchainToken(tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
-            _takeTokenMintBurn(tokenAddress, from, amount);
+            _burnToken(tokenManager, tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
-            _takeTokenMintBurnFrom(tokenAddress, from, amount);
+            _burnTokenFrom(tokenManager, tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
             _transferTokenFrom(tokenAddress, from, tokenManager, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
@@ -220,8 +219,8 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         ITokenManager(tokenManager).burnToken(tokenAddress, from, amount);
     }
 
-    function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {
-        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
+    function _burnTokenFrom(address tokenManager, address tokenAddress, address from, uint256 amount) internal {
+        ITokenManager(tokenManager).burnTokenFrom(tokenAddress, from, amount);
     }
 
     function _approveGateway(address tokenAddress, uint256 amount) internal {
