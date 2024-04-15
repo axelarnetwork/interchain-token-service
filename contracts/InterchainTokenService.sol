@@ -45,7 +45,6 @@ contract InterchainTokenService is
     using AddressBytes for address;
 
     IAxelarGateway public immutable gateway;
-    IAxelarGasService public immutable gasService;
     address public immutable interchainTokenFactory;
     bytes32 public immutable chainNameHash;
 
@@ -99,7 +98,6 @@ contract InterchainTokenService is
      * @param tokenManagerDeployer_ The address of the TokenManagerDeployer.
      * @param interchainTokenDeployer_ The address of the InterchainTokenDeployer.
      * @param gateway_ The address of the AxelarGateway.
-     * @param gasService_ The address of the AxelarGasService.
      * @param interchainTokenFactory_ The address of the InterchainTokenFactory.
      * @param chainName_ The name of the chain that this contract is deployed on.
      * @param tokenManagerImplementation_ The tokenManager implementation.
@@ -109,14 +107,12 @@ contract InterchainTokenService is
         address tokenManagerDeployer_,
         address interchainTokenDeployer_,
         address gateway_,
-        address gasService_,
         address interchainTokenFactory_,
         string memory chainName_,
         address tokenManagerImplementation_,
         address tokenHandler_
     ) {
         if (
-            gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             interchainTokenDeployer_ == address(0) ||
             gateway_ == address(0) ||
@@ -126,7 +122,6 @@ contract InterchainTokenService is
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
-        gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
         interchainTokenFactory = interchainTokenFactory_;
