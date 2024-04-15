@@ -48,6 +48,7 @@ interface IInterchainTokenService is
     error PostDeployFailed(bytes data);
     error ZeroAmount();
     error CannotDeploy(TokenManagerType);
+    error InvalidGatewayTokenTransfer(bytes32 tokenId, bytes payload, string tokenSymbol, uint256 amount);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,

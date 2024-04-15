@@ -6,7 +6,7 @@ import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { SafeTokenTransfer, SafeTokenTransferFrom, SafeTokenCall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/SafeTransfer.sol';
 import { ReentrancyGuard } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/ReentrancyGuard.sol';
-import { Create3Address } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/deploy/Create3Address.sol';
+import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
@@ -19,7 +19,7 @@ import { IERC20Named } from './interfaces/IERC20Named.sol';
  * @title TokenHandler
  * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
-contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Create3Address {
+contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Create3AddressFixed {
     using SafeTokenTransferFrom for IERC20;
     using SafeTokenCall for IERC20;
     using SafeTokenTransfer for IERC20;
@@ -81,7 +81,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     /**
      * @notice This function takes token from a specified address to the token manager.
      * @param tokenId The tokenId for the token.
-     * @param tokenOnly can onky be called from the token.
+     * @param tokenOnly can only be called from the token.
      * @param from The address to take tokens from.
      * @param amount The amount of token to take.
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
@@ -104,36 +104,25 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             _takeInterchainToken(tokenAddress, from, amount);
-            return (amount, symbol);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
-            _burnToken(tokenManager, tokenAddress, from, amount);
-            return (amount, symbol);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
-            _burnTokenFrom(tokenAddress, from, amount);
-            return (amount, symbol);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
+        } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
+            _takeTokenMintBurn(tokenAddress, from, amount);
+        } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
+            _takeTokenMintBurnFrom(tokenAddress, from, amount);
+        } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
             _transferTokenFrom(tokenAddress, from, tokenManager, amount);
-            return (amount, symbol);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+        } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _transferTokenFromWithFee(tokenAddress, from, tokenManager, amount);
-            return (amount, symbol);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
-            _transferTokenFrom(tokenAddress, from, address(this), amount);
+        } else if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             symbol = IERC20Named(tokenAddress).symbol();
-            return (amount, symbol);
+            _transferTokenFrom(tokenAddress, from, address(this), amount);
+        } else {
+            revert UnsupportedTokenManagerType(tokenManagerType);
         }
 
-        revert UnsupportedTokenManagerType(tokenManagerType);
+        /// @dev Track the flow amount being sent out as a message
+        ITokenManager(tokenManager).addFlowOut(amount);
+
+        return (amount, symbol);
     }
 
     /**

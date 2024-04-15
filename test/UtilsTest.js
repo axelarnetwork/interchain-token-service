@@ -306,3 +306,73 @@ describe('InterchainTokenDeployer', () => {
         );
     });
 });
+
+describe('Create3Deployer', () => {
+    let deployerWallet;
+    let userWallet;
+    let tokenFactory;
+
+    let deployerFactory;
+    let deployer;
+    const name = 'test';
+    const symbol = 'test';
+    const decimals = 16;
+
+    before(async () => {
+        [deployerWallet, userWallet] = await ethers.getSigners();
+
+        deployerFactory = await ethers.getContractFactory('TestCreate3Fixed', deployerWallet);
+        tokenFactory = await ethers.getContractFactory('TestMintableBurnableERC20', deployerWallet);
+    });
+
+    beforeEach(async () => {
+        deployer = await deployerFactory.deploy().then((d) => d.deployed());
+    });
+
+    describe('deploy', () => {
+        it('should revert on deploy with empty bytecode', async () => {
+            const salt = getRandomBytes32();
+            const bytecode = '0x';
+
+            await expect(deployer.connect(userWallet).deploy(bytecode, salt)).to.be.revertedWithCustomError(deployer, 'EmptyBytecode');
+        });
+
+        it('should deploy to the predicted address', async () => {
+            const salt = getRandomBytes32();
+
+            const address = await deployer.deployedAddress(salt);
+
+            const bytecode = tokenFactory.getDeployTransaction(name, symbol, decimals).data;
+
+            await expect(deployer.deploy(bytecode, salt)).to.emit(deployer, 'Deployed').withArgs(address);
+        });
+
+        // TODO: Reintroduce this test if we know the address of the deployer.
+        /* if (isHardhat) {
+            it('should deploy to the predicted address with a know salt', async () => {
+                const salt = '0x4943fe1231449cc1baa660716a0cb38ff09af0b2c9acb63d40d9a7ba06d33d21';
+
+                const address = '0x03C2D7E8Fbcc46C62B3DCBB72121818334af2565';
+
+                const bytecode = ERC20Factory.getDeployTransaction(name, symbol, decimals).data;
+
+                await expect(deployer.deploy(bytecode, salt)).to.emit(deployer, 'Deployed').withArgs(address);
+            });
+        } */
+
+        it('should not forward native value', async () => {
+            const salt = getRandomBytes32();
+
+            const address = await deployer.deployedAddress(salt);
+
+            const bytecode = tokenFactory.getDeployTransaction(name, symbol, decimals).data;
+
+            await expect(deployer.deploy(bytecode, salt, { value: 10 }))
+                .to.emit(deployer, 'Deployed')
+                .withArgs(address);
+
+            expect(await ethers.provider.getBalance(address)).to.equal(0);
+            expect(await ethers.provider.getBalance(deployer.address)).to.equal(10);
+        });
+    });
+});

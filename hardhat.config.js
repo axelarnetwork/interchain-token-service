@@ -34,6 +34,16 @@ const compilerSettings = {
         optimizer: optimizerSettings,
     },
 };
+const itsCompilerSettings = {
+    version: '0.8.21',
+    settings: {
+        evmVersion: process.env.EVM_VERSION || 'london',
+        optimizer: {
+            ...optimizerSettings,
+            runs: 600, // Reduce runs to keep bytecode size under limit
+        },
+    },
+};
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -42,10 +52,14 @@ module.exports = {
     solidity: {
         compilers: [compilerSettings],
         // Fix the Proxy bytecodes
-        overrides: {
-            'contracts/proxies/Proxy.sol': compilerSettings,
-            'contracts/proxies/TokenManagerProxy.sol': compilerSettings,
-        },
+        overrides: process.env.NO_OVERRIDES
+            ? {}
+            : {
+                  'contracts/proxies/Proxy.sol': compilerSettings,
+                  'contracts/proxies/TokenManagerProxy.sol': compilerSettings,
+                  'contracts/InterchainTokenService.sol': itsCompilerSettings,
+                  'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
+              },
     },
     defaultNetwork: 'hardhat',
     networks,
