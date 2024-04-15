@@ -235,9 +235,15 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Interchain Token Service Deployment', () => {
-        it('Should revert on token handler deployment with invalid gateway address', async () => {
+        it('Should revert on token handler deployment with invalid gateway or gas service address', async () => {
             await expectRevert(
-                (gasOptions) => deployContract(wallet, 'TokenHandler', [AddressZero, gasOptions]),
+                (gasOptions) => deployContract(wallet, 'TokenHandler', [AddressZero, gasService.address, gasOptions]),
+                tokenHandler,
+                'AddressZero',
+            );
+
+            await expectRevert(
+                (gasOptions) => deployContract(wallet, 'TokenHandler', [gateway.address, AddressZero, gasOptions]),
                 tokenHandler,
                 'AddressZero',
             );

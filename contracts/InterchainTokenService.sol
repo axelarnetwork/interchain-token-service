@@ -814,29 +814,17 @@ contract InterchainTokenService is
             destinationAddress = trustedAddress(destinationChain);
         }
 
-        if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                gasService.payNativeGasForContractCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                gasService.payNativeGasForExpressCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
-        }
-
-        gateway.callContract(destinationChain, destinationAddress, payload);
+        (bool success, ) = tokenHandler.delegatecall(
+            abi.encodeWithSelector(
+                ITokenHandler.callContract.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                metadataVersion,
+                gasValue
+            )
+        );
+        if (!success) revert CallContractFailed();
     }
 
     /**
@@ -862,33 +850,19 @@ contract InterchainTokenService is
             destinationAddress = trustedAddress(destinationChain);
         }
 
-        if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                gasService.payNativeGasForExpressCallWithToken{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
-        }
-
-        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+        (bool success, ) = tokenHandler.delegatecall(
+            abi.encodeWithSelector(
+                ITokenHandler.callContractWithToken.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                metadataVersion,
+                gasValue
+            )
+        );
+        if (!success) revert CallContractFailed();
     }
 
     function _execute(
