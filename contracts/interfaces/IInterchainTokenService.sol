@@ -32,7 +32,6 @@ interface IInterchainTokenService is
     error InvalidChainName();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);
-    error NotToken(address caller, address token);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
     error GatewayToken();
@@ -49,6 +48,7 @@ interface IInterchainTokenService is
     error PostDeployFailed(bytes data);
     error InvalidGatewayTokenTransfer(bytes32 tokenId, bytes payload, string tokenSymbol, uint256 amount);
     error ZeroAmount();
+    error InvalidGatewayTokenTransfer(bytes32 tokenId, bytes payload, string tokenSymbol, uint256 amount);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
