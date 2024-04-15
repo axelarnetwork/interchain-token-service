@@ -50,8 +50,13 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         /// @dev Track the flow amount being received via the message
         ITokenManager(tokenManager).addFlowIn(amount);
 
+        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
+            _giveInterchainToken(tokenAddress, to, amount);
+            return (amount, tokenAddress);
+        }
+
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
-            _giveTokenMintBurn(tokenAddress, to, amount);
+            _mintToken(tokenManager, tokenAddress, to, amount);
             return (amount, tokenAddress);
         }
 
@@ -90,15 +95,16 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         uint256 amount
     ) external payable returns (uint256, string memory symbol) {
         address tokenManager = _create3Address(tokenId);
-
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
         if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
 
-        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
-            _takeTokenMintBurn(tokenAddress, from, amount);
+        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
+            _takeInterchainToken(tokenAddress, from, amount);
+        } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
+            _burnToken(tokenManager, tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
-            _takeTokenMintBurnFrom(tokenAddress, from, amount);
+            _burnTokenFrom(tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
             _transferTokenFrom(tokenAddress, from, tokenManager, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
@@ -128,10 +134,10 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     // slither-disable-next-line locked-ether
     function transferTokenFrom(bytes32 tokenId, address from, address to, uint256 amount) external payable returns (uint256, address) {
         address tokenManager = _create3Address(tokenId);
-
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
         if (
+            tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) ||
             tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) ||
             tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
             tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM) ||
@@ -195,15 +201,23 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         return amount;
     }
 
-    function _giveTokenMintBurn(address tokenAddress, address to, uint256 amount) internal {
+    function _giveInterchainToken(address tokenAddress, address to, uint256 amount) internal {
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
     }
 
-    function _takeTokenMintBurn(address tokenAddress, address from, uint256 amount) internal {
+    function _takeInterchainToken(address tokenAddress, address from, uint256 amount) internal {
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
     }
 
-    function _takeTokenMintBurnFrom(address tokenAddress, address from, uint256 amount) internal {
+    function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal {
+        ITokenManager(tokenManager).mintToken(tokenAddress, to, amount);
+    }
+
+    function _burnToken(address tokenManager, address tokenAddress, address from, uint256 amount) internal {
+        ITokenManager(tokenManager).burnToken(tokenAddress, from, amount);
+    }
+
+    function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
     }
 
