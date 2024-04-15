@@ -1171,8 +1171,8 @@ contract InterchainTokenService is
 
     function _getExpressExecutorAndEmitEvent(
         bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
+        string memory sourceChain,
+        string memory sourceAddress,
         bytes32 payloadHash
     ) internal returns (address expressExecutor) {
         expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
