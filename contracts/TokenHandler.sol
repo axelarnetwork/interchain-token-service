@@ -185,7 +185,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @param metadataVersion The metadata version is used to determine how to pay for gas.
      * @param gasValue how much gas to pay.
      */
-    // slither-disable-next-line locked-ether arbitrary-send-eth
+    // slither-disable-next-line locked-ether
     function callContract(
         string calldata destinationChain,
         string calldata destinationAddress,
@@ -195,6 +195,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     ) external payable {
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 IAxelarGasService(gasService).payNativeGasForContractCall{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -203,6 +204,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 IAxelarGasService(gasService).payNativeGasForExpressCall{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -240,6 +242,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     ) external payable {
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 IAxelarGasService(gasService).payNativeGasForContractCallWithToken{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -250,6 +253,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 IAxelarGasService(gasService).payNativeGasForExpressCallWithToken{ value: gasValue }(
                     address(this),
                     destinationChain,
