@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
-import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
@@ -50,6 +49,8 @@ contract InterchainTokenService is
     address public immutable interchainTokenDeployer;
     address public immutable tokenManagerDeployer;
 
+    string internal constant AXELAR = 'Axelar';
+
     /**
      * @dev Token manager implementation addresses
      */
@@ -70,6 +71,7 @@ contract InterchainTokenService is
     uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
     uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
+    uint256 private constant MESSAGE_TYPE_ROUTE_PAYLOAD = 10;
 
     /**
      * @dev Tokens and token managers deployed via the Token Factory contract use a special deployer address.
@@ -700,8 +702,8 @@ contract InterchainTokenService is
     function _processInterchainTransferPayload(
         bytes32 commandId,
         address expressExecutor,
-        string calldata sourceChain,
-        bytes calldata payload
+        string memory sourceChain,
+        bytes memory payload
     ) internal {
         bytes32 tokenId;
         bytes memory sourceAddress;
@@ -757,7 +759,7 @@ contract InterchainTokenService is
     /**
      * @notice Processes a deploy token manager payload.
      */
-    function _processDeployTokenManagerPayload(bytes calldata payload) internal {
+    function _processDeployTokenManagerPayload(bytes memory payload) internal {
         (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
             payload,
             (uint256, bytes32, TokenManagerType, bytes)
@@ -772,7 +774,7 @@ contract InterchainTokenService is
      * @notice Processes a deploy interchain token manager payload.
      * @param payload The encoded data payload to be processed.
      */
-    function _processDeployInterchainTokenPayload(bytes calldata payload) internal {
+    function _processDeployInterchainTokenPayload(bytes memory payload) internal {
         (, bytes32 tokenId, string memory name, string memory symbol, uint8 decimals, bytes memory minterBytes) = abi.decode(
             payload,
             (uint256, bytes32, string, string, uint8, bytes)
@@ -791,13 +793,19 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _callContract(
-        string calldata destinationChain,
+        string memory destinationChain,
         bytes memory payload,
         MetadataVersion metadataVersion,
         uint256 gasValue
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+
+        if (bytes(destinationAddress).length == 1) {
+            payload = abi.encode(MESSAGE_TYPE_ROUTE_PAYLOAD, destinationChain, payload);
+            destinationChain = AXELAR;
+            destinationAddress = trustedAddress(destinationChain);
+        }
 
         (bool success, ) = tokenHandler.delegatecall(
             abi.encodeWithSelector(
@@ -819,7 +827,7 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _callContractWithToken(
-        string calldata destinationChain,
+        string memory destinationChain,
         bytes memory payload,
         string memory symbol,
         uint256 amount,
@@ -828,6 +836,12 @@ contract InterchainTokenService is
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+
+        if (bytes(destinationAddress).length == 1) {
+            payload = abi.encode(MESSAGE_TYPE_ROUTE_PAYLOAD, destinationChain, payload);
+            destinationChain = AXELAR;
+            destinationAddress = trustedAddress(destinationChain);
+        }
 
         (bool success, ) = tokenHandler.delegatecall(
             abi.encodeWithSelector(
@@ -846,9 +860,9 @@ contract InterchainTokenService is
 
     function _execute(
         bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
+        string memory sourceChain,
+        string memory sourceAddress,
+        bytes memory payload,
         bytes32 payloadHash
     ) internal {
         uint256 messageType = abi.decode(payload, (uint256));
@@ -859,6 +873,9 @@ contract InterchainTokenService is
             _processDeployTokenManagerPayload(payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
             _processDeployInterchainTokenPayload(payload);
+        } else if (messageType == MESSAGE_TYPE_ROUTE_PAYLOAD) {
+            (, sourceChain, sourceAddress, payload) = abi.decode(payload, (uint256, string, string, bytes));
+            _execute(commandId, sourceChain, sourceAddress, payload, keccak256(payload));
         } else {
             revert InvalidMessageType(messageType);
         }
@@ -1127,8 +1144,8 @@ contract InterchainTokenService is
 
     function _getExpressExecutorAndEmitEvent(
         bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
+        string memory sourceChain,
+        string memory sourceAddress,
         bytes32 payloadHash
     ) internal returns (address expressExecutor) {
         expressExecutor = _popExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
