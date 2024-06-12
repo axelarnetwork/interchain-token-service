@@ -44,7 +44,6 @@ contract InterchainTokenService is
     using AddressBytes for address;
 
     IAxelarGateway public immutable gateway;
-    IAxelarGasService public immutable gasService;
     address public immutable interchainTokenFactory;
     bytes32 public immutable chainNameHash;
 
@@ -95,7 +94,6 @@ contract InterchainTokenService is
      * @param tokenManagerDeployer_ The address of the TokenManagerDeployer.
      * @param interchainTokenDeployer_ The address of the InterchainTokenDeployer.
      * @param gateway_ The address of the AxelarGateway.
-     * @param gasService_ The address of the AxelarGasService.
      * @param interchainTokenFactory_ The address of the InterchainTokenFactory.
      * @param chainName_ The name of the chain that this contract is deployed on.
      * @param tokenManagerImplementation_ The tokenManager implementation.
@@ -105,14 +103,12 @@ contract InterchainTokenService is
         address tokenManagerDeployer_,
         address interchainTokenDeployer_,
         address gateway_,
-        address gasService_,
         address interchainTokenFactory_,
         string memory chainName_,
         address tokenManagerImplementation_,
         address tokenHandler_
     ) {
         if (
-            gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
             interchainTokenDeployer_ == address(0) ||
             gateway_ == address(0) ||
@@ -122,7 +118,6 @@ contract InterchainTokenService is
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
-        gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
         interchainTokenFactory = interchainTokenFactory_;
@@ -804,29 +799,17 @@ contract InterchainTokenService is
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
-        if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                gasService.payNativeGasForContractCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                gasService.payNativeGasForExpressCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
-        }
-
-        gateway.callContract(destinationChain, destinationAddress, payload);
+        (bool success, ) = tokenHandler.delegatecall(
+            abi.encodeWithSelector(
+                ITokenHandler.callContract.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                metadataVersion,
+                gasValue
+            )
+        );
+        if (!success) revert CallContractFailed();
     }
 
     /**
@@ -846,33 +829,19 @@ contract InterchainTokenService is
         string memory destinationAddress = trustedAddress(destinationChain);
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
-        if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                gasService.payNativeGasForExpressCallWithToken{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
-        }
-
-        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+        (bool success, ) = tokenHandler.delegatecall(
+            abi.encodeWithSelector(
+                ITokenHandler.callContractWithToken.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                metadataVersion,
+                gasValue
+            )
+        );
+        if (!success) revert CallContractFailed();
     }
 
     function _execute(

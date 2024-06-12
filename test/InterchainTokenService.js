@@ -226,7 +226,6 @@ describe('Interchain Token Service', () => {
             tokenManagerDeployer.address,
             interchainTokenDeployer.address,
             gateway.address,
-            gasService.address,
             interchainTokenFactoryAddress,
             chainName,
             tokenManager.address,
@@ -235,9 +234,15 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Interchain Token Service Deployment', () => {
-        it('Should revert on token handler deployment with invalid gateway address', async () => {
+        it('Should revert on token handler deployment with invalid gateway or gas service address', async () => {
             await expectRevert(
-                (gasOptions) => deployContract(wallet, 'TokenHandler', [AddressZero, gasOptions]),
+                (gasOptions) => deployContract(wallet, 'TokenHandler', [AddressZero, gasService.address, gasOptions]),
+                tokenHandler,
+                'AddressZero',
+            );
+
+            await expectRevert(
+                (gasOptions) => deployContract(wallet, 'TokenHandler', [gateway.address, AddressZero, gasOptions]),
                 tokenHandler,
                 'AddressZero',
             );
@@ -334,7 +339,6 @@ describe('Interchain Token Service', () => {
                         tokenManagerDeployer.address,
                         interchainTokenDeployer.address,
                         gateway.address,
-                        gasService.address,
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
@@ -356,7 +360,6 @@ describe('Interchain Token Service', () => {
                     AddressZero,
                     interchainTokenDeployer.address,
                     gateway.address,
-                    gasService.address,
                     interchainTokenFactoryAddress,
                     tokenManager.address,
                     tokenHandler.address,
@@ -377,7 +380,6 @@ describe('Interchain Token Service', () => {
                         tokenManagerDeployer.address,
                         AddressZero,
                         gateway.address,
-                        gasService.address,
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
@@ -400,7 +402,6 @@ describe('Interchain Token Service', () => {
                         tokenManagerDeployer.address,
                         interchainTokenDeployer.address,
                         AddressZero,
-                        gasService.address,
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
@@ -423,7 +424,6 @@ describe('Interchain Token Service', () => {
                         tokenManagerDeployer.address,
                         interchainTokenDeployer.address,
                         gateway.address,
-                        gasService.address,
                         interchainTokenFactoryAddress,
                         AddressZero,
                         tokenHandler.address,
@@ -446,7 +446,6 @@ describe('Interchain Token Service', () => {
                         tokenManagerDeployer.address,
                         interchainTokenDeployer.address,
                         gateway.address,
-                        gasService.address,
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         AddressZero,

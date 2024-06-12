@@ -75,7 +75,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
         interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
         tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
-        tokenHandler = await deployContract(wallet, 'TokenHandler', [gateway.address]);
+        tokenHandler = await deployContract(wallet, 'TokenHandler', [gateway.address, gasService.address]);
         interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey + 'Factory');
 
         axelarServiceGovernanceFactory = await ethers.getContractFactory(
@@ -101,7 +101,6 @@ describe('Interchain Token Service Upgrade Flow', () => {
             tokenManagerDeployer.address,
             interchainTokenDeployer.address,
             gateway.address,
-            gasService.address,
             interchainTokenFactoryAddress,
             tokenManager.address,
             tokenHandler.address,
@@ -123,7 +122,6 @@ describe('Interchain Token Service Upgrade Flow', () => {
             tokenManagerDeployer.address,
             interchainTokenDeployer.address,
             gateway.address,
-            gasService.address,
             interchainTokenFactoryAddress,
             chainName,
             tokenManager.address,
@@ -189,7 +187,6 @@ describe('Interchain Token Service Upgrade Flow', () => {
             tokenManagerDeployer.address,
             interchainTokenDeployer.address,
             gateway.address,
-            gasService.address,
             interchainTokenFactoryAddress,
             chainName,
             tokenManager.address,
