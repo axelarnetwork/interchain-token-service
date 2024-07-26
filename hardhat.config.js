@@ -57,7 +57,7 @@ module.exports = {
             : {
                   'contracts/proxies/Proxy.sol': compilerSettings,
                   'contracts/proxies/TokenManagerProxy.sol': compilerSettings,
-                  'contracts/InterchainTokenService.sol': itsCompilerSettings,
+                  'contracts/InterchainTokenService.sol': compilerSettings,
                   'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
               },
     },
