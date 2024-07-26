@@ -49,6 +49,7 @@ interface IInterchainTokenService is
     error ZeroAmount();
     error CannotDeploy(TokenManagerType);
     error InvalidGatewayTokenTransfer(bytes32 tokenId, bytes payload, string tokenSymbol, uint256 amount);
+    error InvalidPayload();
 
     event InterchainTransfer(
         bytes32 indexed tokenId,

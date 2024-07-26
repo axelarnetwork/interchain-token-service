@@ -71,6 +71,8 @@ contract InterchainTokenService is
     uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
     uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
+    uint256 private constant MESSAGE_TYPE_SEND_TO_HUB = 3;
+    uint256 private constant MESSAGE_TYPE_RECEIVE_FROM_HUB = 4;
 
     /**
      * @dev Tokens and token managers deployed via the Token Factory contract use a special deployer address.
@@ -88,6 +90,18 @@ contract InterchainTokenService is
     }
 
     uint32 internal constant LATEST_METADATA_VERSION = 1;
+
+    /**
+     * @dev Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
+     */
+    string internal constant AXELAR_CHAIN_NAME = 'Axelarnet';
+    bytes32 internal constant AXELAR_CHAIN_NAME_HASH = keccak256(abi.encodePacked(AXELAR_CHAIN_NAME));
+
+    /**
+     * @dev Special trusted address value that indicates that the ITS call
+     * for that destination chain should be routed via the ITS hub.
+     */
+    bytes32 internal constant ITS_HUB_TRUSTED_ADDRESS_HASH = keccak256('hub');
 
     /**
      * @notice Constructor for the Interchain Token Service.
@@ -688,7 +702,7 @@ contract InterchainTokenService is
      * @param tokenSymbol The tokenSymbol for the call contract with token.
      * @param amount The amount for the call contract with token.
      */
-    function _checkPayloadAgainstGatewayData(bytes calldata payload, string calldata tokenSymbol, uint256 amount) internal view {
+    function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
         if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
@@ -705,8 +719,8 @@ contract InterchainTokenService is
     function _processInterchainTransferPayload(
         bytes32 commandId,
         address expressExecutor,
-        string calldata sourceChain,
-        bytes calldata payload
+        string memory sourceChain,
+        bytes memory payload
     ) internal {
         bytes32 tokenId;
         bytes memory sourceAddress;
@@ -762,7 +776,7 @@ contract InterchainTokenService is
     /**
      * @notice Processes a deploy token manager payload.
      */
-    function _processDeployTokenManagerPayload(bytes calldata payload) internal {
+    function _processDeployTokenManagerPayload(bytes memory payload) internal {
         (, bytes32 tokenId, TokenManagerType tokenManagerType, bytes memory params) = abi.decode(
             payload,
             (uint256, bytes32, TokenManagerType, bytes)
@@ -777,7 +791,7 @@ contract InterchainTokenService is
      * @notice Processes a deploy interchain token manager payload.
      * @param payload The encoded data payload to be processed.
      */
-    function _processDeployInterchainTokenPayload(bytes calldata payload) internal {
+    function _processDeployInterchainTokenPayload(bytes memory payload) internal {
         (, bytes32 tokenId, string memory name, string memory symbol, uint8 decimals, bytes memory minterBytes) = abi.decode(
             payload,
             (uint256, bytes32, string, string, uint8, bytes)
@@ -796,12 +810,21 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _callContract(
-        string calldata destinationChain,
+        string memory destinationChain,
         bytes memory payload,
         MetadataVersion metadataVersion,
         uint256 gasValue
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
+
+        // Check if the ITS call should be routed via ITS hub for this destination chain
+        if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_TRUSTED_ADDRESS_HASH) {
+            // Wrap ITS message in an ITS Hub message
+            payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
+            destinationChain = AXELAR_CHAIN_NAME;
+            destinationAddress = trustedAddress(AXELAR_CHAIN_NAME);
+        }
+
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         if (gasValue > 0) {
@@ -836,7 +859,7 @@ contract InterchainTokenService is
      * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _callContractWithToken(
-        string calldata destinationChain,
+        string memory destinationChain,
         bytes memory payload,
         string memory symbol,
         uint256 amount,
@@ -844,6 +867,15 @@ contract InterchainTokenService is
         uint256 gasValue
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
+
+        // Check if the ITS call should be routed via ITS hub for this destination chain
+        if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_TRUSTED_ADDRESS_HASH) {
+            // Wrap ITS message in an ITS Hub message
+            payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
+            destinationChain = AXELAR_CHAIN_NAME;
+            destinationAddress = trustedAddress(AXELAR_CHAIN_NAME);
+        }
+
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         if (gasValue > 0) {
@@ -879,13 +911,27 @@ contract InterchainTokenService is
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
-        bytes calldata payload,
+        bytes memory payload,
         bytes32 payloadHash
     ) internal {
-        uint256 messageType = abi.decode(payload, (uint256));
+        // Read the first 32 bytes of the payload to determine the message type
+        uint256 messageType = _getMessageType(payload);
+        // True source chain, this is overridden if the ITS call is coming via the ITS hub
+        string memory originalSourceChain = sourceChain;
+
+        // Only allow routed call wrapping once
+        if (messageType == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+            if (keccak256(abi.encodePacked(sourceChain)) != AXELAR_CHAIN_NAME_HASH) revert UntrustedChain();
+
+            (, originalSourceChain, payload) = abi.decode(payload, (uint256, string, bytes));
+
+            // Get message type of the inner ITS message
+            messageType = _getMessageType(payload);
+        }
+
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
-            _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
+            _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
             _processDeployTokenManagerPayload(payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
@@ -899,7 +945,7 @@ contract InterchainTokenService is
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
-        bytes calldata payload,
+        bytes memory payload,
         string calldata tokenSymbol,
         uint256 amount
     ) internal {
@@ -908,7 +954,21 @@ contract InterchainTokenService is
         if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
             revert NotApprovedByGateway();
 
-        uint256 messageType = abi.decode(payload, (uint256));
+        // Read the first 32 bytes of the payload to determine the message type
+        uint256 messageType = _getMessageType(payload);
+        // True source chain, this is overridden if the ITS call is coming via the ITS hub
+        string memory originalSourceChain = sourceChain;
+
+        // Unwrap ITS message if coming from ITS hub
+        if (messageType == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+            if (keccak256(abi.encodePacked(sourceChain)) != AXELAR_CHAIN_NAME_HASH) revert UntrustedChain();
+
+            (, originalSourceChain, payload) = abi.decode(payload, (uint256, string, bytes));
+
+            // Get message type of the inner ITS message
+            messageType = _getMessageType(payload);
+        }
+
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidMessageType(messageType);
         }
@@ -918,7 +978,16 @@ contract InterchainTokenService is
         // slither-disable-next-line reentrancy-events
         address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
 
-        _processInterchainTransferPayload(commandId, expressExecutor, sourceChain, payload);
+        _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, payload);
+    }
+
+    function _getMessageType(bytes memory payload) internal pure returns (uint256 messageType) {
+        if (payload.length < 32) revert InvalidPayload();
+
+        /// @solidity memory-safe-assembly
+        assembly {
+            messageType := mload(add(payload, 32))
+        }
     }
 
     /**
