@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import { IGatewayCaller } from '../interfaces/IGatewayCaller.sol';
 import { InterchainTokenService } from '../InterchainTokenService.sol';
 
 contract TestInterchainTokenService is InterchainTokenService {
@@ -30,8 +31,8 @@ contract TestInterchainTokenService is InterchainTokenService {
             gatewayCaller_
         )
     {
-        if (LATEST_METADATA_VERSION != uint32(type(MetadataVersion).max))
-            revert LatestMetadataVersionMismatch(LATEST_METADATA_VERSION, uint32(type(MetadataVersion).max));
+        if (LATEST_METADATA_VERSION != uint32(type(IGatewayCaller.MetadataVersion).max))
+            revert LatestMetadataVersionMismatch(LATEST_METADATA_VERSION, uint32(type(IGatewayCaller.MetadataVersion).max));
     }
 
     function setupTest(bytes calldata params) external {
