@@ -130,7 +130,8 @@ contract InterchainTokenService is
             gateway_ == address(0) ||
             interchainTokenFactory_ == address(0) ||
             tokenManagerImplementation_ == address(0) ||
-            tokenHandler_ == address(0)
+            tokenHandler_ == address(0) ||
+            gatewayCaller_ == address(0)
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
