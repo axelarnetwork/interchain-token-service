@@ -41,7 +41,7 @@ describe('Interchain Token Service', () => {
     let interchainTokenDeployer;
     let tokenManager;
     let tokenHandler;
-    let contractCaller;
+    let gatewayCaller;
     let interchainTokenFactoryAddress;
     let serviceTest;
 
@@ -212,7 +212,7 @@ describe('Interchain Token Service', () => {
             interchainTokenDeployer,
             tokenManager,
             tokenHandler,
-            contractCaller,
+            gatewayCaller,
         } = await deployAll(wallet, 'Test', [sourceChain, destinationChain]));
 
         testToken = await deployContract(wallet, 'TestInterchainTokenStandard', [
@@ -233,7 +233,7 @@ describe('Interchain Token Service', () => {
             chainName,
             tokenManager.address,
             tokenHandler.address,
-            contractCaller.address,
+            gatewayCaller.address,
         ]);
     });
 
@@ -295,7 +295,7 @@ describe('Interchain Token Service', () => {
                         AddressZero,
                         tokenManager.address,
                         tokenHandler.address,
-                        contractCaller.address,
+                        gatewayCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -319,7 +319,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
-                        contractCaller.address,
+                        gatewayCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -343,7 +343,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
-                        contractCaller.address,
+                        gatewayCaller.address,
                         '',
                         [],
                         deploymentKey,
@@ -366,7 +366,7 @@ describe('Interchain Token Service', () => {
                     interchainTokenFactoryAddress,
                     tokenManager.address,
                     tokenHandler.address,
-                    contractCaller.address,
+                    gatewayCaller.address,
                     chainName,
                     [],
                     deploymentKey,
@@ -388,7 +388,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
-                        contractCaller.address,
+                        gatewayCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -412,7 +412,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
-                        contractCaller.address,
+                        gatewayCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -436,7 +436,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         AddressZero,
                         tokenHandler.address,
-                        contractCaller.address,
+                        gatewayCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -460,7 +460,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         AddressZero,
-                        contractCaller.address,
+                        gatewayCaller.address,
                         chainName,
                         [],
                         deploymentKey,

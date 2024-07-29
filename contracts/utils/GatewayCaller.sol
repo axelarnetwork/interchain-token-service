@@ -6,10 +6,10 @@ import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contr
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 
 /**
- * @title CallContract contract
+ * @title GatewayCaller contract
  * @notice This contract is used like a library to resolve metadata for the interchain token service
  */
-contract CallContract {
+contract GatewayCaller {
     error UntrustedChain();
     error InvalidMetadataVersion(uint32 metadataVersion);
 

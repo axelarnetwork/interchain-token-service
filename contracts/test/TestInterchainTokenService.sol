@@ -16,7 +16,7 @@ contract TestInterchainTokenService is InterchainTokenService {
         string memory chainName_,
         address tokenManager_,
         address tokenHandler_,
-        address contractCaller_
+        address gatewayCaller_
     )
         InterchainTokenService(
             tokenManagerDeployer_,
@@ -27,7 +27,7 @@ contract TestInterchainTokenService is InterchainTokenService {
             chainName_,
             tokenManager_,
             tokenHandler_,
-            contractCaller_
+            gatewayCaller_
         )
     {
         if (LATEST_METADATA_VERSION != uint32(type(MetadataVersion).max))
@@ -36,14 +36,5 @@ contract TestInterchainTokenService is InterchainTokenService {
 
     function setupTest(bytes calldata params) external {
         _setup(params);
-    }
-
-    function callContract(
-        string calldata destinationChain,
-        bytes memory payload,
-        MetadataVersion metadataVersion,
-        uint256 gasValue
-    ) external payable {
-        _callContract(destinationChain, payload, metadataVersion, gasValue);
     }
 }

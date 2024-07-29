@@ -20,7 +20,7 @@ import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecuta
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
-import { CallContract } from './utils/CallContract.sol';
+import { GatewayCaller } from './utils/GatewayCaller.sol';
 
 import { Operator } from './utils/Operator.sol';
 
@@ -57,7 +57,7 @@ contract InterchainTokenService is
      */
     address public immutable tokenManager;
     address public immutable tokenHandler;
-    address public immutable contractCaller;
+    address public immutable gatewayCaller;
 
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_ID = keccak256('its-interchain-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
@@ -116,6 +116,7 @@ contract InterchainTokenService is
      * @param chainName_ The name of the chain that this contract is deployed on.
      * @param tokenManagerImplementation_ The tokenManager implementation.
      * @param tokenHandler_ The tokenHandler implementation.
+     * @param gatewayCaller_ The gatewayCaller implementation.
      */
     constructor(
         address tokenManagerDeployer_,
@@ -126,7 +127,7 @@ contract InterchainTokenService is
         string memory chainName_,
         address tokenManagerImplementation_,
         address tokenHandler_,
-        address contractCaller_
+        address gatewayCaller_
     ) {
         if (
             gasService_ == address(0) ||
@@ -149,7 +150,7 @@ contract InterchainTokenService is
 
         tokenManager = tokenManagerImplementation_;
         tokenHandler = tokenHandler_;
-        contractCaller = contractCaller_;
+        gatewayCaller = gatewayCaller_;
     }
 
     /*******\
@@ -831,16 +832,18 @@ contract InterchainTokenService is
 
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
-        (bool success, bytes memory returnData) = contractCaller.delegatecall(abi.encodeWithSelector(
-            CallContract.callContract.selector,
-            destinationChain,
-            destinationAddress,
-            payload,
-            metadataVersion,
-            gasValue
-        ));
+        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
+            abi.encodeWithSelector(
+                GatewayCaller.callContract.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                metadataVersion,
+                gasValue
+            )
+        );
 
-        if(!success) revert CallContractFailed(returnData);
+        if (!success) revert GatewayCallFailed(returnData);
     }
 
     /**
@@ -869,18 +872,20 @@ contract InterchainTokenService is
 
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
-        (bool success, bytes memory returnData) = contractCaller.delegatecall(abi.encodeWithSelector(
-            CallContract.callContractWithToken.selector,
-            destinationChain,
-            destinationAddress,
-            payload,
-            symbol,
-            amount,
-            metadataVersion,
-            gasValue
-        ));
+        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
+            abi.encodeWithSelector(
+                GatewayCaller.callContractWithToken.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                metadataVersion,
+                gasValue
+            )
+        );
 
-        if(!success) revert CallContractFailed(returnData);
+        if (!success) revert GatewayCallFailed(returnData);
     }
 
     function _execute(

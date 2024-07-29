@@ -21,7 +21,7 @@ const MINT_BURN = 4;
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, signer;
     let service, gateway, gasService;
-    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler, contractCaller;
+    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler, gatewayCaller;
     let interchainTokenFactoryAddress;
 
     let axelarServiceGovernanceFactory;
@@ -76,7 +76,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
         tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
         tokenHandler = await deployContract(wallet, 'TokenHandler', [gateway.address]);
-        contractCaller = await deployContract(wallet, 'CallContract', [gateway.address, gasService.address]);
+        gatewayCaller = await deployContract(wallet, 'GatewayCaller', [gateway.address, gasService.address]);
         interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey + 'Factory');
 
         axelarServiceGovernanceFactory = await ethers.getContractFactory(
@@ -106,7 +106,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             interchainTokenFactoryAddress,
             tokenManager.address,
             tokenHandler.address,
-            contractCaller.address,
+            gatewayCaller.address,
             chainName,
             [],
             deploymentKey,
@@ -130,7 +130,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             chainName,
             tokenManager.address,
             tokenHandler.address,
-            contractCaller.address,
+            gatewayCaller.address,
         ]);
         const newServiceImplementationCodeHash = await getBytecodeHash(newServiceImplementation);
         const setupParams = '0x';
@@ -197,7 +197,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             chainName,
             tokenManager.address,
             tokenHandler.address,
-            contractCaller.address,
+            gatewayCaller.address,
         ]);
         const newServiceImplementationCodeHash = await getBytecodeHash(newServiceImplementation);
         const setupParams = '0x';
