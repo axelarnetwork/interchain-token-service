@@ -471,6 +471,30 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should revert on invalid gateway caller', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    deployInterchainTokenService(
+                        wallet,
+                        create3Deployer.address,
+                        tokenManagerDeployer.address,
+                        interchainTokenDeployer.address,
+                        gateway.address,
+                        gasService.address,
+                        interchainTokenFactoryAddress,
+                        tokenManager.address,
+                        tokenHandler.address,
+                        AddressZero,
+                        chainName,
+                        [],
+                        deploymentKey,
+                        gasOptions,
+                    ),
+                service,
+                'ZeroAddress',
+            );
+        });
+
         it('Should return the token manager implementation', async () => {
             const tokenManagerImplementation = await service.tokenManagerImplementation(getRandomInt(1000));
             expect(tokenManagerImplementation).to.eq(tokenManager.address);
