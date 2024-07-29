@@ -41,6 +41,7 @@ contract GatewayCaller is IGatewayCaller {
     ) external payable override {
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 gasService.payNativeGasForContractCall{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -49,6 +50,7 @@ contract GatewayCaller is IGatewayCaller {
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 gasService.payNativeGasForExpressCall{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -85,6 +87,7 @@ contract GatewayCaller is IGatewayCaller {
     ) external payable override {
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
                     address(this),
                     destinationChain,
@@ -95,6 +98,7 @@ contract GatewayCaller is IGatewayCaller {
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
+                // slither-disable-next-line arbitrary-send-eth
                 gasService.payNativeGasForExpressCallWithToken{ value: gasValue }(
                     address(this),
                     destinationChain,
