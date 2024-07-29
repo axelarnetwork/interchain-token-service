@@ -21,7 +21,7 @@ const MINT_BURN = 4;
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, signer;
     let service, gateway, gasService;
-    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler;
+    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler, contractCaller;
     let interchainTokenFactoryAddress;
 
     let axelarServiceGovernanceFactory;
@@ -76,6 +76,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
         tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
         tokenHandler = await deployContract(wallet, 'TokenHandler', [gateway.address]);
+        contractCaller = await deployContract(wallet, 'CallContract', [gateway.address, gasService.address]);
         interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey + 'Factory');
 
         axelarServiceGovernanceFactory = await ethers.getContractFactory(
@@ -105,6 +106,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             interchainTokenFactoryAddress,
             tokenManager.address,
             tokenHandler.address,
+            contractCaller.address,
             chainName,
             [],
             deploymentKey,
@@ -128,6 +130,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             chainName,
             tokenManager.address,
             tokenHandler.address,
+            contractCaller.address,
         ]);
         const newServiceImplementationCodeHash = await getBytecodeHash(newServiceImplementation);
         const setupParams = '0x';
@@ -194,6 +197,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             chainName,
             tokenManager.address,
             tokenHandler.address,
+            contractCaller.address,
         ]);
         const newServiceImplementationCodeHash = await getBytecodeHash(newServiceImplementation);
         const setupParams = '0x';

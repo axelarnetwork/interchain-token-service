@@ -20,6 +20,7 @@ import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecuta
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
+import { CallContract } from './utils/CallContract.sol';
 
 import { Operator } from './utils/Operator.sol';
 
@@ -56,6 +57,7 @@ contract InterchainTokenService is
      */
     address public immutable tokenManager;
     address public immutable tokenHandler;
+    address public immutable contractCaller;
 
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_ID = keccak256('its-interchain-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
@@ -123,7 +125,8 @@ contract InterchainTokenService is
         address interchainTokenFactory_,
         string memory chainName_,
         address tokenManagerImplementation_,
-        address tokenHandler_
+        address tokenHandler_,
+        address contractCaller_
     ) {
         if (
             gasService_ == address(0) ||
@@ -146,6 +149,7 @@ contract InterchainTokenService is
 
         tokenManager = tokenManagerImplementation_;
         tokenHandler = tokenHandler_;
+        contractCaller = contractCaller_;
     }
 
     /*******\
@@ -827,29 +831,16 @@ contract InterchainTokenService is
 
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
-        if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                gasService.payNativeGasForContractCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                gasService.payNativeGasForExpressCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
-        }
+        (bool success, bytes memory returnData) = contractCaller.delegatecall(abi.encodeWithSelector(
+            CallContract.callContract.selector,
+            destinationChain,
+            destinationAddress,
+            payload,
+            metadataVersion,
+            gasValue
+        ));
 
-        gateway.callContract(destinationChain, destinationAddress, payload);
+        if(!success) revert CallContractFailed(returnData);
     }
 
     /**
@@ -878,33 +869,18 @@ contract InterchainTokenService is
 
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
-        if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                gasService.payNativeGasForExpressCallWithToken{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
-        }
+        (bool success, bytes memory returnData) = contractCaller.delegatecall(abi.encodeWithSelector(
+            CallContract.callContractWithToken.selector,
+            destinationChain,
+            destinationAddress,
+            payload,
+            symbol,
+            amount,
+            metadataVersion,
+            gasValue
+        ));
 
-        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+        if(!success) revert CallContractFailed(returnData);
     }
 
     function _execute(

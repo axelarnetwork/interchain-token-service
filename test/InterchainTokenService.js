@@ -41,6 +41,7 @@ describe('Interchain Token Service', () => {
     let interchainTokenDeployer;
     let tokenManager;
     let tokenHandler;
+    let contractCaller;
     let interchainTokenFactoryAddress;
     let serviceTest;
 
@@ -211,6 +212,7 @@ describe('Interchain Token Service', () => {
             interchainTokenDeployer,
             tokenManager,
             tokenHandler,
+            contractCaller,
         } = await deployAll(wallet, 'Test', [sourceChain, destinationChain]));
 
         testToken = await deployContract(wallet, 'TestInterchainTokenStandard', [
@@ -231,6 +233,7 @@ describe('Interchain Token Service', () => {
             chainName,
             tokenManager.address,
             tokenHandler.address,
+            contractCaller.address,
         ]);
     });
 
@@ -292,6 +295,7 @@ describe('Interchain Token Service', () => {
                         AddressZero,
                         tokenManager.address,
                         tokenHandler.address,
+                        contractCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -315,6 +319,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
+                        contractCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -338,6 +343,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
+                        contractCaller.address,
                         '',
                         [],
                         deploymentKey,
@@ -360,6 +366,7 @@ describe('Interchain Token Service', () => {
                     interchainTokenFactoryAddress,
                     tokenManager.address,
                     tokenHandler.address,
+                    contractCaller.address,
                     chainName,
                     [],
                     deploymentKey,
@@ -381,6 +388,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
+                        contractCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -404,6 +412,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
+                        contractCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -427,6 +436,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         AddressZero,
                         tokenHandler.address,
+                        contractCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -450,6 +460,7 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         AddressZero,
+                        contractCaller.address,
                         chainName,
                         [],
                         deploymentKey,
@@ -1642,8 +1653,7 @@ describe('Interchain Token Service', () => {
 
         it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [gateway]`, async () => {
             const symbol = 'TT1';
-            const [token, tokenManager, tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount * 3);
-            console.log(await tokenManager.implementationType());
+            const [token, _, tokenId] = await deployFunctions.gateway(`Test Token gateway`, symbol, 12, amount * 3);
             const sendAmount = amount;
             const metadata = '0x00000000';
             const payload = defaultAbiCoder.encode(

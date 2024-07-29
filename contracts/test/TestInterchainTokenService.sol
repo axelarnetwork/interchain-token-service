@@ -15,7 +15,8 @@ contract TestInterchainTokenService is InterchainTokenService {
         address interchainTokenFactory_,
         string memory chainName_,
         address tokenManager_,
-        address tokenHandler_
+        address tokenHandler_,
+        address contractCaller_
     )
         InterchainTokenService(
             tokenManagerDeployer_,
@@ -25,7 +26,8 @@ contract TestInterchainTokenService is InterchainTokenService {
             interchainTokenFactory_,
             chainName_,
             tokenManager_,
-            tokenHandler_
+            tokenHandler_,
+            contractCaller_
         )
     {
         if (LATEST_METADATA_VERSION != uint32(type(MetadataVersion).max))
