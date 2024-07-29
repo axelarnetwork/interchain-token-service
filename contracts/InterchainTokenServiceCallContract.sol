@@ -27,17 +27,19 @@ contract InterchainTokenServiceCallContract is InterchainTokenServiceVirtual {
         address tokenManagerImplementation_,
         address tokenHandler_,
         address callContract_
-    ) InterchainTokenServiceVirtual(
-        tokenManagerDeployer_,
-        interchainTokenDeployer_,
-        gateway_,
-        gasService_,
-        interchainTokenFactory_,
-        chainName_,
-        tokenManagerImplementation_,
-        tokenHandler_
-    ) {
-        if(callContract_ == address(0)) revert ZeroAddress();
+    )
+        InterchainTokenServiceVirtual(
+            tokenManagerDeployer_,
+            interchainTokenDeployer_,
+            gateway_,
+            gasService_,
+            interchainTokenFactory_,
+            chainName_,
+            tokenManagerImplementation_,
+            tokenHandler_
+        )
+    {
+        if (callContract_ == address(0)) revert ZeroAddress();
 
         callContract = callContract_;
     }
@@ -55,16 +57,18 @@ contract InterchainTokenServiceCallContract is InterchainTokenServiceVirtual {
         uint256 gasValue
     ) internal override {
         string memory destinationAddress = trustedAddress(destinationChain);
-        (bool success, bytes memory returnData) = callContract.delegatecall(abi.encodeWithSelector(
-            ICallContract.callContract.selector, 
-            destinationChain,
-            destinationAddress,
-            payload,
-            metadataVersion,
-            gasValue
-        ));
+        (bool success, bytes memory returnData) = callContract.delegatecall(
+            abi.encodeWithSelector(
+                ICallContract.callContract.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                metadataVersion,
+                gasValue
+            )
+        );
 
-        if(!success) revert CallContractFailed(returnData);
+        if (!success) revert CallContractFailed(returnData);
     }
 
     /**
@@ -85,17 +89,19 @@ contract InterchainTokenServiceCallContract is InterchainTokenServiceVirtual {
         uint256 gasValue
     ) internal override {
         string memory destinationAddress = trustedAddress(destinationChain);
-        (bool success, bytes memory returnData) = callContract.delegatecall(abi.encodeWithSelector(
-            ICallContract.callContractWithToken.selector, 
-            destinationChain,
-            destinationAddress,
-            payload,
-            symbol,
-            amount,
-            metadataVersion,
-            gasValue
-        ));
+        (bool success, bytes memory returnData) = callContract.delegatecall(
+            abi.encodeWithSelector(
+                ICallContract.callContractWithToken.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                metadataVersion,
+                gasValue
+            )
+        );
 
-        if(!success) revert CallContractFailed(returnData);
+        if (!success) revert CallContractFailed(returnData);
     }
 }
