@@ -19,8 +19,8 @@ import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
+import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
-import { GatewayCaller } from './utils/GatewayCaller.sol';
 
 import { Operator } from './utils/Operator.sol';
 
@@ -834,7 +834,7 @@ contract InterchainTokenService is
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
             abi.encodeWithSelector(
-                GatewayCaller.callContract.selector,
+                IGatewayCaller.callContract.selector,
                 destinationChain,
                 destinationAddress,
                 payload,
@@ -874,7 +874,7 @@ contract InterchainTokenService is
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
             abi.encodeWithSelector(
-                GatewayCaller.callContractWithToken.selector,
+                IGatewayCaller.callContractWithToken.selector,
                 destinationChain,
                 destinationAddress,
                 payload,

@@ -4,33 +4,33 @@ pragma solidity ^0.8.0;
 
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IGatewayCaller } from '../interfaces/IGatewayCaller.sol';
 
 /**
  * @title GatewayCaller contract
- * @notice This contract is used like a library to resolve metadata for the interchain token service
+ * @dev This contract is used to handle cross-chain calls via the Axelar gateway
  */
-contract GatewayCaller {
-    error UntrustedChain();
-    error InvalidMetadataVersion(uint32 metadataVersion);
-
+contract GatewayCaller is IGatewayCaller {
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
 
-    enum MetadataVersion {
-        CONTRACT_CALL,
-        EXPRESS_CALL
-    }
-
+    /**
+     * @dev Constructor to initialize the GatewayCaller contract
+     * @param gateway_ The address of the AxelarGateway contract
+     * @param gasService_ The address of the AxelarGasService contract
+     */
     constructor(address gateway_, address gasService_) {
         gateway = IAxelarGateway(gateway_);
         gasService = IAxelarGasService(gasService_);
     }
 
     /**
-     * @notice Calls a contract on a specific destination chain with the given payload
-     * @param destinationChain The target chain where the contract will be called.
-     * @param payload The data payload for the transaction.
-     * @param gasValue The amount of gas to be paid for the transaction.
+     * @dev Calls a contract on a specific destination chain with the given payload
+     * @param destinationChain The target chain where the contract will be called
+     * @param destinationAddress The address of the contract to be called on the destination chain
+     * @param payload The data payload for the transaction
+     * @param metadataVersion The version of metadata to be used
+     * @param gasValue The amount of gas to be paid for the transaction
      */
     function callContract(
         string calldata destinationChain,
@@ -38,14 +38,14 @@ contract GatewayCaller {
         bytes calldata payload,
         MetadataVersion metadataVersion,
         uint256 gasValue
-    ) external payable {
+    ) external payable override {
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
                 gasService.payNativeGasForContractCall{ value: gasValue }(
                     address(this),
                     destinationChain,
                     destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
+                    payload,
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
@@ -53,7 +53,7 @@ contract GatewayCaller {
                     address(this),
                     destinationChain,
                     destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
+                    payload,
                     tx.origin
                 );
             } else {
@@ -65,10 +65,14 @@ contract GatewayCaller {
     }
 
     /**
-     * @notice Calls a contract on a specific destination chain with the given payload and gateway token
-     * @param destinationChain The target chain where the contract will be called.
-     * @param payload The data payload for the transaction.
-     * @param gasValue The amount of gas to be paid for the transaction.
+     * @dev Calls a contract on a specific destination chain with the given payload and token
+     * @param destinationChain The target chain where the contract will be called
+     * @param destinationAddress The address of the contract to be called on the destination chain
+     * @param payload The data payload for the transaction
+     * @param symbol The symbol of the token to be sent
+     * @param amount The amount of tokens to be sent
+     * @param metadataVersion The version of metadata to be used
+     * @param gasValue The amount of gas to be paid for the transaction
      */
     function callContractWithToken(
         string calldata destinationChain,
@@ -78,7 +82,7 @@ contract GatewayCaller {
         uint256 amount,
         MetadataVersion metadataVersion,
         uint256 gasValue
-    ) external payable {
+    ) external payable override {
         if (gasValue > 0) {
             if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
                 gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
@@ -87,7 +91,7 @@ contract GatewayCaller {
                     destinationAddress,
                     payload,
                     symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
+                    amount,
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
@@ -97,7 +101,7 @@ contract GatewayCaller {
                     destinationAddress,
                     payload,
                     symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
+                    amount,
                     tx.origin
                 );
             } else {
