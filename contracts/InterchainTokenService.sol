@@ -19,6 +19,7 @@ import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
+import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 
 import { Operator } from './utils/Operator.sol';
@@ -56,6 +57,7 @@ contract InterchainTokenService is
      */
     address public immutable tokenManager;
     address public immutable tokenHandler;
+    address public immutable gatewayCaller;
 
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_ID = keccak256('its-interchain-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
@@ -83,12 +85,6 @@ contract InterchainTokenService is
     /**
      * @dev Latest version of metadata that's supported.
      */
-
-    enum MetadataVersion {
-        CONTRACT_CALL,
-        EXPRESS_CALL
-    }
-
     uint32 internal constant LATEST_METADATA_VERSION = 1;
 
     /**
@@ -114,6 +110,7 @@ contract InterchainTokenService is
      * @param chainName_ The name of the chain that this contract is deployed on.
      * @param tokenManagerImplementation_ The tokenManager implementation.
      * @param tokenHandler_ The tokenHandler implementation.
+     * @param gatewayCaller_ The gatewayCaller implementation.
      */
     constructor(
         address tokenManagerDeployer_,
@@ -123,7 +120,8 @@ contract InterchainTokenService is
         address interchainTokenFactory_,
         string memory chainName_,
         address tokenManagerImplementation_,
-        address tokenHandler_
+        address tokenHandler_,
+        address gatewayCaller_
     ) {
         if (
             gasService_ == address(0) ||
@@ -132,7 +130,8 @@ contract InterchainTokenService is
             gateway_ == address(0) ||
             interchainTokenFactory_ == address(0) ||
             tokenManagerImplementation_ == address(0) ||
-            tokenHandler_ == address(0)
+            tokenHandler_ == address(0) ||
+            gatewayCaller_ == address(0)
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
@@ -146,6 +145,7 @@ contract InterchainTokenService is
 
         tokenManager = tokenManagerImplementation_;
         tokenHandler = tokenHandler_;
+        gatewayCaller = gatewayCaller_;
     }
 
     /*******\
@@ -460,7 +460,7 @@ contract InterchainTokenService is
         string memory symbol;
         (amount, symbol) = _takeToken(tokenId, msg.sender, amount, false);
 
-        (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+        (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
         _transmitInterchainTransfer(
             tokenId,
@@ -501,7 +501,7 @@ contract InterchainTokenService is
             destinationChain,
             destinationAddress,
             amount,
-            MetadataVersion.CONTRACT_CALL,
+            IGatewayCaller.MetadataVersion.CONTRACT_CALL,
             data,
             symbol,
             gasValue
@@ -533,7 +533,7 @@ contract InterchainTokenService is
         string memory symbol;
         (amount, symbol) = _takeToken(tokenId, sourceAddress, amount, true);
 
-        (MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+        (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
         _transmitInterchainTransfer(
             tokenId,
@@ -812,7 +812,7 @@ contract InterchainTokenService is
     function _callContract(
         string memory destinationChain,
         bytes memory payload,
-        MetadataVersion metadataVersion,
+        IGatewayCaller.MetadataVersion metadataVersion,
         uint256 gasValue
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
@@ -827,29 +827,18 @@ contract InterchainTokenService is
 
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
-        if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                gasService.payNativeGasForContractCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                gasService.payNativeGasForExpressCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
-        }
+        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
+            abi.encodeWithSelector(
+                IGatewayCaller.callContract.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                metadataVersion,
+                gasValue
+            )
+        );
 
-        gateway.callContract(destinationChain, destinationAddress, payload);
+        if (!success) revert GatewayCallFailed(returnData);
     }
 
     /**
@@ -863,7 +852,7 @@ contract InterchainTokenService is
         bytes memory payload,
         string memory symbol,
         uint256 amount,
-        MetadataVersion metadataVersion,
+        IGatewayCaller.MetadataVersion metadataVersion,
         uint256 gasValue
     ) internal {
         string memory destinationAddress = trustedAddress(destinationChain);
@@ -878,33 +867,20 @@ contract InterchainTokenService is
 
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
-        if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                gasService.payNativeGasForContractCallWithToken{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                gasService.payNativeGasForExpressCallWithToken{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    symbol,
-                    amount, // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
-        }
+        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
+            abi.encodeWithSelector(
+                IGatewayCaller.callContractWithToken.selector,
+                destinationChain,
+                destinationAddress,
+                payload,
+                symbol,
+                amount,
+                metadataVersion,
+                gasValue
+            )
+        );
 
-        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+        if (!success) revert GatewayCallFailed(returnData);
     }
 
     function _execute(
@@ -1012,7 +988,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
 
-        _callContract(destinationChain, payload, MetadataVersion.CONTRACT_CALL, gasValue);
+        _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -1042,7 +1018,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter);
 
-        _callContract(destinationChain, payload, MetadataVersion.CONTRACT_CALL, gasValue);
+        _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -1122,13 +1098,13 @@ contract InterchainTokenService is
      * @return version The version number extracted from the metadata.
      * @return data The data bytes extracted from the metadata.
      */
-    function _decodeMetadata(bytes calldata metadata) internal pure returns (MetadataVersion version, bytes memory data) {
-        if (metadata.length < 4) return (MetadataVersion.CONTRACT_CALL, data);
+    function _decodeMetadata(bytes calldata metadata) internal pure returns (IGatewayCaller.MetadataVersion version, bytes memory data) {
+        if (metadata.length < 4) return (IGatewayCaller.MetadataVersion.CONTRACT_CALL, data);
 
         uint32 versionUint = uint32(bytes4(metadata[:4]));
         if (versionUint > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(versionUint);
 
-        version = MetadataVersion(versionUint);
+        version = IGatewayCaller.MetadataVersion(versionUint);
 
         if (metadata.length == 4) return (version, data);
 
@@ -1151,7 +1127,7 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes memory destinationAddress,
         uint256 amount,
-        MetadataVersion metadataVersion,
+        IGatewayCaller.MetadataVersion metadataVersion,
         bytes memory data,
         string memory symbol,
         uint256 gasValue

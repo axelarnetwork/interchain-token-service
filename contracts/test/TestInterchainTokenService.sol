@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import { IGatewayCaller } from '../interfaces/IGatewayCaller.sol';
 import { InterchainTokenService } from '../InterchainTokenService.sol';
 
 contract TestInterchainTokenService is InterchainTokenService {
@@ -15,7 +16,8 @@ contract TestInterchainTokenService is InterchainTokenService {
         address interchainTokenFactory_,
         string memory chainName_,
         address tokenManager_,
-        address tokenHandler_
+        address tokenHandler_,
+        address gatewayCaller_
     )
         InterchainTokenService(
             tokenManagerDeployer_,
@@ -25,23 +27,15 @@ contract TestInterchainTokenService is InterchainTokenService {
             interchainTokenFactory_,
             chainName_,
             tokenManager_,
-            tokenHandler_
+            tokenHandler_,
+            gatewayCaller_
         )
     {
-        if (LATEST_METADATA_VERSION != uint32(type(MetadataVersion).max))
-            revert LatestMetadataVersionMismatch(LATEST_METADATA_VERSION, uint32(type(MetadataVersion).max));
+        if (LATEST_METADATA_VERSION != uint32(type(IGatewayCaller.MetadataVersion).max))
+            revert LatestMetadataVersionMismatch(LATEST_METADATA_VERSION, uint32(type(IGatewayCaller.MetadataVersion).max));
     }
 
     function setupTest(bytes calldata params) external {
         _setup(params);
-    }
-
-    function callContract(
-        string calldata destinationChain,
-        bytes memory payload,
-        MetadataVersion metadataVersion,
-        uint256 gasValue
-    ) external payable {
-        _callContract(destinationChain, payload, metadataVersion, gasValue);
     }
 }
