@@ -88,16 +88,18 @@ contract InterchainTokenService is
     uint32 internal constant LATEST_METADATA_VERSION = 1;
 
     /**
-     * @dev Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
+     * @dev Chain name where ITS Hub exists. This is used for routing ITS calls via ITS hub.
+     * This is set as a constant, since the ITS Hub will exist on Axelar.
      */
-    string internal constant AXELAR_CHAIN_NAME = 'Axelarnet';
-    bytes32 internal constant AXELAR_CHAIN_NAME_HASH = keccak256(abi.encodePacked(AXELAR_CHAIN_NAME));
+    string internal constant ITS_HUB_CHAIN_NAME = 'Axelarnet';
+    bytes32 internal constant ITS_HUB_CHAIN_NAME_HASH = keccak256(abi.encodePacked(ITS_HUB_CHAIN_NAME));
 
     /**
-     * @dev Special trusted address value that indicates that the ITS call
-     * for that destination chain should be routed via the ITS hub.
+     * @dev Special identifier that the trusted address for a chain should be set to, which indicates if the ITS call
+     * for that chain should be routed via the ITS hub.
      */
-    bytes32 internal constant ITS_HUB_TRUSTED_ADDRESS_HASH = keccak256('hub');
+    string internal constant ITS_HUB_ROUTING_IDENTIFIER = 'hub';
+    bytes32 internal constant ITS_HUB_ROUTING_IDENTIFIER_HASH = keccak256(abi.encodePacked(ITS_HUB_ROUTING_IDENTIFIER));
 
     /**
      * @notice Constructor for the Interchain Token Service.
@@ -805,6 +807,8 @@ contract InterchainTokenService is
 
     /**
      * @notice Calls a contract on a specific destination chain with the given payload
+     * @dev This method also determines whether the ITS call should be routed via the ITS Hub.
+     * If the `trustedAddress(destinationChain) == 'hub'`, then the call is wrapped and routed to the ITS Hub destination.
      * @param destinationChain The target chain where the contract will be called.
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
@@ -815,17 +819,9 @@ contract InterchainTokenService is
         IGatewayCaller.MetadataVersion metadataVersion,
         uint256 gasValue
     ) internal {
-        string memory destinationAddress = trustedAddress(destinationChain);
+        string memory destinationAddress;
 
-        // Check if the ITS call should be routed via ITS hub for this destination chain
-        if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_TRUSTED_ADDRESS_HASH) {
-            // Wrap ITS message in an ITS Hub message
-            payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
-            destinationChain = AXELAR_CHAIN_NAME;
-            destinationAddress = trustedAddress(AXELAR_CHAIN_NAME);
-        }
-
-        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+        (destinationChain, destinationAddress, payload) = _getCallParams(destinationChain, payload);
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
             abi.encodeWithSelector(
@@ -855,17 +851,9 @@ contract InterchainTokenService is
         IGatewayCaller.MetadataVersion metadataVersion,
         uint256 gasValue
     ) internal {
-        string memory destinationAddress = trustedAddress(destinationChain);
+        string memory destinationAddress;
 
-        // Check if the ITS call should be routed via ITS hub for this destination chain
-        if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_TRUSTED_ADDRESS_HASH) {
-            // Wrap ITS message in an ITS Hub message
-            payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
-            destinationChain = AXELAR_CHAIN_NAME;
-            destinationAddress = trustedAddress(AXELAR_CHAIN_NAME);
-        }
-
-        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+        (destinationChain, destinationAddress, payload) = _getCallParams(destinationChain, payload);
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
             abi.encodeWithSelector(
@@ -883,6 +871,32 @@ contract InterchainTokenService is
         if (!success) revert GatewayCallFailed(returnData);
     }
 
+    /**
+     * @dev Get the params for the cross-chain message, taking routing via ITS Hub into account.
+     */
+    function _getCallParams(
+        string memory destinationChain,
+        bytes memory payload
+    ) internal view returns (string memory, string memory, bytes memory) {
+        string memory destinationAddress = trustedAddress(destinationChain);
+
+        // Prevent sending directly to the ITS Hub chain. This is not supported yet, so fail early to prevent the user from having their funds stuck.
+        if (keccak256(abi.encodePacked(destinationChain)) == ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();
+
+        // Check whether the ITS call should be routed via ITS hub for this destination chain
+        if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+            // Wrap ITS message in an ITS Hub message
+            payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
+            destinationChain = ITS_HUB_CHAIN_NAME;
+            destinationAddress = trustedAddress(ITS_HUB_CHAIN_NAME);
+        }
+
+        // Check whether no trusted address was set for the destination chain
+        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+
+        return (destinationChain, destinationAddress, payload);
+    }
+
     function _execute(
         bytes32 commandId,
         string calldata sourceChain,
@@ -890,20 +904,9 @@ contract InterchainTokenService is
         bytes memory payload,
         bytes32 payloadHash
     ) internal {
-        // Read the first 32 bytes of the payload to determine the message type
-        uint256 messageType = _getMessageType(payload);
-        // True source chain, this is overridden if the ITS call is coming via the ITS hub
-        string memory originalSourceChain = sourceChain;
-
-        // Only allow routed call wrapping once
-        if (messageType == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
-            if (keccak256(abi.encodePacked(sourceChain)) != AXELAR_CHAIN_NAME_HASH) revert UntrustedChain();
-
-            (, originalSourceChain, payload) = abi.decode(payload, (uint256, string, bytes));
-
-            // Get message type of the inner ITS message
-            messageType = _getMessageType(payload);
-        }
+        uint256 messageType;
+        string memory originalSourceChain;
+        (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
 
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
@@ -930,20 +933,9 @@ contract InterchainTokenService is
         if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
             revert NotApprovedByGateway();
 
-        // Read the first 32 bytes of the payload to determine the message type
-        uint256 messageType = _getMessageType(payload);
-        // True source chain, this is overridden if the ITS call is coming via the ITS hub
-        string memory originalSourceChain = sourceChain;
-
-        // Unwrap ITS message if coming from ITS hub
-        if (messageType == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
-            if (keccak256(abi.encodePacked(sourceChain)) != AXELAR_CHAIN_NAME_HASH) revert UntrustedChain();
-
-            (, originalSourceChain, payload) = abi.decode(payload, (uint256, string, bytes));
-
-            // Get message type of the inner ITS message
-            messageType = _getMessageType(payload);
-        }
+        uint256 messageType;
+        string memory originalSourceChain;
+        (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
 
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidMessageType(messageType);
@@ -967,6 +959,38 @@ contract InterchainTokenService is
     }
 
     /**
+     * @dev Return the parameters for the execute call, taking routing via ITS Hub into account.
+     */
+    function _getExecuteParams(
+        string calldata sourceChain,
+        bytes memory payload
+    ) internal view returns (uint256, string memory, bytes memory) {
+        // Read the first 32 bytes of the payload to determine the message type
+        uint256 messageType = _getMessageType(payload);
+
+        // True source chain, this is overridden if the ITS call is coming via the ITS hub
+        string memory originalSourceChain = sourceChain;
+
+        // Unwrap ITS message if coming from ITS hub
+        if (messageType == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+            if (keccak256(abi.encodePacked(sourceChain)) != ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();
+
+            (, originalSourceChain, payload) = abi.decode(payload, (uint256, string, bytes));
+
+            // Check whether the original source chain is expected to be routed via the ITS Hub
+            if (trustedAddressHash(originalSourceChain) != ITS_HUB_ROUTING_IDENTIFIER_HASH) revert UntrustedChain();
+
+            // Get message type of the inner ITS message
+            messageType = _getMessageType(payload);
+        } else {
+            // Prevent receiving a direct message from the ITS Hub. This is not supported yet.
+            if (keccak256(abi.encodePacked(sourceChain)) == ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();
+        }
+
+        return (messageType, originalSourceChain, payload);
+    }
+
+    /**
      * @notice Deploys a token manager on a destination chain.
      * @param tokenId The ID of the token.
      * @param destinationChain The chain where the token manager will be deployed.
@@ -979,7 +1003,7 @@ contract InterchainTokenService is
         string calldata destinationChain,
         uint256 gasValue,
         TokenManagerType tokenManagerType,
-        bytes memory params
+        bytes calldata params
     ) internal {
         // slither-disable-next-line unused-return
         validTokenManagerAddress(tokenId);
