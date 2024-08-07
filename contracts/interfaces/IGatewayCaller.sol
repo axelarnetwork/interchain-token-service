@@ -26,7 +26,7 @@ interface IGatewayCaller {
      * @param destinationAddress The address of the contract to be called on the destination chain
      * @param payload The data payload for the transaction
      * @param metadataVersion The version of metadata to be used
-     * @param gasValue The amount of gas to be paid for the transaction
+     * @param gasValue The amount of gas to be paid for the cross-chain message. If this is 0, then gas payment is skipped. `msg.value` must be at least gasValue.
      */
     function callContract(
         string calldata destinationChain,
@@ -44,7 +44,7 @@ interface IGatewayCaller {
      * @param symbol The symbol of the token to be sent
      * @param amount The amount of tokens to be sent
      * @param metadataVersion The version of metadata to be used
-     * @param gasValue The amount of gas to be paid for the transaction
+     * @param gasValue The amount of gas to be paid for the cross-chain message. If this is 0, then gas payment is skipped. `msg.value` must be at least gasValue.
      */
     function callContractWithToken(
         string calldata destinationChain,

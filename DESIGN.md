@@ -47,11 +47,11 @@ The messages going through the Axelar Network between `InterchainTokenServices` 
 
 ### `INTERCHAIN_TRANSFER`
 
-This message has the following data encoded and should only be sent after the proper tokens have been procured by the service. It should result in the proper funds being transferred to the user at the destionation chain.
+This message is used to transfer tokens between chains. The tokens are handled appropriately on the source chain (lock/burn etc.), and then this message is sent to the ITS contract on the remote chain which sends the tokens to the destination address.
 
 | Name                | Type      | Description                                                                                               |
 | ------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
-| selector            | `uint256` | Will always have a value of `0`                                                                           |
+| messageType         | `uint256` | Will always have a value of `0`                                                                           |
 | tokenId             | `bytes32` | The `interchainTokenId` of the token being transferred                                                    |
 | source address      | `bytes`   | The address of the sender, encoded as bytes to account for different chain architectures                  |
 | destination address | `bytes`   | The address of the recipient, encoded as bytes as well                                                    |
@@ -60,11 +60,11 @@ This message has the following data encoded and should only be sent after the pr
 
 ### `DEPLOY_INTERCHAIN_TOKEN`
 
-This message has the following data encoded and should only be sent after the `interchainTokenId` has been properly generated (a user should not be able to claim just any `interchainTokenId`)
+This message is used to deploy an `InterchainToken` on a remote chain, that corresponds to the `tokenId` of a local ERC-20 token registered in ITS. This allows a user to deploy tokens to remote chains from a single source chain, instead of having to make a tx on each chain. It also allows the implementation on each chain to be flexible (e.g. `tokenId` derivation can be different on remote chains).
 
 | Name     | Type      | Description                                                                                                             |
 | -------- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
-| selector | `uint256` | Will always have a value of `1`                                                                                         |
+| messageType | `uint256` | Will always have a value of `1`                                                                                         |
 | tokenId  | `bytes32` | The `interchainTokenId` of the token being deployed                                                                     |
 | name     | `string`  | The name for the token                                                                                                  |
 | symbol   | `string`  | The symbol for the token                                                                                                |
@@ -73,11 +73,31 @@ This message has the following data encoded and should only be sent after the `i
 
 ### `DEPLOY_TOKEN_MANAGER`
 
-This message has the following data encoded and should only be sent after the proper tokens have been procured by the service. It should result in the proper funds being transferred to the user at the destination chain.
+This message is used to deploy a token manager on a remote chain, that corresponds to a local token manager. This is useful to link custom tokens via ITS with the same tokenId.
 
 | Name               | Type      | Description                                                                                                                                                               |
 | ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| selector           | `uint256` | Will always have a value of `2`                                                                                                                                           |
+| messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
 | tokenId            | `bytes32` | The `interchainTokenId` of the token being deployed                                                                                                                       |
 | token manager type | `uint256` | The type of the token manager, look at the [code](./contracts/interfaces/ITokenManagerType.sol) for details on EVM, but it could be different for different architectures |
 | params             | `bytes`   | The parameters for the token manager deployments, look [here](./contracts/token-manager/TokenManager.sol#L179) for details on EVM chain parameters                        |
+
+### `SEND_TO_HUB`
+
+This message is used to route an ITS message via the ITS Hub. The ITS Hub applies certain security checks, and then routes it to the true destination chain. This mode is enabled if the trusted address corresponding to the destination chain is set to the ITS Hub identifier.
+
+| Name               | Type      | Description                                                                                                                                                               |
+| ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
+| destinationChain   | `string`  | The true destination chain for the ITS call                                                                                                                       |
+| payload            | `bytes`   | The actual ITS message that's being routed through ITS Hub
+
+### `RECEIVE_FROM_HUB`
+
+This message is used to receive an ITS message from the ITS Hub. The ITS Hub applies certain security checks, and then routes it to the ITS contract. The message is accepted if the trusted address corresponding to the original source chain is set to the ITS Hub identifier.
+
+| Name               | Type      | Description                                                                                                                                                               |
+| ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
+| sourceChain        | `string`  | The original source chain for the ITS call                                                                                                                       |
+| payload            | `bytes`   | The actual ITS message that's being routed through ITS Hub
