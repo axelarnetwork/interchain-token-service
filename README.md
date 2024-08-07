@@ -12,13 +12,31 @@ To build and run tests, do the following
 npm ci
 
 npm run build
+```
 
+## Test
+
+```bash
 npm run test
 ```
 
-## Test Coverage Report
+### Gas Report
 
-For the most recent test coverage report of the `main` branch, please visit the following [page](https://axelarnetwork.github.io/interchain-token-service/).
+Generate gas report
+
+```bash
+REPORT_GAS=true npm run test
+```
+
+### Coverage
+
+Generate test coverage report
+
+```bash
+COVERAGE=true npm run test
+```
+
+Test coverage reports of the `main` branch can also be found on [Codecov](https://app.codecov.io/gh/axelarnetwork/interchain-token-service).
 
 ## Deployment Guide
 

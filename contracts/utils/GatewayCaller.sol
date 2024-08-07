@@ -8,7 +8,7 @@ import { IGatewayCaller } from '../interfaces/IGatewayCaller.sol';
 
 /**
  * @title GatewayCaller contract
- * @dev This contract is used to handle cross-chain calls via the Axelar gateway
+ * @dev This contract is used to handle cross-chain ITS calls via the Axelar gateway.
  */
 contract GatewayCaller is IGatewayCaller {
     IAxelarGateway public immutable gateway;
@@ -30,7 +30,7 @@ contract GatewayCaller is IGatewayCaller {
      * @param destinationAddress The address of the contract to be called on the destination chain
      * @param payload The data payload for the transaction
      * @param metadataVersion The version of metadata to be used
-     * @param gasValue The amount of gas to be paid for the transaction
+     * @param gasValue The amount of gas to be paid for the cross-chain message. If this is 0, then gas payment is skipped. `msg.value` must be at least gasValue.
      */
     function callContract(
         string calldata destinationChain,
@@ -47,6 +47,7 @@ contract GatewayCaller is IGatewayCaller {
                     destinationChain,
                     destinationAddress,
                     payload,
+                    // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
@@ -56,6 +57,7 @@ contract GatewayCaller is IGatewayCaller {
                     destinationChain,
                     destinationAddress,
                     payload,
+                    // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
             } else {
@@ -74,7 +76,7 @@ contract GatewayCaller is IGatewayCaller {
      * @param symbol The symbol of the token to be sent
      * @param amount The amount of tokens to be sent
      * @param metadataVersion The version of metadata to be used
-     * @param gasValue The amount of gas to be paid for the transaction
+     * @param gasValue The amount of gas to be paid for the cross-chain message. If this is 0, then gas payment is skipped. `msg.value` must be at least gasValue.
      */
     function callContractWithToken(
         string calldata destinationChain,
@@ -95,6 +97,7 @@ contract GatewayCaller is IGatewayCaller {
                     payload,
                     symbol,
                     amount,
+                    // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
             } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
@@ -106,6 +109,7 @@ contract GatewayCaller is IGatewayCaller {
                     payload,
                     symbol,
                     amount,
+                    // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
             } else {
