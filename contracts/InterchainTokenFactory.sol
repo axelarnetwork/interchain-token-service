@@ -27,6 +27,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
+    bytes32 internal constant PREFIX_GATEWAY_TOKEN_SALT = keccak256('gateway-token-salt');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     /**
@@ -69,6 +70,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      */
     function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash_, tokenAddress));
+    }
+
+    /**
+     * @notice Calculates the salt for a gateway interchain token.
+     * @param tokenIdentifier A unique identifier to generate the salt.
+     * @return salt The calculated salt for the interchain token.
+     */
+    function gatewayTokenSalt(bytes32 tokenIdentifier) public pure returns (bytes32 salt) {
+        salt = keccak256(abi.encode(PREFIX_GATEWAY_TOKEN_SALT, tokenIdentifier));
     }
 
     /**
@@ -285,13 +295,16 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Register 'canonical' gateway tokens. The same salt needs to be used for the same gateway token on every chain.
-     * @param salt The salt to be used for the token registration. Should be the same for all tokens and something that will not have collisions with any of the other salts used by the factory.
+     * @param tokenIdentifier A gateway token identifier to be used for the token registration. Should be the same for all chains.
      * @param symbol The symbol of the token to register.
      */
-    function registerGatewayToken(bytes32 salt, string calldata symbol) external onlyOwner returns (bytes32 tokenId) {
+    function registerGatewayToken(bytes32 tokenIdentifier, string calldata symbol) external onlyOwner returns (bytes32 tokenId) {
         address tokenAddress = gateway.tokenAddresses(symbol);
         if (tokenAddress == address(0)) revert NotGatewayToken(symbol);
+
         bytes memory params = abi.encode('', tokenAddress);
+        bytes32 salt = gatewayTokenSalt(tokenIdentifier);
+
         tokenId = interchainTokenService.deployTokenManager(salt, '', TokenManagerType.GATEWAY, params, 0);
     }
 
