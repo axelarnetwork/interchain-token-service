@@ -10,9 +10,6 @@ const chains = require(`@axelar-network/axelar-chains-config/info/${env}.json`);
 const keys = readJSON(`${__dirname}/keys.json`);
 const { networks, etherscan } = importNetworks(chains, keys);
 
-// TODO: Remove this temporary override
-networks.hardhat.allowUnlimitedContractSize = true;
-
 const optimizerSettings = {
     enabled: true,
     runs: 1000,
@@ -43,7 +40,7 @@ const itsCompilerSettings = {
         evmVersion: process.env.EVM_VERSION || 'london',
         optimizer: {
             ...optimizerSettings,
-            runs: 200, // Reduce runs to keep bytecode size under limit
+            runs: 150, // Reduce runs to keep bytecode size under limit
         },
     },
 };
@@ -76,7 +73,7 @@ module.exports = {
     },
     contractSizer: {
         runOnCompile: process.env.CHECK_CONTRACT_SIZE,
-        // strict: process.env.CHECK_CONTRACT_SIZE, // TODO: uncomment this
+        strict: process.env.CHECK_CONTRACT_SIZE,
         except: ['contracts/test'],
     },
 };
