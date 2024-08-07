@@ -139,7 +139,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
 
     /**
      * @notice Register 'canonical' gateway tokens. The same salt needs to be used for the same gateway token on every chain.
-     * @param tokenIdentifier A gateway token identifier to be used for the token registration. Should be the same for all chains and something that will not have collisions with any of the other salts used by the factory.
+     * @param tokenIdentifier A gateway token identifier to be used for the token registration. Should be the same for all chains.
      * @param symbol The symbol of the token to register.
      */
     function registerGatewayToken(bytes32 tokenIdentifier, string calldata symbol) external returns (bytes32 tokenId);
