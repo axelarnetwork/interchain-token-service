@@ -131,9 +131,16 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     ) external payable returns (bytes32 tokenId);
 
     /**
+     * @notice Calculates the salt for a gateway interchain token.
+     * @param tokenIdentifier A unique identifier to generate the salt.
+     * @return salt The calculated salt for the interchain token.
+     */
+    function gatewayTokenSalt(bytes32 tokenIdentifier) external pure returns (bytes32 salt);
+
+    /**
      * @notice Register 'canonical' gateway tokens. The same salt needs to be used for the same gateway token on every chain.
-     * @param salt The salt to be used for the token registration. Should be the same for all tokens and something that will not have collisions with any of the other salts used by the factory.
+     * @param tokenIdentifier A gateway token identifier to be used for the token registration. Should be the same for all chains and something that will not have collisions with any of the other salts used by the factory.
      * @param symbol The symbol of the token to register.
      */
-    function registerGatewayToken(bytes32 salt, string calldata symbol) external returns (bytes32 tokenId);
+    function registerGatewayToken(bytes32 tokenIdentifier, string calldata symbol) external returns (bytes32 tokenId);
 }

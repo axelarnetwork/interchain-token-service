@@ -38,12 +38,12 @@ const compilerSettings = {
     },
 };
 const itsCompilerSettings = {
-    version: '0.8.21',
+    version: '0.8.24',
     settings: {
         evmVersion: process.env.EVM_VERSION || 'london',
         optimizer: {
             ...optimizerSettings,
-            runs: 100, // Reduce runs to keep bytecode size under limit
+            runs: 200, // Reduce runs to keep bytecode size under limit
         },
     },
 };

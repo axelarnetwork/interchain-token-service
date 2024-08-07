@@ -7,7 +7,7 @@ const {
     getContractAt,
     Wallet,
     constants: { AddressZero },
-    utils: { defaultAbiCoder, keccak256, toUtf8Bytes },
+    utils: { defaultAbiCoder, keccak256, toUtf8Bytes, id },
 } = ethers;
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32, expectRevert } = require('./utils');
@@ -188,7 +188,8 @@ describe('InterchainTokenFactory', () => {
 
             await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait);
 
-            tokenId = await service.interchainTokenId(AddressZero, salt);
+            const deploySalt = keccak256(defaultAbiCoder.encode(['bytes32', 'bytes32'], [id('gateway-token-salt'), salt]));
+            tokenId = await service.interchainTokenId(AddressZero, deploySalt);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
             if (lockUnlock) {
