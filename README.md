@@ -33,7 +33,7 @@ REPORT_GAS=true npm run test
 Generate test coverage report
 
 ```bash
-COVERAGE=true npm run test
+npm run coverage
 ```
 
 Test coverage reports of the `main` branch can also be found on [Codecov](https://app.codecov.io/gh/axelarnetwork/interchain-token-service).
