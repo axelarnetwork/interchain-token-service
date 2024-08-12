@@ -16,7 +16,7 @@ The main workflow of a bridge is as follows:
 
 For the bridge to function effectively, it should be capable of executing these steps between any two supported chains, designated as 'Chain A' and 'Chain B'. There are multiple different possible configurations for any such bridge. Our goal is to make bridging as easy as possible for deployers to get what they want, while also making it cheap and easy for users to transfer their tokens between chains.
 
-The workflow described below is facilitated by 2 smart contracts the [`InterchainTokenService`](./contracts/interchainTokenService/InterchainTokenService.sol) and the [`InterchainTokenFactory`](./contracts/InterchainTokenFactory.sol). The `InterchainTokenService` deploys `TokenManagers` which register each token and is also responsible for sending and receiving messages. Each bridge will result in a new `TokenManager` with a unique `interchainTokenId`. Deployers have a few different options when creating `TokenManagers`, with each option representing a different `TokenManager` type with distinct qualities. The `InterchainTokenFactory` allows developers to deploy bridges that have certain guarantees, such as fixed supply tokens, or bridging pre-existing tokens.
+The workflow described below is facilitated by 2 smart contracts the [`InterchainTokenService`](./contracts/InterchainTokenService.sol) and the [`InterchainTokenFactory`](./contracts/InterchainTokenFactory.sol). The `InterchainTokenService` deploys `TokenManagers` which register each token and is also responsible for sending and receiving messages. Each bridge will result in a new `TokenManager` with a unique `interchainTokenId`. Deployers have a few different options when creating `TokenManagers`, with each option representing a different `TokenManager` type with distinct qualities. The `InterchainTokenFactory` allows developers to deploy bridges that have certain guarantees, such as fixed supply tokens, or bridging pre-existing tokens.
 
 It is important to note that a lot of the design choices were made with supporting non-EVM chains in mind.
 
@@ -80,7 +80,7 @@ This message is used to deploy a token manager on a remote chain, that correspon
 | messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
 | tokenId            | `bytes32` | The `interchainTokenId` of the token being deployed                                                                                                                       |
 | token manager type | `uint256` | The type of the token manager, look at the [code](./contracts/interfaces/ITokenManagerType.sol) for details on EVM, but it could be different for different architectures |
-| params             | `bytes`   | The parameters for the token manager deployments, look [here](./contracts/token-manager/TokenManager.sol#L179) for details on EVM chain parameters                        |
+| params             | `bytes`   | The parameters for the token manager deployments, look [here](./contracts/token-manager/TokenManager.sol#L191) for details on EVM chain parameters                        |
 
 ### `SEND_TO_HUB`
 
@@ -88,7 +88,7 @@ This message is used to route an ITS message via the ITS Hub. The ITS Hub applie
 
 | Name               | Type      | Description                                                                                                                                                               |
 | ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
+| messageType        | `uint256` | Will always have a value of `3`                                                                                                                                           |
 | destinationChain   | `string`  | The true destination chain for the ITS call                                                                                                                       |
 | payload            | `bytes`   | The actual ITS message that's being routed through ITS Hub
 
@@ -98,6 +98,6 @@ This message is used to receive an ITS message from the ITS Hub. The ITS Hub app
 
 | Name               | Type      | Description                                                                                                                                                               |
 | ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
+| messageType        | `uint256` | Will always have a value of `4`                                                                                                                                           |
 | sourceChain        | `string`  | The original source chain for the ITS call                                                                                                                       |
 | payload            | `bytes`   | The actual ITS message that's being routed through ITS Hub
