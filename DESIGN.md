@@ -80,7 +80,7 @@ This message is used to deploy a token manager on a remote chain, that correspon
 | messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
 | tokenId            | `bytes32` | The `interchainTokenId` of the token being deployed                                                                                                                       |
 | token manager type | `uint256` | The type of the token manager, look at the [code](./contracts/interfaces/ITokenManagerType.sol) for details on EVM, but it could be different for different architectures |
-| params             | `bytes`   | The parameters for the token manager deployments, look [here](./contracts/token-manager/TokenManager.sol#L179) for details on EVM chain parameters                        |
+| params             | `bytes`   | The parameters for the token manager deployments, look [here](./contracts/token-manager/TokenManager.sol#L191) for details on EVM chain parameters                        |
 
 ### `SEND_TO_HUB`
 
@@ -88,7 +88,7 @@ This message is used to route an ITS message via the ITS Hub. The ITS Hub applie
 
 | Name               | Type      | Description                                                                                                                                                               |
 | ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
+| messageType        | `uint256` | Will always have a value of `3`                                                                                                                                           |
 | destinationChain   | `string`  | The true destination chain for the ITS call                                                                                                                       |
 | payload            | `bytes`   | The actual ITS message that's being routed through ITS Hub
 
@@ -98,6 +98,6 @@ This message is used to receive an ITS message from the ITS Hub. The ITS Hub app
 
 | Name               | Type      | Description                                                                                                                                                               |
 | ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| messageType        | `uint256` | Will always have a value of `2`                                                                                                                                           |
+| messageType        | `uint256` | Will always have a value of `4`                                                                                                                                           |
 | sourceChain        | `string`  | The original source chain for the ITS call                                                                                                                       |
 | payload            | `bytes`   | The actual ITS message that's being routed through ITS Hub
