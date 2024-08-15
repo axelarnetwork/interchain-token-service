@@ -17,6 +17,7 @@ const { deployAll, deployContract, deployInterchainTokenService, deployAllWithTe
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
+/* eslint-disable-next-line no-unused-vars */
 const MESSAGE_TYPE_SEND_TO_HUB = 3;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB = 4;
 const INVALID_MESSAGE_TYPE = 5;
