@@ -138,10 +138,53 @@ async function deployAll(
     };
 }
 
+async function deployAllWithTestGatewayCaller(
+    wallet,
+    chainName,
+    evmChains = [],
+    deploymentKey = 'InterchainTokenService',
+    factoryDeploymentKey = deploymentKey + 'Factory',
+) {
+    const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
+        .deploy()
+        .then((d) => d.deployed());
+    const gateway = await deployMockGateway(wallet);
+    const gasService = await deployGasService(wallet);
+
+    const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
+    const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
+    const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
+    const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
+    const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
+    const tokenHandler = await deployContract(wallet, 'TokenHandler', [gateway.address]);
+    const gatewayCaller = await deployContract(wallet, 'TestGatewayCaller');
+
+    const interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey);
+
+    const service = await deployInterchainTokenService(
+        wallet,
+        create3Deployer.address,
+        tokenManagerDeployer.address,
+        interchainTokenDeployer.address,
+        gateway.address,
+        gasService.address,
+        interchainTokenFactoryAddress,
+        tokenManager.address,
+        tokenHandler.address,
+        gatewayCaller.address,
+        chainName,
+        evmChains,
+        deploymentKey,
+    );
+
+    return service;
+}
+
 module.exports = {
     deployContract,
     deployMockGateway,
     deployGasService,
     deployInterchainTokenService,
     deployAll,
+    deployAllWithTestGatewayCaller,
 };

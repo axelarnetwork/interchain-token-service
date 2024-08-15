@@ -11,13 +11,15 @@ const {
 } = ethers;
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall, approveContractCallWithMint } = require('../scripts/utils');
-const { getRandomBytes32, getRandomInt, expectRevert, gasReporter, getEVMVersion } = require('./utils');
-const { deployAll, deployContract, deployInterchainTokenService } = require('../scripts/deploy');
+const { getRandomBytes32, getRandomInt, expectRevert, gasReporter, getEVMVersion, itsHubChainName } = require('./utils');
+const { deployAll, deployContract, deployInterchainTokenService, deployAllWithTestGatewayCaller } = require('../scripts/deploy');
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
-const INVALID_MESSAGE_TYPE = 3;
+const MESSAGE_TYPE_SEND_TO_HUB = 3;
+const MESSAGE_TYPE_RECEIVE_FROM_HUB = 4;
+const INVALID_MESSAGE_TYPE = 5;
 
 const NATIVE_INTERCHAIN_TOKEN = 0;
 const MINT_BURN_FROM = 1;
@@ -43,13 +45,14 @@ describe('Interchain Token Service', () => {
     let tokenHandler;
     let gatewayCaller;
     let interchainTokenFactoryAddress;
-    let serviceTest;
+    let serviceTest, serviceTestGatewayCaller;
 
     const chainName = 'Test';
     const deploymentKey = 'InterchainTokenService';
     const factoryDeploymentKey = 'factoryKey';
 
     const deployFunctions = {};
+    const deployFunctionsTest = {};
     const destinationChain = 'destination chain';
     const sourceChain = 'source chain';
     const gasValue = 12;
@@ -84,6 +87,36 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     };
 
+    deployFunctionsTest.lockUnlock = async function deployNewLockUnlock(
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
+        const salt = getRandomBytes32();
+        const tokenId = await serviceTestGatewayCaller.interchainTokenId(wallet.address, salt);
+        const tokenManager = await getContractAt('TokenManager', await serviceTestGatewayCaller.tokenManagerAddress(tokenId), wallet);
+
+        const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
+            tokenName,
+            tokenSymbol,
+            tokenDecimals,
+            serviceTestGatewayCaller.address,
+            tokenId,
+        ]);
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+        await serviceTestGatewayCaller.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0).then((tx) => tx.wait);
+
+        if (mintAmount > 0) {
+            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
+            if (!skipApprove) await token.approve(serviceTestGatewayCaller.address, mintAmount).then((tx) => tx.wait);
+        }
+
+        return [token, tokenManager, tokenId];
+    };
+
     deployFunctions.gateway = async function deployNewGateway(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
@@ -109,6 +142,36 @@ describe('Interchain Token Service', () => {
         if (mintAmount > 0) {
             await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
             if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait);
+        }
+
+        return [token, tokenManager, tokenId];
+    };
+
+    deployFunctionsTest.gateway = async function deployNewGateway(tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
+        const salt = getRandomBytes32();
+        const tokenId = await serviceTestGatewayCaller.interchainTokenId(wallet.address, salt);
+        const tokenManager = await getContractAt('TokenManager', await serviceTestGatewayCaller.tokenManagerAddress(tokenId), wallet);
+
+        const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
+            tokenName,
+            tokenSymbol,
+            tokenDecimals,
+            serviceTestGatewayCaller.address,
+            tokenId,
+        ]);
+        let params = defaultAbiCoder.encode(
+            ['string', 'string', 'uint8', 'uint256', 'address', 'uint256'],
+            [tokenName, tokenSymbol, tokenDecimals, 0, token.address, 0],
+        );
+        await gateway.deployToken(params, getRandomBytes32()).then((tx) => tx.wait);
+
+        params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+        await serviceTestGatewayCaller.deployTokenManager(salt, '', GATEWAY, params, 0).then((tx) => tx.wait);
+
+        if (mintAmount > 0) {
+            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
+            if (!skipApprove) await token.approve(serviceTestGatewayCaller.address, mintAmount).then((tx) => tx.wait);
         }
 
         return [token, tokenManager, tokenId];
@@ -235,6 +298,8 @@ describe('Interchain Token Service', () => {
             tokenHandler.address,
             gatewayCaller.address,
         ]);
+
+        serviceTestGatewayCaller = await deployAllWithTestGatewayCaller(wallet, 'Test', [sourceChain, destinationChain]);
     });
 
     describe('Interchain Token Service Deployment', () => {
@@ -1323,6 +1388,20 @@ describe('Interchain Token Service', () => {
                 [selector + errorData.substring(2)],
             );
         });
+
+        it(`Should revert on initiating an interchain token transfer for gateway token when gateway call failed`, async () => {
+            const [, , tokenId] = await deployFunctionsTest.gateway(`Test Token gateway`, 'TG1', 12, amount);
+            const metadata = '0x00000000';
+            await expectRevert(
+                (gasOptions) =>
+                    serviceTestGatewayCaller.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, {
+                        value: gasValue,
+                        ...gasOptions,
+                    }),
+                    serviceTestGatewayCaller,
+                'GatewayCallFailed',
+            );
+        });
     });
 
     describe('Execute checks', () => {
@@ -1466,6 +1545,24 @@ describe('Interchain Token Service', () => {
         before(async () => {
             sourceAddress = service.address;
             destAddress = wallet.address;
+        });
+
+        it('Should revert with InvalidPayload', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(`Test Token Lock Unlock`, 'TT', 12, amount);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
+
+            const invalidPayload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
+            ).slice(0, 32);
+
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, invalidPayload);
+
+            await expectRevert(
+                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, invalidPayload, gasOptions),
+                service,
+                'InvalidPayload',
+            );
         });
 
         it('Should be able to receive lock/unlock token', async () => {
@@ -1877,6 +1974,27 @@ describe('Interchain Token Service', () => {
                 [Number(metadata)],
             );
         });
+
+        it(`Should revert on callContractWithInterchainToken when gateway call failed`, async () => {
+            const type = 'lockUnlock'
+            const [, , tokenId] = await deployFunctionsTest[type](`Test Token ${type}`, 'TT', 12, amount);
+            await expectRevert(
+                (gasOptions) =>
+                    serviceTestGatewayCaller.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, gasOptions),
+                serviceTestGatewayCaller,
+                'GatewayCallFailed',
+            );
+        });
+
+        it(`Should revert on callContractWithInterchainToken when destination chain is untrusted chain`, async () => {
+            const type = 'lockUnlock'
+            const [, , tokenId] = await deployFunctions[type](`Test Token ${type}`, 'TT', 12, amount);
+            await expectRevert(
+                (gasOptions) => service.callContractWithInterchainToken(tokenId, itsHubChainName, destAddress, amount, data, 0, gasOptions),
+                service,
+                'UntrustedChain',
+            );
+        });
     });
 
     describe('Receive Remote Token with Data', () => {
@@ -1886,6 +2004,7 @@ describe('Interchain Token Service', () => {
         let destAddress;
         let executable;
         let invalidExecutable;
+        const itsHubAddress = 'axelar1xyz';
 
         before(async () => {
             sourceAddress = service.address;
@@ -2057,6 +2176,60 @@ describe('Interchain Token Service', () => {
                 service,
                 'ExecuteWithInterchainTokenFailed',
                 [invalidExecutable.address],
+            );
+        });
+
+        it('Should revert with UntrustedChain when the message type is RECEIVE_FROM_HUB and untrusted chain', async () => {
+            const data = '0x';
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, data],
+            );
+            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+
+            await expectRevert(
+                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                service,
+                'UntrustedChain',
+            );
+        });
+
+        it('Should revert with UntrustedChain when the message type is RECEIVE_FROM_HUB and untrusted original source chain', async () => {
+            const data = '0x';
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, "untrustedSourceChain", data],
+            );
+            const commandId = await approveContractCall(gateway, itsHubChainName, itsHubAddress, service.address, payload);
+
+            await expect(service.setTrustedAddress(itsHubChainName, itsHubAddress))
+                .to.emit(service, 'TrustedAddressSet')
+                .withArgs(itsHubChainName, itsHubAddress);
+
+            await expectRevert(
+                (gasOptions) => service.execute(commandId, itsHubChainName, itsHubAddress, payload, gasOptions),
+                service,
+                'UntrustedChain',
+            );
+        });
+
+        it('Should revert with UntrustedChain when receiving a direct message from the ITS Hub. Not supported yet', async () => {
+            const data = '0x';
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, data],
+            );
+
+            const commandId = await approveContractCall(gateway, itsHubChainName, itsHubAddress, service.address, payload);
+
+            await expect(service.setTrustedAddress(itsHubChainName, itsHubAddress))
+                .to.emit(service, 'TrustedAddressSet')
+                .withArgs(itsHubChainName, itsHubAddress);
+
+            await expectRevert(
+                (gasOptions) => service.execute(commandId, itsHubChainName, itsHubAddress, payload, gasOptions),
+                service,
+                'UntrustedChain',
             );
         });
     });
