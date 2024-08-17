@@ -12,10 +12,7 @@ const { approveContractCall } = require('../scripts/utils');
 const { getRandomBytes32, getSaltFromKey, isHardhat, getContractJSON } = require('./utils');
 const { create3DeployContract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const Token = getContractJSON('TestInterchainTokenStandard');
-const {
-    MINT_BURN,
-    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-} = require('./constants');
+const { MINT_BURN, MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN } = require('./constants');
 
 if (isHardhat) {
     describe('Token Address Derivation [ @skip-on-coverage ]', () => {

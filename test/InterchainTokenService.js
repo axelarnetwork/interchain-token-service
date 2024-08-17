@@ -55,14 +55,7 @@ describe('Interchain Token Service', () => {
     const sourceChain = 'source chain';
     const gasValue = 12;
 
-    async function deployNewLockUnlock(
-        service,
-        tokenName,
-        tokenSymbol,
-        tokenDecimals,
-        mintAmount = 0,
-        skipApprove = false,
-    ) {
+    async function deployNewLockUnlock(service, tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
@@ -86,14 +79,7 @@ describe('Interchain Token Service', () => {
         return [token, tokenManager, tokenId];
     }
 
-    async function deployNewGateway(
-        service,
-        tokenName,
-        tokenSymbol,
-        tokenDecimals,
-        mintAmount = 0,
-        skipApprove = false,
-    ) {
+    async function deployNewGateway(service, tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
@@ -1239,7 +1225,8 @@ describe('Interchain Token Service', () => {
         });
 
         it(`Should be able to initiate an interchain token transfer for lockUnlockFee with a normal ERC20 token`, async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(service,
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                service,
                 `Test Token lockUnlockFee`,
                 'TT',
                 12,
@@ -1269,7 +1256,15 @@ describe('Interchain Token Service', () => {
         });
 
         it(`Should revert on initiating an interchain token transfer for lockUnlockFee with reentrant token`, async () => {
-            const [, , tokenId] = await deployFunctions.lockUnlockFee(service, `Test Token lockUnlockFee`, 'TT', 12, amount, false, 'reentrant');
+            const [, , tokenId] = await deployFunctions.lockUnlockFee(
+                service,
+                `Test Token lockUnlockFee`,
+                'TT',
+                12,
+                amount,
+                false,
+                'reentrant',
+            );
 
             const revertData = keccak256(toUtf8Bytes('TokenTransferFailed()')).substring(0, 10);
 
@@ -1372,7 +1367,7 @@ describe('Interchain Token Service', () => {
                         value: gasValue,
                         ...gasOptions,
                     }),
-                    serviceTestGatewayCaller,
+                serviceTestGatewayCaller,
                 'GatewayCallFailed',
             );
         });
@@ -1381,7 +1376,15 @@ describe('Interchain Token Service', () => {
             [, , tokenId] = await deployFunctions.lockUnlock(serviceTestGatewayCaller, `Test Token lockUnlock`, 'TG2', 12, amount);
             await expectRevert(
                 (gasOptions) =>
-                    serviceTestGatewayCaller.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, gasOptions),
+                    serviceTestGatewayCaller.callContractWithInterchainToken(
+                        tokenId,
+                        destinationChain,
+                        destAddress,
+                        amount,
+                        data,
+                        0,
+                        gasOptions,
+                    ),
                 serviceTestGatewayCaller,
                 'GatewayCallFailed',
             );
@@ -1532,10 +1535,9 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert with InvalidPayload', async () => {
-            const invalidPayload = defaultAbiCoder.encode(
-                ['uint256', 'bytes'],
-                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, hexlify(wallet.address)],
-            ).slice(0, 32);
+            const invalidPayload = defaultAbiCoder
+                .encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, hexlify(wallet.address)])
+                .slice(0, 32);
 
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, invalidPayload);
 
@@ -1584,7 +1586,13 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(service, `Test Token Lock Unlock`, 'TT', 12, amount + 10);
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                service,
+                `Test Token Lock Unlock`,
+                'TT',
+                12,
+                amount + 10,
+            );
             await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait);
 
             const payload = defaultAbiCoder.encode(
@@ -1601,7 +1609,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token with normal ERC20 token', async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(service,
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                service,
                 `Test Token Lock Unlock`,
                 'TT',
                 12,
@@ -1957,10 +1966,11 @@ describe('Interchain Token Service', () => {
         });
 
         it(`Should revert on callContractWithInterchainToken when destination chain is untrusted chain`, async () => {
-            const type = 'lockUnlock'
+            const type = 'lockUnlock';
             const [, , tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount);
             await expectRevert(
-                (gasOptions) => service.callContractWithInterchainToken(tokenId, ITS_HUB_CHAIN_NAME, destAddress, amount, data, 0, gasOptions),
+                (gasOptions) =>
+                    service.callContractWithInterchainToken(tokenId, ITS_HUB_CHAIN_NAME, destAddress, amount, data, 0, gasOptions),
                 service,
                 'UntrustedChain',
             );
@@ -2084,7 +2094,13 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(service, `Test Token Lock Unlock`, 'TT', 12, amount + 10);
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                service,
+                `Test Token Lock Unlock`,
+                'TT',
+                12,
+                amount + 10,
+            );
             await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait);
             const msg = `lock/unlock`;
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
@@ -2150,10 +2166,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert with UntrustedChain when the message type is RECEIVE_FROM_HUB and untrusted chain', async () => {
             const data = '0x';
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes'],
-                [MESSAGE_TYPE_RECEIVE_FROM_HUB, data],
-            );
+            const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [MESSAGE_TYPE_RECEIVE_FROM_HUB, data]);
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expectRevert(
@@ -2167,7 +2180,7 @@ describe('Interchain Token Service', () => {
             const data = '0x';
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'string', 'bytes'],
-                [MESSAGE_TYPE_RECEIVE_FROM_HUB, "untrustedSourceChain", data],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, 'untrustedSourceChain', data],
             );
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, itsHubAddress, service.address, payload);
 
@@ -2185,10 +2198,9 @@ describe('Interchain Token Service', () => {
         it('Should revert with InvalidPayload when the message type is RECEIVE_FROM_HUB and has invalid inner payload.', async () => {
             const data = '0x';
             const sourceChain = 'hub chain 1';
-            const invalidItsMessage = defaultAbiCoder.encode(
-                ['uint256', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, amount, data],
-            ).slice(0, 32);
+            const invalidItsMessage = defaultAbiCoder
+                .encode(['uint256', 'uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, amount, data])
+                .slice(0, 32);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'string', 'bytes'],
                 [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, invalidItsMessage],
@@ -2208,10 +2220,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert with UntrustedChain when receiving a direct message from the ITS Hub. Not supported yet', async () => {
             const data = '0x';
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes'],
-                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, data],
-            );
+            const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, data]);
 
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, itsHubAddress, service.address, payload);
 
@@ -2852,7 +2861,13 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(service, `Test Token Lock Unlock`, 'TT', 12, 2 * amount + 10);
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                service,
+                `Test Token Lock Unlock`,
+                'TT',
+                12,
+                2 * amount + 10,
+            );
             await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait);
             await token.approve(service.address, amount).then((tx) => tx.wait);
 
@@ -2873,7 +2888,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token with normal ERC20 token', async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(service,
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                service,
                 `Test Token Lock Unlock`,
                 'TT',
                 12,
@@ -3029,7 +3045,13 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive lock/unlock with fee on transfer token', async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(service, `Test Token Lock Unlock`, 'TT', 12, amount * 2 + 10);
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
+                service,
+                `Test Token Lock Unlock`,
+                'TT',
+                12,
+                amount * 2 + 10,
+            );
             await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait);
             await token.approve(service.address, amount).then((tx) => tx.wait);
 
