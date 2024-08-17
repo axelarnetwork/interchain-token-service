@@ -2967,7 +2967,13 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive lock/unlock token', async () => {
-            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, `Test Token Lock Unlock`, 'TT', 12, amount * 2);
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(
+                service,
+                `Test Token Lock Unlock`,
+                'TT',
+                12,
+                amount * 2,
+            );
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
             await token.approve(service.address, amount).then((tx) => tx.wait);
 
