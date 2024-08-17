@@ -37,7 +37,7 @@ const reportGas = gasReporter('Interchain Token Service');
 describe('Interchain Token Service', () => {
     let wallet, otherWallet;
     let service, gateway, gasService, testToken;
-    let tokenFactory;
+
     let create3Deployer;
     let tokenManagerDeployer;
     let interchainToken;
@@ -84,7 +84,7 @@ describe('Interchain Token Service', () => {
         }
 
         return [token, tokenManager, tokenId];
-    };
+    }
 
     async function deployNewGateway(
         service,
@@ -121,7 +121,7 @@ describe('Interchain Token Service', () => {
         }
 
         return [token, tokenManager, tokenId];
-    };
+    }
 
     async function deployNewLockUnlockFee(
         service,
@@ -177,7 +177,7 @@ describe('Interchain Token Service', () => {
         }
 
         return [token, tokenManager, tokenId];
-    };
+    }
 
     const makeDeployNewMintBurn = (type) =>
         async function deployNewMintBurn(service, tokenName, tokenSymbol, tokenDecimals, mintAmount = 0) {
@@ -219,7 +219,6 @@ describe('Interchain Token Service', () => {
             service,
             gateway,
             gasService,
-            tokenFactory,
             create3Deployer,
             tokenManagerDeployer,
             interchainToken,
@@ -1360,7 +1359,7 @@ describe('Interchain Token Service', () => {
                 gasService,
                 tokenManagerDeployer,
                 interchainTokenDeployer,
-                tokenHandler
+                tokenHandler,
             );
         });
 
