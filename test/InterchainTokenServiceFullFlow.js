@@ -12,21 +12,23 @@ const {
     utils: { defaultAbiCoder, keccak256, solidityPack, arrayify },
 } = ethers;
 
-const { getRandomBytes32, expectRevert, itsHubChainName, itsHubIdentifier } = require('./utils');
+const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { approveContractCall } = require('../scripts/utils');
-
-const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
-const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
-const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
-const MESSAGE_TYPE_SEND_TO_HUB = 3;
-const MESSAGE_TYPE_RECEIVE_FROM_HUB = 4;
-
-const MINTER_ROLE = 0;
-
-const NATIVE_INTERCHAIN_TOKEN = 0;
-const MINT_BURN = 4;
-const LOCK_UNLOCK = 2;
+const {
+    MESSAGE_TYPE_INTERCHAIN_TRANSFER,
+    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
+    MESSAGE_TYPE_SEND_TO_HUB,
+    MESSAGE_TYPE_RECEIVE_FROM_HUB,
+    NATIVE_INTERCHAIN_TOKEN,
+    LOCK_UNLOCK,
+    MINT_BURN,
+    MINTER_ROLE,
+    ITS_HUB_CHAIN_NAME,
+    ITS_HUB_ROUTING_IDENTIFIER,
+    itsHubAddress,
+} = require('./constants');
 
 describe('Interchain Token Service Full Flow', () => {
     let wallet;
@@ -664,7 +666,6 @@ describe('Interchain Token Service Full Flow', () => {
 
         // Use a separate set of chains for this test, to avoid conflicting other tests
         const otherChains = ['hub chain 1', 'hub chain 2'];
-        const itsHubAddress = 'axelar1xyz';
 
         before(async () => {
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
@@ -674,15 +675,15 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Route via ITS Hub for the following chain
             for (const otherChain of otherChains) {
-                await expect(service.setTrustedAddress(otherChain, itsHubIdentifier))
+                await expect(service.setTrustedAddress(otherChain, ITS_HUB_ROUTING_IDENTIFIER))
                     .to.emit(service, 'TrustedAddressSet')
-                    .withArgs(otherChain, itsHubIdentifier);
+                    .withArgs(otherChain, ITS_HUB_ROUTING_IDENTIFIER);
             }
 
             // Set ITS Hub trusted address
-            await expect(service.setTrustedAddress(itsHubChainName, itsHubAddress))
+            await expect(service.setTrustedAddress(ITS_HUB_CHAIN_NAME, itsHubAddress))
                 .to.emit(service, 'TrustedAddressSet')
-                .withArgs(itsHubChainName, itsHubAddress);
+                .withArgs(ITS_HUB_CHAIN_NAME, itsHubAddress);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
@@ -728,15 +729,15 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(payloads[0]), gasValues[0], wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(payloads[0]), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(payloads[0]), payloads[0])
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(payloads[0]), payloads[0])
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), otherChains[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(payloads[1]), gasValues[1], wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(payloads[1]), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(payloads[1]), payloads[1]);
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(payloads[1]), payloads[1]);
 
             expect(await token.balanceOf(wallet.address)).to.equal(totalMint);
 
@@ -764,9 +765,9 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, itsHubChainName, itsHubAddress, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, itsHubChainName, itsHubAddress, payloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
@@ -776,9 +777,9 @@ describe('Interchain Token Service Full Flow', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, itsHubChainName, itsHubAddress, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, payloadHash, payload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, itsHubChainName, itsHubAddress, payloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, destChain, destAddress, amount, HashZero);
             });
@@ -814,17 +815,17 @@ describe('Interchain Token Service Full Flow', () => {
                     .to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(payloads[0]), payloads[0])
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(payloads[0]), payloads[0])
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(payloads[0]), gasValues[0], wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(payloads[0]), gasValues[0], wallet.address)
                     .and.to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, otherChains[0], destAddress, amount, HashZero)
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(payloads[1]), payloads[1])
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(payloads[1]), payloads[1])
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(payloads[1]), gasValues[1], wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(payloads[1]), gasValues[1], wallet.address)
                     .and.to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, otherChains[1], destAddress, amount, HashZero);
             });
@@ -859,15 +860,15 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, AddressZero, amount)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(sendPayload), sendPayload)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(sendPayload), sendPayload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, itsHubChainName, itsHubAddress, keccak256(sendPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, itsHubAddress, keccak256(sendPayload), gasValue, wallet.address)
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, wallet.address, destChain, executable.address.toLowerCase(), amount, keccak256(data));
 
             await approveContractCall(
                 gateway,
-                itsHubChainName,
+                ITS_HUB_CHAIN_NAME,
                 itsHubAddress,
                 service.address,
                 receivePayload,
@@ -877,7 +878,7 @@ describe('Interchain Token Service Full Flow', () => {
             );
 
             // Execute the contract call on destination with transfer
-            await expect(service.execute(commandId, itsHubChainName, itsHubAddress, receivePayload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, itsHubAddress, receivePayload))
                 .to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, sourceAddress, executable.address, amount, keccak256(data))
                 .and.to.emit(token, 'Transfer')

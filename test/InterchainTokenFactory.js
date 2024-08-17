@@ -11,16 +11,15 @@ const {
 } = ethers;
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32, expectRevert } = require('./utils');
-
-const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
-
-const LOCK_UNLOCK = 2;
-const GATEWAY = 5;
-const NATIVE_INTERCHAIN_TOKEN = 0;
-
-const MINTER_ROLE = 0;
-const OPERATOR_ROLE = 1;
-const FLOW_LIMITER_ROLE = 2;
+const {
+    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+    NATIVE_INTERCHAIN_TOKEN,
+    LOCK_UNLOCK,
+    GATEWAY,
+    MINTER_ROLE,
+    OPERATOR_ROLE,
+    FLOW_LIMITER_ROLE,
+} = require('./constants');
 
 describe('InterchainTokenFactory', () => {
     let wallet, otherWallet;
