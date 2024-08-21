@@ -4,14 +4,15 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
-import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
-import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
+import { AxelarGMPExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarGMPExecutable.sol';
+import { AxelarGMPExecutableWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarGMPExecutableWithToken.sol';
+import { IAxelarGMPExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPExecutable.sol';
+import { GMPExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/GMPExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
 import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/InterchainAddressTracker.sol';
-
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
@@ -23,6 +24,7 @@ import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 
 import { Operator } from './utils/Operator.sol';
+import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
 
 /**
  * @title The Interchain Token Service
@@ -37,14 +39,14 @@ contract InterchainTokenService is
     Pausable,
     Multicall,
     Create3AddressFixed,
-    ExpressExecutorTracker,
     InterchainAddressTracker,
+    AxelarGMPExecutableWithToken,
+    GMPExpressExecutorTracker,
     IInterchainTokenService
 {
     using AddressBytes for bytes;
     using AddressBytes for address;
 
-    IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
     address public immutable interchainTokenFactory;
     bytes32 public immutable chainNameHash;
@@ -124,7 +126,7 @@ contract InterchainTokenService is
         address tokenManagerImplementation_,
         address tokenHandler_,
         address gatewayCaller_
-    ) {
+    ) AxelarGMPExecutableWithToken(gateway_) {
         if (
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
@@ -136,7 +138,6 @@ contract InterchainTokenService is
             gatewayCaller_ == address(0)
         ) revert ZeroAddress();
 
-        gateway = IAxelarGateway(gateway_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
@@ -377,13 +378,13 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public payable whenNotPaused {
+    ) public payable override whenNotPaused {
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidExpressMessageType(messageType);
         }
 
-        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted();
+        if (IAxelarGMPGatewayWithToken(gatewayAddress).isCommandExecuted(commandId)) revert AlreadyExecuted();
 
         address expressExecutor = msg.sender;
         bytes32 payloadHash = keccak256(payload);
@@ -622,24 +623,8 @@ contract InterchainTokenService is
         }
     }
 
-    /**
-     * @notice Executes operations based on the payload and selector.
-     * @param commandId The unique message id.
-     * @param sourceChain The chain where the transaction originates from.
-     * @param sourceAddress The address of the remote ITS where the transaction originates from.
-     * @param payload The encoded data payload for the transaction.
-     */
-    function execute(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload
-    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
-        bytes32 payloadHash = keccak256(payload);
-
-        if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
-
-        _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
+    function getGatewayAddress() external view returns (IAxelarGMPGatewayWithToken) {
+        return IAxelarGMPGatewayWithToken(gatewayAddress);
     }
 
     /**
@@ -686,17 +671,6 @@ contract InterchainTokenService is
         expressExecute(commandId, sourceChain, sourceAddress, payload);
     }
 
-    function executeWithToken(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata tokenSymbol,
-        uint256 amount
-    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
-        _executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount);
-    }
-
     /**
      * @notice Check that the tokenId from the payload is a token that is registered in the gateway with the proper tokenSymbol, with the right amount from the payload.
      * Also check that the amount in the payload matches the one for the call.
@@ -707,7 +681,7 @@ contract InterchainTokenService is
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
+        if (validTokenAddress(tokenId) != IAxelarGMPGatewayWithToken(gatewayAddress).tokenAddresses(tokenSymbol) || amount != amountInPayload)
             revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
@@ -871,6 +845,16 @@ contract InterchainTokenService is
         if (!success) revert GatewayCallFailed(returnData);
     }
 
+    function callContractWithToken(
+        string calldata destinationChain,
+        string calldata contractAddress,
+        bytes calldata payload,
+        string calldata symbol,
+        uint256 amount
+    ) external override {
+        // do nothing ?
+    }
+
     /**
      * @dev Get the params for the cross-chain message, taking routing via ITS Hub into account.
      */
@@ -903,7 +887,7 @@ contract InterchainTokenService is
         string calldata sourceAddress,
         bytes memory payload,
         bytes32 payloadHash
-    ) internal {
+    ) internal override whenNotPaused {
         uint256 messageType;
         string memory originalSourceChain;
         (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
@@ -927,12 +911,8 @@ contract InterchainTokenService is
         bytes memory payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) internal {
+    ) internal override whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
-
-        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
-            revert NotApprovedByGateway();
-
         uint256 messageType;
         string memory originalSourceChain;
         (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
