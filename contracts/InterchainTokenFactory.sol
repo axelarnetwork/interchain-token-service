@@ -40,7 +40,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
 
         chainNameHash = interchainTokenService.chainNameHash();
-        gateway = interchainTokenService.getGatewayAddress();
+        gateway = interchainTokenService.gateway();
     }
 
     /**

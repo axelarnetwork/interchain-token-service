@@ -621,10 +621,6 @@ contract InterchainTokenService is
         }
     }
 
-    function getGatewayAddress() external view returns (IAxelarGMPGatewayWithToken) {
-        return IAxelarGMPGatewayWithToken(gatewayAddress);
-    }
-
     /**
      * @notice Returns the amount of token that this call is worth.
      * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
