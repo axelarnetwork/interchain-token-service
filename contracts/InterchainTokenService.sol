@@ -4,9 +4,7 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
-import { AxelarGMPExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarGMPExecutable.sol';
 import { AxelarGMPExecutableWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarGMPExecutableWithToken.sol';
-import { IAxelarGMPExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPExecutable.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
