@@ -847,16 +847,6 @@ contract InterchainTokenService is
         if (!success) revert GatewayCallFailed(returnData);
     }
 
-    function callContractWithToken(
-        string calldata destinationChain,
-        string calldata contractAddress,
-        bytes calldata payload,
-        string calldata symbol,
-        uint256 amount
-    ) external override {
-        // do nothing ?
-    }
-
     /**
      * @dev Get the params for the cross-chain message, taking routing via ITS Hub into account.
      */
