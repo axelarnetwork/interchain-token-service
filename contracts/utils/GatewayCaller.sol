@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
-import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
 import { IGatewayCaller } from '../interfaces/IGatewayCaller.sol';
 
 /**
@@ -11,7 +11,7 @@ import { IGatewayCaller } from '../interfaces/IGatewayCaller.sol';
  * @dev This contract is used to handle cross-chain ITS calls via the Axelar gateway.
  */
 contract GatewayCaller is IGatewayCaller {
-    IAxelarGateway public immutable gateway;
+    IAxelarGMPGatewayWithToken public immutable gateway;
     IAxelarGasService public immutable gasService;
 
     /**
@@ -20,7 +20,7 @@ contract GatewayCaller is IGatewayCaller {
      * @param gasService_ The address of the AxelarGasService contract
      */
     constructor(address gateway_, address gasService_) {
-        gateway = IAxelarGateway(gateway_);
+        gateway = IAxelarGMPGatewayWithToken(gateway_);
         gasService = IAxelarGasService(gasService_);
     }
 

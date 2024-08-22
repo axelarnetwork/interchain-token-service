@@ -51,8 +51,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         return CONTRACT_ID;
     }
 
-    function _setup(bytes calldata params) internal override {
-    }
+    function _setup(bytes calldata params) internal override {}
 
     /**
      * @notice Calculates the salt for an interchain token.

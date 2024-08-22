@@ -7,7 +7,7 @@ import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contr
 import { AxelarGMPExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarGMPExecutable.sol';
 import { AxelarGMPExecutableWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarGMPExecutableWithToken.sol';
 import { IAxelarGMPExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPExecutable.sol';
-import { GMPExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/GMPExpressExecutorTracker.sol';
+import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
@@ -40,8 +40,8 @@ contract InterchainTokenService is
     Multicall,
     Create3AddressFixed,
     InterchainAddressTracker,
+    ExpressExecutorTracker,
     AxelarGMPExecutableWithToken,
-    GMPExpressExecutorTracker,
     IInterchainTokenService
 {
     using AddressBytes for bytes;
@@ -681,8 +681,10 @@ contract InterchainTokenService is
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if (validTokenAddress(tokenId) != IAxelarGMPGatewayWithToken(gatewayAddress).tokenAddresses(tokenSymbol) || amount != amountInPayload)
-            revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
+        if (
+            validTokenAddress(tokenId) != IAxelarGMPGatewayWithToken(gatewayAddress).tokenAddresses(tokenSymbol) ||
+            amount != amountInPayload
+        ) revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
     /**
@@ -885,20 +887,21 @@ contract InterchainTokenService is
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
-        bytes memory payload,
-        bytes32 payloadHash
+        bytes calldata payload
     ) internal override whenNotPaused {
+        bytes32 payloadHash = keccak256(payload);
         uint256 messageType;
         string memory originalSourceChain;
-        (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
+        bytes memory originalPayload;
+        (messageType, originalSourceChain, originalPayload) = _getExecuteParams(sourceChain, payload);
 
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
-            _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, payload);
+            _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, originalPayload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
-            _processDeployTokenManagerPayload(payload);
+            _processDeployTokenManagerPayload(originalPayload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
-            _processDeployInterchainTokenPayload(payload);
+            _processDeployInterchainTokenPayload(originalPayload);
         } else {
             revert InvalidMessageType(messageType);
         }
@@ -908,25 +911,26 @@ contract InterchainTokenService is
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
-        bytes memory payload,
+        bytes calldata payload,
         string calldata tokenSymbol,
         uint256 amount
     ) internal override whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
         uint256 messageType;
         string memory originalSourceChain;
-        (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
+        bytes memory originalPayload;
+        (messageType, originalSourceChain, originalPayload) = _getExecuteParams(sourceChain, payload);
 
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidMessageType(messageType);
         }
 
-        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
+        _checkPayloadAgainstGatewayData(originalPayload, tokenSymbol, amount);
 
         // slither-disable-next-line reentrancy-events
         address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
 
-        _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, payload);
+        _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, originalPayload);
     }
 
     function _getMessageType(bytes memory payload) internal pure returns (uint256 messageType) {
