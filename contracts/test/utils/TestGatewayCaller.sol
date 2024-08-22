@@ -3,8 +3,9 @@
 pragma solidity ^0.8.0;
 
 contract TestGatewayCaller {
+    error delegatecallFailed();
+
     function delegatecall(bytes memory) external pure returns (bool, bytes memory) {
-        // solhint-disable-next-line reason-string
-        revert();
+        revert delegatecallFailed();
     }
 }

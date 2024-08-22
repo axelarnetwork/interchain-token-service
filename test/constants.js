@@ -21,7 +21,7 @@ const FLOW_LIMITER_ROLE = 2;
 // Chain name for ITS Hub chain
 const ITS_HUB_CHAIN_NAME = 'Axelarnet';
 const ITS_HUB_ROUTING_IDENTIFIER = 'hub';
-const itsHubAddress = 'axelar1xyz';
+const ITS_HUB_ADDRESS = 'axelar1xyz';
 
 module.exports = {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
@@ -41,5 +41,5 @@ module.exports = {
     FLOW_LIMITER_ROLE,
     ITS_HUB_CHAIN_NAME,
     ITS_HUB_ROUTING_IDENTIFIER,
-    itsHubAddress,
+    ITS_HUB_ADDRESS,
 };

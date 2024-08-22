@@ -138,51 +138,10 @@ async function deployAll(
     };
 }
 
-async function deployWithTestGatewayCaller(
-    wallet,
-    chainName,
-    evmChains = [],
-    gateway,
-    gasService,
-    tokenManagerDeployer,
-    interchainTokenDeployer,
-    tokenHandler,
-    deploymentKey = 'InterchainTokenService',
-    factoryDeploymentKey = deploymentKey + 'Factory',
-) {
-    const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
-        .deploy()
-        .then((d) => d.deployed());
-
-    const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-    const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
-    const gatewayCaller = await deployContract(wallet, 'TestGatewayCaller');
-    const interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey);
-
-    const service = await deployInterchainTokenService(
-        wallet,
-        create3Deployer.address,
-        tokenManagerDeployer.address,
-        interchainTokenDeployer.address,
-        gateway.address,
-        gasService.address,
-        interchainTokenFactoryAddress,
-        tokenManager.address,
-        tokenHandler.address,
-        gatewayCaller.address,
-        chainName,
-        evmChains,
-        deploymentKey,
-    );
-
-    return service;
-}
-
 module.exports = {
     deployContract,
     deployMockGateway,
     deployGasService,
     deployInterchainTokenService,
     deployAll,
-    deployWithTestGatewayCaller,
 };
