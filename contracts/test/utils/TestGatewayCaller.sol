@@ -3,9 +3,9 @@
 pragma solidity ^0.8.0;
 
 contract TestGatewayCaller {
-    error delegatecallFailed();
+    error DelegatecallFailed();
 
     function delegatecall(bytes memory) external pure returns (bool, bytes memory) {
-        revert delegatecallFailed();
+        revert DelegatecallFailed();
     }
 }
