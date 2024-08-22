@@ -6,10 +6,6 @@ const { ethers, network, config } = require('hardhat');
 const { expect } = require('chai');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
 
-// Chain name for ITS Hub chain
-const itsHubChainName = 'Axelarnet';
-const itsHubIdentifier = 'hub';
-
 function getRandomBytes32() {
     return keccak256(defaultAbiCoder.encode(['uint256'], [Math.floor(new Date().getTime() * Math.random())]));
 }
@@ -204,6 +200,4 @@ module.exports = {
     gasReporter,
     getEVMVersion,
     getContractJSON,
-    itsHubChainName,
-    itsHubIdentifier,
 };
