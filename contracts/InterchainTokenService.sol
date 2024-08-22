@@ -37,8 +37,8 @@ contract InterchainTokenService is
     Pausable,
     Multicall,
     Create3AddressFixed,
-    InterchainAddressTracker,
     ExpressExecutorTracker,
+    InterchainAddressTracker,
     AxelarGMPExecutableWithToken,
     IInterchainTokenService
 {

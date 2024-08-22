@@ -13,8 +13,6 @@ import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 import { IOperator } from './IOperator.sol';
 import { IAddressTracker } from './IAddressTracker.sol';
 
-import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
-
 /**
  * @title IInterchainTokenService Interface
  * @notice Interface for the Interchain Token Service
