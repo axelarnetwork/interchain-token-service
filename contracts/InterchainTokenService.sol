@@ -22,7 +22,6 @@ import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 
 import { Operator } from './utils/Operator.sol';
-import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
 
 /**
  * @title The Interchain Token Service
@@ -39,8 +38,8 @@ contract InterchainTokenService is
     Create3AddressFixed,
     ExpressExecutorTracker,
     InterchainAddressTracker,
-    AxelarGMPExecutableWithToken,
-    IInterchainTokenService
+    IInterchainTokenService,
+    AxelarGMPExecutableWithToken
 {
     using AddressBytes for bytes;
     using AddressBytes for address;
@@ -382,7 +381,7 @@ contract InterchainTokenService is
             revert InvalidExpressMessageType(messageType);
         }
 
-        if (IAxelarGMPGatewayWithToken(gatewayAddress).isCommandExecuted(commandId)) revert AlreadyExecuted();
+        if (gateway().isCommandExecuted(commandId)) revert AlreadyExecuted();
 
         address expressExecutor = msg.sender;
         bytes32 payloadHash = keccak256(payload);
@@ -676,7 +675,7 @@ contract InterchainTokenService is
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
         if (
-            validTokenAddress(tokenId) != IAxelarGMPGatewayWithToken(gatewayAddress).tokenAddresses(tokenSymbol) ||
+            validTokenAddress(tokenId) != gateway().tokenAddresses(tokenSymbol) ||
             amount != amountInPayload
         ) revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
@@ -872,7 +871,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) internal override whenNotPaused {
+    ) internal override {
         bytes32 payloadHash = keccak256(payload);
         uint256 messageType;
         string memory originalSourceChain;
@@ -898,7 +897,7 @@ contract InterchainTokenService is
         bytes calldata payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) internal override whenNotPaused {
+    ) internal override {
         bytes32 payloadHash = keccak256(payload);
         uint256 messageType;
         string memory originalSourceChain;

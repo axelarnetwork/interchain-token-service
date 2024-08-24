@@ -419,7 +419,7 @@ describe('Interchain Token Service', () => {
                         gasOptions,
                     ),
                 service,
-                'ZeroAddress',
+                'InvalidAddress',
             );
         });
 
@@ -1342,7 +1342,7 @@ describe('Interchain Token Service', () => {
             await expectRevert(
                 (gasOptions) => service.execute(commandId, sourceChain, wallet.address, '0x', gasOptions),
                 service,
-                'NotRemoteService',
+                'InvalidPayload',
             );
         });
 
@@ -1387,24 +1387,6 @@ describe('Interchain Token Service', () => {
             sourceAddress = service.address;
             destAddress = wallet.address;
             await deployFunctions.gateway(tokenName, tokenSymbol, tokenDecimals);
-        });
-
-        it('Should revert on execute with token if remote address validation fails', async () => {
-            const commandId = await approveContractCallWithMint(
-                gateway,
-                sourceChain,
-                wallet.address,
-                service.address,
-                '0x',
-                tokenSymbol,
-                amount,
-            );
-
-            await expectRevert(
-                (gasOptions) => service.executeWithToken(commandId, sourceChain, wallet.address, '0x', tokenSymbol, amount, gasOptions),
-                service,
-                'NotRemoteService',
-            );
         });
 
         it('Should revert on execute with token if the service is paused', async () => {

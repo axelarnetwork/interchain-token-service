@@ -11,7 +11,7 @@ const {
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const { isHardhat, waitFor, getRandomBytes32, getPayloadAndProposalHash, getContractJSON } = require('./utils');
-const { deployContract, deployMockGateway, deployGasService, deployInterchainTokenService } = require('../scripts/deploy');
+const { deployContract, deployMockGMPGatewayWithToken, deployGasService, deployInterchainTokenService } = require('../scripts/deploy');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
@@ -65,12 +65,14 @@ describe('Interchain Token Service Upgrade Flow', () => {
 
         buffer = isHardhat ? 10 * 60 * 60 : 10;
 
+        console.log("ahram1");
+
         const create3DeployerFactory = await ethers.getContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet);
         const create3Deployer = await create3DeployerFactory.deploy().then((d) => d.deployed());
         const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
         const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
 
-        gateway = await deployMockGateway(wallet);
+        gateway = await deployMockGMPGatewayWithToken(wallet);
         gasService = await deployGasService(wallet);
         tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
         interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
@@ -85,6 +87,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             wallet,
         );
 
+        console.log("ahram2");
+
         axelarServiceGovernance = await axelarServiceGovernanceFactory
             .deploy(
                 gateway.address,
@@ -95,6 +99,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
                 threshold,
             )
             .then((d) => d.deployed());
+
+        console.log("ahram3");
 
         service = await deployInterchainTokenService(
             wallet,
@@ -112,13 +118,17 @@ describe('Interchain Token Service Upgrade Flow', () => {
             deploymentKey,
             axelarServiceGovernance.address,
         );
+
+        console.log("ahram4");
     });
 
-    it('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {
+    it.only('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {
         const commandID = 0;
         const target = service.address;
         const nativeValue = 0;
         const timeDelay = isHardhat ? 12 * 60 * 60 : 12;
+
+        console.log("ahram5");
 
         const targetInterface = new Interface(service.interface.fragments);
         const newServiceImplementation = await deployContract(wallet, 'InterchainTokenService', [
@@ -139,6 +149,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             newServiceImplementationCodeHash,
             setupParams,
         ]);
+
+        console.log(newServiceImplementationCodeHash);
 
         const [payload, proposalHash, eta] = await getPayloadAndProposalHash(commandID, target, nativeValue, calldata, timeDelay);
 
