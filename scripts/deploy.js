@@ -14,8 +14,8 @@ async function deployContract(wallet, contractName, args = []) {
     return contract;
 }
 
-async function deployMockGMPGatewayWithToken(wallet) {
-    const gateway = await deployContract(wallet, 'MockGMPGatewayWithToken');
+async function deployMockGateway(wallet) {
+    const gateway = await deployContract(wallet, 'MockGateway');
     return gateway;
 }
 
@@ -87,7 +87,7 @@ async function deployAll(
     const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
         .deploy()
         .then((d) => d.deployed());
-    const gateway = await deployMockGMPGatewayWithToken(wallet);
+    const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
 
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
@@ -140,7 +140,7 @@ async function deployAll(
 
 module.exports = {
     deployContract,
-    deployMockGMPGatewayWithToken,
+    deployMockGateway,
     deployGasService,
     deployInterchainTokenService,
     deployAll,

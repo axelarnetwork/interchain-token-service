@@ -11,7 +11,7 @@ const {
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const { isHardhat, waitFor, getRandomBytes32, getPayloadAndProposalHash, getContractJSON } = require('./utils');
-const { deployContract, deployMockGMPGatewayWithToken, deployGasService, deployInterchainTokenService } = require('../scripts/deploy');
+const { deployContract, deployMockGateway, deployGasService, deployInterchainTokenService } = require('../scripts/deploy');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
@@ -72,7 +72,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
         const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
 
-        gateway = await deployMockGMPGatewayWithToken(wallet);
+        gateway = await deployMockGateway(wallet);
         gasService = await deployGasService(wallet);
         tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
         interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
@@ -122,7 +122,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         console.log("ahram4");
     });
 
-    it.only('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {
+    it('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {
         const commandID = 0;
         const target = service.address;
         const nativeValue = 0;
