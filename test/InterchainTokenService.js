@@ -1395,6 +1395,22 @@ describe('Interchain Token Service', () => {
             await deployFunctions.gateway(tokenName, tokenSymbol, tokenDecimals);
         });
 
+        it('Should revert on execute with token if mint token fails', async () => {
+            const commandId = await approveContractCallWithMint(
+                gateway,
+                sourceChain,
+                wallet.address,
+                service.address,
+                '0x',
+                tokenSymbol,
+                amount,
+            );
+
+            await expect(service.executeWithToken(commandId, sourceChain, wallet.address, '0x', tokenSymbol, amount ))
+                .to.be.revertedWithCustomError(gateway, 'MintFailed')
+                .withArgs('TS');
+        });
+
         it('Should revert on execute with token if the service is paused', async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
