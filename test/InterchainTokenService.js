@@ -495,6 +495,12 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should return the correct contract id', async () => {
+            const expectedContractid = keccak256(toUtf8Bytes('interchain-token-service'));
+            const contractId = await service.contractId();
+            expect(contractId).to.eq(expectedContractid);
+        });
+
         it('Should return the token manager implementation', async () => {
             const tokenManagerImplementation = await service.tokenManagerImplementation(getRandomInt(1000));
             expect(tokenManagerImplementation).to.eq(tokenManager.address);
@@ -1402,11 +1408,9 @@ describe('Interchain Token Service', () => {
                 amount,
             );
 
-            await expectRevert(
-                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, '0x', tokenSymbol, amount, gasOptions),
-                service,
-                'Pause',
-            );
+            await expect(service.executeWithToken(commandId, sourceChain, sourceAddress, '0x', tokenSymbol, amount))
+                .to.be.revertedWithCustomError(gateway, 'MintFailed')
+                .withArgs('TS');
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });

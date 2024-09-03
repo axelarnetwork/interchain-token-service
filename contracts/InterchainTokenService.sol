@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
+import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
 import { AxelarGMPExecutableWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarGMPExecutableWithToken.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
@@ -381,7 +382,7 @@ contract InterchainTokenService is
             revert InvalidExpressMessageType(messageType);
         }
 
-        if (gateway().isCommandExecuted(commandId)) revert AlreadyExecuted();
+        if (gatewayWithToken().isCommandExecuted(commandId)) revert AlreadyExecuted();
 
         address expressExecutor = msg.sender;
         bytes32 payloadHash = keccak256(payload);
@@ -674,10 +675,8 @@ contract InterchainTokenService is
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if (
-            validTokenAddress(tokenId) != gateway().tokenAddresses(tokenSymbol) ||
-            amount != amountInPayload
-        ) revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
+        if (validTokenAddress(tokenId) != gatewayWithToken().tokenAddresses(tokenSymbol) || amount != amountInPayload)
+            revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
     /**
@@ -871,7 +870,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) internal override {
+    ) internal override whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
         uint256 messageType;
         string memory originalSourceChain;
@@ -897,7 +896,7 @@ contract InterchainTokenService is
         bytes calldata payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) internal override {
+    ) internal override whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
         uint256 messageType;
         string memory originalSourceChain;
@@ -1203,5 +1202,13 @@ contract InterchainTokenService is
         if (expressExecutor != address(0)) {
             emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
         }
+    }
+
+    /**
+     * @notice Returns the address of the IAxelarGMPGatewayWithToken contract.
+     * @return The Axelar GMP Gateway with Token instance.
+     */
+    function getGatewayWithToken() external view returns (IAxelarGMPGatewayWithToken) {
+        return IAxelarGMPGatewayWithToken(gatewayAddress);
     }
 }

@@ -19,7 +19,7 @@ const Create3Deployer = getContractJSON('Create3Deployer');
 const MINT_BURN = 4;
 
 describe('Interchain Token Service Upgrade Flow', () => {
-    let wallet, otherWallet, signer;
+    let wallet, otherWallet, multisig;
     let service, gateway, gasService;
     let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler, gatewayCaller;
     let interchainTokenFactoryAddress;
@@ -31,7 +31,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
     let buffer;
 
     const governanceChain = 'Governance Chain';
-    const threshold = 2;
+    const minimumTimeDelay = isHardhat ? 10 * 60 * 60 : 15;
     const deploymentKey = 'InterchainTokenService';
     const chainName = 'Test';
 
@@ -59,13 +59,10 @@ describe('Interchain Token Service Upgrade Flow', () => {
     }
 
     before(async () => {
-        [wallet, otherWallet, signer] = await ethers.getSigners();
-        const signers = [wallet, otherWallet, signer];
+        [wallet, otherWallet, multisig] = await ethers.getSigners();
         governanceAddress = otherWallet.address;
 
         buffer = isHardhat ? 10 * 60 * 60 : 10;
-
-        console.log("ahram1");
 
         const create3DeployerFactory = await ethers.getContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet);
         const create3Deployer = await create3DeployerFactory.deploy().then((d) => d.deployed());
@@ -87,20 +84,9 @@ describe('Interchain Token Service Upgrade Flow', () => {
             wallet,
         );
 
-        console.log("ahram2");
-
         axelarServiceGovernance = await axelarServiceGovernanceFactory
-            .deploy(
-                gateway.address,
-                governanceChain,
-                governanceAddress,
-                buffer,
-                signers.map((signer) => signer.address),
-                threshold,
-            )
+            .deploy(gateway.address, governanceChain, governanceAddress, minimumTimeDelay, multisig.address)
             .then((d) => d.deployed());
-
-        console.log("ahram3");
 
         service = await deployInterchainTokenService(
             wallet,
@@ -118,8 +104,6 @@ describe('Interchain Token Service Upgrade Flow', () => {
             deploymentKey,
             axelarServiceGovernance.address,
         );
-
-        console.log("ahram4");
     });
 
     it('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {
@@ -127,8 +111,6 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const target = service.address;
         const nativeValue = 0;
         const timeDelay = isHardhat ? 12 * 60 * 60 : 12;
-
-        console.log("ahram5");
 
         const targetInterface = new Interface(service.interface.fragments);
         const newServiceImplementation = await deployContract(wallet, 'InterchainTokenService', [
@@ -149,8 +131,6 @@ describe('Interchain Token Service Upgrade Flow', () => {
             newServiceImplementationCodeHash,
             setupParams,
         ]);
-
-        console.log(newServiceImplementationCodeHash);
 
         const [payload, proposalHash, eta] = await getPayloadAndProposalHash(commandID, target, nativeValue, calldata, timeDelay);
 
@@ -240,12 +220,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
             .to.emit(axelarServiceGovernance, 'MultisigApproved')
             .withArgs(proposalHash, target, calldata, nativeValue);
 
-        await axelarServiceGovernance
-            .connect(wallet)
-            .executeMultisigProposal(target, calldata, nativeValue)
-            .then((tx) => tx.wait);
-
-        await expect(axelarServiceGovernance.connect(otherWallet).executeMultisigProposal(target, calldata, nativeValue))
+        await expect(axelarServiceGovernance.connect(multisig).executeMultisigProposal(target, calldata, nativeValue))
             .to.emit(axelarServiceGovernance, 'MultisigExecuted')
             .withArgs(proposalHash, target, calldata, nativeValue)
             .and.to.emit(service, 'Upgraded')

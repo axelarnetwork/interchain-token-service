@@ -6,7 +6,6 @@ import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
-
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
@@ -40,7 +39,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
 
         chainNameHash = interchainTokenService.chainNameHash();
-        gateway = interchainTokenService.gateway();
+        gateway = interchainTokenService.getGatewayWithToken();
     }
 
     /**
