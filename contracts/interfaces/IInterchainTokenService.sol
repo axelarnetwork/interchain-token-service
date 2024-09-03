@@ -95,6 +95,10 @@ interface IInterchainTokenService is
     );
     event InterchainTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
 
+    /**
+     * @notice Returns the address of the IAxelarGMPGatewayWithToken contract.
+     * @return The Axelar GMP Gateway with Token instance.
+     */
     function getGatewayWithToken() external view returns (IAxelarGMPGatewayWithToken);
 
     /**
