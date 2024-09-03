@@ -121,7 +121,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals for the token.
      * @param initialSupply The amount of tokens to mint initially (can be zero).
-     * @param minter The address to receive the initially minted tokens.
+     * @param minter The address to receive the mintership and operatorship of the token.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployInterchainToken(
