@@ -29,8 +29,11 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@axelar-network/axelar-cgp-solidity": "6.2.1",
-    "@axelar-network/axelar-gmp-sdk-solidity": "5.6.4"
+    "@axelar-network/axelar-cgp-solidity": "file:../axelar-cgp-solidity",
+    "@axelar-network/axelar-gmp-sdk-solidity": "file:../axelar-gmp-sdk-solidity",
+    "build": "^0.1.4",
+    "npm": "^10.8.3",
+    "run": "^1.5.0"
   },
   "devDependencies": {
     "@axelar-network/axelar-chains-config": "^1.2.0",
