@@ -419,7 +419,7 @@ describe('Interchain Token Service', () => {
                         gasOptions,
                     ),
                 service,
-                'InvalidAddress',
+                'ZeroAddress',
             );
         });
 
@@ -1348,7 +1348,7 @@ describe('Interchain Token Service', () => {
             await expectRevert(
                 (gasOptions) => service.execute(commandId, sourceChain, wallet.address, '0x', gasOptions),
                 service,
-                'InvalidPayload',
+                'NotRemoteService',
             );
         });
 
@@ -1406,9 +1406,11 @@ describe('Interchain Token Service', () => {
                 amount,
             );
 
-            await expect(service.executeWithToken(commandId, sourceChain, wallet.address, '0x', tokenSymbol, amount ))
-                .to.be.revertedWithCustomError(gateway, 'MintFailed')
-                .withArgs('TS');
+            await expectRevert(
+                (gasOptions) => service.executeWithToken(commandId, sourceChain, wallet.address, '0x', tokenSymbol, amount, gasOptions),
+                service,
+                'NotRemoteService',
+            );
         });
 
         it('Should revert on execute with token if the service is paused', async () => {
@@ -1424,9 +1426,11 @@ describe('Interchain Token Service', () => {
                 amount,
             );
 
-            await expect(service.executeWithToken(commandId, sourceChain, sourceAddress, '0x', tokenSymbol, amount))
-                .to.be.revertedWithCustomError(gateway, 'MintFailed')
-                .withArgs('TS');
+            await expectRevert(
+                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, '0x', tokenSymbol, amount, gasOptions),
+                service,
+                'Pause',
+            );
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });

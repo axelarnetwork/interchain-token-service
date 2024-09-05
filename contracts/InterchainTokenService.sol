@@ -4,14 +4,15 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
+import { IAxelarGMPGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGateway.sol';
 import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
-import { AxelarGMPExecutableWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executable/AxelarGMPExecutableWithToken.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Pausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Pausable.sol';
 import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/InterchainAddressTracker.sol';
+
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
@@ -21,7 +22,6 @@ import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainToken
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
-
 import { Operator } from './utils/Operator.sol';
 
 /**
@@ -39,12 +39,12 @@ contract InterchainTokenService is
     Create3AddressFixed,
     ExpressExecutorTracker,
     InterchainAddressTracker,
-    IInterchainTokenService,
-    AxelarGMPExecutableWithToken
+    IInterchainTokenService
 {
     using AddressBytes for bytes;
     using AddressBytes for address;
 
+    IAxelarGMPGatewayWithToken public immutable gatewayAddress;
     IAxelarGasService public immutable gasService;
     address public immutable interchainTokenFactory;
     bytes32 public immutable chainNameHash;
@@ -124,7 +124,7 @@ contract InterchainTokenService is
         address tokenManagerImplementation_,
         address tokenHandler_,
         address gatewayCaller_
-    ) AxelarGMPExecutableWithToken(gateway_) {
+    ) {
         if (
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
@@ -136,6 +136,7 @@ contract InterchainTokenService is
             gatewayCaller_ == address(0)
         ) revert ZeroAddress();
 
+        gatewayAddress = IAxelarGMPGatewayWithToken(gateway_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
@@ -382,7 +383,7 @@ contract InterchainTokenService is
             revert InvalidExpressMessageType(messageType);
         }
 
-        if (gatewayWithToken().isCommandExecuted(commandId)) revert AlreadyExecuted();
+        if (gatewayAddress.isCommandExecuted(commandId)) revert AlreadyExecuted();
 
         address expressExecutor = msg.sender;
         bytes32 payloadHash = keccak256(payload);
@@ -622,6 +623,26 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Executes operations based on the payload and selector.
+     * @param commandId The unique message id.
+     * @param sourceChain The chain where the transaction originates from.
+     * @param sourceAddress The address of the remote ITS where the transaction originates from.
+     * @param payload The encoded data payload for the transaction.
+     */
+    function execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+        bytes32 payloadHash = keccak256(payload);
+
+        if (!gatewayAddress.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
+
+        _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
+    }
+
+    /**
      * @notice Returns the amount of token that this call is worth.
      * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
      * @param sourceChain The source chain.
@@ -665,6 +686,17 @@ contract InterchainTokenService is
         expressExecute(commandId, sourceChain, sourceAddress, payload);
     }
 
+    function executeWithToken(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata tokenSymbol,
+        uint256 amount
+    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+        _executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount);
+    }
+
     /**
      * @notice Check that the tokenId from the payload is a token that is registered in the gateway with the proper tokenSymbol, with the right amount from the payload.
      * Also check that the amount in the payload matches the one for the call.
@@ -675,7 +707,7 @@ contract InterchainTokenService is
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if (validTokenAddress(tokenId) != gatewayWithToken().tokenAddresses(tokenSymbol) || amount != amountInPayload)
+        if (validTokenAddress(tokenId) != gatewayAddress.tokenAddresses(tokenSymbol) || amount != amountInPayload)
             revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
@@ -869,21 +901,20 @@ contract InterchainTokenService is
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
-        bytes calldata payload
-    ) internal override whenNotPaused {
-        bytes32 payloadHash = keccak256(payload);
+        bytes memory payload,
+        bytes32 payloadHash
+    ) internal {
         uint256 messageType;
         string memory originalSourceChain;
-        bytes memory originalPayload;
-        (messageType, originalSourceChain, originalPayload) = _getExecuteParams(sourceChain, payload);
+        (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
 
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
-            _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, originalPayload);
+            _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
-            _processDeployTokenManagerPayload(originalPayload);
+            _processDeployTokenManagerPayload(payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
-            _processDeployInterchainTokenPayload(originalPayload);
+            _processDeployInterchainTokenPayload(payload);
         } else {
             revert InvalidMessageType(messageType);
         }
@@ -893,26 +924,29 @@ contract InterchainTokenService is
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
-        bytes calldata payload,
+        bytes memory payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) internal override whenNotPaused {
+    ) internal {
         bytes32 payloadHash = keccak256(payload);
+
+        if (!gatewayAddress.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+            revert NotApprovedByGateway();
+
         uint256 messageType;
         string memory originalSourceChain;
-        bytes memory originalPayload;
-        (messageType, originalSourceChain, originalPayload) = _getExecuteParams(sourceChain, payload);
+        (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
 
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidMessageType(messageType);
         }
 
-        _checkPayloadAgainstGatewayData(originalPayload, tokenSymbol, amount);
+        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
 
         // slither-disable-next-line reentrancy-events
         address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
 
-        _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, originalPayload);
+        _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, payload);
     }
 
     function _getMessageType(bytes memory payload) internal pure returns (uint256 messageType) {
@@ -1204,11 +1238,7 @@ contract InterchainTokenService is
         }
     }
 
-    /**
-     * @notice Returns the address of the IAxelarGMPGatewayWithToken contract.
-     * @return The Axelar GMP Gateway with Token instance.
-     */
-    function getGatewayWithToken() external view returns (IAxelarGMPGatewayWithToken) {
-        return IAxelarGMPGatewayWithToken(gatewayAddress);
+    function gateway() external view override returns (IAxelarGMPGateway) {
+        return IAxelarGMPGateway(gatewayAddress);
     }
 }

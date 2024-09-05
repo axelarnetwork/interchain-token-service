@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
 import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarValuedExpressExecutable.sol';
 import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
@@ -94,12 +93,6 @@ interface IInterchainTokenService is
         uint8 decimals
     );
     event InterchainTokenIdClaimed(bytes32 indexed tokenId, address indexed deployer, bytes32 indexed salt);
-
-    /**
-     * @notice Returns the address of the IAxelarGMPGatewayWithToken contract.
-     * @return The Axelar GMP Gateway with Token instance.
-     */
-    function getGatewayWithToken() external view returns (IAxelarGMPGatewayWithToken);
 
     /**
      * @notice Returns the address of the token manager deployer contract.
