@@ -1395,7 +1395,7 @@ describe('Interchain Token Service', () => {
             await deployFunctions.gateway(tokenName, tokenSymbol, tokenDecimals);
         });
 
-        it('Should revert on execute with token if mint token fails', async () => {
+        it('Should revert on execute with token if remote address validation fails', async () => {
             const commandId = await approveContractCallWithMint(
                 gateway,
                 sourceChain,
