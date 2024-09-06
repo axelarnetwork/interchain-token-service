@@ -44,7 +44,7 @@ contract InterchainTokenService is
     using AddressBytes for bytes;
     using AddressBytes for address;
 
-    IAxelarGMPGatewayWithToken public immutable gatewayAddress;
+    IAxelarGMPGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
     address public immutable interchainTokenFactory;
     bytes32 public immutable chainNameHash;
@@ -136,7 +136,7 @@ contract InterchainTokenService is
             gatewayCaller_ == address(0)
         ) revert ZeroAddress();
 
-        gatewayAddress = IAxelarGMPGatewayWithToken(gateway_);
+        gateway = IAxelarGMPGateway(gateway_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
@@ -383,7 +383,7 @@ contract InterchainTokenService is
             revert InvalidExpressMessageType(messageType);
         }
 
-        if (gatewayAddress.isCommandExecuted(commandId)) revert AlreadyExecuted();
+        if (gateway.isCommandExecuted(commandId)) revert AlreadyExecuted();
 
         address expressExecutor = msg.sender;
         bytes32 payloadHash = keccak256(payload);
@@ -637,7 +637,7 @@ contract InterchainTokenService is
     ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
 
-        if (!gatewayAddress.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
+        if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
 
         _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
     }
@@ -707,7 +707,7 @@ contract InterchainTokenService is
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if (validTokenAddress(tokenId) != gatewayAddress.tokenAddresses(tokenSymbol) || amount != amountInPayload)
+        if (validTokenAddress(tokenId) != IAxelarGMPGatewayWithToken(address(gateway)).tokenAddresses(tokenSymbol) || amount != amountInPayload)
             revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
@@ -930,7 +930,7 @@ contract InterchainTokenService is
     ) internal {
         bytes32 payloadHash = keccak256(payload);
 
-        if (!gatewayAddress.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+        if (!IAxelarGMPGatewayWithToken(address(gateway)).validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
             revert NotApprovedByGateway();
 
         uint256 messageType;
@@ -1236,9 +1236,5 @@ contract InterchainTokenService is
         if (expressExecutor != address(0)) {
             emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
         }
-    }
-
-    function gateway() external view override returns (IAxelarGMPGateway) {
-        return IAxelarGMPGateway(gatewayAddress);
     }
 }
