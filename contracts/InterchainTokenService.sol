@@ -45,11 +45,12 @@ contract InterchainTokenService is
     using AddressBytes for address;
 
     /**
-     * @dev Axelar GMP Gateway for cross-chain messaging.
-     * Two available approaches:
-     * 1. Pure GMP: Uses IAxelarGMPGateway to handle messaging without token transfers, compatible across Amplifier chains.
-     * 2. GMP with Token: Legacy functionality. Explicitly cast to IAxelarGMPGatewayWithToken when needed.
-     *    This approach only functions on chains that rely on Axelar consensus Connection.
+     * @dev There are two types of Axelar Gateways for cross-chain messaging:
+     * 1. Cross-chain messaging (GMP): The Axelar Gateway allows sending cross-chain messages.
+     *    This is compatible across both Amplifier and consensus chains. IAxelarGMPGateway interface exposes this functionality.
+     * 2. Cross-chain messaging with Gateway Token: The AxelarGateway on legacy consensus EVM connections supports this (via callContractWithToken)
+     *    but not Amplifier chains. The gateway is cast to IAxelarGMPGatewayWithToken when gateway tokens need to be handled.
+     *    ITS deployments on Amplifier chains will revert when this functionality is used.
      */
     IAxelarGMPGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
@@ -714,10 +715,8 @@ contract InterchainTokenService is
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if (
-            validTokenAddress(tokenId) != IAxelarGMPGatewayWithToken(address(gateway)).tokenAddresses(tokenSymbol) ||
-            amount != amountInPayload
-        ) revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
+        if (validTokenAddress(tokenId) != gatewayWithToken().tokenAddresses(tokenSymbol) || amount != amountInPayload)
+            revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
     /**
@@ -939,16 +938,8 @@ contract InterchainTokenService is
     ) internal {
         bytes32 payloadHash = keccak256(payload);
 
-        if (
-            !IAxelarGMPGatewayWithToken(address(gateway)).validateContractCallAndMint(
-                commandId,
-                sourceChain,
-                sourceAddress,
-                payloadHash,
-                tokenSymbol,
-                amount
-            )
-        ) revert NotApprovedByGateway();
+        if (!gatewayWithToken().validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+            revert NotApprovedByGateway();
 
         uint256 messageType;
         string memory originalSourceChain;
@@ -1253,5 +1244,9 @@ contract InterchainTokenService is
         if (expressExecutor != address(0)) {
             emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
         }
+    }
+
+    function gatewayWithToken() internal view returns (IAxelarGMPGatewayWithToken) {
+        return IAxelarGMPGatewayWithToken(address(gateway));
     }
 }
