@@ -44,6 +44,13 @@ contract InterchainTokenService is
     using AddressBytes for bytes;
     using AddressBytes for address;
 
+    /**
+     * @dev Axelar GMP Gateway for cross-chain messaging.
+     * Two available approaches:
+     * 1. Pure GMP: Uses IAxelarGMPGateway to handle messaging without token transfers, compatible across Amplifier chains.
+     * 2. GMP with Token: Legacy functionality. Explicitly cast to IAxelarGMPGatewayWithToken when needed.
+     *    This approach only functions on chains that rely on Axelar consensus Connection.
+     */
     IAxelarGMPGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
     address public immutable interchainTokenFactory;
