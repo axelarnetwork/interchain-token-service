@@ -714,8 +714,10 @@ contract InterchainTokenService is
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if (validTokenAddress(tokenId) != IAxelarGMPGatewayWithToken(address(gateway)).tokenAddresses(tokenSymbol) || amount != amountInPayload)
-            revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
+        if (
+            validTokenAddress(tokenId) != IAxelarGMPGatewayWithToken(address(gateway)).tokenAddresses(tokenSymbol) ||
+            amount != amountInPayload
+        ) revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
     /**
@@ -937,8 +939,16 @@ contract InterchainTokenService is
     ) internal {
         bytes32 payloadHash = keccak256(payload);
 
-        if (!IAxelarGMPGatewayWithToken(address(gateway)).validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
-            revert NotApprovedByGateway();
+        if (
+            !IAxelarGMPGatewayWithToken(address(gateway)).validateContractCallAndMint(
+                commandId,
+                sourceChain,
+                sourceAddress,
+                payloadHash,
+                tokenSymbol,
+                amount
+            )
+        ) revert NotApprovedByGateway();
 
         uint256 messageType;
         string memory originalSourceChain;
