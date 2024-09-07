@@ -270,16 +270,6 @@ describe('InterchainTokenFactory', () => {
             expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
         };
 
-        it('Should revert an interchain token deployment with the minter as interchainTokenService', async () => {
-            const salt = keccak256('0x1245');
-            await expectRevert(
-                (gasOptions) => tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, service.address, gasOptions),
-                tokenFactory,
-                'InvalidMinter',
-                [service.address],
-            );
-        });
-
         it('Should register a token if the mint amount is zero', async () => {
             const salt = keccak256('0x1234');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);

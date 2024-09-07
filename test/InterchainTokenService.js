@@ -705,6 +705,19 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
+        it('Should revert an interchain token deployment', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, service.address, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                service,
+                'InvalidMinter',
+                [service.address],
+            );
+        });
+
         it('Should revert on remote interchain token deployment if destination chain is not trusted', async () => {
             await expectRevert(
                 (gasOptions) =>

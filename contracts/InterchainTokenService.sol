@@ -1101,6 +1101,7 @@ contract InterchainTokenService is
 
         address minter;
         if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
+        if (minter == address(this)) revert InvalidMinter(minter);
 
         (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
             abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, salt, tokenId, minter, name, symbol, decimals)
