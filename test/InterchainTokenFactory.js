@@ -363,20 +363,6 @@ describe('InterchainTokenFactory', () => {
             await checkRoles(tokenManager, minter);
         });
 
-        it('Should revert a remote interchain token deployment with the minter as interchainTokenService', async () => {
-            const gasValue = 1234;
-            await expectRevert(
-                (gasOptions) =>
-                    tokenFactory.deployRemoteInterchainToken(chainName, salt, service.address, destinationChain, gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
-                tokenFactory,
-                'InvalidMinter',
-                [service.address],
-            );
-        });
-
         it('Should initiate a remote interchain token deployment with the same minter', async () => {
             const gasValue = 1234;
             const mintAmount = 5678;
@@ -422,6 +408,17 @@ describe('InterchainTokenFactory', () => {
                 tokenFactory,
                 'NotMinter',
                 [otherWallet.address],
+            );
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory.deployRemoteInterchainToken(chainName, salt, service.address, destinationChain, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                tokenFactory,
+                'InvalidMinter',
+                [service.address],
             );
 
             await expect(
