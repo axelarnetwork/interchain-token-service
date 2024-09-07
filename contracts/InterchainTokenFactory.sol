@@ -140,6 +140,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         if (initialSupply > 0) {
             minterBytes = address(this).toBytes();
         } else if (minter != address(0)) {
+            if(minter == address(interchainTokenService)) revert InvalidMinter(minter);
             minterBytes = minter.toBytes();
         }
 
@@ -202,6 +203,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
             if (minter != address(0)) {
                 if (!token.isMinter(minter)) revert NotMinter(minter);
+                if(minter == address(interchainTokenService)) revert InvalidMinter(minter);
 
                 minter_ = minter.toBytes();
             }

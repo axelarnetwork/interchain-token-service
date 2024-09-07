@@ -14,6 +14,7 @@ import { IInterchainTokenService } from './IInterchainTokenService.sol';
 interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error ZeroAddress();
     error InvalidChainName();
+    error InvalidMinter(address minter);
     error NotMinter(address minter);
     error NotOperator(address operator);
     error GatewayToken(address tokenAddress);
