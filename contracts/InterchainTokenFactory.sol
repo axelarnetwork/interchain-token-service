@@ -123,7 +123,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param initialSupply The amount of tokens to mint initially (can be zero), allocated to the msg.sender.
      * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If it is set to `address(0)`,
      * the additional minter isn't set, and can't be added later. This allows creating tokens that are managed only by ITS, reducing trust assumptions.
-     * Reverts if the minter is interchainTokenService address (invalid).
+     * Reverts if the minter is the ITS address since it's already added as a minter.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployInterchainToken(
@@ -142,6 +142,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             minterBytes = address(this).toBytes();
         } else if (minter != address(0)) {
             if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
+
             minterBytes = minter.toBytes();
         }
 
@@ -167,8 +168,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param originalChainName The name of the chain where the token originally exists.
      * @param salt The unique salt for deploying the token.
-     * @param minter The address to distribute the token on the destination chain. If the address is zero,
-     * no additional minter is set on the token. Reverts if the minter is not authorized or interchainTokenService address (invalid).
+     * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
+     * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
