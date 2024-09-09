@@ -51,7 +51,6 @@ interface IInterchainTokenService is
     error InvalidGatewayTokenTransfer(bytes32 tokenId, bytes payload, string tokenSymbol, uint256 amount);
     error InvalidPayload();
     error GatewayCallFailed(bytes data);
-    error InvalidMinter(address minter);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
