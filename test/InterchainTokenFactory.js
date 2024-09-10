@@ -101,6 +101,20 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
+        it('Should revert when the original chain name and the destination chain name are the same', async () => {
+            const gasValue = 1234;
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory.deployRemoteCanonicalInterchainToken(destinationChain, token.address, destinationChain, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                tokenFactory,
+                'CannotDeployRemotely',
+                [destinationChain],
+            );
+        });
+
         it('Should initiate a remote interchain token deployment', async () => {
             const gasValue = 1234;
             const payload = defaultAbiCoder.encode(
@@ -408,6 +422,17 @@ describe('InterchainTokenFactory', () => {
                 tokenFactory,
                 'NotMinter',
                 [otherWallet.address],
+            );
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory.deployRemoteInterchainToken(destinationChain, salt, otherWallet.address, destinationChain, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                tokenFactory,
+                'CannotDeployRemotely',
+                [destinationChain],
             );
 
             await expectRevert(
