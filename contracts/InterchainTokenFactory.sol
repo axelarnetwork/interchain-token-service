@@ -191,9 +191,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             if (bytes(originalChainName).length == 0) {
                 chainNameHash_ = chainNameHash;
             } else {
-                chainNameHash_ = keccak256(bytes(originalChainName));
+                revert NotSupported();
             }
-            if (chainNameHash_ == keccak256(bytes(destinationChain))) revert CannotDeployRemotely(destinationChain);
 
             address sender = msg.sender;
             salt = interchainTokenSalt(chainNameHash_, sender, salt);
@@ -284,9 +283,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             if (bytes(originalChain).length == 0) {
                 chainNameHash_ = chainNameHash;
             } else {
-                chainNameHash_ = keccak256(bytes(originalChain));
+                revert NotSupported();
             }
-            if (chainNameHash_ == keccak256(bytes(destinationChain))) revert CannotDeployRemotely(destinationChain);
 
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
             salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);

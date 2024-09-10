@@ -20,7 +20,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error GatewayToken(address tokenAddress);
     error NotServiceOwner(address sender);
     error NotGatewayToken(string symbol);
-    error CannotDeployRemotely(string chainName);
+    error NotSupported();
 
     /**
      * @notice Returns the address of the interchain token service.
