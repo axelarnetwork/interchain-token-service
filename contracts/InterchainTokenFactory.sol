@@ -191,11 +191,54 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             if (bytes(originalChainName).length == 0) {
                 chainNameHash_ = chainNameHash;
             } else {
-                revert NotSupported();
+                chainNameHash_ = keccak256(bytes(originalChainName));
             }
 
             address sender = msg.sender;
             salt = interchainTokenSalt(chainNameHash_, sender, salt);
+            tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+
+            IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
+
+            tokenName = token.name();
+            tokenSymbol = token.symbol();
+            tokenDecimals = token.decimals();
+
+            if (minter != address(0)) {
+                if (!token.isMinter(minter)) revert NotMinter(minter);
+                if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
+
+                minter_ = minter.toBytes();
+            }
+        }
+
+        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
+    }
+
+    /**
+     * @notice The deployRemoteInterchainToken with originalChainName allows deploying a remote interchain token back to the same chain, which could cause issues with ITS Hub balance tracking.
+     * To fix this, the deployRemoteInterchainToken function was overloaded to prevent self-deployemnt while still allowing self-transfers.
+     * @param salt The unique salt for deploying the token.
+     * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
+     * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
+     * @param destinationChain The name of the destination chain.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainToken(
+        bytes32 salt,
+        address minter,
+        string memory destinationChain,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId) {
+        string memory tokenName;
+        string memory tokenSymbol;
+        uint8 tokenDecimals;
+        bytes memory minter_ = new bytes(0);
+
+        {
+            address sender = msg.sender;
+            salt = interchainTokenSalt(chainNameHash, sender, salt);
             tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
 
             IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
@@ -283,11 +326,42 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             if (bytes(originalChain).length == 0) {
                 chainNameHash_ = chainNameHash;
             } else {
-                revert NotSupported();
+                chainNameHash_ = keccak256(bytes(originalChain));
             }
 
             // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
             salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);
+            tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+            token = IInterchainToken(interchainTokenService.validTokenAddress(tokenId));
+        }
+
+        // The 3 lines below will revert if the token does not exist.
+        string memory tokenName = token.name();
+        string memory tokenSymbol = token.symbol();
+        uint8 tokenDecimals = token.decimals();
+
+        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
+    }
+
+    /**
+     * @notice The deployRemoteCanonicalInterchainToken with originalChain allows deploying a canonical interchain token back to the same chain, which could cause issues with ITS Hub balance tracking.
+     * To fix this, the deployRemoteCanonicalInterchainToken function was overloaded to prevent self-deployemnt while still allowing self-transfers.
+     * @param originalTokenAddress The address of the original token on the original chain.
+     * @param destinationChain The name of the chain where the token will be deployed.
+     * @param gasValue The gas amount to be sent for deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteCanonicalInterchainToken(
+        address originalTokenAddress,
+        string calldata destinationChain,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId) {
+        bytes32 salt;
+        IInterchainToken token;
+
+        {
+            // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
+            salt = canonicalInterchainTokenSalt(chainNameHash, originalTokenAddress);
             tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
             token = IInterchainToken(interchainTokenService.validTokenAddress(tokenId));
         }

@@ -73,7 +73,7 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction.deployRemoteCanonicalInterchainToken(
+                tx = await tokenFactory.populateTransaction['deployRemoteCanonicalInterchainToken(string,address,string,uint256)'](
                     chainName,
                     token.address,
                     otherChains[i],
@@ -177,7 +177,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction.deployRemoteInterchainToken(
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
                     chainName,
                     salt,
                     wallet.address,
@@ -485,7 +485,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction.deployRemoteInterchainToken(
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
                     chainName,
                     salt,
                     AddressZero,
@@ -703,7 +703,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction.deployRemoteInterchainToken(
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
                     chainName,
                     salt,
                     wallet.address,

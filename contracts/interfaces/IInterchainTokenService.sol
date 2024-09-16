@@ -48,7 +48,7 @@ interface IInterchainTokenService is
     error PostDeployFailed(bytes data);
     error ZeroAmount();
     error CannotDeploy(TokenManagerType);
-    error CannotDeployRemotely(string chainName);
+    error CannotDeployRemotelyToSelf();
     error InvalidGatewayTokenTransfer(bytes32 tokenId, bytes payload, string tokenSymbol, uint256 amount);
     error InvalidPayload();
     error GatewayCallFailed(bytes data);
