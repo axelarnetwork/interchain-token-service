@@ -707,7 +707,9 @@ contract InterchainTokenService is
      * @param amount The amount for the call contract with token.
      */
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
-        (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256));
+        // The same payload is decoded in both _checkPayloadAgainstGatewayData and _contractCallValue using different parameters.
+        // This is intentional, as using `uint256` instead of `bytes` improves gas efficiency without any functional difference.
+        (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
         if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
             revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
