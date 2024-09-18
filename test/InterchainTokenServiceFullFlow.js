@@ -73,8 +73,7 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteCanonicalInterchainToken(string,address,string,uint256)'](
-                    chainName,
+                tx = await tokenFactory.populateTransaction['deployRemoteCanonicalInterchainToken(address,string,uint256)'](
                     token.address,
                     otherChains[i],
                     gasValues[i],
@@ -177,8 +176,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
-                    chainName,
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
                     salt,
                     wallet.address,
                     otherChains[i],
@@ -485,8 +483,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
-                    chainName,
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
                     salt,
                     AddressZero,
                     otherChains[i],
@@ -703,8 +700,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
-                    chainName,
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
                     salt,
                     wallet.address,
                     otherChains[i],
