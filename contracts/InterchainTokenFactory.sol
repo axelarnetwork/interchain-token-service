@@ -201,15 +201,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string memory destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
-        bytes32 chainNameHash_;
-
-        if (bytes(originalChainName).length == 0) {
-            chainNameHash_ = chainNameHash;
-        } else {
-            revert NotSupported();
-        }
-
-        tokenId = _deployRemoteInterchainToken(chainNameHash_, salt, minter, destinationChain, gasValue);
+        if (bytes(originalChainName).length != 0) revert NotSupported();
+        tokenId = _deployRemoteInterchainToken(chainNameHash, salt, minter, destinationChain, gasValue);
     }
 
     /**
@@ -333,15 +326,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
-        bytes32 chainNameHash_;
-
-        if (bytes(originalChain).length == 0) {
-            chainNameHash_ = chainNameHash;
-        } else {
-            revert NotSupported();
-        }
-
-        tokenId = _deployRemoteCanonicalInterchainToken(chainNameHash_, originalTokenAddress, destinationChain, gasValue);
+        if (bytes(originalChain).length != 0) revert NotSupported();
+        tokenId = _deployRemoteCanonicalInterchainToken(chainNameHash, originalTokenAddress, destinationChain, gasValue);
     }
 
     /**
