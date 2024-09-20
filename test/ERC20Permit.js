@@ -172,13 +172,6 @@ describe('ERC20 Permit', () => {
 
         await expectRevert(
             (gasOptions) =>
-                token.connect(owner).permit(user.address, owner.address, allowance, deadline, 0, signature.r, signature.s, gasOptions),
-            token,
-            'InvalidV',
-        );
-
-        await expectRevert(
-            (gasOptions) =>
                 token
                     .connect(owner)
                     .permit(owner.address, owner.address, allowance, deadline, signature.v, signature.r, signature.s, gasOptions),

@@ -15,7 +15,6 @@ import { ERC20 } from './ERC20.sol';
 abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
     error PermitExpired();
     error InvalidS();
-    error InvalidV();
     error InvalidSignature();
 
     /**
@@ -72,8 +71,6 @@ abstract contract ERC20Permit is IERC20, IERC20Permit, ERC20 {
         if (block.timestamp > deadline) revert PermitExpired();
 
         if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) revert InvalidS();
-
-        if (v != 27 && v != 28) revert InvalidV();
 
         bytes32 digest = keccak256(
             abi.encodePacked(
