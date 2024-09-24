@@ -1081,7 +1081,7 @@ contract InterchainTokenService is
      * @return salt The computed salt for the token deployment.
      */
     function _getInterchainTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
-        return keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
+        salt = keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
     }
 
     /**
