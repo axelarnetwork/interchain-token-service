@@ -621,6 +621,8 @@ describe('Interchain Token Service', () => {
                     'Call deployInterchainToken on source chain',
                 ),
             )
+                .to.emit(service, 'InterchainTokenIdClaimed')
+                .withArgs(tokenId, wallet.address, salt)
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
                 .to.emit(service, 'TokenManagerDeployed')
@@ -846,6 +848,8 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
             await expect(reportGas(service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0), 'Call deployTokenManager on source chain'))
+                .to.emit(service, 'InterchainTokenIdClaimed')
+                .withArgs(tokenId, wallet.address, salt)
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
 
