@@ -91,7 +91,7 @@ contract InterchainTokenService is
      * @dev Chain name where ITS Hub exists. This is used for routing ITS calls via ITS hub.
      * This is set as a constant, since the ITS Hub will exist on Axelar.
      */
-    string internal constant ITS_HUB_CHAIN_NAME = 'Axelarnet';
+    string internal constant ITS_HUB_CHAIN_NAME = 'axelarnet';
     bytes32 internal constant ITS_HUB_CHAIN_NAME_HASH = keccak256(abi.encodePacked(ITS_HUB_CHAIN_NAME));
 
     /**
