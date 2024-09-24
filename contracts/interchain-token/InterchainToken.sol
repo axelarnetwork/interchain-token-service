@@ -130,7 +130,6 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
 
     /**
      * @notice A method to be overwritten that will decrease the allowance of the `spender` from `sender` by `amount`.
-     * @dev Needs to be overwritten. This provides flexibility for the choice of ERC20 implementation used. Must revert if allowance is not sufficient.
      */
     function _spendAllowance(address sender, address spender, uint256 amount) internal override {
         uint256 _allowance = allowance[sender][spender];
