@@ -313,8 +313,10 @@ contract InterchainTokenService is
     /**
      * @notice Used to deploy an interchain token alongside a TokenManager in another chain.
      * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
-     * part of a multicall involving multiple functions that could make remote contract calls. If the `minter` parameter is empty bytes then
-     * a mint/burn TokenManager is used, otherwise a lock/unlock TokenManager is used.
+     * part of a multicall involving multiple functions that could make remote contract calls.
+     * If minter is empty bytes, no additional minter is set on the token, only ITS is allowed to mint.
+     * If the token is being deployed on the current chain, minter should correspond to an EVM address (as bytes).
+     * Otherwise, an encoding appropriate to the destination chain should be used.
      * @param salt The salt to be used during deployment.
      * @param destinationChain The name of the destination chain to deploy to.
      * @param name The name of the token to be deployed.
@@ -705,6 +707,8 @@ contract InterchainTokenService is
      * @param amount The amount for the call contract with token.
      */
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
+        // The same payload is decoded in both _checkPayloadAgainstGatewayData and _contractCallValue using different parameters.
+        // This is intentional, as using `uint256` instead of `bytes` improves gas efficiency without any functional difference.
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
         if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
@@ -1077,7 +1081,7 @@ contract InterchainTokenService is
      * @return salt The computed salt for the token deployment.
      */
     function _getInterchainTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
-        return keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
+        salt = keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
     }
 
     /**

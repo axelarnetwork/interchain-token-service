@@ -14,6 +14,7 @@ import { IInterchainTokenService } from './IInterchainTokenService.sol';
 interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error ZeroAddress();
     error InvalidChainName();
+    error InvalidMinter(address minter);
     error NotMinter(address minter);
     error NotOperator(address operator);
     error GatewayToken(address tokenAddress);
@@ -63,7 +64,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
      * @param name The name of the token.
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals for the token.
-     * @param initialSupply The amount of tokens to mint initially (can be zero).
+     * @param initialSupply The amount of tokens to mint initially (can be zero), allocated to the msg.sender.
      * @param minter The address to receive the initially minted tokens.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
