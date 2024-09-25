@@ -96,7 +96,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @dev originalChainName is only allowed to be '', i.e the current chain.
-     * Other source chains are not supported anymore to simplify ITS deployment behaviour.
+     * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChainName The name of the chain where the token originally exists.
      * @param salt The unique salt for deploying the token.
      * @param minter The address to distribute the token on the destination chain.
@@ -150,7 +150,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     /**
      * @notice Deploys a canonical interchain token on a remote chain.
      * @dev originalChain is only allowed to be '', i.e the current chain.
-     * Other source chains are not supported anymore to simplify ITS deployment behaviour.
+     * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChain The name of the chain where the token originally exists.
      * @param originalTokenAddress The address of the original token on the original chain.
      * @param destinationChain The name of the chain where the token will be deployed.
