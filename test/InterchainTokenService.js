@@ -699,6 +699,8 @@ describe('Interchain Token Service', () => {
                     'Send deployInterchainToken to remote chain',
                 ),
             )
+                .to.emit(service, 'InterchainTokenIdClaimed')
+                .withArgs(tokenId, wallet.address, salt)
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, minter, destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -1089,6 +1091,8 @@ describe('Interchain Token Service', () => {
                     'Send deployTokenManager to remote chain',
                 ),
             )
+                .to.emit(service, 'InterchainTokenIdClaimed')
+                .withArgs(tokenId, wallet.address, salt)
                 .to.emit(service, 'TokenManagerDeploymentStarted')
                 .withArgs(tokenId, destinationChain, type, params)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
