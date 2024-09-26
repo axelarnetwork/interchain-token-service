@@ -91,7 +91,7 @@ contract InterchainTokenService is
      * @dev Chain name where ITS Hub exists. This is used for routing ITS calls via ITS hub.
      * This is set as a constant, since the ITS Hub will exist on Axelar.
      */
-    string internal constant ITS_HUB_CHAIN_NAME = 'Axelarnet';
+    string internal constant ITS_HUB_CHAIN_NAME = 'axelarnet';
     bytes32 internal constant ITS_HUB_CHAIN_NAME_HASH = keccak256(abi.encodePacked(ITS_HUB_CHAIN_NAME));
 
     /**
@@ -1083,7 +1083,7 @@ contract InterchainTokenService is
      * @return salt The computed salt for the token deployment.
      */
     function _getInterchainTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
-        return keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
+        salt = keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
     }
 
     /**
