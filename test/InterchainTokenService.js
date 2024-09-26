@@ -1289,6 +1289,22 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should revert on initiating an interchain token transfer for lockUnlock with invalid token id', async () => {
+            const [, , tokenId] = await deployFunctions.lockUnlock(service, 'Test Token lockUnlock', 'TT', 12, amount);
+            const invalidTokenId = tokenId.slice(0, -4) + '1111';
+
+            await expectRevert(
+                (gasOptions) =>
+                    service.interchainTransfer(invalidTokenId, destinationChain, destAddress, amount, '0x', gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                service,
+                'TokenManagerDoesNotExist',
+                [invalidTokenId],
+            );
+        });
+
         it('Should revert on initiate interchain token transfer with zero amount', async () => {
             await expectRevert(
                 (gasOptions) =>
@@ -1697,6 +1713,35 @@ describe('Interchain Token Service', () => {
                 .withArgs(gateway.address, service.address, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
                 .withArgs(commandId, tokenId, sourceChain, hexlify(wallet.address), destAddress, amount, HashZero);
+        });
+
+        it('Should revert with invalid token id', async () => {
+            const symbol = 'TT6';
+            const [token, , tokenId] = await deployFunctions.gateway(service, 'Test Token Lock Unlock', symbol, 12, amount);
+            await token.transfer(gateway.address, amount).then((tx) => tx.wait);
+            const invalidTokenId = tokenId.slice(0, -4) + '1111';
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, invalidTokenId, hexlify(wallet.address), destAddress, amount, '0x'],
+            );
+
+            const commandId = await approveContractCallWithMint(
+                gateway,
+                sourceChain,
+                sourceAddress,
+                service.address,
+                payload,
+                symbol,
+                amount,
+            );
+
+            await expectRevert(
+                (gasOptions) => service.executeWithToken(commandId, sourceChain, sourceAddress, payload, symbol, amount, gasOptions),
+                service,
+                'TokenManagerDoesNotExist',
+                [invalidTokenId],
+            );
         });
     });
 
@@ -2558,6 +2603,22 @@ describe('Interchain Token Service', () => {
                 .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, destinationAddress, amount);
+        });
+
+        it('Should revert on express execute with invalid token id', async () => {
+            const invalidTokenId = tokenId.slice(0, -4) + '1111';
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', ' bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, invalidTokenId, sourceAddress, AddressZero, amount, data],
+            );
+
+            await expectRevert(
+                (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                service,
+                'TokenManagerDoesNotExist',
+                [invalidTokenId],
+            );
         });
 
         it('Should revert on express execute if token handler transfer token from fails', async () => {
