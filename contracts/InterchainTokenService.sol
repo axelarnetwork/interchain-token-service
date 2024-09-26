@@ -341,6 +341,8 @@ contract InterchainTokenService is
 
         tokenId = interchainTokenId(deployer, salt);
 
+        emit InterchainTokenIdClaimed(tokenId, deployer, salt);
+
         if (bytes(destinationChain).length == 0) {
             address tokenAddress = _deployInterchainToken(tokenId, minter, name, symbol, decimals);
 
