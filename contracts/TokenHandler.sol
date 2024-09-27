@@ -43,7 +43,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      */
     // slither-disable-next-line locked-ether
     function giveToken(bytes32 tokenId, address to, uint256 amount) external payable returns (uint256, address) {
-        address tokenManager = _create3Address(tokenId);
+        address tokenManager = _validTokenManagerAddress(tokenId);
 
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
@@ -94,7 +94,8 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         address from,
         uint256 amount
     ) external payable returns (uint256, string memory symbol) {
-        address tokenManager = _create3Address(tokenId);
+        address tokenManager = _validTokenManagerAddress(tokenId);
+
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
         if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
@@ -133,7 +134,8 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      */
     // slither-disable-next-line locked-ether
     function transferTokenFrom(bytes32 tokenId, address from, address to, uint256 amount) external payable returns (uint256, address) {
-        address tokenManager = _create3Address(tokenId);
+        address tokenManager = _validTokenManagerAddress(tokenId);
+
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
         if (
@@ -227,5 +229,16 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         if (allowance == 0) {
             IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20.approve.selector, gateway, amount));
         }
+    }
+
+    /**
+     * @notice Returns the address of a TokenManager from a specific tokenId.
+     * @dev The TokenManager needs to exist already.
+     * @param tokenId The tokenId.
+     * @return tokenManagerAddress_ The deployment address of the TokenManager.
+     */
+    function _validTokenManagerAddress(bytes32 tokenId) internal view returns (address tokenManagerAddress_) {
+        tokenManagerAddress_ = _create3Address(tokenId);
+        if (tokenManagerAddress_.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
     }
 }

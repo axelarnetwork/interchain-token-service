@@ -1300,8 +1300,7 @@ describe('Interchain Token Service', () => {
                         value: gasValue,
                     }),
                 service,
-                'TokenManagerDoesNotExist',
-                [invalidTokenId],
+                'TakeTokenFailed',
             );
         });
 
@@ -2616,8 +2615,7 @@ describe('Interchain Token Service', () => {
             await expectRevert(
                 (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
                 service,
-                'TokenManagerDoesNotExist',
-                [invalidTokenId],
+                'TokenHandlerFailed',
             );
         });
 

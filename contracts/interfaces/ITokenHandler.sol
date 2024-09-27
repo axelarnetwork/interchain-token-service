@@ -10,6 +10,7 @@ interface ITokenHandler {
     error UnsupportedTokenManagerType(uint256 tokenManagerType);
     error AddressZero();
     error NotToken(address caller, address token);
+    error TokenManagerDoesNotExist(bytes32 tokenId);
 
     /**
      * @notice Returns the address of the axelar gateway on this chain.

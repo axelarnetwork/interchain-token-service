@@ -413,9 +413,6 @@ contract InterchainTokenService is
 
         IERC20 token;
         {
-            // slither-disable-next-line unused-return
-            validTokenManagerAddress(tokenId);
-
             (bool success, bytes memory returnData) = tokenHandler.delegatecall(
                 abi.encodeWithSelector(ITokenHandler.transferTokenFrom.selector, tokenId, msg.sender, destinationAddress, amount)
             );
@@ -1196,9 +1193,6 @@ contract InterchainTokenService is
      * @dev Takes token from a sender via the token service. `tokenOnly` indicates if the caller should be restricted to the token only.
      */
     function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256, string memory symbol) {
-        // slither-disable-next-line unused-return
-        validTokenManagerAddress(tokenId);
-
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenId, tokenOnly, from, amount)
         );
@@ -1212,9 +1206,6 @@ contract InterchainTokenService is
      * @dev Gives token to recipient via the token service.
      */
     function _giveToken(bytes32 tokenId, address to, uint256 amount) internal returns (uint256, address tokenAddress) {
-        // slither-disable-next-line unused-return
-        validTokenManagerAddress(tokenId);
-
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.giveToken.selector, tokenId, to, amount)
         );
