@@ -166,6 +166,48 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
+     * @param salt The unique salt for deploying the token.
+     * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
+     * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
+     * @param destinationChain The name of the destination chain.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainToken(
+        bytes32 salt,
+        address minter,
+        string memory destinationChain,
+        uint256 gasValue
+    ) public payable returns (bytes32 tokenId) {
+        string memory tokenName;
+        string memory tokenSymbol;
+        uint8 tokenDecimals;
+        bytes memory minter_ = new bytes(0);
+
+        salt = interchainTokenSalt(chainNameHash, msg.sender, salt);
+        tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+
+        IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
+
+        tokenName = token.name();
+        tokenSymbol = token.symbol();
+        tokenDecimals = token.decimals();
+
+        if (minter != address(0)) {
+            if (!token.isMinter(minter)) revert NotMinter(minter);
+            if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
+
+            minter_ = minter.toBytes();
+        }
+
+        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
+    }
+
+    /**
+     * @notice Deploys a remote interchain token on a specified destination chain.
+     * This method is deprecated and will be removed in the future. Please use the above method instead.
+     * @dev originalChainName is only allowed to be '', i.e the current chain.
+     * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChainName The name of the chain where the token originally exists.
      * @param salt The unique salt for deploying the token.
      * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
@@ -181,38 +223,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string memory destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
-        string memory tokenName;
-        string memory tokenSymbol;
-        uint8 tokenDecimals;
-        bytes memory minter_ = new bytes(0);
+        if (bytes(originalChainName).length != 0) revert NotSupported();
 
-        {
-            bytes32 chainNameHash_;
-            if (bytes(originalChainName).length == 0) {
-                chainNameHash_ = chainNameHash;
-            } else {
-                chainNameHash_ = keccak256(bytes(originalChainName));
-            }
-
-            address sender = msg.sender;
-            salt = interchainTokenSalt(chainNameHash_, sender, salt);
-            tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
-
-            IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
-
-            tokenName = token.name();
-            tokenSymbol = token.symbol();
-            tokenDecimals = token.decimals();
-
-            if (minter != address(0)) {
-                if (!token.isMinter(minter)) revert NotMinter(minter);
-                if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
-
-                minter_ = minter.toBytes();
-            }
-        }
-
-        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
+        tokenId = deployRemoteInterchainToken(salt, minter, destinationChain, gasValue);
     }
 
     /**
@@ -263,6 +276,37 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Deploys a canonical interchain token on a remote chain.
+     * @param originalTokenAddress The address of the original token on the original chain.
+     * @param destinationChain The name of the chain where the token will be deployed.
+     * @param gasValue The gas amount to be sent for deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteCanonicalInterchainToken(
+        address originalTokenAddress,
+        string calldata destinationChain,
+        uint256 gasValue
+    ) public payable returns (bytes32 tokenId) {
+        bytes32 salt;
+        IInterchainToken token;
+
+        // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
+        salt = canonicalInterchainTokenSalt(chainNameHash, originalTokenAddress);
+        tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
+        token = IInterchainToken(interchainTokenService.validTokenAddress(tokenId));
+
+        // The 3 lines below will revert if the token does not exist.
+        string memory tokenName = token.name();
+        string memory tokenSymbol = token.symbol();
+        uint8 tokenDecimals = token.decimals();
+
+        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
+    }
+
+    /**
+     * @notice Deploys a canonical interchain token on a remote chain.
+     * This method is deprecated and will be removed in the future. Please use the above method instead.
+     * @dev originalChain is only allowed to be '', i.e the current chain.
+     * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChain The name of the chain where the token originally exists.
      * @param originalTokenAddress The address of the original token on the original chain.
      * @param destinationChain The name of the chain where the token will be deployed.
@@ -275,28 +319,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
-        bytes32 salt;
-        IInterchainToken token;
+        if (bytes(originalChain).length != 0) revert NotSupported();
 
-        {
-            bytes32 chainNameHash_;
-            if (bytes(originalChain).length == 0) {
-                chainNameHash_ = chainNameHash;
-            } else {
-                chainNameHash_ = keccak256(bytes(originalChain));
-            }
-            // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
-            salt = canonicalInterchainTokenSalt(chainNameHash_, originalTokenAddress);
-            tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
-            token = IInterchainToken(interchainTokenService.validTokenAddress(tokenId));
-        }
-
-        // The 3 lines below will revert if the token does not exist.
-        string memory tokenName = token.name();
-        string memory tokenSymbol = token.symbol();
-        uint8 tokenDecimals = token.decimals();
-
-        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
+        tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
     }
 
     /**

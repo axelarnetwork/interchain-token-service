@@ -20,6 +20,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error GatewayToken(address tokenAddress);
     error NotServiceOwner(address sender);
     error NotGatewayToken(string symbol);
+    error NotSupported();
 
     /**
      * @notice Returns the address of the interchain token service.
@@ -79,6 +80,23 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
 
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
+     * @param salt The unique salt for deploying the token.
+     * @param minter The address to distribute the token on the destination chain.
+     * @param destinationChain The name of the destination chain.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainToken(
+        bytes32 salt,
+        address minter,
+        string memory destinationChain,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @dev originalChainName is only allowed to be '', i.e the current chain.
+     * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChainName The name of the chain where the token originally exists.
      * @param salt The unique salt for deploying the token.
      * @param minter The address to distribute the token on the destination chain.
@@ -118,6 +136,21 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
 
     /**
      * @notice Deploys a canonical interchain token on a remote chain.
+     * @param originalTokenAddress The address of the original token on the original chain.
+     * @param destinationChain The name of the chain where the token will be deployed.
+     * @param gasValue The gas amount to be sent for deployment.
+     * @return tokenId The tokenId corresponding to the deployed canonical InterchainToken.
+     */
+    function deployRemoteCanonicalInterchainToken(
+        address originalTokenAddress,
+        string calldata destinationChain,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Deploys a canonical interchain token on a remote chain.
+     * @dev originalChain is only allowed to be '', i.e the current chain.
+     * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChain The name of the chain where the token originally exists.
      * @param originalTokenAddress The address of the original token on the original chain.
      * @param destinationChain The name of the chain where the token will be deployed.

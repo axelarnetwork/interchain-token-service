@@ -89,7 +89,25 @@ describe('InterchainTokenFactory', () => {
             );
 
             await expect(
-                tokenFactory.deployRemoteCanonicalInterchainToken('', token.address, destinationChain, gasValue, {
+                tokenFactory['deployRemoteCanonicalInterchainToken(string,address,string,uint256)'](
+                    '',
+                    token.address,
+                    destinationChain,
+                    gasValue,
+                    {
+                        value: gasValue,
+                    },
+                ),
+            )
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
+
+            await expect(
+                tokenFactory['deployRemoteCanonicalInterchainToken(address,string,uint256)'](token.address, destinationChain, gasValue, {
                     value: gasValue,
                 }),
             )
@@ -108,8 +126,23 @@ describe('InterchainTokenFactory', () => {
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
             );
 
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory['deployRemoteCanonicalInterchainToken(string,address,string,uint256)'](
+                        chainName,
+                        token.address,
+                        destinationChain,
+                        gasValue,
+                        {
+                            value: gasValue,
+                        },
+                    ),
+                tokenFactory,
+                'NotSupported',
+            );
+
             await expect(
-                tokenFactory.deployRemoteCanonicalInterchainToken(chainName, token.address, destinationChain, gasValue, {
+                tokenFactory['deployRemoteCanonicalInterchainToken(address,string,uint256)'](token.address, destinationChain, gasValue, {
                     value: gasValue,
                 }),
             )
@@ -401,10 +434,34 @@ describe('InterchainTokenFactory', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    tokenFactory.deployRemoteInterchainToken(chainName, salt, otherWallet.address, destinationChain, gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
+                    tokenFactory['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
+                        chainName,
+                        salt,
+                        otherWallet.address,
+                        destinationChain,
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
+                tokenFactory,
+                'NotSupported',
+            );
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
+                        '',
+                        salt,
+                        otherWallet.address,
+                        destinationChain,
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
                 tokenFactory,
                 'NotMinter',
                 [otherWallet.address],
@@ -412,19 +469,33 @@ describe('InterchainTokenFactory', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    tokenFactory.deployRemoteInterchainToken(chainName, salt, service.address, destinationChain, gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
+                    tokenFactory['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
+                        '',
+                        salt,
+                        service.address,
+                        destinationChain,
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
                 tokenFactory,
                 'InvalidMinter',
                 [service.address],
             );
 
             await expect(
-                tokenFactory.deployRemoteInterchainToken('', salt, wallet.address, destinationChain, gasValue, {
-                    value: gasValue,
-                }),
+                tokenFactory['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
+                    '',
+                    salt,
+                    wallet.address,
+                    destinationChain,
+                    gasValue,
+                    {
+                        value: gasValue,
+                    },
+                ),
             )
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), destinationChain)
@@ -433,10 +504,50 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
 
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
+                        salt,
+                        otherWallet.address,
+                        destinationChain,
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
+                tokenFactory,
+                'NotMinter',
+                [otherWallet.address],
+            );
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
+                        salt,
+                        service.address,
+                        destinationChain,
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
+                tokenFactory,
+                'InvalidMinter',
+                [service.address],
+            );
+
             await expect(
-                tokenFactory.deployRemoteInterchainToken(chainName, salt, wallet.address, destinationChain, gasValue, {
-                    value: gasValue,
-                }),
+                tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
+                    salt,
+                    wallet.address,
+                    destinationChain,
+                    gasValue,
+                    {
+                        value: gasValue,
+                    },
+                ),
             )
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), destinationChain)
@@ -482,7 +593,26 @@ describe('InterchainTokenFactory', () => {
             );
 
             await expect(
-                tokenFactory.deployRemoteInterchainToken(chainName, salt, AddressZero, destinationChain, gasValue, {
+                tokenFactory['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
+                    '',
+                    salt,
+                    AddressZero,
+                    destinationChain,
+                    gasValue,
+                    {
+                        value: gasValue,
+                    },
+                ),
+            )
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
+
+            await expect(
+                tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](salt, AddressZero, destinationChain, gasValue, {
                     value: gasValue,
                 }),
             )

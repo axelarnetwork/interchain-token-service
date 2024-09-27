@@ -548,6 +548,47 @@ describe('Interchain Token Service', () => {
 
             await deployContract(wallet, 'TokenManagerProxy', [service.address, LOCK_UNLOCK, tokenId, validParams]);
         });
+
+        it('Should revert when deploying a remote interchain token to self', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const salt = getRandomBytes32();
+
+            await expectRevert(
+                (gasOptions) =>
+                    serviceTest.deployInterchainToken(
+                        salt,
+                        chainName,
+                        tokenName,
+                        tokenSymbol,
+                        tokenDecimals,
+                        wallet.address,
+                        0,
+                        gasOptions,
+                    ),
+                serviceTest,
+                'CannotDeployRemotelyToSelf',
+            );
+        });
+
+        it('Should revert when deploying a remote token manager to self', async () => {
+            const salt = getRandomBytes32();
+
+            await expectRevert(
+                (gasOptions) =>
+                    serviceTest.deployTokenManager(
+                        salt,
+                        chainName,
+                        LOCK_UNLOCK,
+                        defaultAbiCoder.encode(['bytes', 'address'], ['0x', testToken.address]),
+                        0,
+                        gasOptions,
+                    ),
+                serviceTest,
+                'CannotDeployRemotelyToSelf',
+            );
+        });
     });
 
     describe('Owner functions', () => {

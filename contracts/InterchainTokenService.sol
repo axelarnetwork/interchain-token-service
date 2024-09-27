@@ -306,6 +306,8 @@ contract InterchainTokenService is
         if (bytes(destinationChain).length == 0) {
             _deployTokenManager(tokenId, tokenManagerType, params);
         } else {
+            if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
+
             _deployRemoteTokenManager(tokenId, destinationChain, gasValue, tokenManagerType, params);
         }
     }
@@ -348,6 +350,8 @@ contract InterchainTokenService is
 
             _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, abi.encode(minter, tokenAddress));
         } else {
+            if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
+
             _deployRemoteInterchainToken(tokenId, name, symbol, decimals, minter, destinationChain, gasValue);
         }
     }
