@@ -91,7 +91,7 @@ contract InterchainTokenService is
      * @dev Chain name where ITS Hub exists. This is used for routing ITS calls via ITS hub.
      * This is set as a constant, since the ITS Hub will exist on Axelar.
      */
-    string internal constant ITS_HUB_CHAIN_NAME = 'Axelarnet';
+    string internal constant ITS_HUB_CHAIN_NAME = 'axelarnet';
     bytes32 internal constant ITS_HUB_CHAIN_NAME_HASH = keccak256(abi.encodePacked(ITS_HUB_CHAIN_NAME));
 
     /**
@@ -342,6 +342,8 @@ contract InterchainTokenService is
         if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
 
         tokenId = interchainTokenId(deployer, salt);
+
+        emit InterchainTokenIdClaimed(tokenId, deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
             address tokenAddress = _deployInterchainToken(tokenId, minter, name, symbol, decimals);
@@ -711,6 +713,8 @@ contract InterchainTokenService is
      * @param amount The amount for the call contract with token.
      */
     function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
+        // The same payload is decoded in both _checkPayloadAgainstGatewayData and _contractCallValue using different parameters.
+        // This is intentional, as using `uint256` instead of `bytes` improves gas efficiency without any functional difference.
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
         if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
@@ -1083,7 +1087,7 @@ contract InterchainTokenService is
      * @return salt The computed salt for the token deployment.
      */
     function _getInterchainTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
-        return keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
+        salt = keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
     }
 
     /**

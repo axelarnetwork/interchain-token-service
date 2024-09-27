@@ -72,6 +72,6 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3Fixed {
      * @return tokenAddress The token address.
      */
     function deployedAddress(bytes32 salt) external view returns (address tokenAddress) {
-        return _create3Address(salt);
+        tokenAddress = _create3Address(salt);
     }
 }
