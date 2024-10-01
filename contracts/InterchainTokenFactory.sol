@@ -248,10 +248,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
-
-        if (_isGatewayToken(tokenAddress)) revert GatewayToken(tokenAddress);
-
         bytes32 salt = canonicalInterchainTokenSalt(chainNameHash, tokenAddress);
+
         tokenId = interchainTokenService.deployTokenManager(salt, '', TokenManagerType.LOCK_UNLOCK, params, 0);
     }
 
@@ -306,15 +304,5 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         bytes32 salt = gatewayTokenSalt(tokenIdentifier);
 
         tokenId = interchainTokenService.deployTokenManager(salt, '', TokenManagerType.GATEWAY, params, 0);
-    }
-
-    /**
-     * @notice Checks if a given token is a gateway token.
-     * @param token The address of the token to check.
-     * @return bool True if the token is a gateway token, false otherwise.
-     */
-    function _isGatewayToken(address token) internal view returns (bool) {
-        string memory symbol = IInterchainToken(token).symbol();
-        return token == gateway.tokenAddresses(symbol);
     }
 }
