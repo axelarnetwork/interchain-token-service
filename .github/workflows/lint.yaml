@@ -15,7 +15,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install Node.js and its dependencies
       - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:

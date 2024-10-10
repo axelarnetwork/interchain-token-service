@@ -25,8 +25,6 @@ jobs:
             echo "has_changeset=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Install Node.js and its dependencies
-      # Needed for the changeset releases
       - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:

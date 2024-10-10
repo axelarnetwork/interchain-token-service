@@ -27,6 +27,7 @@ jobs:
         uses: ./.github/actions/setup-tools
         with:
           install-nodejs: 'true'
+
       # Publishes a release in case the release isn't published
       - name: Publish release
         id: publish-release
@@ -43,22 +44,22 @@ jobs:
       - name: Prepare cross-steps variables
         run: |
           export PACKAGE_NAME=$(jq -r '.name' 'package.json');
-          export PUBLISHED_PACKAGE_VERSION=v$(echo '${{ steps.publish-release.outputs.publishedPackages }}' | jq -r ".[] | select(.name == \"${PACKAGE_NAME}\") | .version")
-          export BASE_ARTIFACTS_SEARCH_DIR="./artifacts"
-          export ARTIFACT_VERSIONED_PACKAGE_NAME="interchain-token-service-assets-${PUBLISHED_PACKAGE_VERSION}"
-          export BASE_ARTIFACTS_VERSIONED_DIR="$(dirname ${BASE_ARTIFACTS_SEARCH_DIR})/${ARTIFACT_VERSIONED_PACKAGE_NAME}" # Regardless of the dir type, relative or absolute
+          export PACKAGE_VERSION=v$(echo '${{ steps.publish-release.outputs.publishedPackages }}' | jq -r ".[] | select(.name == \"${PACKAGE_NAME}\") | .version")
+          export BASE_ARTIFACTS_DIR="./artifacts"
+          export ARTIFACT_NAME="interchain-token-service-assets-${PACKAGE_VERSION}"
+          export BASE_ARTIFACTS_VERSIONED_DIR="$(dirname ${BASE_ARTIFACTS_DIR})/${ARTIFACT_NAME}" # Regardless of the dir type, relative or absolute
 
           # ex: @axelarnetwork/interchain-token-service
           echo "PACKAGE_NAME=${PACKAGE_NAME}" >> $GITHUB_ENV
 
           # ex: v2.1.0
-          echo "PUBLISHED_PACKAGE_VERSION=${PUBLISHED_PACKAGE_VERSION}" >> $GITHUB_ENV
+          echo "PACKAGE_VERSION=${PACKAGE_VERSION}" >> $GITHUB_ENV
 
           # ex: ./artifacts
-          echo "BASE_ARTIFACTS_SEARCH_DIR=${BASE_ARTIFACTS_SEARCH_DIR}" >> $GITHUB_ENV
+          echo "BASE_ARTIFACTS_DIR=${BASE_ARTIFACTS_DIR}" >> $GITHUB_ENV
 
           # ex: interchain-token-service-assets-v2.1.0
-          echo "ARTIFACT_VERSIONED_PACKAGE_NAME=${ARTIFACT_VERSIONED_PACKAGE_NAME}" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> $GITHUB_ENV
 
           # ex: ./interchain-token-service-assets-v2.1.0
           echo "BASE_ARTIFACTS_VERSIONED_DIR=${BASE_ARTIFACTS_VERSIONED_DIR}" >> $GITHUB_ENV
@@ -67,13 +68,13 @@ jobs:
       - name: Create `zip` and `tar` archive files for contracts ABIs
         run: |
           # Renaming to keep the dir structure in the archive matching the release version defined in `BASE_ARTIFACTS_VERSIONED_DIR`
-          mv ${{ env.BASE_ARTIFACTS_SEARCH_DIR }} ${{ env.BASE_ARTIFACTS_VERSIONED_DIR }}
+          mv ${{ env.BASE_ARTIFACTS_DIR }} ${{ env.BASE_ARTIFACTS_VERSIONED_DIR }}
 
-          find "${{ env.BASE_ARTIFACTS_VERSIONED_DIR }}/contracts" -type f -name "*.json" ! -name "*.dbg.json" -print | zip ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.zip -@
-          find "${{ env.BASE_ARTIFACTS_VERSIONED_DIR }}/contracts" -type f -name "*.json" ! -name "*.dbg.json" -print | tar -czvf ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.tar.gz -T -
+          find "${{ env.BASE_ARTIFACTS_VERSIONED_DIR }}/contracts" -type f -name "*.json" -print | zip ${{ env.ARTIFACT_NAME }}.zip -@
+          find "${{ env.BASE_ARTIFACTS_VERSIONED_DIR }}/contracts" -type f -name "*.json" -print | tar -czvf ${{ env.ARTIFACT_NAME }}.tar.gz -T -
 
           # Generate SHA-256 Checksums
-          for file in ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.tar.gz ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.zip; do
+          for file in ${{ env.ARTIFACT_NAME }}.tar.gz ${{ env.ARTIFACT_NAME }}.zip; do
             sha256sum "$file" > "$file.sha256"
           done
 
@@ -94,8 +95,8 @@ jobs:
           ENDPOINT_URL: ${{ secrets.CF_ENDPOINT_URL }}
           CF_BUCKET_ROOT_KEY: ${{ vars.CF_BUCKET_ROOT_KEY }}
         run: |
-          export CF_CONTRACTS_BUCKET_ROOT_KEY="${CF_BUCKET_ROOT_KEY}/${{ env.PUBLISHED_PACKAGE_VERSION }}"
-          export JSON_FILES=$(find "${{ env.BASE_ARTIFACTS_VERSIONED_DIR }}/contracts" -type f -name "*.json" ! -name "*.dbg.json")
+          export CF_CONTRACTS_BUCKET_ROOT_KEY="${CF_BUCKET_ROOT_KEY}/${{ env.PACKAGE_VERSION }}"
+          export JSON_FILES=$(find "${{ env.BASE_ARTIFACTS_VERSIONED_DIR }}/contracts" -type f -name "*.json")
 
           for json_file in "${JSON_FILES}"; do
 
@@ -111,8 +112,8 @@ jobs:
           done
 
           # Upload the created archives to R2
-          export CF_ARCHIVES_BUCKET_ROOT_KEY="${CF_BUCKET_ROOT_KEY}/${{ env.PUBLISHED_PACKAGE_VERSION }}/archives"
-          for file in ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.tar.gz ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.zip; do
+          export CF_ARCHIVES_BUCKET_ROOT_KEY="${CF_BUCKET_ROOT_KEY}/${{ env.PACKAGE_VERSION }}/archives"
+          for file in ${{ env.ARTIFACT_NAME }}.tar.gz ${{ env.ARTIFACT_NAME }}.zip; do
             aws s3api put-object --bucket $S3_BUCKET_NAME --key "$CF_ARCHIVES_BUCKET_ROOT_KEY/$file" --body "$file" --acl public-read --endpoint-url $ENDPOINT_URL
             aws s3api put-object --bucket $S3_BUCKET_NAME --key "$CF_ARCHIVES_BUCKET_ROOT_KEY/$file.sha256" --body "$file.sha256" --acl public-read --endpoint-url $ENDPOINT_URL
           done
@@ -121,11 +122,11 @@ jobs:
       - name: Create and Upload Release
         uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
         with:
-          tag_name: ${{ env.PUBLISHED_PACKAGE_VERSION }} # This uses the tag from the push
+          tag_name: ${{ env.PACKAGE_VERSION }} # This uses the tag from the push
           files: |
-            ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.tar.gz
-            ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.tar.gz.sha256
-            ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.zip
-            ${{ env.ARTIFACT_VERSIONED_PACKAGE_NAME }}.zip.sha256
+            ${{ env.ARTIFACT_NAME }}.tar.gz
+            ${{ env.ARTIFACT_NAME }}.tar.gz.sha256
+            ${{ env.ARTIFACT_NAME }}.zip
+            ${{ env.ARTIFACT_NAME }}.zip.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
