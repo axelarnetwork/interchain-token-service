@@ -20,15 +20,8 @@ jobs:
         with:
           install-nodejs: 'true'
 
-      - name: Build the modules
-        run: npm run build && npm run build:ts && npm run flatten && npm run clean:artifacts
-
-      - name: Set Snapshot Version
+      - name: Build and Publish a Snapshot to NPM
         run: |
-          npm version 0.0.0-snapshot.$(git rev-parse --short HEAD) --git-tag-version=false
-
-      - name: Publish Snapshot to NPM
-        run: |
-          npm publish --no-git-checks --tag snapshot --access public
+          npm run release-snapshot
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
