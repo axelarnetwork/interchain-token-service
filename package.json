@@ -17,7 +17,9 @@
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js' && eslint 'test/**/*.js'",
     "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js' 'test/**/*.js' '*.js' 'package.json' '.solhint.json' '.prettierrc' '.github/**/*.yaml'",
     "flatten": "sh scripts/flatten-contracts.sh",
-    "coverage": "cross-env COVERAGE=true hardhat coverage"
+    "coverage": "cross-env COVERAGE=true hardhat coverage",
+    "release": "npm run build && npm run build:ts && npm run flatten && npm run clean:artifacts && changeset publish",
+    "cs": "changeset"
   },
   "keywords": [
     "axelar",
@@ -35,6 +37,7 @@
   "devDependencies": {
     "@axelar-network/axelar-chains-config": "^1.2.0",
     "@axelarjs/evm": "^0.2.1",
+    "@changesets/cli": "^2.27.9",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@tsconfig/strictest": "^2.0.2",
     "chai": "^4.3.7",
