@@ -385,7 +385,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public payable override whenNotPaused {
+    ) public payable whenNotPaused {
         uint256 messageType = abi.decode(payload, (uint256));
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidExpressMessageType(messageType);
