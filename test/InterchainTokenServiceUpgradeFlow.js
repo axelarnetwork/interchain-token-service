@@ -217,11 +217,11 @@ describe('Interchain Token Service Upgrade Flow', () => {
         );
 
         await expect(axelarServiceGovernance.execute(commandIdGateway, governanceChain, governanceAddress, payload))
-            .to.emit(axelarServiceGovernance, 'MultisigApproved')
+            .to.emit(axelarServiceGovernance, 'OperatorProposalApproved')
             .withArgs(proposalHash, target, calldata, nativeValue);
 
-        await expect(axelarServiceGovernance.connect(operator).executeMultisigProposal(target, calldata, nativeValue))
-            .to.emit(axelarServiceGovernance, 'MultisigExecuted')
+        await expect(axelarServiceGovernance.connect(operator).executeOperatorProposal(target, calldata, nativeValue))
+            .to.emit(axelarServiceGovernance, 'OperatorProposalExecuted')
             .withArgs(proposalHash, target, calldata, nativeValue)
             .and.to.emit(service, 'Upgraded')
             .withArgs(newServiceImplementation.address);

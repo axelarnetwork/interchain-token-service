@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
-import { IAxelarGMPGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGateway.sol';
-import { IAxelarGMPGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGMPGatewayWithToken.sol';
+import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGatewayWithToken.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
@@ -47,12 +47,12 @@ contract InterchainTokenService is
     /**
      * @dev There are two types of Axelar Gateways for cross-chain messaging:
      * 1. Cross-chain messaging (GMP): The Axelar Gateway allows sending cross-chain messages.
-     *    This is compatible across both Amplifier and consensus chains. IAxelarGMPGateway interface exposes this functionality.
+     *    This is compatible across both Amplifier and consensus chains. IAxelarGateway interface exposes this functionality.
      * 2. Cross-chain messaging with Gateway Token: The AxelarGateway on legacy consensus EVM connections supports this (via callContractWithToken)
-     *    but not Amplifier chains. The gateway is cast to IAxelarGMPGatewayWithToken when gateway tokens need to be handled.
+     *    but not Amplifier chains. The gateway is cast to IAxelarGatewayWithToken when gateway tokens need to be handled.
      *    ITS deployments on Amplifier chains will revert when this functionality is used.
      */
-    IAxelarGMPGateway public immutable gateway;
+    IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
     address public immutable interchainTokenFactory;
     bytes32 public immutable chainNameHash;
@@ -144,7 +144,7 @@ contract InterchainTokenService is
             gatewayCaller_ == address(0)
         ) revert ZeroAddress();
 
-        gateway = IAxelarGMPGateway(gateway_);
+        gateway = IAxelarGateway(gateway_);
         gasService = IAxelarGasService(gasService_);
         tokenManagerDeployer = tokenManagerDeployer_;
         interchainTokenDeployer = interchainTokenDeployer_;
@@ -1246,7 +1246,7 @@ contract InterchainTokenService is
         }
     }
 
-    function gatewayWithToken() internal view returns (IAxelarGMPGatewayWithToken) {
-        return IAxelarGMPGatewayWithToken(address(gateway));
+    function gatewayWithToken() internal view returns (IAxelarGatewayWithToken) {
+        return IAxelarGatewayWithToken(address(gateway));
     }
 }
