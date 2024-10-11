@@ -15,8 +15,7 @@ const { deployContract, deployMockGateway, deployGasService, deployInterchainTok
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
-
-const MINT_BURN = 4;
+const { MINT_BURN } = require('./constants');
 
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, operator;

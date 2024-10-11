@@ -12,8 +12,7 @@ const { approveContractCall } = require('../scripts/utils');
 const { getRandomBytes32, getSaltFromKey, isHardhat, getContractJSON } = require('./utils');
 const { create3DeployContract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const Token = getContractJSON('TestInterchainTokenStandard');
-const MINT_BURN = 0;
-const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
+const { NATIVE_INTERCHAIN_TOKEN, MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN } = require('./constants');
 
 if (isHardhat) {
     describe('Token Address Derivation [ @skip-on-coverage ]', () => {
@@ -61,7 +60,7 @@ if (isHardhat) {
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
                     .to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                    .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
             });
 
             it('Should derive the correct token address for remote interchain token deployment', async () => {
@@ -84,7 +83,7 @@ if (isHardhat) {
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                    .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
             });
 
             it('Should derive the correct token address for remote interchain token deployment with empty minter and operator', async () => {
@@ -107,7 +106,7 @@ if (isHardhat) {
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                    .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
             });
         });
 
@@ -127,7 +126,7 @@ if (isHardhat) {
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, tokenName, tokenSymbol, tokenDecimals)
                     .to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                    .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
             });
 
             it('Should derive the correct token address for remote interchain token deployment', async () => {
@@ -151,7 +150,7 @@ if (isHardhat) {
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                    .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
             });
 
             it('Should derive the correct token address for remote interchain token deployment with empty minter and operator', async () => {
@@ -175,7 +174,7 @@ if (isHardhat) {
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                    .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
             });
 
             it('Should derive the correct token address for remote canonical token deployment', async () => {
@@ -198,7 +197,7 @@ if (isHardhat) {
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
+                    .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
             });
         });
     });
