@@ -6,9 +6,7 @@ on:
   pull_request:
     branches:
       - main
-      # It needs to be specific based on the maintenance policy that will be set: (e.g.: `release/1.0.*`)
-      # This ensures that the unmaintained old releases are no longer being updated.
-      - release/**
+      - 'releases/**'
     types: [closed]
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}

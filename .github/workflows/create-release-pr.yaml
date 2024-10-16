@@ -15,7 +15,7 @@ jobs:
         id: branch-check
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          WHITELISTED_BRANCHES=("main" "release/2.*.*")
+          WHITELISTED_BRANCHES=("main" "releases/*")
 
           IS_WHITELISTED=false
           # Check the branch against the whitelist using wildcard matching
@@ -60,8 +60,9 @@ jobs:
         id: release-pr
         uses: changesets/action@aba318e9165b45b7948c60273e0b72fce0a64eb9 # v1.4.7
         with:
-          branch: ${{ steps.branch-check.outputs.branch_name }} # This branch context is ignored in this step: `https://github.com/changesets/action/blob/50750fa876cc1e54c7cb972db5e2f7271fc53d99/src/run.ts#L328`, therefore the usage of `branch`
-          title: 'chore(release): bump version and update changelog from `${{ steps.branch-check.outputs.branch_name }}`'
-          commit: 'chore(release): bump version and update changelog from `${{ steps.branch-check.outputs.branch_name }}`'
+          # This branch context is ignored in this step: https://github.com/changesets/action/blob/50750fa876cc1e54c7cb972db5e2f7271fc53d99/src/run.ts#L328, therefore the usage of `branch`
+          branch: ${{ steps.branch-check.outputs.branch_name }}
+          title: 'chore(release): bump version and update changelog'
+          commit: 'chore(release): bump version and update changelog'
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
