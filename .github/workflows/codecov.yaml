@@ -1,11 +1,7 @@
-name: Coverage
+name: Code Coverage
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
-      - releases/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,17 +12,15 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: useblacksmith/setup-node@v5
+      - name: Setup tools
+        uses: ./.github/actions/setup-tools
         with:
-          node-version: 18.x
-          cache: 'npm'
+          install-nodejs: 'true'
 
-      - name: Install Dependencies
-        run: npm ci
-
+      # Step to do builds and check for warnings
       - name: Build
         run: npm run build > build.log 2>&1
 

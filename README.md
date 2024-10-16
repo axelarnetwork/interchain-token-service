@@ -41,3 +41,7 @@ Test coverage reports of the `main` branch can also be found on [Codecov](https:
 ## Deployment Guide
 
 To learn more about the deployment process, please refer to [this repo](https://github.com/axelarnetwork/axelar-contract-deployments).
+
+## Release Process
+
+Please check the [release process](./RELEASE.md) for more details.
