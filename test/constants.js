@@ -19,7 +19,7 @@ const OPERATOR_ROLE = 1;
 const FLOW_LIMITER_ROLE = 2;
 
 // Chain name for ITS Hub chain
-const ITS_HUB_CHAIN_NAME = 'axelarnet';
+const ITS_HUB_CHAIN_NAME = 'axelar';
 const ITS_HUB_ROUTING_IDENTIFIER = 'hub';
 const ITS_HUB_ADDRESS = 'axelar1xyz';
 
