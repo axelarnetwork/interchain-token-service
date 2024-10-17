@@ -29,7 +29,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@axelar-network/axelar-cgp-solidity": "6.3.1",
+    "@axelar-network/axelar-cgp-solidity": "6.4.0",
     "@axelar-network/axelar-gmp-sdk-solidity": "6.0.0"
   },
   "devDependencies": {
