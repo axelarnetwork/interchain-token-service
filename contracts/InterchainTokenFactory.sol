@@ -42,6 +42,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         gateway = IAxelarGatewayWithToken(address(interchainTokenService.gateway()));
     }
 
+    function _setup(bytes calldata data) internal override {}
+
     /**
      * @notice Getter for the contract id.
      * @return bytes32 The contract id of this contract.
@@ -49,8 +51,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     function contractId() external pure returns (bytes32) {
         return CONTRACT_ID;
     }
-
-    function _setup(bytes calldata params) internal override {}
 
     /**
      * @notice Calculates the salt for an interchain token.
