@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGatewayWithToken.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
@@ -21,7 +22,6 @@ import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainToken
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
-
 import { Operator } from './utils/Operator.sol';
 
 /**
@@ -44,6 +44,14 @@ contract InterchainTokenService is
     using AddressBytes for bytes;
     using AddressBytes for address;
 
+    /**
+     * @dev There are two types of Axelar Gateways for cross-chain messaging:
+     * 1. Cross-chain messaging (GMP): The Axelar Gateway allows sending cross-chain messages.
+     *    This is compatible across both Amplifier and consensus chains. IAxelarGateway interface exposes this functionality.
+     * 2. Cross-chain messaging with Gateway Token: The AxelarGateway on legacy consensus EVM connections supports this (via callContractWithToken)
+     *    but not Amplifier chains. The gateway is cast to IAxelarGatewayWithToken when gateway tokens need to be handled.
+     *    ITS deployments on Amplifier chains will revert when this functionality is used.
+     */
     IAxelarGateway public immutable gateway;
     IAxelarGasService public immutable gasService;
     address public immutable interchainTokenFactory;
@@ -717,7 +725,7 @@ contract InterchainTokenService is
         // This is intentional, as using `uint256` instead of `bytes` improves gas efficiency without any functional difference.
         (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
 
-        if (validTokenAddress(tokenId) != gateway.tokenAddresses(tokenSymbol) || amount != amountInPayload)
+        if (validTokenAddress(tokenId) != gatewayWithToken().tokenAddresses(tokenSymbol) || amount != amountInPayload)
             revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
     }
 
@@ -940,7 +948,7 @@ contract InterchainTokenService is
     ) internal {
         bytes32 payloadHash = keccak256(payload);
 
-        if (!gateway.validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
+        if (!gatewayWithToken().validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
             revert NotApprovedByGateway();
 
         uint256 messageType;
@@ -1246,5 +1254,9 @@ contract InterchainTokenService is
         if (expressExecutor != address(0)) {
             emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
         }
+    }
+
+    function gatewayWithToken() internal view returns (IAxelarGatewayWithToken) {
+        return IAxelarGatewayWithToken(address(gateway));
     }
 }
