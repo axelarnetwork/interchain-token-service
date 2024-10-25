@@ -500,6 +500,12 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should return the correct contract id', async () => {
+            const expectedContractid = keccak256(toUtf8Bytes('interchain-token-service'));
+            const contractId = await service.contractId();
+            expect(contractId).to.eq(expectedContractid);
+        });
+
         it('Should return the token manager implementation', async () => {
             const tokenManagerImplementation = await service.tokenManagerImplementation(getRandomInt(1000));
             expect(tokenManagerImplementation).to.eq(tokenManager.address);

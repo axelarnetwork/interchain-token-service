@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGatewayWithToken.sol';
 import { IGatewayCaller } from '../interfaces/IGatewayCaller.sol';
 
 /**
@@ -117,6 +118,6 @@ contract GatewayCaller is IGatewayCaller {
             }
         }
 
-        gateway.callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
+        IAxelarGatewayWithToken(address(gateway)).callContractWithToken(destinationChain, destinationAddress, payload, symbol, amount);
     }
 }
