@@ -5,8 +5,7 @@ pragma solidity ^0.8.0;
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
-import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
-
+import { IAxelarGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGatewayWithToken.sol';
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
@@ -22,7 +21,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     IInterchainTokenService public immutable interchainTokenService;
     bytes32 public immutable chainNameHash;
-    IAxelarGateway public immutable gateway;
+    IAxelarGatewayWithToken public immutable gateway;
 
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
@@ -40,8 +39,10 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
 
         chainNameHash = interchainTokenService.chainNameHash();
-        gateway = interchainTokenService.gateway();
+        gateway = IAxelarGatewayWithToken(address(interchainTokenService.gateway()));
     }
+
+    function _setup(bytes calldata data) internal override {}
 
     /**
      * @notice Getter for the contract id.

@@ -18,7 +18,7 @@ const Create3Deployer = getContractJSON('Create3Deployer');
 const { MINT_BURN } = require('./constants');
 
 describe('Interchain Token Service Upgrade Flow', () => {
-    let wallet, otherWallet, signer;
+    let wallet, otherWallet, operator;
     let service, gateway, gasService;
     let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler, gatewayCaller;
     let interchainTokenFactoryAddress;
@@ -30,7 +30,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
     let buffer;
 
     const governanceChain = 'Governance Chain';
-    const threshold = 2;
+    const minimumTimeDelay = isHardhat ? 10 * 60 * 60 : 15;
     const deploymentKey = 'InterchainTokenService';
     const chainName = 'Test';
 
@@ -58,8 +58,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
     }
 
     before(async () => {
-        [wallet, otherWallet, signer] = await ethers.getSigners();
-        const signers = [wallet, otherWallet, signer];
+        [wallet, otherWallet, operator] = await ethers.getSigners();
         governanceAddress = otherWallet.address;
 
         buffer = isHardhat ? 10 * 60 * 60 : 10;
@@ -85,14 +84,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         );
 
         axelarServiceGovernance = await axelarServiceGovernanceFactory
-            .deploy(
-                gateway.address,
-                governanceChain,
-                governanceAddress,
-                buffer,
-                signers.map((signer) => signer.address),
-                threshold,
-            )
+            .deploy(gateway.address, governanceChain, governanceAddress, minimumTimeDelay, operator.address)
             .then((d) => d.deployed());
 
         service = await deployInterchainTokenService(
@@ -224,16 +216,11 @@ describe('Interchain Token Service Upgrade Flow', () => {
         );
 
         await expect(axelarServiceGovernance.execute(commandIdGateway, governanceChain, governanceAddress, payload))
-            .to.emit(axelarServiceGovernance, 'MultisigApproved')
+            .to.emit(axelarServiceGovernance, 'OperatorProposalApproved')
             .withArgs(proposalHash, target, calldata, nativeValue);
 
-        await axelarServiceGovernance
-            .connect(wallet)
-            .executeMultisigProposal(target, calldata, nativeValue)
-            .then((tx) => tx.wait);
-
-        await expect(axelarServiceGovernance.connect(otherWallet).executeMultisigProposal(target, calldata, nativeValue))
-            .to.emit(axelarServiceGovernance, 'MultisigExecuted')
+        await expect(axelarServiceGovernance.connect(operator).executeOperatorProposal(target, calldata, nativeValue))
+            .to.emit(axelarServiceGovernance, 'OperatorProposalExecuted')
             .withArgs(proposalHash, target, calldata, nativeValue)
             .and.to.emit(service, 'Upgraded')
             .withArgs(newServiceImplementation.address);
