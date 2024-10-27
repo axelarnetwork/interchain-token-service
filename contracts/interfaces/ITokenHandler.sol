@@ -8,14 +8,7 @@ pragma solidity ^0.8.0;
  */
 interface ITokenHandler {
     error UnsupportedTokenManagerType(uint256 tokenManagerType);
-    error AddressZero();
     error NotToken(address caller, address token);
-
-    /**
-     * @notice Returns the address of the axelar gateway on this chain.
-     * @return gateway_ The address of the axelar gateway contract.
-     */
-    function gateway() external view returns (address gateway_);
 
     /**
      * @notice This function gives token to a specified address from the token manager.
@@ -34,7 +27,6 @@ interface ITokenHandler {
      * @param from The address to take tokens from.
      * @param amount The amount of token to take.
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
-     * @return symbol The symbol for the token, if not empty the token is a gateway token and a callContractWith token has to be made.
      */
     // slither-disable-next-line locked-ether
     function takeToken(
@@ -42,7 +34,7 @@ interface ITokenHandler {
         bool tokenOnly,
         address from,
         uint256 amount
-    ) external payable returns (uint256, string memory symbol);
+    ) external payable returns (uint256);
 
     /**
      * @notice This function transfers token from and to a specified address.

@@ -17,9 +17,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error InvalidMinter(address minter);
     error NotMinter(address minter);
     error NotOperator(address operator);
-    error GatewayToken(address tokenAddress);
     error NotServiceOwner(address sender);
-    error NotGatewayToken(string symbol);
     error NotSupported();
 
     /**
@@ -163,18 +161,4 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
         string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
-
-    /**
-     * @notice Calculates the salt for a gateway interchain token.
-     * @param tokenIdentifier A unique identifier to generate the salt.
-     * @return salt The calculated salt for the interchain token.
-     */
-    function gatewayTokenSalt(bytes32 tokenIdentifier) external pure returns (bytes32 salt);
-
-    /**
-     * @notice Register 'canonical' gateway tokens. The same salt needs to be used for the same gateway token on every chain.
-     * @param tokenIdentifier A gateway token identifier to be used for the token registration. Should be the same for all chains.
-     * @param symbol The symbol of the token to register.
-     */
-    function registerGatewayToken(bytes32 tokenIdentifier, string calldata symbol) external returns (bytes32 tokenId);
 }

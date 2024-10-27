@@ -24,14 +24,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     using SafeTokenCall for IERC20;
     using SafeTokenTransfer for IERC20;
 
-    address public immutable gateway;
-
     uint256 internal constant UINT256_MAX = type(uint256).max;
-
-    constructor(address gateway_) {
-        if (gateway_ == address(0)) revert AddressZero();
-        gateway = gateway_;
-    }
 
     /**
      * @notice This function gives token to a specified address from the token manager.
@@ -70,11 +63,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
             return (amount, tokenAddress);
         }
 
-        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
-            _transferToken(tokenAddress, to, amount);
-            return (amount, tokenAddress);
-        }
-
         revert UnsupportedTokenManagerType(tokenManagerType);
     }
 
@@ -85,7 +73,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @param from The address to take tokens from.
      * @param amount The amount of token to take.
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
-     * @return symbol The symbol for the token, if not empty the token is a gateway token and a callContractWith token has to be made.
      */
     // slither-disable-next-line locked-ether
     function takeToken(
@@ -93,7 +80,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         bool tokenOnly,
         address from,
         uint256 amount
-    ) external payable returns (uint256, string memory symbol) {
+    ) external payable returns (uint256) {
         address tokenManager = _create3Address(tokenId);
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
@@ -109,9 +96,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
             _transferTokenFrom(tokenAddress, from, tokenManager, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _transferTokenFromWithFee(tokenAddress, from, tokenManager, amount);
-        } else if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
-            symbol = IERC20Named(tokenAddress).symbol();
-            _transferTokenFrom(tokenAddress, from, address(this), amount);
         } else {
             revert UnsupportedTokenManagerType(tokenManagerType);
         }
@@ -119,7 +103,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         /// @dev Track the flow amount being sent out as a message
         ITokenManager(tokenManager).addFlowOut(amount);
 
-        return (amount, symbol);
+        return amount;
     }
 
     /**
@@ -140,8 +124,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
             tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) ||
             tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) ||
             tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
-            tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM) ||
-            tokenManagerType == uint256(TokenManagerType.GATEWAY)
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
         ) {
             _transferTokenFrom(tokenAddress, from, to, amount);
             return (amount, tokenAddress);
@@ -162,15 +145,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      */
     // slither-disable-next-line locked-ether
     function postTokenManagerDeploy(uint256 tokenManagerType, address tokenManager) external payable {
+        // For lock/unlock token managers, the ITS contract needs an approval from the token manager to transfer tokens on its behalf
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             ITokenManager(tokenManager).approveService();
-        }
-
-        // Approve the gateway here. One-time infinite approval works for gateway wrapped tokens, and for most origin tokens.
-        // Approval can be refreshed in the future if needed for certain tokens via an upgrade, but realistically should never be exhausted.
-        if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
-            address token = ITokenManager(tokenManager).tokenAddress();
-            _approveGateway(token, UINT256_MAX);
         }
     }
 
@@ -220,12 +197,5 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
     function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
-    }
-
-    function _approveGateway(address tokenAddress, uint256 amount) internal {
-        uint256 allowance = IERC20(tokenAddress).allowance(address(this), gateway);
-        if (allowance == 0) {
-            IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20.approve.selector, gateway, amount));
-        }
     }
 }

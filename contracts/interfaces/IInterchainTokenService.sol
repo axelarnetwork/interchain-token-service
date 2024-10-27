@@ -34,12 +34,10 @@ interface IInterchainTokenService is
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
-    error GatewayToken();
     error TokenManagerDeploymentFailed(bytes error);
     error InterchainTokenDeploymentFailed(bytes error);
     error InvalidMessageType(uint256 messageType);
     error InvalidMetadataVersion(uint32 version);
-    error ExecuteWithTokenNotSupported();
     error InvalidExpressMessageType(uint256 messageType);
     error TakeTokenFailed(bytes data);
     error GiveTokenFailed(bytes data);
@@ -49,9 +47,9 @@ interface IInterchainTokenService is
     error ZeroAmount();
     error CannotDeploy(TokenManagerType);
     error CannotDeployRemotelyToSelf();
-    error InvalidGatewayTokenTransfer(bytes32 tokenId, bytes payload, string tokenSymbol, uint256 amount);
     error InvalidPayload();
     error GatewayCallFailed(bytes data);
+    error NotSupported();
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
