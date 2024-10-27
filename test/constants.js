@@ -12,7 +12,6 @@ const MINT_BURN_FROM = 1;
 const LOCK_UNLOCK = 2;
 const LOCK_UNLOCK_FEE_ON_TRANSFER = 3;
 const MINT_BURN = 4;
-const GATEWAY = 5;
 
 const MINTER_ROLE = 0;
 const OPERATOR_ROLE = 1;
@@ -35,7 +34,6 @@ module.exports = {
     LOCK_UNLOCK,
     LOCK_UNLOCK_FEE_ON_TRANSFER,
     MINT_BURN,
-    GATEWAY,
     MINTER_ROLE,
     OPERATOR_ROLE,
     FLOW_LIMITER_ROLE,

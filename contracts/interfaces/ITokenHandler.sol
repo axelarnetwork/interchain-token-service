@@ -29,12 +29,7 @@ interface ITokenHandler {
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
      */
     // slither-disable-next-line locked-ether
-    function takeToken(
-        bytes32 tokenId,
-        bool tokenOnly,
-        address from,
-        uint256 amount
-    ) external payable returns (uint256);
+    function takeToken(bytes32 tokenId, bool tokenOnly, address from, uint256 amount) external payable returns (uint256);
 
     /**
      * @notice This function transfers token from and to a specified address.

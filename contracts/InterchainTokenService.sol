@@ -478,16 +478,7 @@ contract InterchainTokenService is
 
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(
-            tokenId,
-            msg.sender,
-            destinationChain,
-            destinationAddress,
-            amount,
-            metadataVersion,
-            data,
-            gasValue
-        );
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
     }
 
     /**
@@ -547,16 +538,7 @@ contract InterchainTokenService is
 
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(
-            tokenId,
-            sourceAddress,
-            destinationChain,
-            destinationAddress,
-            amount,
-            metadataVersion,
-            data,
-            msg.value
-        );
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data, msg.value);
     }
 
     /*************\

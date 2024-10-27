@@ -7,7 +7,7 @@ const {
     getContractAt,
     Wallet,
     constants: { AddressZero },
-    utils: { defaultAbiCoder, keccak256, toUtf8Bytes, id },
+    utils: { defaultAbiCoder, keccak256, toUtf8Bytes },
 } = ethers;
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32, expectRevert } = require('./utils');
@@ -15,7 +15,6 @@ const {
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
     NATIVE_INTERCHAIN_TOKEN,
     LOCK_UNLOCK,
-    GATEWAY,
     MINTER_ROLE,
     OPERATOR_ROLE,
     FLOW_LIMITER_ROLE,

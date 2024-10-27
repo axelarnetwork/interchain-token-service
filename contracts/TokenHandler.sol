@@ -13,7 +13,6 @@ import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
-import { IERC20Named } from './interfaces/IERC20Named.sol';
 
 /**
  * @title TokenHandler
@@ -75,12 +74,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
      */
     // slither-disable-next-line locked-ether
-    function takeToken(
-        bytes32 tokenId,
-        bool tokenOnly,
-        address from,
-        uint256 amount
-    ) external payable returns (uint256) {
+    function takeToken(bytes32 tokenId, bool tokenOnly, address from, uint256 amount) external payable returns (uint256) {
         address tokenManager = _create3Address(tokenId);
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 

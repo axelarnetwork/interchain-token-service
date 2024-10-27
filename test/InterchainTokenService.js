@@ -11,7 +11,7 @@ const {
 } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
-const { approveContractCall, approveContractCallWithMint } = require('../scripts/utils');
+const { approveContractCall } = require('../scripts/utils');
 const { getRandomBytes32, getRandomInt, expectRevert, gasReporter, getEVMVersion } = require('./utils');
 const { deployAll, deployContract, deployInterchainTokenService } = require('../scripts/deploy');
 const {
@@ -2973,8 +2973,7 @@ describe('Interchain Token Service', () => {
     describe('Call contract with token value', () => {
         it('Should revert on contract call value', async () => {
             await expectRevert(
-                (gasOptions) =>
-                    service.contractCallWithTokenValue(sourceChain, 'sourceAddress', '0x', 'TEST', 1, gasOptions),
+                (gasOptions) => service.contractCallWithTokenValue(sourceChain, 'sourceAddress', '0x', 'TEST', 1, gasOptions),
                 service,
                 'NotSupported',
             );
