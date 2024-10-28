@@ -27,7 +27,8 @@ const optimizerSettings = {
         },
     },
 };
-const proxyContractCompilerSettings = {
+// For contracts that are fixed to a specific version, we fix the compiler settings as well
+const fixedContractCompilerSettings = {
     version: '0.8.21',
     settings: {
         evmVersion: process.env.EVM_VERSION || 'london',
@@ -55,10 +56,10 @@ module.exports = {
         overrides: process.env.NO_OVERRIDES
             ? {}
             : {
-                  'contracts/proxies/InterchainProxy.sol': proxyContractCompilerSettings,
-                  'contracts/proxies/TokenManagerProxy.sol': proxyContractCompilerSettings,
-                  'contracts/interchain-token/InterchainToken.sol': proxyContractCompilerSettings,
-                  'contracts/test/TestInterchainTokenService.sol': proxyContractCompilerSettings,
+                  'contracts/proxies/InterchainProxy.sol': fixedContractCompilerSettings,
+                  'contracts/proxies/TokenManagerProxy.sol': fixedContractCompilerSettings,
+                  'contracts/interchain-token/InterchainToken.sol': fixedContractCompilerSettings,
+                  'contracts/test/TestInterchainTokenService.sol': fixedContractCompilerSettings,
               },
     },
     defaultNetwork: 'hardhat',
