@@ -23,8 +23,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     using SafeTokenCall for IERC20;
     using SafeTokenTransfer for IERC20;
 
-    uint256 internal constant UINT256_MAX = type(uint256).max;
-
     /**
      * @notice This function gives token to a specified address from the token manager.
      * @param tokenId The token id of the tokenManager.
