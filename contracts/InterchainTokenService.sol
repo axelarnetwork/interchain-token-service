@@ -701,13 +701,14 @@ contract InterchainTokenService is
             destinationAddress = destinationAddressBytes.toAddress();
         }
 
-        address recipient = (expressExecutor == address(0)) ? destinationAddress : expressExecutor;
-        address tokenAddress;
-        (amount, tokenAddress) = _giveToken(tokenId, recipient, amount);
         // Return token to the express executor
         if (expressExecutor != address(0)) {
+            _giveToken(tokenId, expressExecutor, amount);
             return;
         }
+
+        address tokenAddress;
+        (amount, tokenAddress) = _giveToken(tokenId, destinationAddress, amount);
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTransferReceived(
