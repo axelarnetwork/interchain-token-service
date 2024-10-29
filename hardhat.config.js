@@ -27,21 +27,22 @@ const optimizerSettings = {
         },
     },
 };
-const compilerSettings = {
+// For contracts that are fixed to a specific version, we fix the compiler settings as well
+const fixedContractCompilerSettings = {
     version: '0.8.21',
-    settings: {
-        evmVersion: process.env.EVM_VERSION || 'london',
-        optimizer: optimizerSettings,
-    },
-};
-const itsCompilerSettings = {
-    version: '0.8.24',
     settings: {
         evmVersion: process.env.EVM_VERSION || 'london',
         optimizer: {
             ...optimizerSettings,
-            runs: 100, // Reduce runs to keep bytecode size under limit
+            runs: 1000,
         },
+    },
+};
+const compilerSettings = {
+    version: '0.8.27',
+    settings: {
+        evmVersion: process.env.EVM_VERSION || 'london',
+        optimizer: optimizerSettings,
     },
 };
 
@@ -55,10 +56,10 @@ module.exports = {
         overrides: process.env.NO_OVERRIDES
             ? {}
             : {
-                  'contracts/proxies/Proxy.sol': compilerSettings,
-                  'contracts/proxies/TokenManagerProxy.sol': compilerSettings,
-                  'contracts/InterchainTokenService.sol': itsCompilerSettings,
-                  'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
+                  'contracts/proxies/InterchainProxy.sol': fixedContractCompilerSettings,
+                  'contracts/proxies/TokenManagerProxy.sol': fixedContractCompilerSettings,
+                  'contracts/interchain-token/InterchainToken.sol': fixedContractCompilerSettings,
+                  'contracts/test/TestInterchainTokenService.sol': fixedContractCompilerSettings,
               },
     },
     defaultNetwork: 'hardhat',
