@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import { IERC20 } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
-import { IAxelarGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGatewayWithToken.sol';
 import { ExpressExecutorTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/express/ExpressExecutorTracker.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
@@ -475,22 +474,11 @@ contract InterchainTokenService is
         bytes calldata metadata,
         uint256 gasValue
     ) external payable whenNotPaused {
-        string memory symbol;
-        (amount, symbol) = _takeToken(tokenId, msg.sender, amount, false);
+        amount = _takeToken(tokenId, msg.sender, amount, false);
 
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(
-            tokenId,
-            msg.sender,
-            destinationChain,
-            destinationAddress,
-            amount,
-            metadataVersion,
-            data,
-            symbol,
-            gasValue
-        );
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
     }
 
     /**
@@ -510,8 +498,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused {
         if (data.length == 0) revert EmptyData();
-        string memory symbol;
-        (amount, symbol) = _takeToken(tokenId, msg.sender, amount, false);
+        amount = _takeToken(tokenId, msg.sender, amount, false);
 
         _transmitInterchainTransfer(
             tokenId,
@@ -521,7 +508,6 @@ contract InterchainTokenService is
             amount,
             IGatewayCaller.MetadataVersion.CONTRACT_CALL,
             data,
-            symbol,
             gasValue
         );
     }
@@ -548,22 +534,11 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable whenNotPaused {
-        string memory symbol;
-        (amount, symbol) = _takeToken(tokenId, sourceAddress, amount, true);
+        amount = _takeToken(tokenId, sourceAddress, amount, true);
 
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(
-            tokenId,
-            sourceAddress,
-            destinationChain,
-            destinationAddress,
-            amount,
-            metadataVersion,
-            data,
-            symbol,
-            msg.value
-        );
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data, msg.value);
     }
 
     /*************\
@@ -659,74 +634,44 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Returns the amount of token that this call is worth.
-     * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
-     * @param sourceChain The source chain.
-     * @param sourceAddress The source address on the source chain.
-     * @param payload The payload sent with the call.
-     * @param symbol The symbol symbol for the call.
-     * @param amount The amount for the call.
-     * @return address The token address.
-     * @return uint256 The value the call is worth.
+     * @notice Call with gateway tokens are not supported.
      */
     function contractCallWithTokenValue(
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata symbol,
-        uint256 amount
-    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
-        _checkPayloadAgainstGatewayData(payload, symbol, amount);
-        return _contractCallValue(payload);
+        string calldata /* sourceChain */,
+        string calldata /* sourceAddress */,
+        bytes calldata /* payload */,
+        string calldata /* symbol */,
+        uint256 /* amount */
+    ) public pure override returns (address, uint256) {
+        revert NotSupported();
     }
 
     /**
-     * @notice Express executes with a gateway token operations based on the payload and selector.
-     * @param commandId The unique message id.
-     * @param sourceChain The chain where the transaction originates from.
-     * @param sourceAddress The address of the remote ITS where the transaction originates from.
-     * @param payload The encoded data payload for the transaction.
-     * @param tokenSymbol The symbol symbol for the call.
-     * @param amount The amount for the call.
+     * @notice Call with gateway tokens are not supported.
      */
     function expressExecuteWithToken(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata tokenSymbol,
-        uint256 amount
+        bytes32 /* commandId */,
+        string calldata /* sourceChain */,
+        string calldata /* sourceAddress */,
+        bytes calldata /* payload */,
+        string calldata /* tokenSymbol */,
+        uint256 /* amount */
     ) external payable {
-        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
-        // It should be ok to ignore the symbol and amount since this info exists on the payload.
-        expressExecute(commandId, sourceChain, sourceAddress, payload);
-    }
-
-    function executeWithToken(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata tokenSymbol,
-        uint256 amount
-    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
-        _executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount);
+        revert NotSupported();
     }
 
     /**
-     * @notice Check that the tokenId from the payload is a token that is registered in the gateway with the proper tokenSymbol, with the right amount from the payload.
-     * Also check that the amount in the payload matches the one for the call.
-     * @param payload The payload for the call contract with token.
-     * @param tokenSymbol The tokenSymbol for the call contract with token.
-     * @param amount The amount for the call contract with token.
+     * @notice Call with gateway tokens are not supported.
      */
-    function _checkPayloadAgainstGatewayData(bytes memory payload, string calldata tokenSymbol, uint256 amount) internal view {
-        // The same payload is decoded in both _checkPayloadAgainstGatewayData and _contractCallValue using different parameters.
-        // This is intentional, as using `uint256` instead of `bytes` improves gas efficiency without any functional difference.
-        (, bytes32 tokenId, , , uint256 amountInPayload) = abi.decode(payload, (uint256, bytes32, uint256, uint256, uint256));
-
-        if (validTokenAddress(tokenId) != gatewayWithToken().tokenAddresses(tokenSymbol) || amount != amountInPayload)
-            revert InvalidGatewayTokenTransfer(tokenId, payload, tokenSymbol, amount);
+    function executeWithToken(
+        bytes32 /* commandId */,
+        string calldata /* sourceChain */,
+        string calldata /* sourceAddress */,
+        bytes calldata /* payload */,
+        string calldata /* tokenSymbol */,
+        uint256 /* amount */
+    ) external pure {
+        revert NotSupported();
     }
 
     /**
@@ -756,11 +701,9 @@ contract InterchainTokenService is
             destinationAddress = destinationAddressBytes.toAddress();
         }
 
-        // Return token to the existing express caller
+        // Return token to the express executor
         if (expressExecutor != address(0)) {
-            // slither-disable-next-line unused-return
             _giveToken(tokenId, expressExecutor, amount);
-
             return;
         }
 
@@ -856,40 +799,6 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Calls a contract on a specific destination chain with the given payload and gateway token
-     * @param destinationChain The target chain where the contract will be called.
-     * @param payload The data payload for the transaction.
-     * @param gasValue The amount of gas to be paid for the transaction.
-     */
-    function _callContractWithToken(
-        string memory destinationChain,
-        bytes memory payload,
-        string memory symbol,
-        uint256 amount,
-        IGatewayCaller.MetadataVersion metadataVersion,
-        uint256 gasValue
-    ) internal {
-        string memory destinationAddress;
-
-        (destinationChain, destinationAddress, payload) = _getCallParams(destinationChain, payload);
-
-        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
-            abi.encodeWithSelector(
-                IGatewayCaller.callContractWithToken.selector,
-                destinationChain,
-                destinationAddress,
-                payload,
-                symbol,
-                amount,
-                metadataVersion,
-                gasValue
-            )
-        );
-
-        if (!success) revert GatewayCallFailed(returnData);
-    }
-
-    /**
      * @dev Get the params for the cross-chain message, taking routing via ITS Hub into account.
      */
     function _getCallParams(
@@ -936,35 +845,6 @@ contract InterchainTokenService is
         } else {
             revert InvalidMessageType(messageType);
         }
-    }
-
-    function _executeWithToken(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes memory payload,
-        string calldata tokenSymbol,
-        uint256 amount
-    ) internal {
-        bytes32 payloadHash = keccak256(payload);
-
-        if (!gatewayWithToken().validateContractCallAndMint(commandId, sourceChain, sourceAddress, payloadHash, tokenSymbol, amount))
-            revert NotApprovedByGateway();
-
-        uint256 messageType;
-        string memory originalSourceChain;
-        (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
-
-        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            revert InvalidMessageType(messageType);
-        }
-
-        _checkPayloadAgainstGatewayData(payload, tokenSymbol, amount);
-
-        // slither-disable-next-line reentrancy-events
-        address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
-
-        _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, payload);
     }
 
     function _getMessageType(bytes memory payload) internal pure returns (uint256 messageType) {
@@ -1162,6 +1042,7 @@ contract InterchainTokenService is
      * @param amount The amount of tokens to send.
      * @param metadataVersion The version of the metadata.
      * @param data The data to be passed with the token transfer.
+     * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _transmitInterchainTransfer(
         bytes32 tokenId,
@@ -1171,7 +1052,6 @@ contract InterchainTokenService is
         uint256 amount,
         IGatewayCaller.MetadataVersion metadataVersion,
         bytes memory data,
-        string memory symbol,
         uint256 gasValue
     ) internal {
         if (amount == 0) revert ZeroAmount();
@@ -1194,24 +1074,21 @@ contract InterchainTokenService is
             amount,
             data
         );
-        if (bytes(symbol).length > 0) {
-            _callContractWithToken(destinationChain, payload, symbol, amount, metadataVersion, gasValue);
-        } else {
-            _callContract(destinationChain, payload, metadataVersion, gasValue);
-        }
+
+        _callContract(destinationChain, payload, metadataVersion, gasValue);
     }
 
     /**
      * @dev Takes token from a sender via the token service. `tokenOnly` indicates if the caller should be restricted to the token only.
      */
-    function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256, string memory symbol) {
+    function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256) {
         (bool success, bytes memory data) = tokenHandler.delegatecall(
             abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenId, tokenOnly, from, amount)
         );
         if (!success) revert TakeTokenFailed(data);
-        (amount, symbol) = abi.decode(data, (uint256, string));
+        amount = abi.decode(data, (uint256));
 
-        return (amount, symbol);
+        return amount;
     }
 
     /**
@@ -1254,9 +1131,5 @@ contract InterchainTokenService is
         if (expressExecutor != address(0)) {
             emit ExpressExecutionFulfilled(commandId, sourceChain, sourceAddress, payloadHash, expressExecutor);
         }
-    }
-
-    function gatewayWithToken() internal view returns (IAxelarGatewayWithToken) {
-        return IAxelarGatewayWithToken(address(gateway));
     }
 }

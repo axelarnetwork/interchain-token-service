@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/utils/Multicall.sol';
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
-import { IAxelarGatewayWithToken } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGatewayWithToken.sol';
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
@@ -21,12 +20,10 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     IInterchainTokenService public immutable interchainTokenService;
     bytes32 public immutable chainNameHash;
-    IAxelarGatewayWithToken public immutable gateway;
 
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
-    bytes32 internal constant PREFIX_GATEWAY_TOKEN_SALT = keccak256('gateway-token-salt');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     /**
@@ -39,7 +36,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         interchainTokenService = IInterchainTokenService(interchainTokenService_);
 
         chainNameHash = interchainTokenService.chainNameHash();
-        gateway = IAxelarGatewayWithToken(address(interchainTokenService.gateway()));
     }
 
     function _setup(bytes calldata data) internal override {}
@@ -71,15 +67,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      */
     function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) public pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(PREFIX_CANONICAL_TOKEN_SALT, chainNameHash_, tokenAddress));
-    }
-
-    /**
-     * @notice Calculates the salt for a gateway interchain token.
-     * @param tokenIdentifier A unique identifier to generate the salt.
-     * @return salt The calculated salt for the interchain token.
-     */
-    function gatewayTokenSalt(bytes32 tokenIdentifier) public pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(PREFIX_GATEWAY_TOKEN_SALT, tokenIdentifier));
     }
 
     /**
@@ -297,8 +284,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string memory tokenName = token.name();
         string memory tokenSymbol = token.symbol();
         uint8 tokenDecimals = token.decimals();
+        bytes memory minter = ''; // No additional minter is set on a canonical token deployment
 
-        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, '', gasValue);
+        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue);
     }
 
     /**
@@ -321,20 +309,5 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         if (bytes(originalChain).length != 0) revert NotSupported();
 
         tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
-    }
-
-    /**
-     * @notice Register 'canonical' gateway tokens. The same salt needs to be used for the same gateway token on every chain.
-     * @param tokenIdentifier A gateway token identifier to be used for the token registration. Should be the same for all chains.
-     * @param symbol The symbol of the token to register.
-     */
-    function registerGatewayToken(bytes32 tokenIdentifier, string calldata symbol) external onlyOwner returns (bytes32 tokenId) {
-        address tokenAddress = gateway.tokenAddresses(symbol);
-        if (tokenAddress == address(0)) revert NotGatewayToken(symbol);
-
-        bytes memory params = abi.encode('', tokenAddress);
-        bytes32 salt = gatewayTokenSalt(tokenIdentifier);
-
-        tokenId = interchainTokenService.deployTokenManager(salt, '', TokenManagerType.GATEWAY, params, 0);
     }
 }
