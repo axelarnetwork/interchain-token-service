@@ -148,11 +148,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         IERC20(tokenAddress).safeTransferFrom(from, to, amount);
     }
 
-    function _transferToken(address tokenAddress, address to, uint256 amount) internal {
-        // slither-disable-next-line arbitrary-send-erc20
-        IERC20(tokenAddress).safeTransfer(to, amount);
-    }
-
     function _transferTokenFromWithFee(
         address tokenAddress,
         address from,

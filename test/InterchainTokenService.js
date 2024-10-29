@@ -2337,7 +2337,6 @@ describe('Interchain Token Service', () => {
 
         before(async () => {
             [token, , tokenId] = await deployFunctions.mintBurn(service, tokenName, tokenSymbol, tokenDecimals, amount * 2, true);
-            // await token.approve(service.address, amount * 2).then((tx) => tx.wait);
             data = defaultAbiCoder.encode(['address', 'string'], [destinationAddress, message]);
             executable = await deployContract(wallet, 'TestInterchainExecutable', [service.address]);
         });
