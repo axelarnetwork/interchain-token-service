@@ -1433,16 +1433,6 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe('Execute with token', () => {
-        it('should revert on execute with token', async () => {
-            await expectRevert(
-                (gasOptions) => service.executeWithToken(HashZero, 'sourceChain', wallet.address, '0x', 'TEST', 1, gasOptions),
-                service,
-                'NotSupported',
-            );
-        });
-    });
-
     describe('Receive Remote Tokens', () => {
         let sourceAddress;
         const amount = 1234;
@@ -2395,15 +2385,6 @@ describe('Interchain Token Service', () => {
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });
-
-        it('Should revert on express execute with token', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    service.expressExecuteWithToken(commandId, sourceChain, sourceAddress, '0x', tokenSymbol, amount, gasOptions),
-                service,
-                'NotSupported',
-            );
-        });
     });
 
     describe('Express Receive Remote Token', () => {
@@ -2486,9 +2467,11 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-
             const commandId = getRandomBytes32();
+
             await (await service.expressExecute(commandId, sourceChain, sourceAddress, payload)).wait();
+            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+
             await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
@@ -2507,9 +2490,11 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-
             const commandId = getRandomBytes32();
+
             await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
+            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+
             await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
@@ -2528,9 +2513,11 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-
             const commandId = getRandomBytes32();
+
             await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
+            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+
             await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
@@ -2555,9 +2542,11 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-
             const commandId = getRandomBytes32();
+
             await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
+            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+
             await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
@@ -2584,9 +2573,11 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-
             const commandId = getRandomBytes32();
+
             await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
+            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+
             await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
 
             await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
@@ -2966,16 +2957,6 @@ describe('Interchain Token Service', () => {
 
             expect(tokenAddress).to.eq(token.address);
             expect(returnedAmount).to.eq(amount);
-        });
-    });
-
-    describe('Call contract with token value', () => {
-        it('Should revert on contract call value', async () => {
-            await expectRevert(
-                (gasOptions) => service.contractCallWithTokenValue(sourceChain, 'sourceAddress', '0x', 'TEST', 1, gasOptions),
-                service,
-                'NotSupported',
-            );
         });
     });
 

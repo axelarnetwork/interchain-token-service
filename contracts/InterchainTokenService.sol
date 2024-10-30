@@ -411,6 +411,23 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Returns the express executor for a given command.
+     * @param commandId The commandId for the contractCall.
+     * @param sourceChain The source chain.
+     * @param sourceAddress The source address.
+     * @param payloadHash The hash of the payload.
+     * @return expressExecutor The address of the express executor.
+     */
+    function getExpressExecutor(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes32 payloadHash
+    ) external view returns (address expressExecutor) {
+        expressExecutor = _getExpressExecutor(commandId, sourceChain, sourceAddress, payloadHash);
+    }
+
+    /**
      * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
      * interchainTransfer that matches the parameters passed here.
      * @param commandId The unique message id of the transfer being expressed.
@@ -631,47 +648,6 @@ contract InterchainTokenService is
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
 
         _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
-    }
-
-    /**
-     * @notice Call with gateway tokens are not supported.
-     */
-    function contractCallWithTokenValue(
-        string calldata /* sourceChain */,
-        string calldata /* sourceAddress */,
-        bytes calldata /* payload */,
-        string calldata /* symbol */,
-        uint256 /* amount */
-    ) public pure override returns (address, uint256) {
-        revert NotSupported();
-    }
-
-    /**
-     * @notice Call with gateway tokens are not supported.
-     */
-    function expressExecuteWithToken(
-        bytes32 /* commandId */,
-        string calldata /* sourceChain */,
-        string calldata /* sourceAddress */,
-        bytes calldata /* payload */,
-        string calldata /* tokenSymbol */,
-        uint256 /* amount */
-    ) external payable {
-        revert NotSupported();
-    }
-
-    /**
-     * @notice Call with gateway tokens are not supported.
-     */
-    function executeWithToken(
-        bytes32 /* commandId */,
-        string calldata /* sourceChain */,
-        string calldata /* sourceAddress */,
-        bytes calldata /* payload */,
-        string calldata /* tokenSymbol */,
-        uint256 /* amount */
-    ) external pure {
-        revert NotSupported();
     }
 
     /**
