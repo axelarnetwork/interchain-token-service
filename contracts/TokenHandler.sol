@@ -159,11 +159,8 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         _transferTokenFrom(tokenAddress, from, to, amount);
 
         uint256 diff = IERC20(tokenAddress).balanceOf(to) - balanceBefore;
-        if (diff < amount) {
-            amount = diff;
-        }
 
-        return amount;
+        return diff < amount ? diff : amount;
     }
 
     function _giveInterchainToken(address tokenAddress, address to, uint256 amount) internal {
