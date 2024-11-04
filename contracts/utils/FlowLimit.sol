@@ -29,7 +29,9 @@ contract FlowLimit is IFlowLimit {
 
     /**
      * @notice Internal function to set the flow limit.
-     * @param flowLimit_ The value to set the flow limit to.
+     * @param flowLimit_ The value to set the flow limit to. Must not be set to `uint256.max`.
+     * Only the operator can set the flow limit for their own token; however, an incorrect setting
+     * may result in a denial of service due to potential arithmetic underflow or overflow.
      * @param tokenId The id of the token to set the flow limit for.
      */
     function _setFlowLimit(uint256 flowLimit_, bytes32 tokenId) internal {
