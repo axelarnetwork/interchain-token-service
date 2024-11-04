@@ -17,7 +17,7 @@ const { deployAll, deployContract, deployInterchainTokenService } = require('../
 const {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
+    MESSAGE_TYPE_REGISTER_TOKEN,
     MESSAGE_TYPE_RECEIVE_FROM_HUB,
     INVALID_MESSAGE_TYPE,
     NATIVE_INTERCHAIN_TOKEN,
@@ -1046,7 +1046,7 @@ describe('Interchain Token Service', () => {
             const type = LOCK_UNLOCK;
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, type, params],
+                [MESSAGE_TYPE_REGISTER_TOKEN, tokenId, type, params],
             );
 
             const tokenManager = await getContractAt('TokenManager', await service.validTokenManagerAddress(tokenId), wallet);
@@ -1127,12 +1127,12 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, LOCK_UNLOCK, params],
+                [MESSAGE_TYPE_REGISTER_TOKEN, tokenId, LOCK_UNLOCK, params],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
+            await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP REGISTER_TOKEN'))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK, params);
 
@@ -1155,7 +1155,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
+                [MESSAGE_TYPE_REGISTER_TOKEN, tokenId, MINT_BURN, params],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -1181,7 +1181,7 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, NATIVE_INTERCHAIN_TOKEN, params],
+                [MESSAGE_TYPE_REGISTER_TOKEN, tokenId, NATIVE_INTERCHAIN_TOKEN, params],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -2422,7 +2422,7 @@ describe('Interchain Token Service', () => {
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, destAddress, amount],
+                [MESSAGE_TYPE_REGISTER_TOKEN, tokenId, destAddress, amount],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -2430,7 +2430,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
                 service,
                 'InvalidExpressMessageType',
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER],
+                [MESSAGE_TYPE_REGISTER_TOKEN],
             );
         });
 

@@ -79,7 +79,7 @@ contract InterchainTokenService is
 
     uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
-    uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
+    uint256 private constant MESSAGE_TYPE_REGISTER_TOKEN = 2;
     uint256 private constant MESSAGE_TYPE_SEND_TO_HUB = 3;
     uint256 private constant MESSAGE_TYPE_RECEIVE_FROM_HUB = 4;
 
@@ -814,7 +814,7 @@ contract InterchainTokenService is
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
             _processInterchainTransferPayload(commandId, expressExecutor, originalSourceChain, payload);
-        } else if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) {
+        } else if (messageType == MESSAGE_TYPE_REGISTER_TOKEN) {
             _processDeployTokenManagerPayload(payload);
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
             _processDeployInterchainTokenPayload(payload);
@@ -884,7 +884,7 @@ contract InterchainTokenService is
 
         emit TokenManagerDeploymentStarted(tokenId, destinationChain, tokenManagerType, params);
 
-        bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, tokenManagerType, params);
+        bytes memory payload = abi.encode(MESSAGE_TYPE_REGISTER_TOKEN, tokenId, tokenManagerType, params);
 
         _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }

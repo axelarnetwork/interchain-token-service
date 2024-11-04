@@ -18,7 +18,7 @@ const { approveContractCall } = require('../scripts/utils');
 const {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
+    MESSAGE_TYPE_REGISTER_TOKEN,
     MESSAGE_TYPE_SEND_TO_HUB,
     MESSAGE_TYPE_RECEIVE_FROM_HUB,
     NATIVE_INTERCHAIN_TOKEN,
@@ -372,7 +372,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
+                [MESSAGE_TYPE_REGISTER_TOKEN, tokenId, MINT_BURN, params],
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             await expect(service.multicall(calls, { value }))

@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 enum MessageType {
     INTERCHAIN_TRANSFER,
     DEPLOY_INTERCHAIN_TOKEN,
-    DEPLOY_TOKEN_MANAGER
+    REGISTER_TOKEN
 }
 
 struct InterchainTransfer {
