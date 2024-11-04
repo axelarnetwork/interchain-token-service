@@ -140,14 +140,14 @@ interface IInterchainTokenService is
      * @param tokenId The tokenId of the token manager.
      * @return tokenManagerAddress_ The address of the valid token manager.
      */
-    function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
+    function getDeployedTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
 
     /**
      * @notice Returns the address of the token that an existing tokenManager points to.
      * @param tokenId The tokenId of the token manager.
      * @return tokenAddress The address of the token.
      */
-    function validTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
+    function getManagedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
     /**
      * @notice Returns the address of the interchain token associated with the given tokenId.

@@ -278,7 +278,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
         salt = canonicalInterchainTokenSalt(chainNameHash, originalTokenAddress);
         tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
-        token = IInterchainToken(interchainTokenService.validTokenAddress(tokenId));
+        token = IInterchainToken(interchainTokenService.getManagedTokenAddress(tokenId));
 
         // The 3 lines below will revert if the token does not exist.
         string memory tokenName = token.name();

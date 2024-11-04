@@ -526,10 +526,10 @@ _The TokenManager does not need to exist already._
 | ---- | ---- | ----------- |
 | tokenManagerAddress_ | address | The deployment address of the TokenManager. |
 
-### validTokenManagerAddress
+### getDeployedTokenManagerAddress
 
 ```solidity
-function validTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress_)
+function getDeployedTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress_)
 ```
 
 Returns the address of a TokenManager from a specific tokenId.
@@ -548,10 +548,10 @@ _The TokenManager needs to exist already._
 | ---- | ---- | ----------- |
 | tokenManagerAddress_ | address | The deployment address of the TokenManager. |
 
-### validTokenAddress
+### getManagedTokenAddress
 
 ```solidity
-function validTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
+function getManagedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
 ```
 
 Returns the address of the token that an existing tokenManager points to.
@@ -3014,10 +3014,10 @@ Returns the address of the token manager associated with the given tokenId.
 | ---- | ---- | ----------- |
 | tokenManagerAddress_ | address | The address of the token manager. |
 
-### validTokenManagerAddress
+### getDeployedTokenManagerAddress
 
 ```solidity
-function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_)
+function getDeployedTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_)
 ```
 
 Returns the address of the valid token manager associated with the given tokenId.
@@ -3034,10 +3034,10 @@ Returns the address of the valid token manager associated with the given tokenId
 | ---- | ---- | ----------- |
 | tokenManagerAddress_ | address | The address of the valid token manager. |
 
-### validTokenAddress
+### getManagedTokenAddress
 
 ```solidity
-function validTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+function getManagedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
 ```
 
 Returns the address of the token that an existing tokenManager points to.

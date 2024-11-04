@@ -200,7 +200,7 @@ contract InterchainTokenService is
      * @param tokenId The tokenId.
      * @return tokenManagerAddress_ The deployment address of the TokenManager.
      */
-    function validTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress_) {
+    function getDeployedTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress_) {
         tokenManagerAddress_ = tokenManagerAddress(tokenId);
         if (tokenManagerAddress_.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
     }
@@ -210,8 +210,8 @@ contract InterchainTokenService is
      * @param tokenId The tokenId.
      * @return tokenAddress The address of the token.
      */
-    function validTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
-        address tokenManagerAddress_ = validTokenManagerAddress(tokenId);
+    function getManagedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
+        address tokenManagerAddress_ = getDeployedTokenManagerAddress(tokenId);
         tokenAddress = ITokenManager(tokenManagerAddress_).tokenAddress();
     }
 
@@ -251,7 +251,7 @@ contract InterchainTokenService is
      * @return flowLimit_ The flow limit.
      */
     function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
+        ITokenManager tokenManager_ = ITokenManager(getDeployedTokenManagerAddress(tokenId));
         flowLimit_ = tokenManager_.flowLimit();
     }
 
@@ -261,7 +261,7 @@ contract InterchainTokenService is
      * @return flowOutAmount_ The flow out amount.
      */
     function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
+        ITokenManager tokenManager_ = ITokenManager(getDeployedTokenManagerAddress(tokenId));
         flowOutAmount_ = tokenManager_.flowOutAmount();
     }
 
@@ -271,7 +271,7 @@ contract InterchainTokenService is
      * @return flowInAmount_ The flow in amount.
      */
     function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
+        ITokenManager tokenManager_ = ITokenManager(getDeployedTokenManagerAddress(tokenId));
         flowInAmount_ = tokenManager_.flowInAmount();
     }
 
@@ -572,7 +572,7 @@ contract InterchainTokenService is
         if (length != flowLimits.length) revert LengthMismatch();
 
         for (uint256 i; i < length; ++i) {
-            ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenIds[i]));
+            ITokenManager tokenManager_ = ITokenManager(getDeployedTokenManagerAddress(tokenIds[i]));
             // slither-disable-next-line calls-loop
             tokenManager_.setFlowLimit(flowLimits[i]);
         }
@@ -880,7 +880,7 @@ contract InterchainTokenService is
         bytes calldata params
     ) internal {
         // slither-disable-next-line unused-return
-        validTokenManagerAddress(tokenId);
+        getDeployedTokenManagerAddress(tokenId);
 
         emit TokenManagerDeploymentStarted(tokenId, destinationChain, tokenManagerType, params);
 
@@ -909,7 +909,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) internal {
         // slither-disable-next-line unused-return
-        validTokenManagerAddress(tokenId);
+        getDeployedTokenManagerAddress(tokenId);
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, minter, destinationChain);
@@ -1093,7 +1093,7 @@ contract InterchainTokenService is
             revert InvalidExpressMessageType(messageType);
         }
 
-        return (validTokenAddress(tokenId), amount);
+        return (getManagedTokenAddress(tokenId), amount);
     }
 
     function _getExpressExecutorAndEmitEvent(
