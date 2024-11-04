@@ -2721,6 +2721,15 @@ describe('Interchain Token Service', () => {
             await tokenManager.setFlowLimit(flowLimit).then((tx) => tx.wait);
         });
 
+        it('Should be reverted setting invalid flow limit', async () => {
+            const invalidFlowLimit = MaxUint256;
+
+            await expectRevert((gasOptions) => tokenManager.setFlowLimit(invalidFlowLimit, gasOptions), tokenManager, 'InvalidFlowLimit', [
+                invalidFlowLimit,
+                tokenId,
+            ]);
+        });
+
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
             await service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x', 0).then((tx) => tx.wait);
 

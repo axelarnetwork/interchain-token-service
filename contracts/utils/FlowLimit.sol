@@ -33,6 +33,8 @@ contract FlowLimit is IFlowLimit {
      * @param tokenId The id of the token to set the flow limit for.
      */
     function _setFlowLimit(uint256 flowLimit_, bytes32 tokenId) internal {
+        if (flowLimit_ == type(uint256).max) revert InvalidFlowLimit(flowLimit_, tokenId);
+
         assembly {
             sstore(FLOW_LIMIT_SLOT, flowLimit_)
         }
