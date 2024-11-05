@@ -2780,14 +2780,14 @@ describe('Interchain Token Service', () => {
             const tokenFlowLimit = await service.flowLimit(tokenId);
             expect(tokenFlowLimit).to.eq(flowLimit);
 
-            let flowIn = await service.flowInAmount(tokenId);
-            let flowOut = await service.flowOutAmount(tokenId);
+            const flowIn = await service.flowInAmount(tokenId);
+            const flowOut = await service.flowOutAmount(tokenId);
 
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(sendAmount);
 
-            let newFlowLimit = MaxUint256;
-            let newSendAmount = 1;
+            const newFlowLimit = MaxUint256;
+            const newSendAmount = 1;
 
             await tokenManager.setFlowLimit(newFlowLimit).then((tx) => tx.wait);
 
@@ -2811,17 +2811,17 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert if the flow addition overflows', async () => {
-            let newFlowLimit = MaxUint256;
-            let newSendAmount = MaxUint256;
-
             const tokenFlowLimit = await service.flowLimit(tokenId);
             expect(tokenFlowLimit).to.eq(MaxUint256);
 
-            let flowIn = await service.flowInAmount(tokenId);
-            let flowOut = await service.flowOutAmount(tokenId);
+            const flowIn = await service.flowInAmount(tokenId);
+            const flowOut = await service.flowOutAmount(tokenId);
 
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(sendAmount);
+
+            const newFlowLimit = MaxUint256;
+            const newSendAmount = MaxUint256;
 
             await tokenManager.setFlowLimit(newFlowLimit).then((tx) => tx.wait);
 
