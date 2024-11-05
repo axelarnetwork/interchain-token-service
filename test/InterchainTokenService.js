@@ -635,7 +635,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
 
-            const tokenManagerAddress = await service.getDeployedTokenManagerAddress(tokenId);
+            const tokenManagerAddress = await service.deployedTokenManager(tokenId);
             expect(tokenManagerAddress).to.not.equal(AddressZero);
 
             tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
@@ -1049,7 +1049,7 @@ describe('Interchain Token Service', () => {
                 [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, type, params],
             );
 
-            const tokenManager = await getContractAt('TokenManager', await service.getDeployedTokenManagerAddress(tokenId), wallet);
+            const tokenManager = await getContractAt('TokenManager', await service.deployedTokenManager(tokenId), wallet);
             expect(await tokenManager.isOperator(AddressZero)).to.be.true;
             expect(await tokenManager.isOperator(service.address)).to.be.true;
             expect(await tokenManager.isFlowLimiter(AddressZero)).to.be.true;

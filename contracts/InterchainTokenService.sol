@@ -195,14 +195,16 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Returns the address of a TokenManager from a specific tokenId.
-     * @dev The TokenManager needs to exist already.
+     * @notice Returns the instance of ITokenManager from a specific tokenId.
+     * @dev This function checks if a token manager contract exists at the address for the specified tokenId.
+     * If no token manager is deployed for the tokenId, the function will revert with `TokenManagerDoesNotExist`.
      * @param tokenId The tokenId.
-     * @return tokenManagerAddress_ The deployment address of the TokenManager.
+     * @return tokenManager_ The instance of ITokenManager associated with the specified tokenId.
      */
-    function getDeployedTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress_) {
-        tokenManagerAddress_ = tokenManagerAddress(tokenId);
+    function deployedTokenManager(bytes32 tokenId) public view returns (ITokenManager tokenManager_) {
+        address tokenManagerAddress_ = tokenManagerAddress(tokenId);
         if (tokenManagerAddress_.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
+        tokenManager_ = ITokenManager(tokenManagerAddress_);
     }
 
     /**
@@ -211,8 +213,7 @@ contract InterchainTokenService is
      * @return tokenAddress The address of the token.
      */
     function getManagedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
-        address tokenManagerAddress_ = getDeployedTokenManagerAddress(tokenId);
-        tokenAddress = ITokenManager(tokenManagerAddress_).tokenAddress();
+        tokenAddress = ITokenManager(deployedTokenManager(tokenId)).tokenAddress();
     }
 
     /**
@@ -251,8 +252,7 @@ contract InterchainTokenService is
      * @return flowLimit_ The flow limit.
      */
     function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_) {
-        ITokenManager tokenManager_ = ITokenManager(getDeployedTokenManagerAddress(tokenId));
-        flowLimit_ = tokenManager_.flowLimit();
+        flowLimit_ = deployedTokenManager(tokenId).flowLimit();
     }
 
     /**
@@ -261,8 +261,7 @@ contract InterchainTokenService is
      * @return flowOutAmount_ The flow out amount.
      */
     function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_) {
-        ITokenManager tokenManager_ = ITokenManager(getDeployedTokenManagerAddress(tokenId));
-        flowOutAmount_ = tokenManager_.flowOutAmount();
+        flowOutAmount_ = deployedTokenManager(tokenId).flowOutAmount();
     }
 
     /**
@@ -271,8 +270,7 @@ contract InterchainTokenService is
      * @return flowInAmount_ The flow in amount.
      */
     function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_) {
-        ITokenManager tokenManager_ = ITokenManager(getDeployedTokenManagerAddress(tokenId));
-        flowInAmount_ = tokenManager_.flowInAmount();
+        flowInAmount_ = deployedTokenManager(tokenId).flowInAmount();
     }
 
     /************\
@@ -572,9 +570,7 @@ contract InterchainTokenService is
         if (length != flowLimits.length) revert LengthMismatch();
 
         for (uint256 i; i < length; ++i) {
-            ITokenManager tokenManager_ = ITokenManager(getDeployedTokenManagerAddress(tokenIds[i]));
-            // slither-disable-next-line calls-loop
-            tokenManager_.setFlowLimit(flowLimits[i]);
+            deployedTokenManager(tokenIds[i]).setFlowLimit(flowLimits[i]);
         }
     }
 
@@ -880,7 +876,7 @@ contract InterchainTokenService is
         bytes calldata params
     ) internal {
         // slither-disable-next-line unused-return
-        getDeployedTokenManagerAddress(tokenId);
+        deployedTokenManager(tokenId);
 
         emit TokenManagerDeploymentStarted(tokenId, destinationChain, tokenManagerType, params);
 
@@ -909,7 +905,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) internal {
         // slither-disable-next-line unused-return
-        getDeployedTokenManagerAddress(tokenId);
+        deployedTokenManager(tokenId);
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, minter, destinationChain);
