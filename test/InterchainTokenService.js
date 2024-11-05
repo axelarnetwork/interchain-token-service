@@ -870,7 +870,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
             expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
 
-            const tokenAddress = await service.getManagedTokenAddress(tokenId);
+            const tokenAddress = await service.registeredTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
 
             tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
@@ -932,7 +932,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
             expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
 
-            const tokenAddress = await service.getManagedTokenAddress(tokenId);
+            const tokenAddress = await service.registeredTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
 
             const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
@@ -969,7 +969,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
             expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
 
-            const tokenAddress = await service.getManagedTokenAddress(tokenId);
+            const tokenAddress = await service.registeredTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
 
             const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
@@ -1006,7 +1006,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
             expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
 
-            const tokenAddress = await service.getManagedTokenAddress(tokenId);
+            const tokenAddress = await service.registeredTokenAddress(tokenId);
             expect(tokenAddress).to.eq(token.address);
 
             const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);

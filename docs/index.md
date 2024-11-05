@@ -548,10 +548,10 @@ _The TokenManager needs to exist already._
 | --------------------- | ------- | ------------------------------------------- |
 | tokenManagerAddress\_ | address | The deployment address of the TokenManager. |
 
-### getManagedTokenAddress
+### registeredTokenAddress
 
 ```solidity
-function getManagedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
+function registeredTokenAddress(bytes32 tokenId) public view returns (address tokenAddress)
 ```
 
 Returns the address of the token that an existing tokenManager points to.
@@ -3034,10 +3034,10 @@ Returns the address of the valid token manager associated with the given tokenId
 | --------------------- | ------- | --------------------------------------- |
 | tokenManagerAddress\_ | address | The address of the valid token manager. |
 
-### getManagedTokenAddress
+### registeredTokenAddress
 
 ```solidity
-function getManagedTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
+function registeredTokenAddress(bytes32 tokenId) external view returns (address tokenAddress)
 ```
 
 Returns the address of the token that an existing tokenManager points to.

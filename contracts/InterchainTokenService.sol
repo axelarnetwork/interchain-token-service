@@ -198,7 +198,7 @@ contract InterchainTokenService is
      * @notice Returns the instance of ITokenManager from a specific tokenId.
      * @dev This function checks if a token manager contract exists at the address for the specified tokenId.
      * If no token manager is deployed for the tokenId, the function will revert with `TokenManagerDoesNotExist`.
-     * @param tokenId The tokenId.
+     * @param tokenId The tokenId of the deployed token manager.
      * @return tokenManager_ The instance of ITokenManager associated with the specified tokenId.
      */
     function deployedTokenManager(bytes32 tokenId) public view returns (ITokenManager tokenManager_) {
@@ -209,10 +209,12 @@ contract InterchainTokenService is
 
     /**
      * @notice Returns the address of the token that an existing tokenManager points to.
-     * @param tokenId The tokenId.
+     * @dev This function requires that a token manager is already deployed for the specified tokenId.
+     * It will call `deployedTokenManager` to get the token manager and return the address of the associated token.
+     * @param tokenId The tokenId of the registered token.
      * @return tokenAddress The address of the token.
      */
-    function getManagedTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
+    function registeredTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
         tokenAddress = ITokenManager(deployedTokenManager(tokenId)).tokenAddress();
     }
 
@@ -1089,7 +1091,7 @@ contract InterchainTokenService is
             revert InvalidExpressMessageType(messageType);
         }
 
-        return (getManagedTokenAddress(tokenId), amount);
+        return (registeredTokenAddress(tokenId), amount);
     }
 
     function _getExpressExecutorAndEmitEvent(
