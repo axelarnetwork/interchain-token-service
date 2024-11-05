@@ -572,6 +572,7 @@ contract InterchainTokenService is
         if (length != flowLimits.length) revert LengthMismatch();
 
         for (uint256 i; i < length; ++i) {
+            // slither-disable-next-line calls-loop
             deployedTokenManager(tokenIds[i]).setFlowLimit(flowLimits[i]);
         }
     }
