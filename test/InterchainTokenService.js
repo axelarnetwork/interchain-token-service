@@ -2786,8 +2786,8 @@ describe('Interchain Token Service', () => {
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(sendAmount);
 
-            const newFlowLimit = MaxUint256;
             const newSendAmount = 1;
+            const newFlowLimit = MaxUint256;
 
             await tokenManager.setFlowLimit(newFlowLimit).then((tx) => tx.wait);
 
@@ -2820,10 +2820,7 @@ describe('Interchain Token Service', () => {
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(sendAmount);
 
-            const newFlowLimit = MaxUint256;
             const newSendAmount = MaxUint256;
-
-            await tokenManager.setFlowLimit(newFlowLimit).then((tx) => tx.wait);
 
             const errorSignatureHash = id('FlowAdditionOverflow(uint256,uint256,address)');
             const selector = errorSignatureHash.substring(0, 10);
