@@ -8,6 +8,7 @@ import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/int
 import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
 
 import { ITransmitInterchainToken } from './ITransmitInterchainToken.sol';
+import { ITokenManager } from './ITokenManager.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 import { IOperator } from './IOperator.sol';
@@ -136,18 +137,18 @@ interface IInterchainTokenService is
     function tokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
 
     /**
-     * @notice Returns the address of the valid token manager associated with the given tokenId.
-     * @param tokenId The tokenId of the token manager.
-     * @return tokenManagerAddress_ The address of the valid token manager.
+     * @notice Returns the instance of ITokenManager from a specific tokenId.
+     * @param tokenId The tokenId of the deployed token manager.
+     * @return tokenManager_ The instance of ITokenManager associated with the specified tokenId.
      */
-    function validTokenManagerAddress(bytes32 tokenId) external view returns (address tokenManagerAddress_);
+    function deployedTokenManager(bytes32 tokenId) external view returns (ITokenManager tokenManager_);
 
     /**
      * @notice Returns the address of the token that an existing tokenManager points to.
-     * @param tokenId The tokenId of the token manager.
+     * @param tokenId The tokenId of the registered token.
      * @return tokenAddress The address of the token.
      */
-    function validTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
+    function registeredTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
     /**
      * @notice Returns the address of the interchain token associated with the given tokenId.

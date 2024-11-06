@@ -215,7 +215,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             expect(await token.balanceOf(wallet.address)).to.equal(totalMint);
 
-            expect(await service.validTokenManagerAddress(tokenId)).to.equal(expectedTokenManagerAddress);
+            expect(await service.deployedTokenManager(tokenId)).to.equal(expectedTokenManagerAddress);
         });
 
         describe('Interchain transfer', () => {
@@ -523,7 +523,7 @@ describe('Interchain Token Service Full Flow', () => {
             // Only tokens minted for the local chain should be left, remaining should be burned.
             expect(await token.balanceOf(wallet.address)).to.equal(totalMint);
 
-            expect(await service.validTokenManagerAddress(tokenId)).to.equal(expectedTokenManagerAddress);
+            expect(await service.deployedTokenManager(tokenId)).to.equal(expectedTokenManagerAddress);
         });
 
         // After the remote deployments are complete we transfer the initial supply to them.
@@ -737,7 +737,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             expect(await token.balanceOf(wallet.address)).to.equal(totalMint);
 
-            expect(await service.validTokenManagerAddress(tokenId)).to.equal(expectedTokenManagerAddress);
+            expect(await service.deployedTokenManager(tokenId)).to.equal(expectedTokenManagerAddress);
         });
 
         describe('Interchain transfer', () => {
