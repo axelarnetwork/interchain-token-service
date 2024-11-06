@@ -79,14 +79,16 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param salt The unique salt for deploying the token.
-     * @param minter The address to distribute the token on the destination chain.
+     * @param localMinter TBD
+     * @param remoteMinter TBD
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteInterchainToken(
         bytes32 salt,
-        address minter,
+        address localMinter,
+        address remoteMinter,
         string memory destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);

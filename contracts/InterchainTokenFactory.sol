@@ -155,22 +155,23 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param salt The unique salt for deploying the token.
-     * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
-     * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
+     * @param localMinter TBD
+     * @param remoteMinter TBD
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteInterchainToken(
         bytes32 salt,
-        address minter,
+        address localMinter,
+        address remoteMinter,
         string memory destinationChain,
         uint256 gasValue
     ) public payable returns (bytes32 tokenId) {
         string memory tokenName;
         string memory tokenSymbol;
         uint8 tokenDecimals;
-        bytes memory minter_ = new bytes(0);
+        bytes memory remoteMinterBytes = new bytes(0);
 
         salt = interchainTokenSalt(chainNameHash, msg.sender, salt);
         tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
@@ -181,14 +182,19 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenSymbol = token.symbol();
         tokenDecimals = token.decimals();
 
-        if (minter != address(0)) {
-            if (!token.isMinter(minter)) revert NotMinter(minter);
-            if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
-
-            minter_ = minter.toBytes();
+        if (localMinter != address(0)) {
+            if (!token.isMinter(localMinter)) revert NotMinter(localMinter);
+            if (localMinter == address(interchainTokenService)) revert InvalidMinter(localMinter);
         }
 
-        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
+        // Prepare remote minter for deployment on the destination chain
+        if (remoteMinter != address(0)) {
+            if (!token.isMinter(remoteMinter)) revert NotMinter(remoteMinter);
+            if (remoteMinter == address(interchainTokenService)) revert InvalidMinter(remoteMinter);
+            remoteMinterBytes = remoteMinter.toBytes();
+        }
+
+        tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, remoteMinterBytes, gasValue);
     }
 
     /**
@@ -204,6 +210,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
+    // This method is deprecated, should I remove it with the minter change or we want to keep it?
     function deployRemoteInterchainToken(
         string calldata originalChainName,
         bytes32 salt,
@@ -213,7 +220,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     ) external payable returns (bytes32 tokenId) {
         if (bytes(originalChainName).length != 0) revert NotSupported();
 
-        tokenId = deployRemoteInterchainToken(salt, minter, destinationChain, gasValue);
+        tokenId = deployRemoteInterchainToken(salt, minter, address(0), destinationChain, gasValue);
     }
 
     /**
