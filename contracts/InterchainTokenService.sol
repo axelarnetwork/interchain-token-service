@@ -195,24 +195,27 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Returns the address of a TokenManager from a specific tokenId.
-     * @dev The TokenManager needs to exist already.
-     * @param tokenId The tokenId.
-     * @return tokenManagerAddress_ The deployment address of the TokenManager.
+     * @notice Returns the instance of ITokenManager from a specific tokenId.
+     * @dev This function checks if a token manager contract exists at the address for the specified tokenId.
+     * If no token manager is deployed for the tokenId, the function will revert with `TokenManagerDoesNotExist`.
+     * @param tokenId The tokenId of the deployed token manager.
+     * @return tokenManager_ The instance of ITokenManager associated with the specified tokenId.
      */
-    function validTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress_) {
-        tokenManagerAddress_ = tokenManagerAddress(tokenId);
+    function deployedTokenManager(bytes32 tokenId) public view returns (ITokenManager tokenManager_) {
+        address tokenManagerAddress_ = tokenManagerAddress(tokenId);
         if (tokenManagerAddress_.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
+        tokenManager_ = ITokenManager(tokenManagerAddress_);
     }
 
     /**
      * @notice Returns the address of the token that an existing tokenManager points to.
-     * @param tokenId The tokenId.
+     * @dev This function requires that a token manager is already deployed for the specified tokenId.
+     * It will call `deployedTokenManager` to get the token manager and return the address of the associated token.
+     * @param tokenId The tokenId of the registered token.
      * @return tokenAddress The address of the token.
      */
-    function validTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
-        address tokenManagerAddress_ = validTokenManagerAddress(tokenId);
-        tokenAddress = ITokenManager(tokenManagerAddress_).tokenAddress();
+    function registeredTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
+        tokenAddress = ITokenManager(deployedTokenManager(tokenId)).tokenAddress();
     }
 
     /**
@@ -251,8 +254,7 @@ contract InterchainTokenService is
      * @return flowLimit_ The flow limit.
      */
     function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
-        flowLimit_ = tokenManager_.flowLimit();
+        flowLimit_ = deployedTokenManager(tokenId).flowLimit();
     }
 
     /**
@@ -261,8 +263,7 @@ contract InterchainTokenService is
      * @return flowOutAmount_ The flow out amount.
      */
     function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
-        flowOutAmount_ = tokenManager_.flowOutAmount();
+        flowOutAmount_ = deployedTokenManager(tokenId).flowOutAmount();
     }
 
     /**
@@ -271,8 +272,7 @@ contract InterchainTokenService is
      * @return flowInAmount_ The flow in amount.
      */
     function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
-        flowInAmount_ = tokenManager_.flowInAmount();
+        flowInAmount_ = deployedTokenManager(tokenId).flowInAmount();
     }
 
     /************\
@@ -572,9 +572,8 @@ contract InterchainTokenService is
         if (length != flowLimits.length) revert LengthMismatch();
 
         for (uint256 i; i < length; ++i) {
-            ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenIds[i]));
             // slither-disable-next-line calls-loop
-            tokenManager_.setFlowLimit(flowLimits[i]);
+            deployedTokenManager(tokenIds[i]).setFlowLimit(flowLimits[i]);
         }
     }
 
@@ -880,7 +879,7 @@ contract InterchainTokenService is
         bytes calldata params
     ) internal {
         // slither-disable-next-line unused-return
-        validTokenManagerAddress(tokenId);
+        deployedTokenManager(tokenId);
 
         emit TokenManagerDeploymentStarted(tokenId, destinationChain, tokenManagerType, params);
 
@@ -909,7 +908,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) internal {
         // slither-disable-next-line unused-return
-        validTokenManagerAddress(tokenId);
+        deployedTokenManager(tokenId);
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, minter, destinationChain);
@@ -1093,7 +1092,7 @@ contract InterchainTokenService is
             revert InvalidExpressMessageType(messageType);
         }
 
-        return (validTokenAddress(tokenId), amount);
+        return (registeredTokenAddress(tokenId), amount);
     }
 
     function _getExpressExecutorAndEmitEvent(
