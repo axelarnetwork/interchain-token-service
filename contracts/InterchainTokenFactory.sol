@@ -307,17 +307,4 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
         tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
     }
-
-    function addressToBytes(address _address) public pure returns (bytes memory) {
-        return abi.encodePacked(_address);
-    }
-
-    function bytesToAddress(bytes memory data) public pure returns (address) {
-        require(data.length == 20, 'Invalid bytes length for address');
-        address addr;
-        assembly {
-            addr := mload(add(data, 20))
-        }
-        return addr;
-    }
 }
