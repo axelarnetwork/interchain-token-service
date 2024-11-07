@@ -787,6 +787,9 @@ contract InterchainTokenService is
 
         // Check whether the ITS call should be routed via ITS hub for this destination chain
         if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+            // Prevent deploy token manager to be usable on ITS hub
+            if (_getMessageType(payload) == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) revert NotSupported();
+
             // Wrap ITS message in an ITS Hub message
             payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
             destinationChain = ITS_HUB_CHAIN_NAME;
