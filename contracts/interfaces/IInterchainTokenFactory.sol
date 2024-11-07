@@ -79,27 +79,28 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param salt The unique salt for deploying the token.
-     * @param localMinter TBD
-     * @param remoteMinter TBD
+     * @param remoteMinter The calldata representing the minter's address on the remote chain. Must be empty if no minter is specified.
+     * Reverts if the msg.sender does not have mint permission for the token.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteInterchainToken(
         bytes32 salt,
-        address localMinter,
-        address remoteMinter,
+        bytes calldata remoteMinter,
         string memory destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
+     * This method is deprecated and will be removed in the future. Please use the above method instead.
      * @dev originalChainName is only allowed to be '', i.e the current chain.
      * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChainName The name of the chain where the token originally exists.
      * @param salt The unique salt for deploying the token.
-     * @param minter The address to distribute the token on the destination chain.
+     * @dev minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
+     * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
