@@ -32,7 +32,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @return address the address of the token.
      */
     // slither-disable-next-line locked-ether
-    function giveToken(bytes32 tokenId, address to, uint256 amount) external payable returns (uint256, address) {
+    function giveToken(bytes32 tokenId, address to, uint256 amount) external returns (uint256, address) {
         address tokenManager = _create3Address(tokenId);
 
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
@@ -108,7 +108,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @return address The address of the token corresponding to the input tokenId.
      */
     // slither-disable-next-line locked-ether
-    function transferTokenFrom(bytes32 tokenId, address from, address to, uint256 amount) external payable returns (uint256, address) {
+    function transferTokenFrom(bytes32 tokenId, address from, address to, uint256 amount) external returns (uint256, address) {
         address tokenManager = _create3Address(tokenId);
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 

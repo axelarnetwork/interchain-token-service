@@ -235,7 +235,7 @@ interface IInterchainTokenService is
         uint256 amount,
         bytes calldata data,
         uint256 gasValue
-    ) external payable;
+    ) external;
 
     /**
      * @notice Sets the flow limits for multiple tokens.

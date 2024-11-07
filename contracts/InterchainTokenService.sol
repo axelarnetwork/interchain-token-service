@@ -513,7 +513,7 @@ contract InterchainTokenService is
         uint256 amount,
         bytes memory data,
         uint256 gasValue
-    ) external payable whenNotPaused {
+    ) external whenNotPaused {
         if (data.length == 0) revert EmptyData();
         amount = _takeToken(tokenId, msg.sender, amount, false);
 
