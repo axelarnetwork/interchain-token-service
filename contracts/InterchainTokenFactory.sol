@@ -209,8 +209,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
         if (bytes(originalChainName).length != 0) revert NotSupported();
+        bytes memory emptyMinter = new bytes(0);
 
-        tokenId = deployRemoteInterchainToken(salt, abi.encodePacked(address(0)), destinationChain, gasValue);
+        tokenId = deployRemoteInterchainToken(salt, emptyMinter, destinationChain, gasValue);
     }
 
     /**
