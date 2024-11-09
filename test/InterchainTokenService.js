@@ -2716,7 +2716,7 @@ describe('Interchain Token Service', () => {
         let tokenManager, tokenId;
         const sendAmount = 1234;
         const flowLimit = (sendAmount * 3) / 2;
-        const mintAmount = flowLimit * 3;
+        const mintAmount = MaxUint256;
 
         before(async () => {
             [, tokenManager, tokenId] = await deployFunctions.mintBurn(service, 'Test Token Lock Unlock', 'TT', 12, mintAmount);
@@ -2748,10 +2748,10 @@ describe('Interchain Token Service', () => {
             expect(flowIn).to.eq(0);
             expect(flowOut).to.eq(sendAmount);
 
-            async function receiveToken(sendAmount) {
+            async function receiveToken(amount) {
                 const payload = defaultAbiCoder.encode(
                     ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
-                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), wallet.address, sendAmount, '0x'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), wallet.address, amount, '0x'],
                 );
                 const commandId = await approveContractCall(gateway, destinationChain, service.address, service.address, payload);
 
@@ -2776,6 +2776,65 @@ describe('Interchain Token Service', () => {
             await expectRevert((gasOptions) => receiveToken(2 * sendAmount, gasOptions), service, 'GiveTokenFailed', [
                 selector + errorData.substring(2),
             ]);
+        });
+
+        it('Should revert if the flow limit overflows', async () => {
+            const tokenFlowLimit = await service.flowLimit(tokenId);
+            expect(tokenFlowLimit).to.eq(flowLimit);
+
+            const flowIn = await service.flowInAmount(tokenId);
+            const flowOut = await service.flowOutAmount(tokenId);
+
+            expect(flowIn).to.eq(sendAmount);
+            expect(flowOut).to.eq(sendAmount);
+
+            const newSendAmount = 1;
+            const newFlowLimit = MaxUint256;
+
+            await tokenManager.setFlowLimit(newFlowLimit).then((tx) => tx.wait);
+
+            async function receiveToken(amount) {
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), wallet.address, amount, '0x'],
+                );
+                const commandId = await approveContractCall(gateway, destinationChain, service.address, service.address, payload);
+
+                return service.execute(commandId, destinationChain, service.address, payload);
+            }
+
+            const errorSignatureHash = id('FlowLimitOverflow(uint256,uint256,address)');
+            const selector = errorSignatureHash.substring(0, 10);
+            const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [newFlowLimit, flowIn, tokenManager.address]);
+
+            await expectRevert((gasOptions) => receiveToken(newSendAmount, gasOptions), service, 'GiveTokenFailed', [
+                selector + errorData.substring(2),
+            ]);
+        });
+
+        it('Should revert if the flow addition overflows', async () => {
+            const tokenFlowLimit = await service.flowLimit(tokenId);
+            expect(tokenFlowLimit).to.eq(MaxUint256);
+
+            const flowIn = await service.flowInAmount(tokenId);
+            const flowOut = await service.flowOutAmount(tokenId);
+
+            expect(flowIn).to.eq(sendAmount);
+            expect(flowOut).to.eq(sendAmount);
+
+            const newSendAmount = MaxUint256;
+
+            const errorSignatureHash = id('FlowAdditionOverflow(uint256,uint256,address)');
+            const selector = errorSignatureHash.substring(0, 10);
+            const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [newSendAmount, flowOut, tokenManager.address]);
+
+            await expectRevert(
+                (gasOptions) =>
+                    service.interchainTransfer(tokenId, destinationChain, destinationAddress, newSendAmount, '0x', 0, gasOptions),
+                service,
+                'TakeTokenFailed',
+                [selector + errorData.substring(2)],
+            );
         });
 
         it('Should be able to set flow limits for each token manager', async () => {
