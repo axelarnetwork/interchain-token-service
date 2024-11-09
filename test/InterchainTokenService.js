@@ -1687,7 +1687,9 @@ describe('Interchain Token Service', () => {
 
                 await expect(
                     reportGas(
-                        service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0),
+                        service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, 0, {
+                            value: gasValue,
+                        }),
                         `Call service.callContractWithInterchainToken ${type}`,
                     ),
                 )
