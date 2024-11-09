@@ -304,6 +304,11 @@ contract InterchainTokenService is
 
         if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
+        } else if (bytes(destinationChain).length == 0) {
+            string memory destinationAddress = trustedAddress(chainName());
+            if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+                revert NotSupported();
+            }
         }
 
         tokenId = interchainTokenId(deployer, salt);
@@ -858,6 +863,9 @@ contract InterchainTokenService is
 
             // Get message type of the inner ITS message
             messageType = _getMessageType(payload);
+
+            // Prevent deploy token manager to be usable on ITS hub
+            if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) revert NotSupported();
         } else {
             // Prevent receiving a direct message from the ITS Hub. This is not supported yet.
             if (keccak256(abi.encodePacked(sourceChain)) == ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();

@@ -1025,6 +1025,22 @@ describe('Interchain Token Service', () => {
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });
+
+        it('Should revert with NotSupported when deploying a token manager on its hub chain', async () => {
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+            await expect(service.setTrustedAddress(chainName, ITS_HUB_ROUTING_IDENTIFIER))
+                .to.emit(service, 'TrustedAddressSet')
+                .withArgs(chainName, ITS_HUB_ROUTING_IDENTIFIER);
+
+            await expectRevert(
+                (gasOptions) => service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0, gasOptions),
+                service,
+                'NotSupported',
+            );
+
+            await expect(service.removeTrustedAddress(chainName)).to.emit(service, 'TrustedAddressRemoved').withArgs(chainName);
+        });
     });
 
     describe('Initialize remote custom token manager deployment', () => {
@@ -1100,6 +1116,34 @@ describe('Interchain Token Service', () => {
             );
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
+        });
+
+        it('Should revert with NotSupported on deploying a remote custom token manager via its hub', async () => {
+            const salt = getRandomBytes32();
+
+            await (
+                await service.deployTokenManager(
+                    salt,
+                    '',
+                    MINT_BURN,
+                    defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]),
+                    0,
+                )
+            ).wait();
+
+            const params = '0x1234';
+            const type = LOCK_UNLOCK;
+            const destinationChainItsHub = 'hub chain 1';
+
+            await expect(service.setTrustedAddress(destinationChainItsHub, ITS_HUB_ROUTING_IDENTIFIER))
+                .to.emit(service, 'TrustedAddressSet')
+                .withArgs(destinationChainItsHub, ITS_HUB_ROUTING_IDENTIFIER);
+
+            await expectRevert(
+                (gasOptions) => service.deployTokenManager(salt, destinationChainItsHub, type, params, gasValue, gasOptions),
+                service,
+                'NotSupported',
+            );
         });
     });
 
@@ -2010,6 +2054,44 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload, gasOptions),
                 service,
                 'InvalidPayload',
+            );
+        });
+
+        it('Should revert with NotSupported when the message type is RECEIVE_FROM_HUB and has MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER type.', async () => {
+            const salt = getRandomBytes32();
+
+            await (
+                await service.deployTokenManager(
+                    salt,
+                    '',
+                    MINT_BURN,
+                    defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]),
+                    0,
+                )
+            ).wait();
+
+            const tokenId = await service.interchainTokenId(wallet.address, salt);
+            const params = '0x1234';
+            const type = LOCK_UNLOCK;
+            const sourceChain = 'hub chain 1';
+            const itsMessage = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, type, params],
+            );
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, itsMessage],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, payload);
+
+            await expect(service.setTrustedAddress(sourceChain, ITS_HUB_ROUTING_IDENTIFIER))
+                .to.emit(service, 'TrustedAddressSet')
+                .withArgs(sourceChain, ITS_HUB_ROUTING_IDENTIFIER);
+
+            await expectRevert(
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload, gasOptions),
+                service,
+                'NotSupported',
             );
         });
 
