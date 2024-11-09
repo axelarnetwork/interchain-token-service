@@ -477,6 +477,7 @@ contract InterchainTokenService is
     /**
      * @notice Initiates an interchain transfer of a specified token to a destination chain.
      * @dev The function retrieves the TokenManager associated with the tokenId.
+     * The function is marked as `payable` to enable multi-call execution.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The address on the destination chain to send the tokens to.
