@@ -19,6 +19,10 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error NotOperator(address operator);
     error NotServiceOwner(address sender);
     error NotSupported();
+    error RemoteDeploymentNotApproved();
+
+    /// @notice Emitted when a minter approves a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
+    event ApprovedDeployRemoteInterchainToken(address indexed minter, address indexed deployer, bytes32 indexed salt, string destinationChain, bytes destinationMinter);
 
     /**
      * @notice Returns the address of the interchain token service.
@@ -77,9 +81,16 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     ) external payable returns (bytes32 tokenId);
 
     /**
+     * @notice Allows the minter to approve a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
+     * This ensures that a token deployer can't choose the destinationMinter itself, and requires the approval of the minter to reduce trust assumptions on the deployer.
+     */
+    function approveDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain, bytes calldata destinationMinter) external;
+
+    /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param salt The unique salt for deploying the token.
-     * @param minter The address to distribute the token on the destination chain.
+     * @param minter The address to use as the minter of the deployed token on the destination chain. If the destination chain is not EVM,
+     * then use the more generic `deployRemoteInterchainToken` function below that allows setting an arbitrary destination minter that was approved by the current minter.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
@@ -88,6 +99,25 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
         bytes32 salt,
         address minter,
         string memory destinationChain,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @param salt The unique salt for deploying the token.
+     * @param minter The address to distribute the token on the destination chain.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationMinter The minter address to set on the deployed token on the destination chain. This can be arbitrary bytes
+     * since the encoding of the account is dependent on the destination chain. If this is empty, then the `minter` of the token on the current chain
+     * is used as the destination minter, which makes it convenient when deploying to other EVM chains.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainToken(
+        bytes32 salt,
+        address minter,
+        string memory destinationChain,
+        bytes memory destinationMinter,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 
