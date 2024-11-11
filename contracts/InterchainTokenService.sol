@@ -493,8 +493,6 @@ contract InterchainTokenService is
         bytes calldata metadata,
         uint256 gasValue
     ) external payable whenNotPaused {
-        if (destinationAddress.length == 0) revert EmptyDestinationAddress();
-
         amount = _takeToken(tokenId, msg.sender, amount, false);
 
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
@@ -518,7 +516,6 @@ contract InterchainTokenService is
         bytes memory data,
         uint256 gasValue
     ) external payable whenNotPaused {
-        if (destinationAddress.length == 0) revert EmptyDestinationAddress();
         if (data.length == 0) revert EmptyData();
 
         amount = _takeToken(tokenId, msg.sender, amount, false);
@@ -557,9 +554,6 @@ contract InterchainTokenService is
         uint256 amount,
         bytes calldata metadata
     ) external payable whenNotPaused {
-        if (sourceAddress == address(0)) revert EmptySourceAddress();
-        if (destinationAddress.length == 0) revert EmptyDestinationAddress();
-
         amount = _takeToken(tokenId, sourceAddress, amount, true);
 
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
@@ -1044,6 +1038,7 @@ contract InterchainTokenService is
         bytes memory data,
         uint256 gasValue
     ) internal {
+        if (destinationAddress.length == 0) revert EmptyDestinationAddress();
         if (amount == 0) revert ZeroAmount();
 
         // slither-disable-next-line reentrancy-events

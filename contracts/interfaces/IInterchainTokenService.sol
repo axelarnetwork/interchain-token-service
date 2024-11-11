@@ -53,7 +53,6 @@ interface IInterchainTokenService is
     error EmptyTokenName();
     error EmptyTokenSymbol();
     error EmptyParams();
-    error EmptySourceAddress();
     error EmptyDestinationAddress();
 
     event InterchainTransfer(

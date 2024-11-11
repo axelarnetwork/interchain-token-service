@@ -1363,18 +1363,6 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });
 
-        it('Should revert on transmit send token when source address is zero address', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    service.transmitInterchainTransfer(tokenId, AddressZero, destinationChain, destAddress, amount, '0x', {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
-                service,
-                'EmptySourceAddress',
-            );
-        });
-
         it('Should revert on transmit send token when destination address is zero address', async () => {
             await expectRevert(
                 (gasOptions) =>
@@ -1383,7 +1371,7 @@ describe('Interchain Token Service', () => {
                         value: gasValue,
                     }),
                 service,
-                'EmptyDestinationAddress',
+                'TakeTokenFailed',
             );
         });
 
