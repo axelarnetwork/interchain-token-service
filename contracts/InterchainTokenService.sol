@@ -297,6 +297,8 @@ contract InterchainTokenService is
         bytes calldata params,
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
+        if (bytes(params).length == 0) revert EmptyParams();
+
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
@@ -515,6 +517,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused {
         if (data.length == 0) revert EmptyData();
+
         amount = _takeToken(tokenId, msg.sender, amount, false);
 
         _transmitInterchainTransfer(
@@ -907,6 +910,9 @@ contract InterchainTokenService is
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
+        if (bytes(name).length == 0) revert EmptyTokenName();
+        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
+
         // slither-disable-next-line unused-return
         deployedTokenManager(tokenId);
 
@@ -968,6 +974,9 @@ contract InterchainTokenService is
         string memory symbol,
         uint8 decimals
     ) internal returns (address tokenAddress) {
+        if (bytes(name).length == 0) revert EmptyTokenName();
+        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
+
         bytes32 salt = _getInterchainTokenSalt(tokenId);
 
         address minter;
@@ -1029,6 +1038,7 @@ contract InterchainTokenService is
         bytes memory data,
         uint256 gasValue
     ) internal {
+        if (destinationAddress.length == 0) revert EmptyDestinationAddress();
         if (amount == 0) revert ZeroAmount();
 
         // slither-disable-next-line reentrancy-events
