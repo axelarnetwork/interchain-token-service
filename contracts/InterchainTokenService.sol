@@ -283,6 +283,11 @@ contract InterchainTokenService is
      * @notice Used to deploy remote custom TokenManagers.
      * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
      * part of a multicall involving multiple functions that could make remote contract calls.
+     * This method is temporarily restricted in the following scenarios:
+     * - Deploying to a remote chain and the destination chain is connected via ITS Hub
+     * - Deploying to the current chain, if connected as an Amplifier chain, i.e existing ITS contracts on consensus chains aren't affected.
+     * Once ITS Hub adds support for deploy token manager msg, the restriction will be lifted.
+     * Note that the factory contract can still call `deployTokenManager` to facilitate canonical token registration.
      * @param salt The salt to be used during deployment.
      * @param destinationChain The name of the chain to deploy the TokenManager and standardized token to.
      * @param tokenManagerType The type of token manager to be deployed. Cannot be NATIVE_INTERCHAIN_TOKEN.
@@ -306,6 +311,9 @@ contract InterchainTokenService is
 
         if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
+        } else if (bytes(destinationChain).length == 0 && trustedAddressHash(chainName()) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+            // Restricted on ITS contracts deployed to Amplifier chains until ITS Hub adds support
+            revert NotSupported();
         }
 
         tokenId = interchainTokenId(deployer, salt);
@@ -791,6 +799,9 @@ contract InterchainTokenService is
 
         // Check whether the ITS call should be routed via ITS hub for this destination chain
         if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+            // Prevent deploy token manager to be usable on ITS hub
+            if (_getMessageType(payload) == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) revert NotSupported();
+
             // Wrap ITS message in an ITS Hub message
             payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
             destinationChain = ITS_HUB_CHAIN_NAME;
@@ -859,6 +870,9 @@ contract InterchainTokenService is
 
             // Get message type of the inner ITS message
             messageType = _getMessageType(payload);
+
+            // Prevent deploy token manager to be usable on ITS hub
+            if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) revert NotSupported();
         } else {
             // Prevent receiving a direct message from the ITS Hub. This is not supported yet.
             if (keccak256(abi.encodePacked(sourceChain)) == ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();

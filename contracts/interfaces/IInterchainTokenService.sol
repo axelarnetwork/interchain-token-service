@@ -54,6 +54,7 @@ interface IInterchainTokenService is
     error EmptyTokenSymbol();
     error EmptyParams();
     error EmptyDestinationAddress();
+    error NotSupported();
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
