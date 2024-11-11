@@ -22,7 +22,13 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error RemoteDeploymentNotApproved();
 
     /// @notice Emitted when a minter approves a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
-    event ApprovedDeployRemoteInterchainToken(address indexed minter, address indexed deployer, bytes32 indexed salt, string destinationChain, bytes destinationMinter);
+    event ApprovedDeployRemoteInterchainToken(
+        address indexed minter,
+        address indexed deployer,
+        bytes32 indexed salt,
+        string destinationChain,
+        bytes destinationMinter
+    );
 
     /**
      * @notice Returns the address of the interchain token service.
@@ -84,7 +90,12 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
      * @notice Allows the minter to approve a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
      * This ensures that a token deployer can't choose the destinationMinter itself, and requires the approval of the minter to reduce trust assumptions on the deployer.
      */
-    function approveDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain, bytes calldata destinationMinter) external;
+    function approveDeployRemoteInterchainToken(
+        address deployer,
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes calldata destinationMinter
+    ) external;
 
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.

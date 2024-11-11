@@ -20,8 +20,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /// @dev This slot contains the storage for this contract in an upgrade-compatible manner
     /// keccak256('InterchainTokenFactory.Slot') - 1;
-    bytes32 internal constant INTERCHAIN_TOKEN_FACTORY_SLOT =
-        0xd4f5c43117c663161acfe6af3208a49856d85e586baf0f60749de2055e001465;
+    bytes32 internal constant INTERCHAIN_TOKEN_FACTORY_SLOT = 0xd4f5c43117c663161acfe6af3208a49856d85e586baf0f60749de2055e001465;
 
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
@@ -176,14 +175,25 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @notice Allow the minter to approve the deployer for a remote interchain token deployment that uses a custom destinationMinter address.
      * This ensures that a token deployer can't choose the destinationMinter itself, and requires the approval of the minter to reduce trust assumptions on the deployer.
      */
-    function approveDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain, bytes calldata destinationMinter) external {
-        bytes32 approvalKey = _deployApprovalKey(DeployApproval({
-            minter: msg.sender,
-            deployer: deployer,
-            salt: salt,
-            destinationChain: destinationChain,
-            destinationMinter: destinationMinter
-        }));
+    function approveDeployRemoteInterchainToken(
+        address deployer,
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes calldata destinationMinter
+    ) external {
+        bytes32 tokenId = interchainTokenId(deployer, salt);
+        IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
+        if (!token.isMinter(msg.sender)) revert InvalidMinter(msg.sender);
+
+        bytes32 approvalKey = _deployApprovalKey(
+            DeployApproval({
+                minter: msg.sender,
+                deployer: deployer,
+                salt: salt,
+                destinationChain: destinationChain,
+                destinationMinter: destinationMinter
+            })
+        );
 
         _interchainTokenFactoryStorage().deployApprovals[approvalKey] = true;
 
@@ -257,6 +267,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
         if (minter != address(0)) {
             if (!token.isMinter(minter)) revert NotMinter(minter);
+            // Sanity check to prevent accidental use of the current ITS address as the destination minter
+            if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
 
             if (destinationMinter.length > 0) {
                 DeployApproval memory approval = DeployApproval({
@@ -271,10 +283,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             } else {
                 minter_ = minter.toBytes();
             }
-
-            // Sanity check to prevent accidental use of the current ITS address as the destination minter
-            bytes memory itsAddress = address(interchainTokenService).toBytes();
-            if (keccak256(minter_) == keccak256(itsAddress)) revert InvalidMinter(minter);
         } else if (destinationMinter.length > 0) {
             // If a destinationMinter is provided, then minter must not be address(0)
             revert InvalidMinter(minter);
