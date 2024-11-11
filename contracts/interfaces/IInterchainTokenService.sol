@@ -50,6 +50,10 @@ interface IInterchainTokenService is
     error CannotDeployRemotelyToSelf();
     error InvalidPayload();
     error GatewayCallFailed(bytes data);
+    error EmptyTokenName();
+    error EmptyTokenSymbol();
+    error EmptyParams();
+    error EmptyDestinationAddress();
     error NotSupported();
 
     event InterchainTransfer(

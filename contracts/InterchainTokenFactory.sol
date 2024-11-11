@@ -104,6 +104,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     /**
      * @notice Deploys a new interchain token with specified parameters.
      * @dev Creates a new token and optionally mints an initial amount to a specified minter.
+     * This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
      * @param salt The unique salt for deploying the token.
      * @param name The name of the token.
      * @param symbol The symbol of the token.
@@ -250,6 +251,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Registers a canonical token as an interchain token and deploys its token manager.
+     * @dev This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
      * @param tokenAddress The address of the canonical token.
      * @return tokenId The tokenId corresponding to the registered canonical token.
      */
