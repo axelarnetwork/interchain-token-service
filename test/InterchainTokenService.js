@@ -675,6 +675,26 @@ describe('Interchain Token Service', () => {
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });
+
+        it('Should revert when registering an interchain token with empty token name', async () => {
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
+
+            await expectRevert(
+                (gasOptions) => service.deployInterchainToken(salt, '', '', tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
+                service,
+                'EmptyTokenName',
+            );
+        });
+
+        it('Should revert when registering an interchain token with empty token symbol', async () => {
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
+
+            await expectRevert(
+                (gasOptions) => service.deployInterchainToken(salt, '', tokenName, '', tokenDecimals, wallet.address, 0, gasOptions),
+                service,
+                'EmptyTokenSymbol',
+            );
+        });
     });
 
     describe('Deploy and Register remote Interchain Token', () => {
@@ -725,6 +745,30 @@ describe('Interchain Token Service', () => {
                     }),
                 service,
                 'UntrustedChain',
+            );
+        });
+
+        it('Should revert on remote interchain token deployment with invalid token name', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    service.deployInterchainToken(salt, destinationChain, '', tokenSymbol, tokenDecimals, minter, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                service,
+                'EmptyTokenName',
+            );
+        });
+
+        it('Should revert on remote interchain token deployment with invalid token symbol', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    service.deployInterchainToken(salt, destinationChain, tokenName, '', tokenDecimals, minter, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                service,
+                'EmptyTokenSymbol',
             );
         });
 
@@ -818,6 +862,14 @@ describe('Interchain Token Service', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
             await expectRevert((gasOptions) => service.deployTokenManager(salt, '', 6, params, 0, gasOptions));
+        });
+
+        it('Should revert on deploying a local token manager with invalid params', async () => {
+            await expectRevert(
+                (gasOptions) => service.deployTokenManager(salt, '', NATIVE_INTERCHAIN_TOKEN, '0x', 0, gasOptions),
+                service,
+                'EmptyParams',
+            );
         });
 
         it('Should revert on deploying a local token manager with interchain token manager type', async () => {
@@ -1271,6 +1323,18 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should revert on initiate interchain token transfer with invalid destination address', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    service.interchainTransfer(tokenId, destinationChain, '0x', amount, '0x', gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                service,
+                'EmptyDestinationAddress',
+            );
+        });
+
         it('Should revert on initiate interchain token transfer when service is paused', async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
@@ -1297,6 +1361,18 @@ describe('Interchain Token Service', () => {
             );
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
+        });
+
+        it('Should revert on transmit send token when destination address is zero address', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    service.transmitInterchainTransfer(tokenId, wallet.address, destinationChain, '0x', amount, '0x', {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                service,
+                'TakeTokenFailed',
+            );
         });
 
         it('Should revert on transmit send token when not called by interchain token', async () => {
@@ -1635,6 +1711,16 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, 0, data, 0, gasOptions),
                 service,
                 'ZeroAmount',
+            );
+        });
+
+        it('Should revert on callContractWithInterchainToken function on the service with invalid destination address', async () => {
+            const [, , tokenId] = await deployFunctions.lockUnlock(service, 'Test Token', 'TT', 12, amount);
+
+            await expectRevert(
+                (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, '0x', amount, data, 0, gasOptions),
+                service,
+                'EmptyDestinationAddress',
             );
         });
 
