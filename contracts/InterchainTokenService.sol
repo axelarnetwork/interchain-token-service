@@ -283,6 +283,8 @@ contract InterchainTokenService is
      * @notice Used to deploy remote custom TokenManagers.
      * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
      * part of a multicall involving multiple functions that could make remote contract calls.
+     * Restricted on ITS contracts deployed to Amplifier chains until ITS Hub adds support. Only the factory contract can call
+     * `deployTokenManager` for canonical token registration. This should still work fine for consensus deployments.
      * @param salt The salt to be used during deployment.
      * @param destinationChain The name of the chain to deploy the TokenManager and standardized token to.
      * @param tokenManagerType The type of token manager to be deployed. Cannot be NATIVE_INTERCHAIN_TOKEN.
@@ -305,8 +307,8 @@ contract InterchainTokenService is
         if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
         } else if (bytes(destinationChain).length == 0) {
-            string memory destinationAddress = trustedAddress(chainName());
-            if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+            // Restricted on ITS contracts deployed to Amplifier chains until ITS Hub adds support.
+            if (trustedAddressHash(chainName()) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
                 revert NotSupported();
             }
         }
