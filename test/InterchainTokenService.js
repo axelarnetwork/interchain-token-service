@@ -2088,6 +2088,37 @@ describe('Interchain Token Service', () => {
             });
         }
 
+        for (const type of ['mintBurn', 'mintBurnFrom', 'lockUnlockFee', 'lockUnlock']) {
+            it(`Should be able to initiate an interchain token transfer via interchainTransfer [${type}] without native gas`, async () => {
+                [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount * 3, true);
+                const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x'],
+                );
+                const payloadHash = keccak256(payload);
+
+                let transferToAddress = AddressZero;
+
+                if (type === 'lockUnlock' || type === 'lockUnlockFee') {
+                    transferToAddress = tokenManager.address;
+                }
+
+                await expect(
+                    reportGas(
+                        token.connect(wallet).interchainTransfer(destinationChain, destAddress, amount, metadata),
+                        `Call token.interchainTransfer ${type}`,
+                    ),
+                )
+                    .and.to.emit(token, 'Transfer')
+                    .withArgs(wallet.address, transferToAddress, amount)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .to.emit(service, 'InterchainTransfer')
+                    .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
+            });
+        }
+
         it('Should be able to initiate an interchain token transfer using interchainTransferFrom with max possible allowance', async () => {
             const sendAmount = amount;
             const payload = defaultAbiCoder.encode(
