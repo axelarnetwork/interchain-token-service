@@ -104,7 +104,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     /**
      * @notice Deploys a new interchain token with specified parameters.
      * @dev Creates a new token and optionally mints an initial amount to a specified minter.
-     * The function is marked as `payable` to enable multi-call execution.
+     * The function is `payable` because non-payable functions cannot be called in a multi-call context.
      * @param salt The unique salt for deploying the token.
      * @param name The name of the token.
      * @param symbol The symbol of the token.
@@ -155,7 +155,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
-     * @dev The function is marked as `payable` to enable multi-call execution.
      * @param salt The unique salt for deploying the token.
      * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
      * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
@@ -252,7 +251,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Registers a canonical token as an interchain token and deploys its token manager.
-     * @dev The function is marked as `payable` to enable multi-call execution.
+     * The function is `payable` because non-payable functions cannot be called in a multi-call context.
      * @param tokenAddress The address of the canonical token.
      * @return tokenId The tokenId corresponding to the registered canonical token.
      */
@@ -265,7 +264,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Deploys a canonical interchain token on a remote chain.
-     * @dev The function is marked as `payable` to enable multi-call execution.
      * @param originalTokenAddress The address of the original token on the original chain.
      * @param destinationChain The name of the chain where the token will be deployed.
      * @param gasValue The gas amount to be sent for deployment.

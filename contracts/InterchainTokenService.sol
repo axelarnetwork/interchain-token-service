@@ -382,6 +382,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Express executes operations based on the payload and selector.
+     * @dev The function is `payable` because non-payable functions cannot be called in a multi-call context.
      * @param commandId The unique message id.
      * @param sourceChain The chain where the transaction originates from.
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
@@ -477,7 +478,6 @@ contract InterchainTokenService is
     /**
      * @notice Initiates an interchain transfer of a specified token to a destination chain.
      * @dev The function retrieves the TokenManager associated with the tokenId.
-     * The function is marked as `payable` to enable multi-call execution.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The address on the destination chain to send the tokens to.

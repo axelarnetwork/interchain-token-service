@@ -40,7 +40,6 @@ interface ITokenHandler {
      * @return uint256 The amount of token actually transferred, which could be different for certain token type.
      * @return address The address of the token corresponding to the input tokenId.
      */
-    // slither-disable-next-line locked-ether
     function transferTokenFrom(bytes32 tokenId, address from, address to, uint256 amount) external returns (uint256, address);
 
     /**
