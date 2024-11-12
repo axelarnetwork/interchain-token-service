@@ -33,16 +33,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     struct DeployApproval {
         address minter;
-        address deployer;
-        bytes32 salt;
+        bytes32 tokenId;
         string destinationChain;
-        bytes destinationMinter;
     }
 
     /// @dev Storage for this contract
-    /// @param deployApprovals Mapping of deployment approvals
+    /// @param approvedDestinationMinters Mapping of approved destination minters
     struct InterchainTokenFactoryStorage {
-        mapping(bytes32 => bool) deployApprovals;
+        mapping(bytes32 => bytes32) approvedDestinationMinters;
     }
 
     /**
@@ -182,37 +180,46 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string calldata destinationChain,
         bytes calldata destinationMinter
     ) external {
+        address minter = msg.sender;
         bytes32 tokenId = interchainTokenId(deployer, salt);
         IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
-        if (!token.isMinter(msg.sender)) revert InvalidMinter(msg.sender);
+        if (!token.isMinter(minter)) revert InvalidMinter(minter);
 
-        bytes32 approvalKey = _deployApprovalKey(
-            DeployApproval({
-                minter: msg.sender,
-                deployer: deployer,
-                salt: salt,
-                destinationChain: destinationChain,
-                destinationMinter: destinationMinter
-            })
-        );
+        if (bytes(interchainTokenService.trustedAddress(destinationChain)).length == 0) revert InvalidChainName();
 
-        _interchainTokenFactoryStorage().deployApprovals[approvalKey] = true;
+        bytes32 approvalKey = _deployApprovalKey(DeployApproval({ minter: minter, tokenId: tokenId, destinationChain: destinationChain }));
 
-        emit ApprovedDeployRemoteInterchainToken(msg.sender, deployer, salt, destinationChain, destinationMinter);
+        _interchainTokenFactoryStorage().approvedDestinationMinters[approvalKey] = keccak256(destinationMinter);
+
+        emit DeployRemoteInterchainTokenApproval(minter, deployer, tokenId, destinationChain, destinationMinter);
+    }
+
+    /**
+     * @notice Allows the minter to revoke a deployer's approval for a remote interchain token deployment that uses a custom destinationMinter address.
+     */
+    function revokeDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain) external {
+        address minter = msg.sender;
+        bytes32 tokenId = interchainTokenId(deployer, salt);
+
+        bytes32 approvalKey = _deployApprovalKey(DeployApproval({ minter: minter, tokenId: tokenId, destinationChain: destinationChain }));
+
+        delete _interchainTokenFactoryStorage().approvedDestinationMinters[approvalKey];
+
+        emit RevokedDeployRemoteInterchainTokenApproval(minter, deployer, tokenId, destinationChain);
     }
 
     function _deployApprovalKey(DeployApproval memory approval) internal pure returns (bytes32 key) {
         key = keccak256(abi.encode(PREFIX_DEPLOY_APPROVAL, approval));
     }
 
-    function _useDeployApproval(DeployApproval memory approval) internal {
+    function _useDeployApproval(DeployApproval memory approval, bytes memory destinationMinter) internal {
         bytes32 approvalKey = _deployApprovalKey(approval);
 
         InterchainTokenFactoryStorage storage slot = _interchainTokenFactoryStorage();
 
-        if (!slot.deployApprovals[approvalKey]) revert RemoteDeploymentNotApproved();
+        if (slot.approvedDestinationMinters[approvalKey] != keccak256(destinationMinter)) revert RemoteDeploymentNotApproved();
 
-        slot.deployApprovals[approvalKey] = false;
+        delete slot.approvedDestinationMinters[approvalKey];
     }
 
     /**
@@ -230,7 +237,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         string memory destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
-        return deployRemoteInterchainToken(salt, minter, destinationChain, new bytes(0), gasValue);
+        return deployRemoteInterchainTokenWithMinter(salt, minter, destinationChain, new bytes(0), gasValue);
     }
 
     /**
@@ -245,7 +252,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
-    function deployRemoteInterchainToken(
+    function deployRemoteInterchainTokenWithMinter(
         bytes32 salt,
         address minter,
         string memory destinationChain,
@@ -272,14 +279,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
 
             if (destinationMinter.length > 0) {
-                DeployApproval memory approval = DeployApproval({
-                    minter: minter,
-                    deployer: msg.sender,
-                    salt: salt,
-                    destinationChain: destinationChain,
-                    destinationMinter: destinationMinter
-                });
-                _useDeployApproval(approval);
+                DeployApproval memory approval = DeployApproval({ minter: minter, tokenId: tokenId, destinationChain: destinationChain });
+                _useDeployApproval(approval, destinationMinter);
                 minter_ = destinationMinter;
             } else {
                 minter_ = minter.toBytes();
@@ -314,7 +315,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     ) external payable returns (bytes32 tokenId) {
         if (bytes(originalChainName).length != 0) revert NotSupported();
 
-        tokenId = deployRemoteInterchainToken(salt, minter, destinationChain, new bytes(0), gasValue);
+        tokenId = deployRemoteInterchainTokenWithMinter(salt, minter, destinationChain, new bytes(0), gasValue);
     }
 
     /**

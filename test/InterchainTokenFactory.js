@@ -7,7 +7,7 @@ const {
     getContractAt,
     Wallet,
     constants: { AddressZero },
-    utils: { defaultAbiCoder, keccak256, toUtf8Bytes },
+    utils: { defaultAbiCoder, keccak256, toUtf8Bytes, arrayify },
 } = ethers;
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32, expectRevert } = require('./utils');
@@ -416,6 +416,52 @@ describe('InterchainTokenFactory', () => {
                         value: gasValue,
                     },
                 ),
+            )
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), destinationChain)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory.deployRemoteInterchainTokenWithMinter(salt, wallet.address, destinationChain, wallet.address, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                tokenFactory,
+                'RemoteDeploymentNotApproved',
+                [],
+            );
+
+            await expect(tokenFactory.approveDeployRemoteInterchainToken(wallet.address, salt, destinationChain, wallet.address))
+                .to.emit(tokenFactory, 'DeployRemoteInterchainTokenApproval')
+                .withArgs(wallet.address, wallet.address, tokenId, destinationChain, arrayify(wallet.address));
+
+            await expect(tokenFactory.revokeDeployRemoteInterchainToken(wallet.address, salt, destinationChain))
+                .to.emit(tokenFactory, 'RevokedDeployRemoteInterchainTokenApproval')
+                .withArgs(wallet.address, wallet.address, tokenId, destinationChain);
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory.deployRemoteInterchainTokenWithMinter(salt, wallet.address, destinationChain, wallet.address, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                tokenFactory,
+                'RemoteDeploymentNotApproved',
+                [],
+            );
+
+            await expect(tokenFactory.approveDeployRemoteInterchainToken(wallet.address, salt, destinationChain, wallet.address))
+                .to.emit(tokenFactory, 'DeployRemoteInterchainTokenApproval')
+                .withArgs(wallet.address, wallet.address, tokenId, destinationChain, arrayify(wallet.address));
+
+            await expect(
+                tokenFactory.deployRemoteInterchainTokenWithMinter(salt, wallet.address, destinationChain, wallet.address, gasValue, {
+                    value: gasValue,
+                }),
             )
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), destinationChain)

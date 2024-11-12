@@ -22,12 +22,20 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error RemoteDeploymentNotApproved();
 
     /// @notice Emitted when a minter approves a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
-    event ApprovedDeployRemoteInterchainToken(
+    event DeployRemoteInterchainTokenApproval(
         address indexed minter,
         address indexed deployer,
-        bytes32 indexed salt,
+        bytes32 indexed tokenId,
         string destinationChain,
         bytes destinationMinter
+    );
+
+    /// @notice Emitted when a minter revokes a deployer's approval for a remote interchain token deployment that uses a custom destinationMinter address.
+    event RevokedDeployRemoteInterchainTokenApproval(
+        address indexed minter,
+        address indexed deployer,
+        bytes32 indexed tokenId,
+        string destinationChain
     );
 
     /**
@@ -98,6 +106,11 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     ) external;
 
     /**
+     * @notice Allows the minter to revoke a deployer's approval for a remote interchain token deployment that uses a custom destinationMinter address.
+     */
+    function revokeDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain) external;
+
+    /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param salt The unique salt for deploying the token.
      * @param minter The address to use as the minter of the deployed token on the destination chain. If the destination chain is not EVM,
@@ -124,7 +137,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
-    function deployRemoteInterchainToken(
+    function deployRemoteInterchainTokenWithMinter(
         bytes32 salt,
         address minter,
         string memory destinationChain,
