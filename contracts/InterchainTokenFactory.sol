@@ -18,13 +18,30 @@ import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, Multicall, Upgradable {
     using AddressBytes for address;
 
-    IInterchainTokenService public immutable interchainTokenService;
-    bytes32 public immutable chainNameHash;
+    /// @dev This slot contains the storage for this contract in an upgrade-compatible manner
+    /// keccak256('InterchainTokenFactory.Slot') - 1;
+    bytes32 internal constant INTERCHAIN_TOKEN_FACTORY_SLOT = 0xd4f5c43117c663161acfe6af3208a49856d85e586baf0f60749de2055e001465;
 
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
+    bytes32 internal constant PREFIX_DEPLOY_APPROVAL = keccak256('deploy-approval');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
+
+    IInterchainTokenService public immutable interchainTokenService;
+    bytes32 public immutable chainNameHash;
+
+    struct DeployApproval {
+        address minter;
+        bytes32 tokenId;
+        string destinationChain;
+    }
+
+    /// @dev Storage for this contract
+    /// @param approvedDestinationMinters Mapping of approved destination minters
+    struct InterchainTokenFactoryStorage {
+        mapping(bytes32 => bytes32) approvedDestinationMinters;
+    }
 
     /**
      * @notice Constructs the InterchainTokenFactory contract.
@@ -154,10 +171,62 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     }
 
     /**
+     * @notice Allow the minter to approve the deployer for a remote interchain token deployment that uses a custom destinationMinter address.
+     * This ensures that a token deployer can't choose the destinationMinter itself, and requires the approval of the minter to reduce trust assumptions on the deployer.
+     */
+    function approveDeployRemoteInterchainToken(
+        address deployer,
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes calldata destinationMinter
+    ) external {
+        address minter = msg.sender;
+        bytes32 tokenId = interchainTokenId(deployer, salt);
+        IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
+        if (!token.isMinter(minter)) revert InvalidMinter(minter);
+
+        if (bytes(interchainTokenService.trustedAddress(destinationChain)).length == 0) revert InvalidChainName();
+
+        bytes32 approvalKey = _deployApprovalKey(DeployApproval({ minter: minter, tokenId: tokenId, destinationChain: destinationChain }));
+
+        _interchainTokenFactoryStorage().approvedDestinationMinters[approvalKey] = keccak256(destinationMinter);
+
+        emit DeployRemoteInterchainTokenApproval(minter, deployer, tokenId, destinationChain, destinationMinter);
+    }
+
+    /**
+     * @notice Allows the minter to revoke a deployer's approval for a remote interchain token deployment that uses a custom destinationMinter address.
+     */
+    function revokeDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain) external {
+        address minter = msg.sender;
+        bytes32 tokenId = interchainTokenId(deployer, salt);
+
+        bytes32 approvalKey = _deployApprovalKey(DeployApproval({ minter: minter, tokenId: tokenId, destinationChain: destinationChain }));
+
+        delete _interchainTokenFactoryStorage().approvedDestinationMinters[approvalKey];
+
+        emit RevokedDeployRemoteInterchainTokenApproval(minter, deployer, tokenId, destinationChain);
+    }
+
+    function _deployApprovalKey(DeployApproval memory approval) internal pure returns (bytes32 key) {
+        key = keccak256(abi.encode(PREFIX_DEPLOY_APPROVAL, approval));
+    }
+
+    function _useDeployApproval(DeployApproval memory approval, bytes memory destinationMinter) internal {
+        bytes32 approvalKey = _deployApprovalKey(approval);
+
+        InterchainTokenFactoryStorage storage slot = _interchainTokenFactoryStorage();
+
+        if (slot.approvedDestinationMinters[approvalKey] != keccak256(destinationMinter)) revert RemoteDeploymentNotApproved();
+
+        delete slot.approvedDestinationMinters[approvalKey];
+    }
+
+    /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param salt The unique salt for deploying the token.
-     * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
-     * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
+     * @param minter The address to use as the minter of the deployed token on the destination chain. If the destination chain is not EVM,
+     * then use the more generic `deployRemoteInterchainToken` function below that allows setting an arbitrary destination minter that was approved by the current minter.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
@@ -166,6 +235,28 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         bytes32 salt,
         address minter,
         string memory destinationChain,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId) {
+        return deployRemoteInterchainTokenWithMinter(salt, minter, destinationChain, new bytes(0), gasValue);
+    }
+
+    /**
+     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @param salt The unique salt for deploying the token.
+     * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
+     * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationMinter The minter address to set on the deployed token on the destination chain. This can be arbitrary bytes
+     * since the encoding of the account is dependent on the destination chain. If this is empty, then the `minter` of the token on the current chain
+     * is used as the destination minter, which makes it convenient when deploying to other EVM chains.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainTokenWithMinter(
+        bytes32 salt,
+        address minter,
+        string memory destinationChain,
+        bytes memory destinationMinter,
         uint256 gasValue
     ) public payable returns (bytes32 tokenId) {
         string memory tokenName;
@@ -184,9 +275,19 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
         if (minter != address(0)) {
             if (!token.isMinter(minter)) revert NotMinter(minter);
+            // Sanity check to prevent accidental use of the current ITS address as the destination minter
             if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
 
-            minter_ = minter.toBytes();
+            if (destinationMinter.length > 0) {
+                DeployApproval memory approval = DeployApproval({ minter: minter, tokenId: tokenId, destinationChain: destinationChain });
+                _useDeployApproval(approval, destinationMinter);
+                minter_ = destinationMinter;
+            } else {
+                minter_ = minter.toBytes();
+            }
+        } else if (destinationMinter.length > 0) {
+            // If a destinationMinter is provided, then minter must not be address(0)
+            revert InvalidMinter(minter);
         }
 
         tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
@@ -214,7 +315,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     ) external payable returns (bytes32 tokenId) {
         if (bytes(originalChainName).length != 0) revert NotSupported();
 
-        tokenId = deployRemoteInterchainToken(salt, minter, destinationChain, gasValue);
+        tokenId = deployRemoteInterchainTokenWithMinter(salt, minter, destinationChain, new bytes(0), gasValue);
     }
 
     /**
@@ -311,5 +412,19 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         if (bytes(originalChain).length != 0) revert NotSupported();
 
         tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
+    }
+
+    /********************\
+    |* Pure Key Getters *|
+    \********************/
+
+    /**
+     * @notice Gets the specific storage location for preventing upgrade collisions
+     * @return slot containing the storage struct
+     */
+    function _interchainTokenFactoryStorage() private pure returns (InterchainTokenFactoryStorage storage slot) {
+        assembly {
+            slot.slot := INTERCHAIN_TOKEN_FACTORY_SLOT
+        }
     }
 }
