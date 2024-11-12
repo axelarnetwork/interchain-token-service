@@ -435,6 +435,35 @@ describe('InterchainTokenFactory', () => {
                 [],
             );
 
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory.deployRemoteInterchainTokenWithMinter(salt, AddressZero, destinationChain, wallet.address, gasValue, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
+                tokenFactory,
+                'InvalidMinter',
+                [AddressZero],
+            );
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory.approveDeployRemoteInterchainToken(wallet.address, salt, 'untrusted-chain', wallet.address, gasOptions),
+                tokenFactory,
+                'InvalidChainName',
+                [],
+            );
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory
+                        .connect(otherWallet)
+                        .approveDeployRemoteInterchainToken(wallet.address, salt, destinationChain, wallet.address, gasOptions),
+                tokenFactory,
+                'InvalidMinter',
+                [otherWallet.address],
+            );
+
             await expect(tokenFactory.approveDeployRemoteInterchainToken(wallet.address, salt, destinationChain, wallet.address))
                 .to.emit(tokenFactory, 'DeployRemoteInterchainTokenApproval')
                 .withArgs(wallet.address, wallet.address, tokenId, destinationChain, arrayify(wallet.address));
