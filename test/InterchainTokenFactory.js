@@ -184,7 +184,7 @@ describe('InterchainTokenFactory', () => {
         it('Should register a token if the mint amount is zero', async () => {
             const salt = keccak256('0x1234');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [minter, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
@@ -200,7 +200,7 @@ describe('InterchainTokenFactory', () => {
         it('Should register a token if the mint amount is zero and minter is the zero address', async () => {
             const salt = keccak256('0x123456');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
             const minterBytes = new Uint8Array();
             const params = defaultAbiCoder.encode(['bytes', 'address'], [minterBytes, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
@@ -217,7 +217,7 @@ describe('InterchainTokenFactory', () => {
         it('Should register a token if the mint amount is greater than zero and the minter is the zero address', async () => {
             const salt = keccak256('0x12345678');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
@@ -233,7 +233,7 @@ describe('InterchainTokenFactory', () => {
         it('Should register a token', async () => {
             const salt = keccak256('0x');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
@@ -270,7 +270,7 @@ describe('InterchainTokenFactory', () => {
 
             const salt = keccak256('0x12');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
@@ -460,7 +460,7 @@ describe('InterchainTokenFactory', () => {
                         .connect(otherWallet)
                         .approveDeployRemoteInterchainToken(wallet.address, salt, destinationChain, wallet.address, gasOptions),
                 tokenFactory,
-                'InvalidMinter',
+                'NotMinter',
                 [otherWallet.address],
             );
 
@@ -505,7 +505,7 @@ describe('InterchainTokenFactory', () => {
 
             const salt = keccak256('0x1245');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await tokenFactory.interchainTokenAddress(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
@@ -556,6 +556,18 @@ describe('InterchainTokenFactory', () => {
 
             await expect(
                 tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](salt, AddressZero, destinationChain, gasValue, {
+                    value: gasValue,
+                }),
+            )
+                .to.emit(service, 'InterchainTokenDeploymentStarted')
+                .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
+
+            await expect(
+                tokenFactory.deployRemoteInterchainTokenWithMinter(salt, AddressZero, destinationChain, '0x', gasValue, {
                     value: gasValue,
                 }),
             )

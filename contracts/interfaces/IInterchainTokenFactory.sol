@@ -20,6 +20,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error NotServiceOwner(address sender);
     error NotSupported();
     error RemoteDeploymentNotApproved();
+    error InvalidTokenId(bytes32 tokenId, bytes32 expectedTokenId);
 
     /// @notice Emitted when a minter approves a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
     event DeployRemoteInterchainTokenApproval(
@@ -51,13 +52,12 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     function chainNameHash() external view returns (bytes32);
 
     /**
-     * @notice Calculates the salt for an interchain token.
-     * @param chainNameHash_ The hash of the chain name.
+     * @notice Computes the deploy salt for an interchain token.
      * @param deployer The address of the deployer.
      * @param salt A unique identifier to generate the salt.
-     * @return tokenSalt The calculated salt for the interchain token.
+     * @return deploySalt The deploy salt for the interchain token.
      */
-    function interchainTokenSalt(bytes32 chainNameHash_, address deployer, bytes32 salt) external view returns (bytes32 tokenSalt);
+    function interchainTokenDeploySalt(address deployer, bytes32 salt) external view returns (bytes32 deploySalt);
 
     /**
      * @notice Computes the ID for an interchain token based on the deployer and a salt.
@@ -66,14 +66,6 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
      * @return tokenId The ID of the interchain token.
      */
     function interchainTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
-
-    /**
-     * @notice Retrieves the address of an interchain token based on the deployer and a salt.
-     * @param deployer The address that deployed the interchain token.
-     * @param salt A unique identifier used in the deployment process.
-     * @return tokenAddress The address of the interchain token.
-     */
-    function interchainTokenAddress(address deployer, bytes32 salt) external view returns (address tokenAddress);
 
     /**
      * @notice Deploys a new interchain token with specified parameters.
@@ -165,12 +157,11 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     ) external payable returns (bytes32 tokenId);
 
     /**
-     * @notice Calculates the salt for a canonical interchain token.
-     * @param chainNameHash_ The hash of the chain name.
+     * @notice Computes the deploy salt for a canonical interchain token.
      * @param tokenAddress The address of the token.
-     * @return tokenSalt The calculated salt for the interchain token.
+     * @return deploySalt The deploy salt for the interchain token.
      */
-    function canonicalInterchainTokenSalt(bytes32 chainNameHash_, address tokenAddress) external view returns (bytes32 tokenSalt);
+    function canonicalInterchainTokenDeploySalt(address tokenAddress) external view returns (bytes32 deploySalt);
 
     /**
      * @notice Computes the ID for a canonical interchain token based on its address.
@@ -201,13 +192,14 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
 
     /**
      * @notice Deploys a canonical interchain token on a remote chain.
+     * This method is deprecated and will be removed in the future. Please use the above method instead.
      * @dev originalChain is only allowed to be '', i.e the current chain.
      * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChain The name of the chain where the token originally exists.
      * @param originalTokenAddress The address of the original token on the original chain.
      * @param destinationChain The name of the chain where the token will be deployed.
      * @param gasValue The gas amount to be sent for deployment.
-     * @return tokenId The tokenId corresponding to the deployed canonical InterchainToken.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteCanonicalInterchainToken(
         string calldata originalChain,
