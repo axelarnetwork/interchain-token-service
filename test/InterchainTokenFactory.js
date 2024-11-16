@@ -51,7 +51,7 @@ describe('InterchainTokenFactory', () => {
         });
     });
 
-    describe.only('Upgrade', async () => {
+    describe('Upgrade', async () => {
         it('Should revert on upgrade from non-owner account', async () => {
             await expectRevert(
                 (gasOptions) => tokenFactory.connect(otherWallet).upgrade(AddressZero, HashZero, '0x', gasOptions),
