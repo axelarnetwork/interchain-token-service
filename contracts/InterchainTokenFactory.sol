@@ -265,7 +265,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             _checkTokenMinter(deployedTokenId, minter);
 
             if (destinationMinter.length > 0) {
-                DeployApproval memory approval = DeployApproval({ minter: minter, tokenId: deployedTokenId, destinationChain: destinationChain });
+                DeployApproval memory approval = DeployApproval({
+                    minter: minter,
+                    tokenId: deployedTokenId,
+                    destinationChain: destinationChain
+                });
                 _useDeployApproval(approval, destinationMinter);
             } else {
                 destinationMinter = minter.toBytes();
