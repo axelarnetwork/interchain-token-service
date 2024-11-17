@@ -172,6 +172,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     /**
      * @notice Allow the minter to approve the deployer for a remote interchain token deployment that uses a custom destinationMinter address.
      * This ensures that a token deployer can't choose the destinationMinter itself, and requires the approval of the minter to reduce trust assumptions on the deployer.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationMinter The minter address to set on the deployed token on the destination chain. This can be arbitrary bytes
+     * since the encoding of the account is dependent on the destination chain.
      */
     function approveDeployRemoteInterchainToken(
         address deployer,
@@ -195,6 +200,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Allows the minter to revoke a deployer's approval for a remote interchain token deployment that uses a custom destinationMinter address.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @param destinationChain The name of the destination chain.
      */
     function revokeDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain) external {
         address minter = msg.sender;
@@ -207,10 +215,16 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         emit RevokedDeployRemoteInterchainTokenApproval(minter, deployer, tokenId, destinationChain);
     }
 
+    /**
+     * @dev Compute the key for the deploy approval mapping.
+     */
     function _deployApprovalKey(DeployApproval memory approval) internal pure returns (bytes32 key) {
         key = keccak256(abi.encode(PREFIX_DEPLOY_APPROVAL, approval));
     }
 
+    /**
+     * @dev Use the deploy approval to check that the destination minter is valid and then delete the approval.
+     */
     function _useDeployApproval(DeployApproval memory approval, bytes memory destinationMinter) internal {
         bytes32 approvalKey = _deployApprovalKey(approval);
 
@@ -309,6 +323,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Checks that the minter is registered for the token on the current chain and not the ITS address.
+     * @param tokenId The unique identifier for the token. The token must be an interchain token deployed via ITS.
+     * @param minter The address to be checked as a minter for the interchain token.
      */
     function _checkTokenMinter(bytes32 tokenId, address minter) internal view {
         // Ensure that the minter is registered for the token on the current chain
@@ -365,21 +381,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         bytes memory minter,
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {
-        tokenId = _interchainTokenId(deploySalt);
+        bytes32 expectedTokenId = _interchainTokenId(deploySalt);
         // Ensure that a local token has been registered for the tokenId
-        IERC20Named token = IERC20Named(interchainTokenService.registeredTokenAddress(tokenId));
+        IERC20Named token = IERC20Named(interchainTokenService.registeredTokenAddress(expectedTokenId));
 
         // The local token must expose the name, symbol, and decimals metadata
-        bytes32 deployedTokenId = _deployInterchainToken(
-            deploySalt,
-            destinationChain,
-            token.name(),
-            token.symbol(),
-            token.decimals(),
-            minter,
-            gasValue
-        );
-        if (deployedTokenId != tokenId) revert InvalidTokenId(deployedTokenId, tokenId);
+        tokenId = _deployInterchainToken(deploySalt, destinationChain, token.name(), token.symbol(), token.decimals(), minter, gasValue);
+        if (tokenId != expectedTokenId) revert InvalidTokenId(tokenId, expectedTokenId);
     }
 
     /**

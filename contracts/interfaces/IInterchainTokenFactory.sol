@@ -87,8 +87,13 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     ) external payable returns (bytes32 tokenId);
 
     /**
-     * @notice Allows the minter to approve a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
+     * @notice Allow the minter to approve the deployer for a remote interchain token deployment that uses a custom destinationMinter address.
      * This ensures that a token deployer can't choose the destinationMinter itself, and requires the approval of the minter to reduce trust assumptions on the deployer.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationMinter The minter address to set on the deployed token on the destination chain. This can be arbitrary bytes
+     * since the encoding of the account is dependent on the destination chain.
      */
     function approveDeployRemoteInterchainToken(
         address deployer,
@@ -99,6 +104,9 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
 
     /**
      * @notice Allows the minter to revoke a deployer's approval for a remote interchain token deployment that uses a custom destinationMinter address.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @param destinationChain The name of the destination chain.
      */
     function revokeDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain) external;
 
