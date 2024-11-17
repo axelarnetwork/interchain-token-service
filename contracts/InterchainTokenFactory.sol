@@ -56,7 +56,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         chainNameHash = interchainTokenService.chainNameHash();
     }
 
-    function _setup(bytes calldata data) internal override {}
+    function _setup(bytes calldata /* data */) internal pure override {}
 
     /**
      * @notice Getter for the contract id.
