@@ -17,7 +17,7 @@ rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
 
 # Get compiler version, expected format ".*version: 'x.y.z',"
-version=$(grep 'version' ./hardhat.config.js | sed "s/ *version: '//" | sed "s/',$//g")
+version='^0.8.0'
 
 # Flatten files
 find "$SOURCE" -name '*.sol' -print | while read -r file; do
