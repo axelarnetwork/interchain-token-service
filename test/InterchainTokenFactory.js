@@ -6,7 +6,7 @@ const { ethers } = require('hardhat');
 const {
     getContractAt,
     Wallet,
-    constants: { AddressZero },
+    constants: { AddressZero, HashZero },
     utils: { defaultAbiCoder, keccak256, toUtf8Bytes, arrayify },
 } = ethers;
 const { deployAll, deployContract } = require('../scripts/deploy');
@@ -19,6 +19,7 @@ const {
     OPERATOR_ROLE,
     FLOW_LIMITER_ROLE,
 } = require('./constants');
+const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 
 describe('InterchainTokenFactory', () => {
     let wallet, otherWallet;
@@ -47,6 +48,40 @@ describe('InterchainTokenFactory', () => {
             const expectedContractid = keccak256(toUtf8Bytes('interchain-token-factory'));
             const contractId = await tokenFactory.contractId();
             expect(contractId).to.eq(expectedContractid);
+        });
+    });
+
+    describe('Upgrade', async () => {
+        it('Should revert on upgrade from non-owner account', async () => {
+            await expectRevert(
+                (gasOptions) => tokenFactory.connect(otherWallet).upgrade(AddressZero, HashZero, '0x', gasOptions),
+                tokenFactory,
+                'NotOwner',
+            );
+        });
+
+        it('Should upgrade the implementation', async () => {
+            const newImplementation = await deployContract(wallet, 'InterchainTokenFactory', [service.address]);
+            const newImplementationCodeHash = await getBytecodeHash(newImplementation);
+            const setupParams = '0x';
+
+            await expect(tokenFactory.upgrade(newImplementation.address, newImplementationCodeHash, setupParams))
+                .to.emit(tokenFactory, 'Upgraded')
+                .withArgs(newImplementation.address);
+
+            expect(await tokenFactory.implementation()).to.eq(newImplementation.address);
+        });
+
+        it('Should upgrade the implementation with setup data', async () => {
+            const newImplementation = await deployContract(wallet, 'InterchainTokenFactory', [service.address]);
+            const newImplementationCodeHash = await getBytecodeHash(newImplementation);
+            const setupParams = '0x1234';
+
+            await expect(tokenFactory.upgrade(newImplementation.address, newImplementationCodeHash, setupParams))
+                .to.emit(tokenFactory, 'Upgraded')
+                .withArgs(newImplementation.address);
+
+            expect(await tokenFactory.implementation()).to.eq(newImplementation.address);
         });
     });
 
