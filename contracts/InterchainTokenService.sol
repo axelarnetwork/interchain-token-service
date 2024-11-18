@@ -356,7 +356,12 @@ contract InterchainTokenService is
     ) external payable whenNotPaused returns (bytes32 tokenId) {
         address deployer = msg.sender;
 
-        if (deployer == interchainTokenFactory) deployer = TOKEN_FACTORY_DEPLOYER;
+        if (deployer == interchainTokenFactory) {
+            deployer = TOKEN_FACTORY_DEPLOYER;
+        } else if (trustedAddressHash(chainName()) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+            // Currently, deployments directly on ITS contract (instead of ITS Factory) are restricted for ITS contracts deployed on Amplifier, i.e registered with the Hub
+            revert NotSupported();
+        }
 
         tokenId = interchainTokenId(deployer, salt);
 
