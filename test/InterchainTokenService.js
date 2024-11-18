@@ -702,7 +702,8 @@ describe('Interchain Token Service', () => {
                 .withArgs(chainName, ITS_HUB_ROUTING_IDENTIFIER);
 
             await expectRevert(
-                (gasOptions) => service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
+                (gasOptions) =>
+                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
                 service,
                 'NotSupported',
             );
