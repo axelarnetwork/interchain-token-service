@@ -695,6 +695,20 @@ describe('Interchain Token Service', () => {
                 'EmptyTokenSymbol',
             );
         });
+
+        it('Should revert when deploying an interchain token on chain native to ITS hub', async () => {
+            await expect(service.setTrustedAddress(chainName, ITS_HUB_ROUTING_IDENTIFIER))
+                .to.emit(service, 'TrustedAddressSet')
+                .withArgs(chainName, ITS_HUB_ROUTING_IDENTIFIER);
+
+            await expectRevert(
+                (gasOptions) => service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
+                service,
+                'NotSupported',
+            );
+
+            await expect(service.removeTrustedAddress(chainName)).to.emit(service, 'TrustedAddressRemoved').withArgs(chainName);
+        });
     });
 
     describe('Deploy and Register remote Interchain Token', () => {
