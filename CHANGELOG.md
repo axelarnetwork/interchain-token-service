@@ -1,5 +1,11 @@
 # @axelar-network/interchain-token-service
 
+## 2.0.1
+
+### Patch Changes
+
+-   983a954: remove npm package.json
+
 ## 2.0.0
 
 ### Major Changes
