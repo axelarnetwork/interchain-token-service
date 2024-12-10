@@ -6,12 +6,13 @@ import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/in
 import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
 
 import { IInterchainTokenService } from './IInterchainTokenService.sol';
+import { ITokenManagerType } from './ITokenManagerType.sol';
 
 /**
  * @title IInterchainTokenFactory Interface
  * @notice This interface defines functions for deploying new interchain tokens and managing their token managers.
  */
-interface IInterchainTokenFactory is IUpgradable, IMulticall {
+interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall {
     error ZeroAddress();
     error InvalidChainName();
     error InvalidMinter(address minter);
@@ -215,4 +216,24 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
         string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Computes the deploy salt for a linked interchain token.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @return deploySalt The deploy salt for the interchain token.
+     */
+    function linkedTokenDeploySalt(address deployer, bytes32 salt) external view returns (bytes32 deploySalt);
+
+    /**
+     * @notice Computes the ID for a canonical interchain token based on its address.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @return tokenId The ID of the canonical interchain token.
+     */
+    function linkedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
+
+    function registerCustomToken(bytes32 salt, address tokenAddress, TokenManagerType tokenManagerType, address operator) external payable returns (bytes32 tokenId);
+
+    function linkToken(bytes32 salt, string calldata destinationChain, bytes calldata destinationTokenAddress, TokenManagerType tokenManagerType, bool autoScaling, bytes calldata linkParams, uint256 gasValue) external payable returns (bytes32 tokenId);
 }

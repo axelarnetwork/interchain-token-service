@@ -16,7 +16,7 @@ import { IERC20Named } from './interfaces/IERC20Named.sol';
  * @title InterchainTokenFactory
  * @notice This contract is responsible for deploying new interchain tokens and managing their token managers.
  */
-contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, Multicall, Upgradable {
+contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradable {
     using AddressBytes for address;
 
     /// @dev This slot contains the storage for this contract in an upgrade-compatible manner
@@ -26,6 +26,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     bytes32 private constant CONTRACT_ID = keccak256('interchain-token-factory');
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
+    bytes32 internal constant PREFIX_CUSTOM_TOKEN_SALT = keccak256('custom-token-salt');
     bytes32 internal constant PREFIX_DEPLOY_APPROVAL = keccak256('deploy-approval');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
@@ -444,6 +445,32 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         if (bytes(originalChain).length != 0) revert NotSupported();
 
         tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
+    }
+
+    // TODO: Should we reuse interchainTokenDeploySalt?
+    function linkedTokenDeploySalt(address deployer, bytes32 salt) public view returns (bytes32 deploySalt) {
+        deploySalt = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_SALT, chainNameHash, deployer, salt));
+    }
+
+    function linkedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId) {
+        bytes32 deploySalt = linkedTokenDeploySalt(deployer, salt);
+        tokenId = _interchainTokenId(deploySalt);
+    }
+
+    function registerCustomToken(bytes32 salt, address tokenAddress, TokenManagerType tokenManagerType, address operator) external payable returns (bytes32 tokenId) {
+        bytes32 deploySalt = linkedTokenDeploySalt(msg.sender, salt);
+        bytes memory operatorBytes = '';
+        string memory currentChain = '';
+        if (operator != address(0)) {
+            operatorBytes = operator.toBytes();
+        }
+
+        tokenId = interchainTokenService.linkToken(deploySalt, currentChain, tokenAddress.toBytes(), tokenManagerType, false, operatorBytes, 0);
+    }
+
+    function linkToken(bytes32 salt, string calldata destinationChain, bytes calldata destinationTokenAddress, TokenManagerType tokenManagerType, bool autoScaling, bytes calldata linkParams, uint256 gasValue) external payable returns (bytes32 tokenId) {
+        bytes32 deploySalt = linkedTokenDeploySalt(msg.sender, salt);
+        tokenId = interchainTokenService.linkToken(deploySalt, destinationChain, destinationTokenAddress, tokenManagerType, autoScaling, linkParams, gasValue);
     }
 
     /********************\
