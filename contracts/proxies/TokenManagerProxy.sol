@@ -84,3 +84,4 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
         implementation_ = ITokenManagerImplementation(interchainTokenService_).tokenManagerImplementation(implementationType_);
     }
 }
+
