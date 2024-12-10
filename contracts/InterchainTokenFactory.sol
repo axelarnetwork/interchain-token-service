@@ -447,7 +447,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
     }
 
-    // TODO: Should we reuse interchainTokenDeploySalt?
     function linkedTokenDeploySalt(address deployer, bytes32 salt) public view returns (bytes32 deploySalt) {
         deploySalt = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_SALT, chainNameHash, deployer, salt));
     }
