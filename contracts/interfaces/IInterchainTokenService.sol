@@ -29,7 +29,6 @@ interface IInterchainTokenService is
     IAddressTracker,
     IUpgradable
 {
-    error InvalidTokenManagerImplementationType(address implementation);
     error InvalidChainName();
     error NotRemoteService();
     error TokenManagerDoesNotExist(bytes32 tokenId);

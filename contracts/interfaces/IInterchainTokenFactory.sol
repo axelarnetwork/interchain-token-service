@@ -16,11 +16,10 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error InvalidChainName();
     error InvalidMinter(address minter);
     error NotMinter(address minter);
-    error NotOperator(address operator);
-    error NotServiceOwner(address sender);
     error NotSupported();
     error RemoteDeploymentNotApproved();
     error InvalidTokenId(bytes32 tokenId, bytes32 expectedTokenId);
+    error EmptyInterchainToken();
 
     /// @notice Emitted when a minter approves a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
     event DeployRemoteInterchainTokenApproval(
