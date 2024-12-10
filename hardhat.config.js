@@ -45,6 +45,9 @@ const compilerSettings = {
         optimizer: optimizerSettings,
     },
 };
+if (!process.env.CHECK_CONTRACT_SIZE) {
+    networks.hardhat.allowUnlimitedContractSize = true;
+}
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
