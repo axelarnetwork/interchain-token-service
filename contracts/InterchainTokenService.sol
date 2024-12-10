@@ -322,19 +322,18 @@ contract InterchainTokenService is
 
     function linkToken(bytes32 salt, string calldata destinationChain, bytes memory destinationTokenAddress, TokenManagerType tokenManagerType, bool autoScaling, bytes memory linkParams, uint256 gasValue) public payable whenNotPaused returns (bytes32 tokenId) {
         if (destinationTokenAddress.length == 0) revert EmptyDestinationAddress();
-        if (linkParams.length == 0) revert EmptyParams();
 
         // TODO: Should we only mint/burn or lock/unlock for remote linking for simplicity? Makes it easier for external chains
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
-        // TODO: Support linking existing custom tokens on remote chains
         address deployer = msg.sender;
 
         if (msg.sender == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
         } else if (bytes(destinationChain).length == 0) {
-            revert NotSupported();
+            // TODO: Only support linking new tokens via ITS factory, to include chain name in token id derivation
+            // revert NotSupported();
         }
 
         tokenId = interchainTokenId(deployer, salt);
@@ -923,7 +922,7 @@ contract InterchainTokenService is
         // slither-disable-next-line unused-return
         bytes memory sourceTokenAddress = registeredTokenAddress(tokenId).toBytes();
 
-        emit TokenManagerDeploymentStarted(tokenId, destinationChain, tokenManagerType, params);
+        emit LinkTokenStarted(tokenId, destinationChain, sourceTokenAddress, destinationTokenAddress, tokenManagerType, autoScaling, params);
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_LINK_TOKEN, tokenId, tokenManagerType, sourceTokenAddress, destinationTokenAddress, autoScaling, params);
 

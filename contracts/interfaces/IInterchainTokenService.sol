@@ -73,10 +73,13 @@ interface IInterchainTokenService is
         uint256 amount,
         bytes32 dataHash
     );
-    event TokenManagerDeploymentStarted(
+    event LinkTokenStarted(
         bytes32 indexed tokenId,
         string destinationChain,
+        bytes sourceTokenAddress,
+        bytes destinationTokenAddress,
         TokenManagerType indexed tokenManagerType,
+        bool autoScaling,
         bytes params
     );
     event InterchainTokenDeploymentStarted(
