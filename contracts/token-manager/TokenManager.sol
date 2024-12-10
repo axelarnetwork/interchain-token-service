@@ -18,6 +18,7 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
 /**
  * @title TokenManager
  * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
+ * @dev Should only be used as an implementation for TokenManagerProxy.
  */
 contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Multicall {
     using AddressBytes for bytes;
@@ -57,8 +58,8 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
 
     /**
      * @notice Reads the token address from the proxy.
-     * @dev This function is not supported when directly called on the implementation. It
-     * must be called by the proxy.
+     * @dev This function is not supported when directly called on the implementation.
+     * It must be called by the proxy. It is included here so that the interace shows this function as existing, for better UX.
      * @return tokenAddress_ The address of the token.
      */
     function tokenAddress() external view virtual returns (address) {
@@ -68,6 +69,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
     /**
      * @notice A function that returns the token id.
      * @dev This will only work when implementation is called by a proxy, which stores the tokenId as an immutable.
+     * It is included here so that the interace shows this function as existing, for better UX.
      * @return bytes32 The interchain token ID.
      */
     function interchainTokenId() public pure returns (bytes32) {
@@ -89,6 +91,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      */
     function getTokenAddressFromParams(bytes calldata params_) external pure returns (address tokenAddress_) {
         (, tokenAddress_) = abi.decode(params_, (bytes, address));
+        if (tokenAddress_ == address(0)) revert ZeroTokenAddress();
     }
 
     /**

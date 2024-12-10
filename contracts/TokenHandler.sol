@@ -16,12 +16,11 @@ import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 
 /**
  * @title TokenHandler
- * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
+ * @notice This contract is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
  */
 contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Create3AddressFixed {
     using SafeTokenTransferFrom for IERC20;
     using SafeTokenCall for IERC20;
-    using SafeTokenTransfer for IERC20;
 
     /**
      * @notice This function gives token to a specified address from the token manager.

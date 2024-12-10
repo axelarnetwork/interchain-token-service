@@ -149,6 +149,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
 
             minterBytes = minter.toBytes();
+        } else {
+            revert EmptyInterchainToken();
         }
 
         tokenId = _deployInterchainToken(deploySalt, currentChain, name, symbol, decimals, minterBytes, gasValue);

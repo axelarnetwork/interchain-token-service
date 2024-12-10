@@ -2,12 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
-
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { InterchainTokenStandard } from './InterchainTokenStandard.sol';
-import { ERC20 } from './ERC20.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
 import { Minter } from '../utils/Minter.sol';
 
@@ -16,9 +13,7 @@ import { Minter } from '../utils/Minter.sol';
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
  * @dev This contract also inherits Minter and Implementation logic.
  */
-contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter, IInterchainToken {
-    using AddressBytes for bytes;
-
+contract InterchainToken is InterchainTokenStandard, ERC20Permit, Minter, IInterchainToken {
     string public name;
     string public symbol;
     uint8 public decimals;
