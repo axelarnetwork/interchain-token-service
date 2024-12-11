@@ -229,18 +229,13 @@ describe('InterchainTokenFactory', () => {
         it('Should register a token if the mint amount is zero and minter is the zero address', async () => {
             const salt = keccak256('0x123456');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
-            const minterBytes = new Uint8Array();
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [minterBytes, tokenAddress]);
-            const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
-            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, AddressZero))
-                .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, AddressZero, name, symbol, decimals)
-                .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params);
-
-            await checkRoles(tokenManager, AddressZero);
+            await expectRevert(
+                (gasOptions) => tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, AddressZero, { gasOptions }),
+                tokenFactory,
+                'EmptyInterchainToken',
+                [],
+            );
         });
 
         it('Should register a token if the mint amount is greater than zero and the minter is the zero address', async () => {

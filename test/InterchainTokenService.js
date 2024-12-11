@@ -909,13 +909,13 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should revert on deploying a token manager if token handler post deploy fails', async () => {
+        it('Should revert on deploying a token manager with an empty token', async () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, AddressZero]);
 
             await expectRevert(
                 (gasOptions) => service.deployTokenManager(salt, '', LOCK_UNLOCK, params, 0, gasOptions),
                 service,
-                'PostDeployFailed',
+                'TokenManagerDeploymentFailed',
             );
         });
 
