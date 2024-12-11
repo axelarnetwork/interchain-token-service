@@ -8,7 +8,7 @@ const {
 } = ethers;
 const { expect } = require('chai');
 const { getRandomBytes32, expectRevert, getChainId } = require('./utils');
-const { deployContract, deployAll } = require('../scripts/deploy');
+const { deployAll } = require('../scripts/deploy');
 
 describe('ERC20 Permit', () => {
     let interchainTokenDeployer;
@@ -27,9 +27,7 @@ describe('ERC20 Permit', () => {
         owner = wallets[0];
         user = wallets[1];
 
-        ({
-            interchainTokenDeployer,
-        } = await deployAll(owner, 'Test'));
+        ({ interchainTokenDeployer } = await deployAll(owner, 'Test'));
         const salt = getRandomBytes32();
         const tokenId = getRandomBytes32();
 

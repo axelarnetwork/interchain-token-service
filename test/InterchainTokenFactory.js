@@ -216,12 +216,18 @@ describe('InterchainTokenFactory', () => {
             );
         });
 
-        it('Should not register a token if the mint amount is zero and there is no minter', async () => {
+        it('Should register a token if the mint amount is zero', async () => {
             const salt = keccak256('0x1234');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [minter, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
-            await expectRevert(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, minter), InterchainTokenFactory.abi, 'EmptyInterchainToken()', []);
+            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, minter))
+                .to.emit(service, 'InterchainTokenDeployed')
+                .withArgs(tokenId, tokenAddress, minter, name, symbol, decimals)
+                .and.to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params);
 
             await checkRoles(tokenManager, minter);
         });
@@ -364,7 +370,7 @@ describe('InterchainTokenFactory', () => {
                     tokenFactory['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
                         '',
                         salt,
-                        service.address,
+                        tokenManager.address,
                         destinationChain,
                         gasValue,
                         {
@@ -374,7 +380,7 @@ describe('InterchainTokenFactory', () => {
                     ),
                 tokenFactory,
                 'InvalidMinter',
-                [service.address],
+                [tokenManager.address],
             );
 
             await expect(
@@ -417,7 +423,7 @@ describe('InterchainTokenFactory', () => {
                 (gasOptions) =>
                     tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
                         salt,
-                        service.address,
+                        tokenManager.address,
                         destinationChain,
                         gasValue,
                         {
@@ -427,7 +433,7 @@ describe('InterchainTokenFactory', () => {
                     ),
                 tokenFactory,
                 'InvalidMinter',
-                [service.address],
+                [tokenManager.address],
             );
 
             await expect(

@@ -26,9 +26,7 @@ describe('ERC20', () => {
         owner = wallets[0];
         user = wallets[1];
 
-        ({
-            interchainTokenDeployer,
-        } = await deployAll(owner, 'Test'));
+        ({ interchainTokenDeployer } = await deployAll(owner, 'Test'));
 
         const salt = getRandomBytes32();
         const tokenId = getRandomBytes32();

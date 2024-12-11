@@ -3,14 +3,13 @@
 const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
-    Wallet,
     getContractAt,
     constants: { AddressZero },
 } = ethers;
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
-const { deployContract } = require('../scripts/deploy');
+const { deployContract, deployAll } = require('../scripts/deploy');
 
 let ownerWallet, otherWallet;
 
@@ -257,16 +256,15 @@ describe('FlowLimit', async () => {
 });
 
 describe('InterchainTokenDeployer', () => {
-    let interchainToken, interchainTokenDeployer;
-    const service = new Wallet(getRandomBytes32()).address;
+    let interchainTokenDeployer;
+    let service;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const decimals = 18;
     const MINTER_ROLE = 0;
 
     before(async () => {
-        interchainToken = await deployContract(ownerWallet, 'InterchainToken', [service]);
-        interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [interchainToken.address]);
+        ({ interchainTokenDeployer, service } = await deployAll(ownerWallet, 'Test'));
     });
 
     it('Should revert on deployment with invalid implementation address', async () => {
@@ -283,20 +281,21 @@ describe('InterchainTokenDeployer', () => {
         const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
 
         const token = await getContractAt('InterchainToken', tokenAddress, ownerWallet);
+        const tokenManager = await service.tokenManagerAddress(tokenId);
 
         await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals))
             .to.emit(token, 'RolesAdded')
-            .withArgs(service, 1 << MINTER_ROLE)
+            .withArgs(tokenManager, 1 << MINTER_ROLE)
             .and.to.emit(token, 'RolesAdded')
             .withArgs(ownerWallet.address, 1 << MINTER_ROLE);
 
         expect(await token.name()).to.equal(name);
         expect(await token.symbol()).to.equal(symbol);
         expect(await token.decimals()).to.equal(decimals);
-        expect(await token.hasRole(service, MINTER_ROLE)).to.be.true;
+        expect(await token.hasRole(tokenManager, MINTER_ROLE)).to.be.true;
         expect(await token.hasRole(ownerWallet.address, MINTER_ROLE)).to.be.true;
         expect(await token.interchainTokenId()).to.equal(tokenId);
-        expect(await token.interchainTokenService()).to.equal(service);
+        expect(await token.interchainTokenService()).to.equal(service.address);
 
         await expectRevert(
             (gasOptions) =>
