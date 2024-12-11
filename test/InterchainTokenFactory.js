@@ -197,7 +197,7 @@ describe('InterchainTokenFactory', () => {
         const checkRoles = async (tokenManager, minter) => {
             const token = await getContractAt('InterchainToken', await tokenManager.tokenAddress(), wallet);
             expect(await token.isMinter(minter)).to.be.true;
-            expect(await token.isMinter(service.address)).to.be.true;
+            expect(await token.isMinter(tokenManager.address)).to.be.true;
 
             expect(await tokenManager.isOperator(minter)).to.be.true;
             expect(await tokenManager.isOperator(service.address)).to.be.true;
@@ -216,18 +216,12 @@ describe('InterchainTokenFactory', () => {
             );
         });
 
-        it('Should register a token if the mint amount is zero', async () => {
+        it('Should not register a token if the mint amount is zero and there is no minter', async () => {
             const salt = keccak256('0x1234');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [minter, tokenAddress]);
             const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
-            await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, minter))
-                .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, minter, name, symbol, decimals)
-                .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManager.address, NATIVE_INTERCHAIN_TOKEN, params);
+            await expectRevert(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, minter), InterchainTokenFactory.abi, 'EmptyInterchainToken()', []);
 
             await checkRoles(tokenManager, minter);
         });

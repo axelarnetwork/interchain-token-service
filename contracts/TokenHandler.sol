@@ -39,7 +39,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         ITokenManager(tokenManager).addFlowIn(amount);
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _giveInterchainToken(tokenAddress, to, amount);
+            _mintToken(tokenManager, tokenAddress, to, amount);
             return (amount, tokenAddress);
         }
 
@@ -77,7 +77,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _takeInterchainToken(tokenAddress, from, amount);
+            _burnToken(tokenManager, tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _burnToken(tokenManager, tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
@@ -158,14 +158,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         uint256 diff = IERC20(tokenAddress).balanceOf(to) - balanceBefore;
 
         return diff < amount ? diff : amount;
-    }
-
-    function _giveInterchainToken(address tokenAddress, address to, uint256 amount) internal {
-        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
-    }
-
-    function _takeInterchainToken(address tokenAddress, address from, uint256 amount) internal {
-        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
     }
 
     function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal {

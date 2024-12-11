@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
+import { IInterchainTokenService } from '../interfaces/IInterchainTokenService.sol';
 
 import { InterchainTokenStandard } from './InterchainTokenStandard.sol';
 import { ERC20Permit } from './ERC20Permit.sol';
@@ -97,7 +98,7 @@ contract InterchainToken is InterchainTokenStandard, ERC20Permit, Minter, IInter
          * Also add the provided address as a minter. If `address(0)` was provided,
          * add it as a minter to allow anyone to easily check that no custom minter was set.
          */
-        _addMinter(interchainTokenService_);
+        _addMinter(IInterchainTokenService(interchainTokenService_).tokenManagerAddress(tokenId_));
         _addMinter(minter);
 
         _setNameHash(tokenName);
