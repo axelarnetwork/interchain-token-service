@@ -8,10 +8,11 @@ const {
 } = ethers;
 const { expect } = require('chai');
 const { getRandomBytes32, expectRevert, getEVMVersion } = require('./utils');
-const { deployContract } = require('../scripts/deploy');
+const { deployContract, deployAll } = require('../scripts/deploy');
 
 describe('InterchainToken', () => {
-    let interchainToken, interchainTokenDeployer;
+    let interchainTokenDeployer;
+    let interchainToken;
 
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -28,8 +29,7 @@ describe('InterchainToken', () => {
         owner = wallets[0];
         user = wallets[1];
 
-        interchainToken = await deployContract(owner, 'InterchainToken', [owner.address]);
-        interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [interchainToken.address]);
+        ({ interchainToken, interchainTokenDeployer } = await deployAll(owner, 'Test'));
 
         const salt = getRandomBytes32();
         const tokenId = getRandomBytes32();
@@ -147,7 +147,7 @@ describe('InterchainToken', () => {
             const contractBytecodeHash = keccak256(contractBytecode);
 
             const expected = {
-                london: '0x482146829055f052063003e9cf0ffaf798a12fb58088c2667566a135b9568355',
+                london: '0x6e99e9cdd22bc7070016c2ca4a88520506fa524a0e91343df4dab44705485991',
             }[getEVMVersion()];
 
             expect(contractBytecodeHash).to.be.equal(expected);

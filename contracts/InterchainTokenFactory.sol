@@ -334,7 +334,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         if (!token.isMinter(minter)) revert NotMinter(minter);
 
         // Sanity check to prevent accidental use of the current ITS address as the token minter
-        if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
+        if (minter == interchainTokenService.tokenManagerAddress(tokenId)) revert InvalidMinter(minter);
     }
 
     /**

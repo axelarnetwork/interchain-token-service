@@ -197,7 +197,7 @@ describe('InterchainTokenFactory', () => {
         const checkRoles = async (tokenManager, minter) => {
             const token = await getContractAt('InterchainToken', await tokenManager.tokenAddress(), wallet);
             expect(await token.isMinter(minter)).to.be.true;
-            expect(await token.isMinter(service.address)).to.be.true;
+            expect(await token.isMinter(tokenManager.address)).to.be.true;
 
             expect(await tokenManager.isOperator(minter)).to.be.true;
             expect(await tokenManager.isOperator(service.address)).to.be.true;
@@ -370,7 +370,7 @@ describe('InterchainTokenFactory', () => {
                     tokenFactory['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
                         '',
                         salt,
-                        service.address,
+                        tokenManager.address,
                         destinationChain,
                         gasValue,
                         {
@@ -380,7 +380,7 @@ describe('InterchainTokenFactory', () => {
                     ),
                 tokenFactory,
                 'InvalidMinter',
-                [service.address],
+                [tokenManager.address],
             );
 
             await expect(
@@ -423,7 +423,7 @@ describe('InterchainTokenFactory', () => {
                 (gasOptions) =>
                     tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
                         salt,
-                        service.address,
+                        tokenManager.address,
                         destinationChain,
                         gasValue,
                         {
@@ -433,7 +433,7 @@ describe('InterchainTokenFactory', () => {
                     ),
                 tokenFactory,
                 'InvalidMinter',
-                [service.address],
+                [tokenManager.address],
             );
 
             await expect(
