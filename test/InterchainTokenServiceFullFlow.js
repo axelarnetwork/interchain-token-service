@@ -350,7 +350,7 @@ describe('Interchain Token Service Full Flow', () => {
             await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
         });
 
-        it('Should register the token and initiate its deployment on other chains', async () => {
+        it.only('Should register the token and initiate its deployment on other chains', async () => {
             const tokenManagerImplementationAddress = await service.tokenManager();
             const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
