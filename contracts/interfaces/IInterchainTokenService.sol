@@ -176,7 +176,7 @@ interface IInterchainTokenService is
     /**
      * @notice Registers metadata for a token on the ITS Hub. This metadata is used for scaling linked tokens.
      * @param tokenAddress The address of the token.
-     * @param gasValue The gas value for deployment.
+     * @param gasValue The cross-chain gas value for sending the registration message to ITS Hub.
      */
     function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable;
 
