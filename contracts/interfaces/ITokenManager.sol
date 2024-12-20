@@ -15,7 +15,6 @@ import { IFlowLimit } from './IFlowLimit.sol';
 interface ITokenManager is IBaseTokenManager, IOperator, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
     error NotService(address caller);
-    error ZeroTokenAddress();
     error NotSupported();
 
     /**
