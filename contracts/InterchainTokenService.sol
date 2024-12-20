@@ -396,7 +396,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Executes operations based on the payload and selector.
+     * @notice Executes the cross-chain ITS message.
      * @param commandId The unique message id.
      * @param sourceChain The chain where the transaction originates from.
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
