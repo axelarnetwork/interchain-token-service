@@ -14,7 +14,7 @@ import { IFlowLimit } from './IFlowLimit.sol';
  */
 interface ITokenManager is IBaseTokenManager, IOperator, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
-    error NotService(address caller);    
+    error NotService(address caller);
     error TakeTokenFailed();
     error GiveTokenFailed();
     error NotToken(address caller);
@@ -25,7 +25,6 @@ interface ITokenManager is IBaseTokenManager, IOperator, IFlowLimit, IImplementa
 
     /**
      * @notice Returns implementation type of this token manager.
-     * @dev This is stored in the proxy and should not be called in the implementation, but it is included here so that the interface properly tells us what functions exist.
      * @return uint256 The implementation type of this token manager.
      */
     function implementationType() external view returns (uint256);
