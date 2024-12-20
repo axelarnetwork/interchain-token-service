@@ -19,7 +19,7 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     error NotSupported();
     error RemoteDeploymentNotApproved();
     error InvalidTokenId(bytes32 tokenId, bytes32 expectedTokenId);
-    error EmptyInterchainToken();
+    error ZeroSupplyToken();
 
     /// @notice Emitted when a minter approves a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
     event DeployRemoteInterchainTokenApproval(
@@ -67,7 +67,8 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
     function interchainTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys a new interchain token with specified parameters.
+     * @notice Deploys a new interchain token with specified parameters. 
+     * This will revert with `ZeroSupplyToken()` if trying to deploy a token without a minter or initial supply.
      * @param salt The unique salt for deploying the token.
      * @param name The name of the token.
      * @param symbol The symbol of the token.

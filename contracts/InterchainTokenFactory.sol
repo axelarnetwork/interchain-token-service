@@ -117,6 +117,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     /**
      * @notice Deploys a new interchain token with specified parameters.
+     * This will revert with `ZeroSupplyToken()` if trying to deploy a token without a minter or initial supply.
      * @dev Creates a new token and optionally mints an initial amount to a specified minter.
      * This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
      * @param salt The unique salt for deploying the token.
@@ -150,7 +151,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
             minterBytes = minter.toBytes();
         } else {
-            revert EmptyInterchainToken();
+            revert ZeroSupplyToken();
         }
 
         tokenId = _deployInterchainToken(deploySalt, currentChain, name, symbol, decimals, minterBytes, gasValue);
