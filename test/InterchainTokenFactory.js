@@ -232,7 +232,7 @@ describe('InterchainTokenFactory', () => {
             await checkRoles(tokenManager, minter);
         });
 
-        it('Should register a token if the mint amount is zero and minter is the zero address', async () => {
+        it('Should revert when trying to register a token if the mint amount is zero and minter is the zero address', async () => {
             const salt = keccak256('0x123456');
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
 
