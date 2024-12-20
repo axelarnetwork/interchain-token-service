@@ -18,7 +18,6 @@ import { FlowLimit } from '../utils/FlowLimit.sol';
 /**
  * @title TokenManager
  * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
- * @dev Should only be used as an implementation for TokenManagerProxy.
  */
 contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Multicall {
     using AddressBytes for bytes;
@@ -57,7 +56,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
     }
 
     /**
-     * @notice Reads the token address from the proxy.     
+     * @notice Reads the token address from the proxy.
      * @dev This function is not supported when directly called on the implementation. It
      * must be called by the proxy.
      * @return tokenAddress_ The address of the token.

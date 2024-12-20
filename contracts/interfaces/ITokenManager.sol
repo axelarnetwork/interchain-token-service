@@ -14,7 +14,13 @@ import { IFlowLimit } from './IFlowLimit.sol';
  */
 interface ITokenManager is IBaseTokenManager, IOperator, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
-    error NotService(address caller);
+    error NotService(address caller);    
+    error TakeTokenFailed();
+    error GiveTokenFailed();
+    error NotToken(address caller);
+    error ZeroAddress();
+    error AlreadyFlowLimiter(address flowLimiter);
+    error NotFlowLimiter(address flowLimiter);
     error NotSupported();
 
     /**
