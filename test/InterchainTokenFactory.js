@@ -239,7 +239,7 @@ describe('InterchainTokenFactory', () => {
             await expectRevert(
                 (gasOptions) => tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, AddressZero, { gasOptions }),
                 tokenFactory,
-                'EmptyInterchainToken',
+                'ZeroSupplyToken',
                 [],
             );
         });
