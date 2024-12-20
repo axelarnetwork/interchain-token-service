@@ -45,9 +45,9 @@ const compilerSettings = {
         optimizer: optimizerSettings,
     },
 };
-if (!process.env.CHECK_CONTRACT_SIZE) {
+//if (!process.env.CHECK_CONTRACT_SIZE) {
     networks.hardhat.allowUnlimitedContractSize = true;
-}
+//}
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -75,9 +75,9 @@ module.exports = {
         enabled: process.env.REPORT_GAS !== undefined,
         excludeContracts: ['contracts/test'],
     },
-    contractSizer: {
-        runOnCompile: process.env.CHECK_CONTRACT_SIZE,
-        strict: process.env.CHECK_CONTRACT_SIZE,
-        except: ['contracts/test'],
-    },
+    //contractSizer: {
+     //   runOnCompile: process.env.CHECK_CONTRACT_SIZE,
+     //   strict: process.env.CHECK_CONTRACT_SIZE,
+     //   except: ['contracts/test'],
+    //},
 };

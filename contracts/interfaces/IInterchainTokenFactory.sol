@@ -233,7 +233,15 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
      */
     function linkedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
 
-    function registerCustomToken(bytes32 salt, address tokenAddress, TokenManagerType tokenManagerType, address operator) external payable returns (bytes32 tokenId);
+    /**
+     * @notice Register an existing token under a `tokenId` computed from the provided `salt`. A token metadata registration message will also be sent to the ITS Hub.
+     * @param salt The salt used to derive the tokenId for the custom token registration. The same salt must be used when linking this token on other chains under the same tokenId.
+     * @param tokenAddress The token address of the token being registered.
+     * @param tokenManagerType The token manager type used for the token link.
+     * @param operator The operator of the token manager.
+     * @param gasValue The cross-chain gas value used to register the token metadata on the ITS Hub.
+     */
+    function registerCustomToken(bytes32 salt, address tokenAddress, TokenManagerType tokenManagerType, address operator, uint256 gasValue) external payable returns (bytes32 tokenId);
 
     function linkToken(bytes32 salt, string calldata destinationChain, bytes calldata destinationTokenAddress, TokenManagerType tokenManagerType, bool autoScaling, bytes calldata linkParams, uint256 gasValue) external payable returns (bytes32 tokenId);
 }
