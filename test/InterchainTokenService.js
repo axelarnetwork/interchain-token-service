@@ -646,7 +646,7 @@ describe('Interchain Token Service', () => {
 
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
             expect(await token.isMinter(wallet.address)).to.be.true;
-            expect(await token.isMinter(service.address)).to.be.true;
+            expect(await token.isMinter(tokenManager.address)).to.be.true;
         });
 
         it('Should revert when registering an interchain token as a lock/unlock for a second time', async () => {

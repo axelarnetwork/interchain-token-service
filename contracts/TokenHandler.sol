@@ -13,6 +13,7 @@ import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
+import { IMinter } from './interfaces/IMinter.sol';
 
 /**
  * @title TokenHandler
@@ -39,12 +40,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         /// @dev Track the flow amount being received via the message
         ITokenManager(tokenManager).addFlowIn(amount);
 
-        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _giveInterchainToken(tokenAddress, to, amount);
-            return (amount, tokenAddress);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
+        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _mintToken(tokenManager, tokenAddress, to, amount);
             return (amount, tokenAddress);
         }
@@ -77,9 +73,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
 
-        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _takeInterchainToken(tokenAddress, from, amount);
-        } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
+        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _burnToken(tokenManager, tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _burnTokenFrom(tokenAddress, from, amount);
@@ -138,6 +132,8 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         // For lock/unlock token managers, the ITS contract needs an approval from the token manager to transfer tokens on its behalf
         if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             ITokenManager(tokenManager).approveService();
+        } else if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
+            IMinter(ITokenManager(tokenManager).tokenAddress()).transferMintership(tokenManager);
         }
     }
 
@@ -159,14 +155,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         uint256 diff = IERC20(tokenAddress).balanceOf(to) - balanceBefore;
 
         return diff < amount ? diff : amount;
-    }
-
-    function _giveInterchainToken(address tokenAddress, address to, uint256 amount) internal {
-        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
-    }
-
-    function _takeInterchainToken(address tokenAddress, address from, uint256 amount) internal {
-        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
     }
 
     function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal {
