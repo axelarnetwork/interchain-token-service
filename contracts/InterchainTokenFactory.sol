@@ -411,12 +411,18 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
 
     function _checkToken(address tokenAddress) internal view {
         IERC20Named token = IERC20Named(tokenAddress);
+        
+        // slither-disable-next-line unused-return
         try token.name() {} catch {
             revert NotToken(tokenAddress);
         }
+
+        // slither-disable-next-line unused-return
         try token.symbol() {} catch {
             revert NotToken(tokenAddress);
         }
+
+        // slither-disable-next-line unused-return
         try token.decimals() {} catch {
             revert NotToken(tokenAddress);
         }
