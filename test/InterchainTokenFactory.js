@@ -115,6 +115,10 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
         });
 
+        it('Should not register a non-existing token', async () => {
+            await expectRevert((gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenFactory.address, { gasOptions }), tokenFactory, "NotToken", [tokenFactory.address])
+        });
+
         it('Should initiate a remote interchain token deployment with no original chain name provided', async () => {
             const gasValue = 1234;
             const payload = defaultAbiCoder.encode(

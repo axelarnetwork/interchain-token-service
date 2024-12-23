@@ -404,8 +404,22 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         bytes32 deploySalt = canonicalInterchainTokenDeploySalt(tokenAddress);
         string memory currentChain = '';
         uint256 gasValue = 0;
+        _checkToken(tokenAddress);
 
         tokenId = interchainTokenService.deployTokenManager(deploySalt, currentChain, TokenManagerType.LOCK_UNLOCK, params, gasValue);
+    }
+
+    function _checkToken(address tokenAddress) internal view {
+        IERC20Named token = IERC20Named(tokenAddress);
+        try token.name() {} catch {
+            revert NotToken(tokenAddress);
+        }
+        try token.symbol() {} catch {
+            revert NotToken(tokenAddress);
+        }
+        try token.decimals() {} catch {
+            revert NotToken(tokenAddress);
+        }
     }
 
     /**
