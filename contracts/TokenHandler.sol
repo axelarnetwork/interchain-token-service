@@ -11,7 +11,6 @@ import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
-import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 import { IMinter } from './interfaces/IMinter.sol';
 
@@ -40,7 +39,11 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         /// @dev Track the flow amount being received via the message
         ITokenManager(tokenManager).addFlowIn(amount);
 
-        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
+        if (
+            tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) ||
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
+        ) {
             _mintToken(tokenManager, tokenAddress, to, amount);
             return (amount, tokenAddress);
         }
@@ -73,7 +76,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
 
-        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
+        if (
+            tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN)
+        ) {
             _burnToken(tokenManager, tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _burnTokenFrom(tokenAddress, from, amount);
