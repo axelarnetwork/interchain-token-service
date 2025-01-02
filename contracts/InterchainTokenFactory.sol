@@ -385,11 +385,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {
         bytes32 expectedTokenId = _interchainTokenId(deploySalt);
+
         // Ensure that a local token has been registered for the tokenId
-        IERC20Named token = IERC20Named(interchainTokenService.registeredTokenAddress(expectedTokenId));
+        string memory name;
+        string memory symbol;
+        uint8 decimals;
+        (name, symbol, decimals) = _getTokenMetadata(interchainTokenService.registeredTokenAddress(expectedTokenId));
 
         // The local token must expose the name, symbol, and decimals metadata
-        tokenId = _deployInterchainToken(deploySalt, destinationChain, token.name(), token.symbol(), token.decimals(), minter, gasValue);
+        tokenId = _deployInterchainToken(deploySalt, destinationChain, name, symbol, decimals, minter, gasValue);
         if (tokenId != expectedTokenId) revert InvalidTokenId(tokenId, expectedTokenId);
     }
 
@@ -404,26 +408,30 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         bytes32 deploySalt = canonicalInterchainTokenDeploySalt(tokenAddress);
         string memory currentChain = '';
         uint256 gasValue = 0;
-        _checkToken(tokenAddress);
+        // slither-disable-next-line unused-return
+        _getTokenMetadata(tokenAddress);
 
         tokenId = interchainTokenService.deployTokenManager(deploySalt, currentChain, TokenManagerType.LOCK_UNLOCK, params, gasValue);
     }
 
-    function _checkToken(address tokenAddress) internal view {
+    function _getTokenMetadata(address tokenAddress) internal view returns (string memory name, string memory symbol, uint8 decimals) {
         IERC20Named token = IERC20Named(tokenAddress);
 
-        // slither-disable-next-line unused-return
-        try token.name() {} catch {
+        try token.name() returns (string memory name_) {
+            name = name_;
+        } catch {
             revert NotToken(tokenAddress);
         }
 
-        // slither-disable-next-line unused-return
-        try token.symbol() {} catch {
+        try token.symbol() returns (string memory symbol_) {
+            symbol = symbol_;
+        } catch {
             revert NotToken(tokenAddress);
         }
 
-        // slither-disable-next-line unused-return
-        try token.decimals() {} catch {
+        try token.decimals() returns (uint8 decimals_) {
+            decimals = decimals_;
+        } catch {
             revert NotToken(tokenAddress);
         }
     }
