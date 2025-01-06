@@ -20,6 +20,7 @@ import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecuta
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
+import { IMinter } from './interfaces/IMinter.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { Operator } from './utils/Operator.sol';
 
@@ -621,6 +622,29 @@ contract InterchainTokenService is
         } else {
             _unpause();
         }
+    }
+
+    /**
+     * @notice Allows the owner to migrate legacy tokens that cannot be migrated automatically.
+     * @param tokenId the tokenId of the registered token.
+     * @param data the data to pass to migrate the token.
+     */
+    function migrateLegacyToken(bytes32 tokenId, bytes calldata data) external onlyOwner {
+        address tokenAddress = registeredTokenAddress(tokenId);
+        (bool success, bytes memory returnData) = tokenAddress.call(data);
+        if (!success) {
+            revert TokenMigrateFailed(returnData);
+        }
+    }
+
+    /**
+     * @notice Allows the owner to migrate legacy tokens that cannot be migrated automatically.
+     * @param tokenId the tokenId of the registered token.
+     */
+    function migrateInterchainToken(bytes32 tokenId) external onlyOwner {
+        ITokenManager tokenManager_ = deployedTokenManager(tokenId);
+        address tokenAddress = tokenManager_.tokenAddress();
+        IMinter(tokenAddress).transferMintership(address(tokenManager_));
     }
 
     /****************\
