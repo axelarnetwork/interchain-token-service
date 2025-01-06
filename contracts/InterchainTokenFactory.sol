@@ -384,15 +384,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         bytes memory minter,
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {
+        // Ensure that a token is registered locally for the tokenId before allowing a remote deployment
         bytes32 expectedTokenId = _interchainTokenId(deploySalt);
-
-        // Ensure that a local token has been registered for the tokenId
-        string memory name;
-        string memory symbol;
-        uint8 decimals;
-        (name, symbol, decimals) = _getTokenMetadata(interchainTokenService.registeredTokenAddress(expectedTokenId));
+        address tokenAddress = interchainTokenService.registeredTokenAddress(expectedTokenId);
 
         // The local token must expose the name, symbol, and decimals metadata
+        (string memory name, string memory symbol, uint8 decimals) = _getTokenMetadata(tokenAddress);
+
         tokenId = _deployInterchainToken(deploySalt, destinationChain, name, symbol, decimals, minter, gasValue);
         if (tokenId != expectedTokenId) revert InvalidTokenId(tokenId, expectedTokenId);
     }
@@ -408,12 +406,21 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         bytes32 deploySalt = canonicalInterchainTokenDeploySalt(tokenAddress);
         string memory currentChain = '';
         uint256 gasValue = 0;
+
+        // Ensure that the ERC20 token has metadata before registering it
         // slither-disable-next-line unused-return
         _getTokenMetadata(tokenAddress);
 
         tokenId = interchainTokenService.deployTokenManager(deploySalt, currentChain, TokenManagerType.LOCK_UNLOCK, params, gasValue);
     }
 
+    /**
+     * @notice Retrieves the metadata of an ERC20 token. Reverts with `NotToken` error if metadata is not available.
+     * @param tokenAddress The address of the token.
+     * @return name The name of the token.
+     * @return symbol The symbol of the token.
+     * @return decimals The number of decimals for the token.
+     */
     function _getTokenMetadata(address tokenAddress) internal view returns (string memory name, string memory symbol, uint8 decimals) {
         IERC20Named token = IERC20Named(tokenAddress);
 
