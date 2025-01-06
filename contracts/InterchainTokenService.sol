@@ -416,6 +416,26 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Executes the cross-chain ITS message.
+     * @param commandId The unique message id.
+     * @param sourceChain The chain where the transaction originates from.
+     * @param sourceAddress The address of the remote ITS where the transaction originates from.
+     * @param payload The encoded data payload for the transaction.
+     */
+    function execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+        bytes32 payloadHash = keccak256(payload);
+
+        if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
+
+        _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
+    }
+
+    /**
      * @notice Express executes operations based on the payload and selector.
      * @dev This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
      * @param commandId The unique message id.
@@ -664,26 +684,6 @@ contract InterchainTokenService is
         for (uint256 i; i < length; ++i) {
             _setTrustedAddress(trustedChainNames[i], trustedAddresses[i]);
         }
-    }
-
-    /**
-     * @notice Executes operations based on the payload and selector.
-     * @param commandId The unique message id.
-     * @param sourceChain The chain where the transaction originates from.
-     * @param sourceAddress The address of the remote ITS where the transaction originates from.
-     * @param payload The encoded data payload for the transaction.
-     */
-    function execute(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload
-    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
-        bytes32 payloadHash = keccak256(payload);
-
-        if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
-
-        _execute(commandId, sourceChain, sourceAddress, payload, payloadHash);
     }
 
     /**

@@ -120,6 +120,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
      * @notice Deploys a new interchain token with specified parameters.
      * @dev Creates a new token and optionally mints an initial amount to a specified minter.
      * This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
+     * Cannot deploy tokens with empty supply and no minter.
      * @param salt The unique salt for deploying the token.
      * @param name The name of the token.
      * @param symbol The symbol of the token.
@@ -150,6 +151,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
             if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
 
             minterBytes = minter.toBytes();
+        } else {
+            revert ZeroSupplyToken();
         }
 
         tokenId = _deployInterchainToken(deploySalt, currentChain, name, symbol, decimals, minterBytes, gasValue);
@@ -382,12 +385,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         bytes memory minter,
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {
+        // Ensure that a token is registered locally for the tokenId before allowing a remote deployment
         bytes32 expectedTokenId = _interchainTokenId(deploySalt);
-        // Ensure that a local token has been registered for the tokenId
-        IERC20Named token = IERC20Named(interchainTokenService.registeredTokenAddress(expectedTokenId));
+        address tokenAddress = interchainTokenService.registeredTokenAddress(expectedTokenId);
 
         // The local token must expose the name, symbol, and decimals metadata
-        tokenId = _deployInterchainToken(deploySalt, destinationChain, token.name(), token.symbol(), token.decimals(), minter, gasValue);
+        (string memory name, string memory symbol, uint8 decimals) = _getTokenMetadata(tokenAddress);
+
+        tokenId = _deployInterchainToken(deploySalt, destinationChain, name, symbol, decimals, minter, gasValue);
         if (tokenId != expectedTokenId) revert InvalidTokenId(tokenId, expectedTokenId);
     }
 
@@ -403,7 +408,40 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         string memory currentChain = '';
         uint256 gasValue = 0;
 
+        // Ensure that the ERC20 token has metadata before registering it
+        // slither-disable-next-line unused-return
+        _getTokenMetadata(tokenAddress);
+
         tokenId = interchainTokenService.deployTokenManager(deploySalt, currentChain, TokenManagerType.LOCK_UNLOCK, params, gasValue);
+    }
+
+    /**
+     * @notice Retrieves the metadata of an ERC20 token. Reverts with `NotToken` error if metadata is not available.
+     * @param tokenAddress The address of the token.
+     * @return name The name of the token.
+     * @return symbol The symbol of the token.
+     * @return decimals The number of decimals for the token.
+     */
+    function _getTokenMetadata(address tokenAddress) internal view returns (string memory name, string memory symbol, uint8 decimals) {
+        IERC20Named token = IERC20Named(tokenAddress);
+
+        try token.name() returns (string memory name_) {
+            name = name_;
+        } catch {
+            revert NotToken(tokenAddress);
+        }
+
+        try token.symbol() returns (string memory symbol_) {
+            symbol = symbol_;
+        } catch {
+            revert NotToken(tokenAddress);
+        }
+
+        try token.decimals() returns (uint8 decimals_) {
+            decimals = decimals_;
+        } catch {
+            revert NotToken(tokenAddress);
+        }
     }
 
     /**
