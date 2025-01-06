@@ -32,11 +32,11 @@ git push
 
 #### Overview:
 
-These GitHub action workflows manage releases based on `changesets` we defined earlier, ensuring that every new release includes tracked changes and proper version updates. The process starts when the `pre-release` workflow is triggered. If the PR includes changesets, the workflow generates a new "PR version", which needs to be reviewed and eventually merged in order to trigger the `release` workflow that publishes the new packages.
+These GitHub actions workflows manage releases based on `changesets` we defined earlier, ensuring that every new release includes tracked changes and proper version updates. The process starts when the `pre-release` workflow is triggered. If the PR includes changesets, the workflow generates a new "PR version", which needs to be reviewed and eventually merged in order to trigger the `release` workflow that publishes the new packages.
 
 #### Pre-Release Workflow:
 
-- This `pre-release` workflow kicks in after it gets triggered manually by one of the authorized team members, It does the following:
+- This `pre-release` workflow kicks in after it gets triggered manually by one of the authorized team members, it does the following:
 
   - Generates a new version based on the `changesets`.
   - Updates the package version.

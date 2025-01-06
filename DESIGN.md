@@ -26,14 +26,14 @@ Most projects that look to go cross-chain nowadays have more complex needs than 
 
 -   Lock/Unlock: This `TokenManager` will simply transfer tokens from a user to itself or vice versa to initiate/fulfill cross-chain transfers.
 -   Lock/Unlock Fee: This `TokenManager` works like the one above, but accounts for tokens that have a fee-on-transfer giving less tokens to be locked than what it actually transferred.
--   Mint/Burn: This `TokenManager` will `burn`/`mint` tokens from/to the user to initiate/fulfill cross-chain transfers. Tokens used with this kind of `TokenManager` need to be properly permissioned to allow for this behaviour.
+-   Mint/Burn: This `TokenManager` will `burn`/`mint` tokens from/to the user to initiate/fulfill cross-chain transfers. Tokens used with this kind of `TokenManager` need to be properly permissioned to allow for this behavior .
 -   Mint/BurnFrom: This `TokenManager` is the same as the one above, but uses `burnFrom` instead of `burn` which is the standard for some tokens and typically requires an approval.
 
 ### Interchain Token Factory
 
 The `InterchainTokenFactory` can remove some of the power from deployers to be able to obtain bridges that have more guarantees/less trust assumptions. There are two options that it provides, one for Canonical Bridges, and one for `InterchainTokens`.
 
-Most current bridge designs aim to transfer a pre-existing, popular token to different chains that can benefit from the liquidity. When they transfer a pre-existing token, the resulting token, called [`InterchainToken`](./contracts/interchain-token/InterchainToken.sol) in this project, will only have basic functionality that enables users to transfer their token and use it with general use smart contracts such as De-Fi applications. This is certainly powerful and has the benefit that as long as the pre-existing `ERC20` implemention and the bridge function properly, everything will run as expected. We included this design for the `InterchainTokenService` so deployers can deploy a Canonical Bridge for any token they choose, once for each pre-existing `ERC20` implementation. This can also be done through the `InterchainTokenFactory` to remove the ability of deployers to confiscate funds, making such bridges have fewer trust assumptions.
+Most current bridge designs aim to transfer a pre-existing, popular token to different chains that can benefit from the liquidity. When they transfer a pre-existing token, the resulting token, called [`InterchainToken`](./contracts/interchain-token/InterchainToken.sol) in this project, will only have basic functionality that enables users to transfer their token and use it with general use smart contracts such as De-Fi applications. This is certainly powerful and has the benefit that as long as the pre-existing `ERC20` implementation and the bridge function properly, everything will run as expected. We included this design for the `InterchainTokenService` so deployers can deploy a Canonical Bridge for any token they choose, once for each pre-existing `ERC20` implementation. This can also be done through the `InterchainTokenFactory` to remove the ability of deployers to confiscate funds, making such bridges have fewer trust assumptions.
 
 `InterchainTokens` deployed through the service have no guarantees: they could have mismatching names/symbols/decimals, and again the deployer needs to be trusted as they have a lot of power over them. Deploying such tokens through the `InterchainTokenFactory`, however, removes this power, and can result in fixed supply tokens as well, or designate a `Minter` that can manage the token supply.
 
@@ -47,7 +47,7 @@ The messages going through the Axelar Network between `InterchainTokenServices` 
 
 ### `INTERCHAIN_TRANSFER`
 
-This message is used to transfer tokens between chains. The tokens are handled appropriately on the source chain (lock/burn etc.), and then this message is sent to the ITS contract on the remote chain which sends the tokens to the destination address.
+This message is used to transfer tokens between chains. The tokens are handled appropriately on the source chain (lock/burn etc.), and then this message is sent to the ITS contract on the remote chain which sent the tokens to the destination address.
 
 | Name                | Type      | Description                                                                                               |
 | ------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
