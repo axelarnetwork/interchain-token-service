@@ -1121,15 +1121,7 @@ describe('Interchain Token Service', () => {
         it('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
 
-            await (
-                await service.deployTokenManager(
-                    salt,
-                    '',
-                    MINT_BURN,
-                    params,
-                    0,
-                )
-            ).wait();
+            await (await service.deployTokenManager(salt, '', MINT_BURN, params, 0)).wait();
 
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const type = LOCK_UNLOCK;
@@ -1221,10 +1213,12 @@ describe('Interchain Token Service', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
+        let operator;
         let sourceAddress;
 
         before(async () => {
             sourceAddress = service.address;
+            operator = wallet.address;
         });
 
         it('Should be able to receive a remote lock/unlock token manager deployment', async () => {
@@ -1238,7 +1232,7 @@ describe('Interchain Token Service', () => {
                 tokenId,
             ]);
 
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bool', 'bytes'],
                 [MESSAGE_TYPE_LINK_TOKEN, tokenId, LOCK_UNLOCK, token.address, token.address, false, operator],
@@ -1252,7 +1246,7 @@ describe('Interchain Token Service', () => {
 
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
-            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
+            expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should be able to receive a remote mint/burn token manager deployment', async () => {
@@ -1266,7 +1260,7 @@ describe('Interchain Token Service', () => {
                 tokenId,
             ]);
 
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, token.address]);
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bool', 'bytes'],
                 [MESSAGE_TYPE_LINK_TOKEN, tokenId, MINT_BURN, token.address, token.address, false, operator],
@@ -1279,7 +1273,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
-            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
+            expect(await tokenManager.hasRole(operator, OPERATOR_ROLE)).to.be.true;
         });
 
         it('Should not be able to receive a remote interchain token manager deployment', async () => {

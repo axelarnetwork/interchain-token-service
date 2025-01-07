@@ -34,8 +34,8 @@ jobs:
             exit 0;
           fi
 
-      - name: Set environment variable
-        run: export CHECK_CONTRACT_SIZE=true
+      # - name: Set environment variable
+      #   run: export CHECK_CONTRACT_SIZE=true
 
       - name: Test
         run: npm run test

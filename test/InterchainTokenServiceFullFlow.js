@@ -18,7 +18,8 @@ const { approveContractCall } = require('../scripts/utils');
 const {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
+    MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
+    MESSAGE_TYPE_LINK_TOKEN,
     MESSAGE_TYPE_SEND_TO_HUB,
     MESSAGE_TYPE_RECEIVE_FROM_HUB,
     NATIVE_INTERCHAIN_TOKEN,
@@ -572,6 +573,43 @@ describe('Interchain Token Service Full Flow', () => {
 
             expect(await token.balanceOf(wallet.address)).to.equal(totalMint - otherChains.length * tokenCap);
         });
+    });
+
+    /**
+     * This test deploys a custom token and links it to another token on the destination chain
+     * - Deploy a custom token
+     * - Register token metadata on ITS Hub
+     * - Link the custom token to another token on the destination chain
+     * - Transfer tokens via ITS between chains
+     */
+    describe('Link Custom Token', () => {
+        const salt = HashZero;
+        const tokenCap = 1e9;
+        let token, tokenId;
+
+        before(async () => {
+            await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
+        });
+
+        it('Should be able to deploy a custom token', async () => {
+            token = await deployContract(wallet, 'TestMintableBurnableERC20', [name, symbol, decimals]);
+            tokenId = await service.interchainTokenId(wallet.address, salt);
+            await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
+        });
+
+        it('Should be able to register token metadata on ITS Hub', async () => {
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes', 'uint8'],
+                [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, token.address, decimals],
+            );
+            const payloadHash = keccak256(payload);
+
+            await expect(service.registerTokenMetadata(token.address, 0))
+                .to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, payload);
+        });
+
+        it.skip('Should be able to link a custom token via ITS Factory', async () => {});
     });
 
     /**
