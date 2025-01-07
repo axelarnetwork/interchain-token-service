@@ -7,7 +7,6 @@ pragma solidity ^0.8.0;
  * @notice This interface is used to deploy new instances of the TokenManagerProxy contract.
  */
 interface ITokenManagerDeployer {
-    error AddressZero();
     error TokenManagerDeploymentFailed();
 
     /**
