@@ -243,5 +243,13 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
      */
     function registerCustomToken(bytes32 salt, address tokenAddress, TokenManagerType tokenManagerType, address operator, uint256 gasValue) external payable returns (bytes32 tokenId);
 
-    function linkToken(bytes32 salt, string calldata destinationChain, bytes calldata destinationTokenAddress, TokenManagerType tokenManagerType, bool autoScaling, bytes calldata linkParams, uint256 gasValue) external payable returns (bytes32 tokenId);
+    function linkToken(
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes calldata destinationTokenAddress,
+        TokenManagerType tokenManagerType,
+        bool autoScaling,
+        bytes calldata linkParams,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
 }

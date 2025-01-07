@@ -283,6 +283,11 @@ contract InterchainTokenService is
     USER FUNCTIONS
     \************/
 
+    /**
+     * @notice Registers metadata for a token on the ITS Hub. This metadata is used for scaling linked tokens.
+     * @param tokenAddress The address of the token.
+     * @param gasValue The gas value for deployment.
+     */
     function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable {
         if (tokenAddress == address(0)) revert ZeroAddress();
 
@@ -290,8 +295,24 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_REGISTER_TOKEN_METADATA, tokenAddress.toBytes(), decimals);
 
-        _callContract(ITS_HUB_CHAIN_NAME, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        string memory destinationAddress = trustedAddress(ITS_HUB_CHAIN_NAME);
+        // Check whether no trusted address was set for ITS Hub chain
+        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+
+        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
+            abi.encodeWithSelector(
+                IGatewayCaller.callContract.selector,
+                ITS_HUB_CHAIN_NAME,
+                destinationAddress,
+                payload,
+                IGatewayCaller.MetadataVersion.CONTRACT_CALL,
+                gasValue
+            )
+        );
+
+        if (!success) revert GatewayCallFailed(returnData);
     }
+
     /**
      * @notice Used to deploy remote custom TokenManagers.
      * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
@@ -320,10 +341,18 @@ contract InterchainTokenService is
         tokenId = linkToken(salt, destinationChain, destinationTokenAddress.toBytes(), tokenManagerType, false, linkParams, gasValue);
     }
 
-    function linkToken(bytes32 salt, string calldata destinationChain, bytes memory destinationTokenAddress, TokenManagerType tokenManagerType, bool autoScaling, bytes memory linkParams, uint256 gasValue) public payable whenNotPaused returns (bytes32 tokenId) {
+    function linkToken(
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes memory destinationTokenAddress,
+        TokenManagerType tokenManagerType,
+        bool autoScaling,
+        bytes memory linkParams,
+        uint256 gasValue
+    ) public payable whenNotPaused returns (bytes32 tokenId) {
         if (destinationTokenAddress.length == 0) revert EmptyDestinationAddress();
 
-        // TODO: Should we only mint/burn or lock/unlock for remote linking for simplicity? Makes it easier for external chains
+        // TODO: Should we only allow mint/burn or lock/unlock for remote linking for simplicity? Makes it easier for external chains
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
@@ -333,6 +362,7 @@ contract InterchainTokenService is
             deployer = TOKEN_FACTORY_DEPLOYER;
         } else if (bytes(destinationChain).length == 0) {
             // TODO: Only support linking new tokens via ITS factory, to include chain name in token id derivation
+            // Custom token usage needs to be moved to ITS factory tests
             // revert NotSupported();
         }
 
@@ -752,10 +782,8 @@ contract InterchainTokenService is
      * @notice Processes a deploy token manager payload.
      */
     function _processLinkTokenPayload(bytes memory payload) internal {
-        (, bytes32 tokenId, TokenManagerType tokenManagerType, , bytes memory destinationTokenAddress, , bytes memory linkParams) = abi.decode(
-            payload,
-            (uint256, bytes32, TokenManagerType, bytes, bytes, bool, bytes)
-        );
+        (, bytes32 tokenId, TokenManagerType tokenManagerType, , bytes memory destinationTokenAddress, , bytes memory linkParams) = abi
+            .decode(payload, (uint256, bytes32, TokenManagerType, bytes, bytes, bool, bytes));
 
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
@@ -922,9 +950,25 @@ contract InterchainTokenService is
         // slither-disable-next-line unused-return
         bytes memory sourceTokenAddress = registeredTokenAddress(tokenId).toBytes();
 
-        emit LinkTokenStarted(tokenId, destinationChain, sourceTokenAddress, destinationTokenAddress, tokenManagerType, autoScaling, params);
+        emit LinkTokenStarted(
+            tokenId,
+            destinationChain,
+            sourceTokenAddress,
+            destinationTokenAddress,
+            tokenManagerType,
+            autoScaling,
+            params
+        );
 
-        bytes memory payload = abi.encode(MESSAGE_TYPE_LINK_TOKEN, tokenId, tokenManagerType, sourceTokenAddress, destinationTokenAddress, autoScaling, params);
+        bytes memory payload = abi.encode(
+            MESSAGE_TYPE_LINK_TOKEN,
+            tokenId,
+            tokenManagerType,
+            sourceTokenAddress,
+            destinationTokenAddress,
+            autoScaling,
+            params
+        );
 
         _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }

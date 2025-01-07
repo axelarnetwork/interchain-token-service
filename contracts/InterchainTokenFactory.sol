@@ -7,7 +7,6 @@ import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/uti
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
-import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
@@ -507,9 +506,25 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         interchainTokenService.registerTokenMetadata{ value: gasValue }(tokenAddress, gasValue);
     }
 
-    function linkToken(bytes32 salt, string calldata destinationChain, bytes calldata destinationTokenAddress, TokenManagerType tokenManagerType, bool autoScaling, bytes calldata linkParams, uint256 gasValue) external payable returns (bytes32 tokenId) {
+    function linkToken(
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes calldata destinationTokenAddress,
+        TokenManagerType tokenManagerType,
+        bool autoScaling,
+        bytes calldata linkParams,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId) {
         bytes32 deploySalt = linkedTokenDeploySalt(msg.sender, salt);
-        tokenId = interchainTokenService.linkToken(deploySalt, destinationChain, destinationTokenAddress, tokenManagerType, autoScaling, linkParams, gasValue);
+        tokenId = interchainTokenService.linkToken(
+            deploySalt,
+            destinationChain,
+            destinationTokenAddress,
+            tokenManagerType,
+            autoScaling,
+            linkParams,
+            gasValue
+        );
     }
 
     /********************\

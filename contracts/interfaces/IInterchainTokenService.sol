@@ -207,7 +207,15 @@ interface IInterchainTokenService is
      * @param gasValue The gas value for deployment.
      * @return tokenId The tokenId associated with the token manager.
      */
-    function linkToken(bytes32 salt, string calldata destinationChain, bytes memory destinationTokenAddress, TokenManagerType tokenManagerType, bool autoScaling, bytes memory linkParams, uint256 gasValue) external payable returns (bytes32 tokenId);
+    function linkToken(
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes memory destinationTokenAddress,
+        TokenManagerType tokenManagerType,
+        bool autoScaling,
+        bytes memory linkParams,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice Deploys and registers an interchain token on a remote chain.
