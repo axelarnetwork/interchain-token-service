@@ -241,7 +241,13 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
      * @param operator The operator of the token manager.
      * @param gasValue The cross-chain gas value used to register the token metadata on the ITS Hub.
      */
-    function registerCustomToken(bytes32 salt, address tokenAddress, TokenManagerType tokenManagerType, address operator, uint256 gasValue) external payable returns (bytes32 tokenId);
+    function registerCustomToken(
+        bytes32 salt,
+        address tokenAddress,
+        TokenManagerType tokenManagerType,
+        address operator,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
 
     function linkToken(
         bytes32 salt,

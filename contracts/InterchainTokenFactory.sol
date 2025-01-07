@@ -493,7 +493,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         tokenId = _interchainTokenId(deploySalt);
     }
 
-    function registerCustomToken(bytes32 salt, address tokenAddress, TokenManagerType tokenManagerType, address operator, uint256 gasValue) external payable returns (bytes32 tokenId) {
+    function registerCustomToken(
+        bytes32 salt,
+        address tokenAddress,
+        TokenManagerType tokenManagerType,
+        address operator,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId) {
         bytes32 deploySalt = linkedTokenDeploySalt(msg.sender, salt);
         bytes memory operatorBytes = '';
         string memory currentChain = '';
@@ -501,7 +507,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
             operatorBytes = operator.toBytes();
         }
 
-        tokenId = interchainTokenService.linkToken(deploySalt, currentChain, tokenAddress.toBytes(), tokenManagerType, false, operatorBytes, 0);
+        tokenId = interchainTokenService.linkToken(
+            deploySalt,
+            currentChain,
+            tokenAddress.toBytes(),
+            tokenManagerType,
+            false,
+            operatorBytes,
+            0
+        );
 
         interchainTokenService.registerTokenMetadata{ value: gasValue }(tokenAddress, gasValue);
     }

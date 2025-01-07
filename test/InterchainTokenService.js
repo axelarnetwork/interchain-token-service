@@ -17,9 +17,9 @@ const { deployAll, deployContract, deployInterchainTokenService } = require('../
 const {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
     MESSAGE_TYPE_RECEIVE_FROM_HUB,
     MESSAGE_TYPE_LINK_TOKEN,
-    MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
     INVALID_MESSAGE_TYPE,
     NATIVE_INTERCHAIN_TOKEN,
     MINT_BURN_FROM,
@@ -881,9 +881,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on deploying a local token manager with invalid params', async () => {
-            await expectRevert(
-                (gasOptions) => service.deployTokenManager(salt, '', NATIVE_INTERCHAIN_TOKEN, '0x', 0, gasOptions),
-            );
+            await expectRevert((gasOptions) => service.deployTokenManager(salt, '', NATIVE_INTERCHAIN_TOKEN, '0x', 0, gasOptions));
         });
 
         it('Should revert on deploying a local token manager with interchain token manager type', async () => {

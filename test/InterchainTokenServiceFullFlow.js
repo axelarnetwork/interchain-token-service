@@ -18,8 +18,8 @@ const { approveContractCall } = require('../scripts/utils');
 const {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
     MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
-    MESSAGE_TYPE_LINK_TOKEN,
     MESSAGE_TYPE_SEND_TO_HUB,
     MESSAGE_TYPE_RECEIVE_FROM_HUB,
     NATIVE_INTERCHAIN_TOKEN,
@@ -351,7 +351,7 @@ describe('Interchain Token Service Full Flow', () => {
             await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
         });
 
-        it.only('Should register the token and initiate its deployment on other chains', async () => {
+        it('Should register the token and initiate its deployment on other chains', async () => {
             const tokenManagerImplementationAddress = await service.tokenManager();
             const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
@@ -583,9 +583,8 @@ describe('Interchain Token Service Full Flow', () => {
      * - Transfer tokens via ITS between chains
      */
     describe('Link Custom Token', () => {
-        const salt = HashZero;
         const tokenCap = 1e9;
-        let token, tokenId;
+        let token;
 
         before(async () => {
             await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
@@ -593,7 +592,6 @@ describe('Interchain Token Service Full Flow', () => {
 
         it('Should be able to deploy a custom token', async () => {
             token = await deployContract(wallet, 'TestMintableBurnableERC20', [name, symbol, decimals]);
-            tokenId = await service.interchainTokenId(wallet.address, salt);
             await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
         });
 

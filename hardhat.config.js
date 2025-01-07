@@ -46,7 +46,7 @@ const compilerSettings = {
     },
 };
 //if (!process.env.CHECK_CONTRACT_SIZE) {
-    networks.hardhat.allowUnlimitedContractSize = true;
+networks.hardhat.allowUnlimitedContractSize = true;
 //}
 
 /**
@@ -76,8 +76,8 @@ module.exports = {
         excludeContracts: ['contracts/test'],
     },
     //contractSizer: {
-     //   runOnCompile: process.env.CHECK_CONTRACT_SIZE,
-     //   strict: process.env.CHECK_CONTRACT_SIZE,
-     //   except: ['contracts/test'],
+    //   runOnCompile: process.env.CHECK_CONTRACT_SIZE,
+    //   strict: process.env.CHECK_CONTRACT_SIZE,
+    //   except: ['contracts/test'],
     //},
 };
