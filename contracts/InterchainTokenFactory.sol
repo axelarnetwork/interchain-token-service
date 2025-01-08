@@ -402,7 +402,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @return tokenId The tokenId corresponding to the registered canonical token.
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
-        bytes memory params = abi.encode('', tokenAddress);
         bytes32 deploySalt = canonicalInterchainTokenDeploySalt(tokenAddress);
         string memory currentChain = '';
         uint256 gasValue = 0;
@@ -411,7 +410,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         // slither-disable-next-line unused-return
         _getTokenMetadata(tokenAddress);
 
-        tokenId = interchainTokenService.deployTokenManager(deploySalt, currentChain, TokenManagerType.LOCK_UNLOCK, params, gasValue);
+        tokenId = interchainTokenService.linkToken(
+            deploySalt,
+            currentChain,
+            tokenAddress.toBytes(),
+            TokenManagerType.LOCK_UNLOCK,
+            true,
+            '',
+            gasValue
+        );
     }
 
     /**
