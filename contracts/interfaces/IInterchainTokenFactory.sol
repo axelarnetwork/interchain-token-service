@@ -254,7 +254,6 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
         string calldata destinationChain,
         bytes calldata destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bool autoScaling,
         bytes calldata linkParams,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);

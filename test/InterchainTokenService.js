@@ -1124,8 +1124,8 @@ describe('Interchain Token Service', () => {
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const type = LOCK_UNLOCK;
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bool', 'bytes'],
-                [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, tokenAddress, tokenAddress, false, operator],
+                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+                [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, tokenAddress, tokenAddress, operator],
             );
 
             const tokenManager = await getContractAt('TokenManager', await service.deployedTokenManager(tokenId), wallet);
@@ -1143,7 +1143,7 @@ describe('Interchain Token Service', () => {
                 .to.emit(service, 'InterchainTokenIdClaimed')
                 .withArgs(tokenId, wallet.address, salt)
                 .to.emit(service, 'LinkTokenStarted')
-                .withArgs(tokenId, destinationChain, tokenAddress, tokenAddress, type, false, operator)
+                .withArgs(tokenId, destinationChain, tokenAddress, tokenAddress, type, operator)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
@@ -1232,8 +1232,8 @@ describe('Interchain Token Service', () => {
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, token.address]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bool', 'bytes'],
-                [MESSAGE_TYPE_LINK_TOKEN, tokenId, LOCK_UNLOCK, token.address, token.address, false, operator],
+                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+                [MESSAGE_TYPE_LINK_TOKEN, tokenId, LOCK_UNLOCK, token.address, token.address, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -1260,8 +1260,8 @@ describe('Interchain Token Service', () => {
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, token.address]);
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bool', 'bytes'],
-                [MESSAGE_TYPE_LINK_TOKEN, tokenId, MINT_BURN, token.address, token.address, false, operator],
+                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+                [MESSAGE_TYPE_LINK_TOKEN, tokenId, MINT_BURN, token.address, token.address, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -1285,8 +1285,8 @@ describe('Interchain Token Service', () => {
             ]);
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bool', 'bytes'],
-                [MESSAGE_TYPE_LINK_TOKEN, tokenId, NATIVE_INTERCHAIN_TOKEN, token.address, token.address, false, operator],
+                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+                [MESSAGE_TYPE_LINK_TOKEN, tokenId, NATIVE_INTERCHAIN_TOKEN, token.address, token.address, operator],
             );
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -2631,8 +2631,8 @@ describe('Interchain Token Service', () => {
             await token.approve(service.address, amount).then((tx) => tx.wait);
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bool', 'bytes'],
-                [MESSAGE_TYPE_LINK_TOKEN, tokenId, MINT_BURN, destAddress, destAddress, false, '0x'],
+                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+                [MESSAGE_TYPE_LINK_TOKEN, tokenId, MINT_BURN, destAddress, destAddress, '0x'],
             );
 
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);

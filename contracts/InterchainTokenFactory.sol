@@ -507,15 +507,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
             operatorBytes = operator.toBytes();
         }
 
-        tokenId = interchainTokenService.linkToken(
-            deploySalt,
-            currentChain,
-            tokenAddress.toBytes(),
-            tokenManagerType,
-            false,
-            operatorBytes,
-            0
-        );
+        tokenId = interchainTokenService.linkToken(deploySalt, currentChain, tokenAddress.toBytes(), tokenManagerType, operatorBytes, 0);
 
         interchainTokenService.registerTokenMetadata{ value: gasValue }(tokenAddress, gasValue);
     }
@@ -525,7 +517,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         string calldata destinationChain,
         bytes calldata destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bool autoScaling,
         bytes calldata linkParams,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
@@ -535,7 +526,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
             destinationChain,
             destinationTokenAddress,
             tokenManagerType,
-            autoScaling,
             linkParams,
             gasValue
         );
