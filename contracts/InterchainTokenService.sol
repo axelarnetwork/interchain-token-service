@@ -921,14 +921,7 @@ contract InterchainTokenService is
         // slither-disable-next-line unused-return
         bytes memory sourceTokenAddress = registeredTokenAddress(tokenId).toBytes();
 
-        emit LinkTokenStarted(
-            tokenId,
-            destinationChain,
-            sourceTokenAddress,
-            destinationTokenAddress,
-            tokenManagerType,
-            params
-        );
+        emit LinkTokenStarted(tokenId, destinationChain, sourceTokenAddress, destinationTokenAddress, tokenManagerType, params);
 
         bytes memory payload = abi.encode(
             MESSAGE_TYPE_LINK_TOKEN,

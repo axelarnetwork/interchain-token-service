@@ -874,8 +874,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert on deploying a local token manager with interchain token manager type', async () => {
             await expectRevert(
-                (gasOptions) =>
-                    service.linkToken(salt, '', token.address, NATIVE_INTERCHAIN_TOKEN, wallet.address, 0, gasOptions),
+                (gasOptions) => service.linkToken(salt, '', token.address, NATIVE_INTERCHAIN_TOKEN, wallet.address, 0, gasOptions),
                 service,
                 'CannotDeploy',
                 [NATIVE_INTERCHAIN_TOKEN],
@@ -885,15 +884,7 @@ describe('Interchain Token Service', () => {
         it('Should revert on deploying a remote token manager with interchain token manager type', async () => {
             await expectRevert(
                 (gasOptions) =>
-                    service.linkToken(
-                        salt,
-                        destinationChain,
-                        token.address,
-                        NATIVE_INTERCHAIN_TOKEN,
-                        wallet.address,
-                        0,
-                        gasOptions,
-                    ),
+                    service.linkToken(salt, destinationChain, token.address, NATIVE_INTERCHAIN_TOKEN, wallet.address, 0, gasOptions),
                 service,
                 'CannotDeploy',
                 [NATIVE_INTERCHAIN_TOKEN],
@@ -1090,7 +1081,6 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Initialize remote custom token manager deployment', () => {
-
         it('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
             const tokenAddress = wallet.address;
@@ -1312,14 +1302,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on initiating an interchain token transfer for lockUnlockFee with reentrant token', async () => {
-            const [, , tokenId] = await deployFunctions.lockUnlockFee(
-                service,
-                'Test Token lockUnlockFee',
-                'TT',
-                12,
-                amount,
-                'reentrant',
-            );
+            const [, , tokenId] = await deployFunctions.lockUnlockFee(service, 'Test Token lockUnlockFee', 'TT', 12, amount, 'reentrant');
 
             const revertData = keccak256(toUtf8Bytes('TokenTransferFailed()')).substring(0, 10);
 
