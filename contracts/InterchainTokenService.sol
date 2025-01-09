@@ -645,19 +645,6 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Allows the owner to migrate legacy tokens that cannot be migrated automatically.
-     * @param tokenId the tokenId of the registered token.
-     * @param data the data to pass to migrate the token.
-     */
-    function migrateLegacyToken(bytes32 tokenId, bytes calldata data) external onlyOwner {
-        address tokenAddress = registeredTokenAddress(tokenId);
-        (bool success, bytes memory returnData) = tokenAddress.call(data);
-        if (!success) {
-            revert TokenMigrateFailed(returnData);
-        }
-    }
-
-    /**
      * @notice Allows the owner to migrate minter of native interchain tokens from ITS to the corresponding token manager.
      * @param tokenId the tokenId of the registered token.
      */

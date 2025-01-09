@@ -54,7 +54,6 @@ interface IInterchainTokenService is
     error EmptyParams();
     error EmptyDestinationAddress();
     error NotSupported();
-    error TokenMigrateFailed(bytes returnData);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
@@ -275,13 +274,6 @@ interface IInterchainTokenService is
      * @param paused whether to pause or unpause.
      */
     function setPauseStatus(bool paused) external;
-
-    /**
-     * @notice Allows the owner to migrate legacy tokens that cannot be migrated automatically.
-     * @param tokenId the tokenId of the registered token.
-     * @param data the data to pass to migrate the token.
-     */
-    function migrateLegacyToken(bytes32 tokenId, bytes calldata data) external;
 
     /**
      * @notice Allows the owner to migrate legacy tokens that cannot be migrated automatically.
