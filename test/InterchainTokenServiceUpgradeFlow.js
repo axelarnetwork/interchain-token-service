@@ -52,7 +52,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         ]);
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
-        await expect(service.linkToken(salt, '', token.address, MINT_BURN, true, wallet.address, 0))
+        await expect(service.linkToken(salt, '', token.address, MINT_BURN, wallet.address, 0))
             .to.emit(service, 'TokenManagerDeployed')
             .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
     }

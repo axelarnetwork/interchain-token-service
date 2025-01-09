@@ -342,7 +342,6 @@ describe('Interchain Token Service Full Flow', () => {
         const gasValues = [1234, 5678];
         const tokenCap = 1e9;
         const salt = keccak256('0x697858');
-        const autoScaling = true;
 
         before(async () => {
             token = await deployContract(wallet, 'TestMintableBurnableERC20', [name, symbol, decimals]);
@@ -356,7 +355,7 @@ describe('Interchain Token Service Full Flow', () => {
             const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
             const params = await tokenManagerImplementation.params(wallet.address, token.address);
-            let tx = await service.populateTransaction.linkToken(salt, '', token.address, MINT_BURN, autoScaling, wallet.address, 0);
+            let tx = await service.populateTransaction.linkToken(salt, '', token.address, MINT_BURN, wallet.address, 0);
 
             const calls = [tx.data];
             let value = 0;
@@ -370,7 +369,6 @@ describe('Interchain Token Service Full Flow', () => {
                     otherChains[i],
                     remoteTokenAddress,
                     MINT_BURN,
-                    autoScaling,
                     wallet.address,
                     gasValues[i],
                 );
@@ -379,8 +377,8 @@ describe('Interchain Token Service Full Flow', () => {
             }
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bool', 'bytes'],
-                [MESSAGE_TYPE_LINK_TOKEN, tokenId, MINT_BURN, token.address, token.address, autoScaling, wallet.address],
+                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+                [MESSAGE_TYPE_LINK_TOKEN, tokenId, MINT_BURN, token.address, token.address, wallet.address],
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
@@ -394,7 +392,6 @@ describe('Interchain Token Service Full Flow', () => {
                     token.address.toLowerCase(),
                     token.address.toLowerCase(),
                     MINT_BURN,
-                    autoScaling,
                     wallet.address.toLowerCase(),
                 )
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -408,7 +405,6 @@ describe('Interchain Token Service Full Flow', () => {
                     token.address.toLowerCase(),
                     token.address.toLowerCase(),
                     MINT_BURN,
-                    autoScaling,
                     wallet.address.toLowerCase(),
                 )
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')

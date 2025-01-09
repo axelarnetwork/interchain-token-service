@@ -78,7 +78,6 @@ interface IInterchainTokenService is
         bytes sourceTokenAddress,
         bytes destinationTokenAddress,
         TokenManagerType indexed tokenManagerType,
-        bool autoScaling,
         bytes params
     );
     event InterchainTokenDeploymentStarted(
@@ -185,7 +184,6 @@ interface IInterchainTokenService is
      * @param destinationChain The name of the destination chain.
      * @param destinationTokenAddress The address of the token on the destination chain.
      * @param tokenManagerType The type of token manager. Cannot be NATIVE_INTERCHAIN_TOKEN.
-     * @param autoScaling Whether to enable auto scaling of decimals for the interchain token.
      * @param linkParams The link parameters.
      * @param gasValue The gas value for deployment.
      * @return tokenId The tokenId associated with the token manager.
@@ -195,7 +193,6 @@ interface IInterchainTokenService is
         string calldata destinationChain,
         bytes memory destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bool autoScaling,
         bytes memory linkParams,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);

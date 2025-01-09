@@ -317,7 +317,6 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes memory destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bool autoScaling,
         bytes memory linkParams,
         uint256 gasValue
     ) public payable whenNotPaused returns (bytes32 tokenId) {
@@ -346,7 +345,7 @@ contract InterchainTokenService is
         } else {
             if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
 
-            _linkToken(tokenId, destinationChain, destinationTokenAddress, tokenManagerType, autoScaling, linkParams, gasValue);
+            _linkToken(tokenId, destinationChain, destinationTokenAddress, tokenManagerType, linkParams, gasValue);
         }
     }
 
@@ -753,8 +752,8 @@ contract InterchainTokenService is
      * @notice Processes a deploy token manager payload.
      */
     function _processLinkTokenPayload(bytes memory payload) internal {
-        (, bytes32 tokenId, TokenManagerType tokenManagerType, , bytes memory destinationTokenAddress, , bytes memory linkParams) = abi
-            .decode(payload, (uint256, bytes32, TokenManagerType, bytes, bytes, bool, bytes));
+        (, bytes32 tokenId, TokenManagerType tokenManagerType, , bytes memory destinationTokenAddress, bytes memory linkParams) = abi
+            .decode(payload, (uint256, bytes32, TokenManagerType, bytes, bytes, bytes));
 
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
@@ -908,7 +907,6 @@ contract InterchainTokenService is
      * @param destinationChain The chain where the token manager will be deployed.
      * @param destinationTokenAddress The address of the token on the destination chain.
      * @param tokenManagerType The type of token manager to be deployed.
-     * @param autoScaling Whether to enable auto scaling of decimals for the interchain token.
      * @param params Additional parameters for the token linking.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
@@ -917,7 +915,6 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes memory destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bool autoScaling,
         bytes memory params,
         uint256 gasValue
     ) internal {
@@ -930,7 +927,6 @@ contract InterchainTokenService is
             sourceTokenAddress,
             destinationTokenAddress,
             tokenManagerType,
-            autoScaling,
             params
         );
 
@@ -940,7 +936,6 @@ contract InterchainTokenService is
             tokenManagerType,
             sourceTokenAddress,
             destinationTokenAddress,
-            autoScaling,
             params
         );
 
