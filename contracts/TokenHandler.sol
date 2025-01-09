@@ -39,15 +39,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         ITokenManager(tokenManager).addFlowIn(amount);
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _migrateToken(tokenManager, tokenAddress); 
+            _migrateToken(tokenManager, tokenAddress);
             _mintToken(tokenManager, tokenAddress, to, amount);
             return (amount, tokenAddress);
-        } 
+        }
 
-        if (
-            tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
-            tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
-        ) {
+        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _mintToken(tokenManager, tokenAddress, to, amount);
             return (amount, tokenAddress);
         }
@@ -81,7 +78,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _migrateToken(tokenManager, tokenAddress); 
+            _migrateToken(tokenManager, tokenAddress);
             _burnToken(tokenManager, tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _burnToken(tokenManager, tokenAddress, from, amount);
@@ -179,6 +176,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
     }
 
+    /**
+     * @notice This transfers mintership to the tokenManager if this is still the minter.
+     * It does nothing if the service is not the minter.
+     * @param tokenManager the token manager address to transfer mintership to.
+     * @param tokenAddress the address of the token to transfer mintership of.
+     */
     function _migrateToken(address tokenManager, address tokenAddress) internal {
         if (IMinter(tokenAddress).isMinter(address(this))) {
             IMinter(tokenAddress).transferMintership(tokenManager);
