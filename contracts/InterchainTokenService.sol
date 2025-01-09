@@ -658,7 +658,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Allows the owner to migrate legacy tokens that cannot be migrated automatically.
+     * @notice Allows the owner to migrate minter of native interchain tokens from ITS to the corresponding token manager.
      * @param tokenId the tokenId of the registered token.
      */
     function migrateInterchainToken(bytes32 tokenId) external onlyOwner {
