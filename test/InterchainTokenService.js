@@ -3245,12 +3245,14 @@ describe('Interchain Token Service', () => {
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            await interchainTokenDeployer.deployInterchainToken(salt, tokenId, service.address, name, symbol, decimals).then((tx) => tx.wait);
+            await interchainTokenDeployer
+                .deployInterchainToken(salt, tokenId, service.address, name, symbol, decimals)
+                .then((tx) => tx.wait);
             const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
-            
+
             await service.deployTokenManager(salt, '', MINT_BURN, params, 0).then((tx) => tx.wait);
 
             await expect(service.migrateInterchainToken(tokenId))
@@ -3268,12 +3270,14 @@ describe('Interchain Token Service', () => {
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            await interchainTokenDeployer.deployInterchainToken(salt, tokenId, service.address, name, symbol, decimals).then((tx) => tx.wait);
+            await interchainTokenDeployer
+                .deployInterchainToken(salt, tokenId, service.address, name, symbol, decimals)
+                .then((tx) => tx.wait);
             const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
-            
+
             await service.deployTokenManager(salt, '', MINT_BURN, params, 0).then((tx) => tx.wait);
 
             await expect(service.migrateInterchainToken(tokenId))
@@ -3282,7 +3286,10 @@ describe('Interchain Token Service', () => {
                 .to.emit(token, 'RolesAdded')
                 .withArgs(tokenManagerAddress, 1 << MINTER_ROLE);
 
-            await expectRevert((gasOptions) => service.migrateInterchainToken(tokenId, { gasOptions} ), token, 'MissingRole', [service.address, MINTER_ROLE]);
+            await expectRevert((gasOptions) => service.migrateInterchainToken(tokenId, { gasOptions }), token, 'MissingRole', [
+                service.address,
+                MINTER_ROLE,
+            ]);
         });
 
         it('Should not be able to migrate a token deployed after this upgrade', async () => {
@@ -3291,16 +3298,17 @@ describe('Interchain Token Service', () => {
             const symbol = 'MT';
             const decimals = 53;
             const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-
 
             await service.deployInterchainToken(salt, '', name, symbol, decimals, AddressZero, 0).then((tx) => tx.wait);
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
-            await expectRevert((gasOptions) => service.migrateInterchainToken(tokenId, { gasOptions} ), token, 'MissingRole', [service.address, MINTER_ROLE]);
+            await expectRevert((gasOptions) => service.migrateInterchainToken(tokenId, { gasOptions }), token, 'MissingRole', [
+                service.address,
+                MINTER_ROLE,
+            ]);
         });
-    })
+    });
 
     describe('Bytecode checks [ @skip-on-coverage ]', () => {
         it('Should preserve the same proxy bytecode for each EVM', async () => {
