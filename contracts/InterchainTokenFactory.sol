@@ -491,7 +491,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
     }
 
-        function linkedTokenDeploySalt(address deployer, bytes32 salt) public view returns (bytes32 deploySalt) {
+    function linkedTokenDeploySalt(address deployer, bytes32 salt) public view returns (bytes32 deploySalt) {
         deploySalt = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_SALT, chainNameHash, deployer, salt));
     }
 
