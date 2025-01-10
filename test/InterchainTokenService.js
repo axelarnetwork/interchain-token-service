@@ -2108,37 +2108,57 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should revert with NotSupported when the message type is RECEIVE_FROM_HUB and has MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER type.', async () => {
-            const salt = getRandomBytes32();
-            const tokenAddress = wallet.address;
+        it('Should receive a message wrapped with RECEIVE_FROM_HUB and has MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER type.', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TS';
+            const tokenDecimals = 53;
+            const tokenId = getRandomBytes32();
 
-            await (await service.linkToken(salt, '', tokenAddress, MINT_BURN, wallet.address, 0)).wait();
+            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                service.address,
+                tokenId,
+            ]);
 
-            const tokenId = await service.interchainTokenId(wallet.address, salt);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const tokenManagerType = LOCK_UNLOCK;
+            const minter = wallet.address;
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
             const remoteTokenAddress = '0x1234';
-            const minter = '0x5678';
             const type = LOCK_UNLOCK;
             const sourceChain = 'hub chain 1';
             const itsMessage = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
-                [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, tokenAddress, remoteTokenAddress, minter],
+                [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, remoteTokenAddress, token.address, minter],
             );
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'string', 'bytes'],
                 [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, itsMessage],
             );
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, payload);
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
+
+            await expect(service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS))
+                .to.emit(service, 'TrustedAddressSet')
+                .withArgs(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS);
 
             await expect(service.setTrustedAddress(sourceChain, ITS_HUB_ROUTING_IDENTIFIER))
                 .to.emit(service, 'TrustedAddressSet')
                 .withArgs(sourceChain, ITS_HUB_ROUTING_IDENTIFIER);
 
-            await expectRevert(
-                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload, gasOptions),
-                service,
-                'NotSupported',
-            );
+            await expect(reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, expectedTokenManagerAddress, tokenManagerType, params);
+
+            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            expect(await tokenManager.tokenAddress()).to.equal(token.address);
+            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });
+
 
         it('Should revert with UntrustedChain when receiving a direct message from the ITS Hub. Not supported yet', async () => {
             const data = '0x';
