@@ -179,13 +179,14 @@ interface IInterchainTokenService is
     function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable;
 
     /**
-     * @notice Links a source token to a destination token on a remote chain.
-     * @param salt The salt used for token manager deployment.
-     * @param destinationChain The name of the destination chain.
-     * @param destinationTokenAddress The address of the token on the destination chain.
-     * @param tokenManagerType The type of token manager. Cannot be NATIVE_INTERCHAIN_TOKEN.
-     * @param linkParams The link parameters.
-     * @param gasValue The gas value for deployment.
+     * @notice This replaces the old deployTokenManager function.
+     * It can either deploy token managers on this chain, if an empty string is provided as the destinationChain, or link an existing token registered to another chain.
+     * @param salt A unique identifier to allow for multiple tokens registered per deployer.
+     * @param destinationChain The chain to link the token to. Pass an empty string for this chain.
+     * @param destinationTokenAddress The token address to link, as bytes.
+     * @param tokenManagerType The type of the token manager to use to send and receive tokens.
+     * @param linkParams Additional parameteres to use to link the token. Fow not it is just the address of the operator.
+     * @param gasValue Pass a non-zero value only for remote linking, which should be the gas to use to pay for the contract call.
      * @return tokenId The tokenId associated with the token manager.
      */
     function linkToken(
