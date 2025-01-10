@@ -333,7 +333,6 @@ contract InterchainTokenService is
     ) public payable whenNotPaused returns (bytes32 tokenId) {
         if (destinationTokenAddress.length == 0) revert EmptyDestinationAddress();
 
-        // TODO: Should we only allow mint/burn or lock/unlock for remote linking for simplicity? Makes it easier for external chains
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
