@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import { ITokenManager } from './ITokenManager.sol';
+
 /**
  * @title ITokenHandler Interface
  * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
@@ -47,5 +49,5 @@ interface ITokenHandler {
      * @param tokenManagerType The token manager type.
      * @param tokenManager The address of the token manager.
      */
-    function postTokenManagerDeploy(uint256 tokenManagerType, address tokenManager) external payable;
+    function postTokenManagerDeploy(uint256 tokenManagerType, ITokenManager tokenManager) external payable;
 }
