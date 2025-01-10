@@ -2150,7 +2150,9 @@ describe('Interchain Token Service', () => {
                 .to.emit(service, 'TrustedAddressSet')
                 .withArgs(sourceChain, ITS_HUB_ROUTING_IDENTIFIER);
 
-            await expect(reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
+            await expect(
+                reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'),
+            )
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, tokenManagerType, params);
 
@@ -2158,7 +2160,6 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.tokenAddress()).to.equal(token.address);
             expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
         });
-
 
         it('Should revert with UntrustedChain when receiving a direct message from the ITS Hub. Not supported yet', async () => {
             const data = '0x';
