@@ -1085,7 +1085,7 @@ describe('Interchain Token Service', () => {
             const salt = getRandomBytes32();
             const tokenAddress = wallet.address;
 
-            await (await service.linkToken(salt, '', tokenAddress, MINT_BURN, '0x', 0)).wait();
+            await service.linkToken(salt, '', tokenAddress, MINT_BURN, '0x', 0).then((tx) => tx.wait);
 
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const remoteTokenAddress = '0x1234';
