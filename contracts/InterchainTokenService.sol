@@ -80,7 +80,7 @@ contract InterchainTokenService is
 
     uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
-    //uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
+    // uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
     uint256 private constant MESSAGE_TYPE_SEND_TO_HUB = 3;
     uint256 private constant MESSAGE_TYPE_RECEIVE_FROM_HUB = 4;
     uint256 private constant MESSAGE_TYPE_LINK_TOKEN = 5;
