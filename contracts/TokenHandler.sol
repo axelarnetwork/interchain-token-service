@@ -135,12 +135,16 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      * @param tokenManager The address of the token manager.
      */
     // slither-disable-next-line locked-ether
-    function postTokenManagerDeploy(uint256 tokenManagerType, address tokenManager) external payable {
-        // For lock/unlock token managers, the ITS contract needs an approval from the token manager to transfer tokens on its behalf
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            ITokenManager(tokenManager).approveService();
-        } else if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            IMinter(ITokenManager(tokenManager).tokenAddress()).transferMintership(tokenManager);
+    function postTokenManagerDeploy(uint256 tokenManagerType, ITokenManager tokenManager) external payable {
+        // For native interhcain tokens we transfer mintership to the token manager.
+        // This is done here because InterchainToken bytecode needs to be fixed.
+        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
+            IMinter(tokenManager.tokenAddress()).transferMintership(address(tokenManager));
+            // For lock/unlock token managers, the ITS contract needs an approval from the token manager to transfer tokens on its behalf.
+        } else if (
+            tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)
+        ) {
+            tokenManager.approveService();
         }
     }
 
@@ -164,12 +168,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         return diff < amount ? diff : amount;
     }
 
-    function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal {
-        ITokenManager(tokenManager).mintToken(tokenAddress, to, amount);
+    function _mintToken(ITokenManager tokenManager, address tokenAddress, address to, uint256 amount) internal {
+        tokenManager.mintToken(tokenAddress, to, amount);
     }
 
-    function _burnToken(address tokenManager, address tokenAddress, address from, uint256 amount) internal {
-        ITokenManager(tokenManager).burnToken(tokenAddress, from, amount);
+    function _burnToken(ITokenManager tokenManager, address tokenAddress, address from, uint256 amount) internal {
+        tokenManager.burnToken(tokenAddress, from, amount);
     }
 
     function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {
