@@ -40,12 +40,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             _migrateToken(tokenManager, tokenAddress);
-            _mintToken(tokenManager, tokenAddress, to, amount);
+            _mintToken(ITokenManager(tokenManager), tokenAddress, to, amount);
             return (amount, tokenAddress);
         }
 
         if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
-            _mintToken(tokenManager, tokenAddress, to, amount);
+            _mintToken(ITokenManager(tokenManager), tokenAddress, to, amount);
             return (amount, tokenAddress);
         }
 
@@ -79,9 +79,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             _migrateToken(tokenManager, tokenAddress);
-            _burnToken(tokenManager, tokenAddress, from, amount);
+            _burnToken(ITokenManager(tokenManager), tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
-            _burnToken(tokenManager, tokenAddress, from, amount);
+            _burnToken(ITokenManager(tokenManager), tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _burnTokenFrom(tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
