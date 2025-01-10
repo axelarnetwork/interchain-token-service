@@ -72,9 +72,11 @@ interface IInterchainTokenService is
         uint256 amount,
         bytes32 dataHash
     );
-    event TokenManagerDeploymentStarted(
+    event LinkTokenStarted(
         bytes32 indexed tokenId,
         string destinationChain,
+        bytes sourceTokenAddress,
+        bytes destinationTokenAddress,
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
@@ -170,19 +172,29 @@ interface IInterchainTokenService is
     function interchainTokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys a custom token manager contract on a remote chain.
-     * @param salt The salt used for token manager deployment.
-     * @param destinationChain The name of the destination chain.
-     * @param tokenManagerType The type of token manager. Cannot be NATIVE_INTERCHAIN_TOKEN.
-     * @param params The deployment parameters.
-     * @param gasValue The gas value for deployment.
+     * @notice Registers metadata for a token on the ITS Hub. This metadata is used for scaling linked tokens.
+     * @param tokenAddress The address of the token.
+     * @param gasValue The cross-chain gas value for sending the registration message to ITS Hub.
+     */
+    function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable;
+
+    /**
+     * @notice This replaces the old deployTokenManager function.
+     * It can either deploy token managers on this chain, if an empty string is provided as the destinationChain, or link an existing token registered to another chain.
+     * @param salt A unique identifier to allow for multiple tokens registered per deployer.
+     * @param destinationChain The chain to link the token to. Pass an empty string for this chain.
+     * @param destinationTokenAddress The token address to link, as bytes.
+     * @param tokenManagerType The type of the token manager to use to send and receive tokens.
+     * @param linkParams Additional parameteres to use to link the token. Fow not it is just the address of the operator.
+     * @param gasValue Pass a non-zero value only for remote linking, which should be the gas to use to pay for the contract call.
      * @return tokenId The tokenId associated with the token manager.
      */
-    function deployTokenManager(
+    function linkToken(
         bytes32 salt,
         string calldata destinationChain,
+        bytes memory destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bytes calldata params,
+        bytes memory linkParams,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 

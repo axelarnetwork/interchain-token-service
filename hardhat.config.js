@@ -45,6 +45,16 @@ const compilerSettings = {
         optimizer: optimizerSettings,
     },
 };
+const itsCompilerService = {
+    version: '0.8.21',
+    settings: {
+        evmVersion: process.env.EVM_VERSION || 'london',
+        optimizer: {
+            ...optimizerSettings,
+            runs: 100,
+        },
+    },
+};
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -59,7 +69,8 @@ module.exports = {
                   'contracts/proxies/InterchainProxy.sol': fixedContractCompilerSettings,
                   'contracts/proxies/TokenManagerProxy.sol': fixedContractCompilerSettings,
                   'contracts/interchain-token/InterchainToken.sol': fixedContractCompilerSettings,
-                  'contracts/test/TestInterchainTokenService.sol': fixedContractCompilerSettings,
+                  'contracts/test/TestInterchainTokenService.sol': itsCompilerService,
+                  'contracts/InterchainTokenService.sol': itsCompilerService,
               },
     },
     defaultNetwork: 'hardhat',
