@@ -20,6 +20,7 @@ import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecuta
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
+import { IMinter } from './interfaces/IMinter.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { Operator } from './utils/Operator.sol';
 
@@ -641,6 +642,16 @@ contract InterchainTokenService is
         } else {
             _unpause();
         }
+    }
+
+    /**
+     * @notice Allows the owner to migrate minter of native interchain tokens from ITS to the corresponding token manager.
+     * @param tokenId the tokenId of the registered token.
+     */
+    function migrateInterchainToken(bytes32 tokenId) external onlyOwner {
+        ITokenManager tokenManager_ = deployedTokenManager(tokenId);
+        address tokenAddress = tokenManager_.tokenAddress();
+        IMinter(tokenAddress).transferMintership(address(tokenManager_));
     }
 
     /****************\
