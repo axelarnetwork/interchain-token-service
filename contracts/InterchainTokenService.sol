@@ -326,9 +326,9 @@ contract InterchainTokenService is
     function linkToken(
         bytes32 salt,
         string calldata destinationChain,
-        bytes memory destinationTokenAddress,
+        bytes calldata destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bytes memory linkParams,
+        bytes calldata linkParams,
         uint256 gasValue
     ) public payable whenNotPaused returns (bytes32 tokenId) {
         if (destinationTokenAddress.length == 0) revert EmptyDestinationAddress();
@@ -338,7 +338,7 @@ contract InterchainTokenService is
 
         address deployer = msg.sender;
 
-        if (msg.sender == interchainTokenFactory) {
+        if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
         } else if (bytes(destinationChain).length == 0) {
             // TODO: Only support linking new tokens via ITS factory, to include chain name in token id derivation
@@ -900,9 +900,6 @@ contract InterchainTokenService is
 
             // Get message type of the inner ITS message
             messageType = _getMessageType(payload);
-
-            // Prevent link token to be usable on ITS HUB.
-            if (messageType == MESSAGE_TYPE_LINK_TOKEN) revert NotSupported();
         } else {
             // Prevent receiving a direct message from the ITS Hub. This is not supported yet.
             if (keccak256(abi.encodePacked(sourceChain)) == ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();
@@ -923,9 +920,9 @@ contract InterchainTokenService is
     function _linkToken(
         bytes32 tokenId,
         string calldata destinationChain,
-        bytes memory destinationTokenAddress,
+        bytes calldata destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bytes memory params,
+        bytes calldata params,
         uint256 gasValue
     ) internal {
         // slither-disable-next-line unused-return
@@ -978,7 +975,7 @@ contract InterchainTokenService is
         _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
-    /*
+    /**
      * @notice Deploys a token manager.
      * @param tokenId The ID of the token.
      * @param tokenManagerType The type of the token manager to be deployed.
