@@ -137,10 +137,12 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         // This is done here because InterchainToken bytecode needs to be fixed.
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             IMinter(tokenManager.tokenAddress()).transferMintership(address(tokenManager));
-        // For lock/unlock token managers, the ITS contract needs an approval from the token manager to transfer tokens on its behalf.
-        } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+            // For lock/unlock token managers, the ITS contract needs an approval from the token manager to transfer tokens on its behalf.
+        } else if (
+            tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)
+        ) {
             tokenManager.approveService();
-        } 
+        }
     }
 
     function _transferTokenFrom(address tokenAddress, address from, address to, uint256 amount) internal {
