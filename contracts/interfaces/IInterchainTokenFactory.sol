@@ -6,12 +6,13 @@ import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/in
 import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
 
 import { IInterchainTokenService } from './IInterchainTokenService.sol';
+import { ITokenManagerType } from './ITokenManagerType.sol';
 
 /**
  * @title IInterchainTokenFactory Interface
  * @notice This interface defines functions for deploying new interchain tokens and managing their token managers.
  */
-interface IInterchainTokenFactory is IUpgradable, IMulticall {
+interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall {
     error ZeroAddress();
     error InvalidChainName();
     error InvalidMinter(address minter);
@@ -213,6 +214,60 @@ interface IInterchainTokenFactory is IUpgradable, IMulticall {
         string calldata originalChain,
         address originalTokenAddress,
         string calldata destinationChain,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Computes the deploy salt for a linked interchain token.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @return deploySalt The deploy salt for the interchain token.
+     */
+    function linkedTokenDeploySalt(address deployer, bytes32 salt) external view returns (bytes32 deploySalt);
+
+    /**
+     * @notice Computes the ID for a linked token based on its address.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @return tokenId The ID of the linked token.
+     */
+    function linkedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId);
+
+    /**
+     * @notice Register an existing ERC20 token under a `tokenId` computed from the provided `salt`.
+     * A token metadata registration message will also be sent to the ITS Hub.
+     * This token can then be linked to remote tokens on different chains by submitting the `linkToken` function from the same `msg.sender` and using the same `salt`.
+     * @param salt The salt used to derive the tokenId for the custom token registration. The same salt must be used when linking this token on other chains under the same tokenId.
+     * @param tokenAddress The token address of the token being registered.
+     * @param tokenManagerType The token manager type used for the token link.
+     * @param operator The operator of the token manager.
+     * @param gasValue The cross-chain gas value used to register the token metadata on the ITS Hub.
+     */
+    function registerCustomToken(
+        bytes32 salt,
+        address tokenAddress,
+        TokenManagerType tokenManagerType,
+        address operator,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Links a remote token on `destinationChain` to a local token corresponding to the `tokenId` computed from the provided `salt`.
+     * A local token must have been registered first using the `registerCustomToken` function.
+     * @param salt The salt used to derive the tokenId for the custom token registration. The same salt must be used when linking this token on other chains under the same tokenId.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationTokenAddress The token address of the token being linked.
+     * @param tokenManagerType The token manager type used for the token link.
+     * @param linkParams Additional parameters for the token link depending on the destination chain. For EVM destination chains, this is an optional custom operator address.
+     * @param gasValue The cross-chain gas value used to link the token on the destination chain.
+     * @return tokenId The tokenId corresponding to the linked token.
+     */
+    function linkToken(
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes calldata destinationTokenAddress,
+        TokenManagerType tokenManagerType,
+        bytes calldata linkParams,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 }
