@@ -720,14 +720,16 @@ describe('InterchainTokenFactory', () => {
 
                 await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
 
-                await expect(tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, wallet.address, gasValue, { value: gasValue }))
+                await expect(
+                    tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, wallet.address, gasValue, { value: gasValue }),
+                )
                     .to.emit(service, 'InterchainTokenIdClaimed')
                     .withArgs(tokenId, AddressZero, deploySalt)
                     .to.emit(service, 'TokenManagerDeployed')
                     .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
             });
 
-            it('Should deploy a lock_unlock token manager', async () => {
+            it('Should link token with lock_unlock type', async () => {
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
                 const gasValue = 1;
@@ -761,7 +763,7 @@ describe('InterchainTokenFactory', () => {
                 expect(tokenAddressFromProxy).to.eq(token.address);
             });
 
-            it('Should revert when deploying a custom token manager twice', async () => {
+            it('Should revert when linking a token twice', async () => {
                 const revertData = keccak256(toUtf8Bytes('AlreadyDeployed()')).substring(0, 10);
                 await expectRevert(
                     (gasOptions) => tokenFactory.linkToken(salt, '', token.address, LOCK_UNLOCK, wallet.address, 0, gasOptions),
@@ -787,7 +789,7 @@ describe('InterchainTokenFactory', () => {
                 );
             });
 
-            it('Should deploy a mint_burn token manager', async () => {
+            it('Should link token with mint_burn type', async () => {
                 const salt = getRandomBytes32();
                 const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -822,7 +824,7 @@ describe('InterchainTokenFactory', () => {
                 expect(tokenAddressFromProxy).to.eq(token.address);
             });
 
-            it('Should deploy a mint_burn_from token manager', async () => {
+            it('Should link token with mint_burn_from type', async () => {
                 const salt = getRandomBytes32();
                 const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -859,7 +861,7 @@ describe('InterchainTokenFactory', () => {
                 expect(tokenAddressFromProxy).to.eq(token.address);
             });
 
-            it('Should deploy a lock_unlock_with_fee token manager', async () => {
+            it('Should link token with lock_unlock_with_fee type', async () => {
                 const salt = getRandomBytes32();
                 const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -896,7 +898,7 @@ describe('InterchainTokenFactory', () => {
                 expect(tokenAddressFromProxy).to.eq(token.address);
             });
 
-            it('Should revert when deploying a custom token manager if paused', async () => {
+            it('Should revert on linking a token if ITS is paused', async () => {
                 await service.setPauseStatus(true).then((tx) => tx.wait);
 
                 await expectRevert(
