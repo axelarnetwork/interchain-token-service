@@ -251,33 +251,6 @@ contract InterchainTokenService is
         return tokenManager;
     }
 
-    /**
-     * @notice Getter function for the flow limit of an existing TokenManager with a given tokenId.
-     * @param tokenId The tokenId of the TokenManager.
-     * @return flowLimit_ The flow limit.
-     */
-    function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_) {
-        flowLimit_ = deployedTokenManager(tokenId).flowLimit();
-    }
-
-    /**
-     * @notice Getter function for the flow out amount of an existing TokenManager with a given tokenId.
-     * @param tokenId The tokenId of the TokenManager.
-     * @return flowOutAmount_ The flow out amount.
-     */
-    function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_) {
-        flowOutAmount_ = deployedTokenManager(tokenId).flowOutAmount();
-    }
-
-    /**
-     * @notice Getter function for the flow in amount of an existing TokenManager with a given tokenId.
-     * @param tokenId The tokenId of the TokenManager.
-     * @return flowInAmount_ The flow in amount.
-     */
-    function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_) {
-        flowInAmount_ = deployedTokenManager(tokenId).flowInAmount();
-    }
-
     /************\
     USER FUNCTIONS
     \************/
