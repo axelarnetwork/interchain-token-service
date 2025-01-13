@@ -11,15 +11,15 @@ const {
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const { isHardhat, waitFor, getRandomBytes32, getPayloadAndProposalHash, getContractJSON } = require('./utils');
-const { deployContract, deployMockGateway, deployGasService, deployInterchainTokenService } = require('../scripts/deploy');
+const { deployContract, deployMockGateway, deployGasService, deployInterchainTokenService, deployInterchainTokenFactory } = require('../scripts/deploy');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
-const { MINT_BURN } = require('./constants');
+const { MINT_BURN, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS } = require('./constants');
 
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, operator;
-    let service, gateway, gasService;
+    let service, gateway, gasService, tokenFactory;
     let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler, gatewayCaller;
     let interchainTokenFactoryAddress;
 
@@ -40,7 +40,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
 
     async function testDeployTokenManager() {
         const salt = getRandomBytes32();
-        const tokenId = await service.interchainTokenId(wallet.address, salt);
+        const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
         const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
@@ -52,7 +52,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
         ]);
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
-        await expect(service.linkToken(salt, '', token.address, MINT_BURN, wallet.address, 0))
+        await expect(tokenFactory.registerCustomToken(salt, token.address, MINT_BURN, wallet.address, 0))
             .to.emit(service, 'TokenManagerDeployed')
             .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
     }
@@ -101,8 +101,14 @@ describe('Interchain Token Service Upgrade Flow', () => {
             chainName,
             [],
             deploymentKey,
-            axelarServiceGovernance.address,
+            wallet.address,
         );
+
+        tokenFactory = await deployInterchainTokenFactory(wallet, create3Deployer.address, service.address, deploymentKey + 'Factory');
+
+        await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
+
+        await service.transferOwnership(axelarServiceGovernance.address).then((tx) => tx.wait)
     });
 
     it('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {

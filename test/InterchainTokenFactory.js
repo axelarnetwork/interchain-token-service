@@ -13,6 +13,7 @@ const { deployAll, deployContract } = require('../scripts/deploy');
 const { getRandomBytes32, expectRevert, gasReporter } = require('./utils');
 const {
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+    MESSAGE_TYPE_LINK_TOKEN,
     NATIVE_INTERCHAIN_TOKEN,
     LOCK_UNLOCK,
     MINTER_ROLE,
@@ -649,20 +650,12 @@ describe('InterchainTokenFactory', () => {
             });
 
             it('Should revert on deploying an invalid token manager', async () => {
-                await expectRevert((gasOptions) => tokenFactory.linkToken(salt, '', token.address, 6, wallet.address, 0, gasOptions));
-            });
-
-            it('Should revert on deploying a local token manager with invalid params', async () => {
-                await expectRevert(
-                    (gasOptions) => tokenFactory.linkToken(salt, '', token.address, NATIVE_INTERCHAIN_TOKEN, '0x', 0, gasOptions),
-                    service,
-                    'CannotDeploy',
-                );
+                await expectRevert((gasOptions) => tokenFactory.registerCustomToken(salt, token.address, 6, wallet.address, 0, gasOptions));
             });
 
             it('Should revert on deploying a local token manager with interchain token manager type', async () => {
                 await expectRevert(
-                    (gasOptions) => tokenFactory.linkToken(salt, '', token.address, NATIVE_INTERCHAIN_TOKEN, wallet.address, 0, gasOptions),
+                    (gasOptions) => tokenFactory.registerCustomToken(salt, token.address, NATIVE_INTERCHAIN_TOKEN, wallet.address, 0, gasOptions),
                     service,
                     'CannotDeploy',
                     [NATIVE_INTERCHAIN_TOKEN],
@@ -898,7 +891,7 @@ describe('InterchainTokenFactory', () => {
                 expect(tokenAddressFromProxy).to.eq(token.address);
             });
 
-            it('Should revert on linking a token if ITS is paused', async () => {
+            it('Should revert on registering a token if ITS is paused', async () => {
                 await service.setPauseStatus(true).then((tx) => tx.wait);
 
                 await expectRevert(
@@ -907,6 +900,101 @@ describe('InterchainTokenFactory', () => {
                     'Pause',
                 );
 
+                await service.setPauseStatus(false).then((tx) => tx.wait);
+            });
+        });
+
+        describe('Initialize remote custom token manager deployment', () => {
+            let token, tokenId, salt;
+            const tokenManagerType = LOCK_UNLOCK;
+            const operator = AddressZero;
+            const gasValue = 5678;
+
+            async function deployAndRegisterToken() {
+                salt = getRandomBytes32();
+
+                token = await deployContract(wallet, 'TestInterchainTokenStandard', [
+                    name,
+                    symbol,
+                    decimals,
+                    service.address,
+                    getRandomBytes32(),
+                ]);
+
+                tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+                await tokenFactory.registerCustomToken(salt, token.address, tokenManagerType, operator, gasValue, {value: gasValue}).then((tx) => tx.wait);
+                await token.setTokenId(tokenId).then((tx) => tx.wait);
+            }
+
+            it('Should initialize a remote custom token manager deployment', async () => {
+                await deployAndRegisterToken();
+    
+                const remoteTokenAddress = '0x1234';
+                const minter = '0x5789';
+                const type = LOCK_UNLOCK;
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+                    [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, token.address, remoteTokenAddress, minter],
+                );
+    
+                const tokenManager = await getContractAt('TokenManager', await service.deployedTokenManager(tokenId), wallet);
+                expect(await tokenManager.isOperator(AddressZero)).to.be.true;
+                expect(await tokenManager.isOperator(service.address)).to.be.true;
+                expect(await tokenManager.isFlowLimiter(AddressZero)).to.be.true;
+                expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
+                await expect(
+                    reportGas(
+                        tokenFactory.linkToken(salt, destinationChain, remoteTokenAddress, type, minter, gasValue, { value: gasValue }),
+                        'Send deployTokenManager to remote chain',
+                    ),
+                )
+                    .to.emit(service, 'InterchainTokenIdClaimed')
+                    .withArgs(tokenId, AddressZero, await tokenFactory.linkedTokenDeploySalt(wallet.address, salt))
+                    .to.emit(service, 'LinkTokenStarted')
+                    .withArgs(
+                        tokenId,
+                        destinationChain,
+                        token.address.toLowerCase(),
+                        remoteTokenAddress.toLowerCase(),
+                        type,
+                        minter.toLowerCase(),
+                    )
+                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                    .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
+                    .and.to.emit(gateway, 'ContractCall')
+                    .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
+            });
+    
+            it('Should revert on a remote custom token manager deployment if the token manager does does not exist', async () => {
+                const salt = getRandomBytes32();
+                const tokenId = await service.interchainTokenId(wallet.address, salt);
+                const tokenAddress = '0x1234';
+                const minter = '0x5678';
+                const type = LOCK_UNLOCK;
+    
+                await expect(
+                    tokenFactory.linkToken(salt, destinationChain, tokenAddress, type, minter, gasValue, { value: gasValue }),
+                ).to.be.revertedWithCustomError(service, 'TokenManagerDoesNotExist', [tokenId]);
+            });
+    
+            it('Should revert on remote custom token manager deployment if paused', async () => {
+                await service.setPauseStatus(true).then((tx) => tx.wait);
+    
+                const salt = getRandomBytes32();
+                const tokenAddress = '0x1234';
+                const minter = '0x5678';
+                const type = LOCK_UNLOCK;
+    
+                await expectRevert(
+                    (gasOptions) =>
+                        tokenFactory.linkToken(salt, destinationChain, tokenAddress, type, minter, gasValue, {
+                            ...gasOptions,
+                            value: gasValue,
+                        }),
+                    service,
+                    'Pause',
+                );
+    
                 await service.setPauseStatus(false).then((tx) => tx.wait);
             });
         });

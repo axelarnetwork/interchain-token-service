@@ -417,6 +417,9 @@ contract InterchainTokenService is
         } else if (trustedAddressHash(chainName()) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
             // Currently, deployments directly on ITS contract (instead of ITS Factory) are restricted for ITS contracts deployed on Amplifier, i.e registered with the Hub
             revert NotSupported();
+        } else if (bytes(destinationChain).length == 0) {
+            // Only the factory can deploy tokens to this chain.
+            revert NotSupported();
         }
 
         tokenId = interchainTokenId(deployer, salt);
@@ -429,6 +432,9 @@ contract InterchainTokenService is
             _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, tokenAddress, minter);
         } else {
             if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
+
+            // Make sure that the token manager already exists on this chain.
+            deployedTokenManager(tokenId);
 
             _deployRemoteInterchainToken(tokenId, name, symbol, decimals, minter, destinationChain, gasValue);
         }
