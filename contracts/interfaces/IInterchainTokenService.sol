@@ -173,14 +173,17 @@ interface IInterchainTokenService is
 
     /**
      * @notice Registers metadata for a token on the ITS Hub. This metadata is used for scaling linked tokens.
+     * The token metadata must be registered before linkToken can be called for the corresponding token.
      * @param tokenAddress The address of the token.
      * @param gasValue The cross-chain gas value for sending the registration message to ITS Hub.
      */
     function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable;
 
     /**
-     * @notice This replaces the old deployTokenManager function.
-     * It can either deploy token managers on this chain, if an empty string is provided as the destinationChain, or link an existing token registered to another chain.
+     * @notice If `destinationChain` is an empty string, this function will register the token address on the current chain.
+     * Otherwise, it will link the token address on the destination chain with the token corresponding to the tokenId on the current chain.
+     * A token manager is deployed on EVM chains that's responsible for managing the linked token.
+     * @dev This function replaces the prior `deployTokenManager` function.
      * @param salt A unique identifier to allow for multiple tokens registered per deployer.
      * @param destinationChain The chain to link the token to. Pass an empty string for this chain.
      * @param destinationTokenAddress The token address to link, as bytes.
