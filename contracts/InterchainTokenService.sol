@@ -289,7 +289,7 @@ contract InterchainTokenService is
      * @param gasValue The cross-chain gas value for sending the registration message to ITS Hub.
      */
     function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable {
-        if (tokenAddress == address(0)) revert ZeroAddress();
+        if (tokenAddress == address(0)) revert EmptyTokenAddress();
 
         uint8 decimals = IERC20Named(tokenAddress).decimals();
 
@@ -298,6 +298,8 @@ contract InterchainTokenService is
         string memory destinationAddress = trustedAddress(ITS_HUB_CHAIN_NAME);
         // Check whether no trusted address was set for ITS Hub chain
         if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+
+        emit TokenMetadataRegistered(tokenAddress, decimals);
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
             abi.encodeWithSelector(
@@ -334,7 +336,7 @@ contract InterchainTokenService is
         bytes calldata linkParams,
         uint256 gasValue
     ) public payable whenNotPaused returns (bytes32 tokenId) {
-        if (destinationTokenAddress.length == 0) revert EmptyDestinationAddress();
+        if (destinationTokenAddress.length == 0) revert EmptyTokenAddress();
 
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);

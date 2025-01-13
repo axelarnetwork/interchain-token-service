@@ -53,6 +53,7 @@ interface IInterchainTokenService is
     error EmptyTokenSymbol();
     error EmptyParams();
     error EmptyDestinationAddress();
+    error EmptyTokenAddress();
     error NotSupported();
 
     event InterchainTransfer(
@@ -72,6 +73,7 @@ interface IInterchainTokenService is
         uint256 amount,
         bytes32 dataHash
     );
+    event TokenMetadataRegistered(address indexed tokenAddress, uint8 decimals);
     event LinkTokenStarted(
         bytes32 indexed tokenId,
         string destinationChain,

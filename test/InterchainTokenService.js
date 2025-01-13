@@ -31,6 +31,7 @@ const {
     ITS_HUB_CHAIN_NAME,
     ITS_HUB_ROUTING_IDENTIFIER,
     ITS_HUB_ADDRESS,
+    MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
 } = require('./constants');
 
 const reportGas = gasReporter('Interchain Token Service');
@@ -841,6 +842,39 @@ describe('Interchain Token Service', () => {
         });
     });
 
+    describe('Register Token Metadata', () => {
+        const decimals = 18;
+        let token;
+
+        before(async () => {
+            token = await deployContract(wallet, 'TestInterchainTokenStandard', ['Test', 'TEST', decimals, service.address, HashZero]);
+        });
+
+        it('Should revert on registering token metadata with empty token address', async () => {
+            await expectRevert((gasOptions) => service.registerTokenMetadata(AddressZero, 0, gasOptions), service, 'EmptyTokenAddress');
+        });
+
+        it('Should revert if ITS Hub chain is not trusted', async () => {
+            await expectRevert((gasOptions) => service.registerTokenMetadata(token.address, 0, gasOptions), service, 'UntrustedChain');
+        });
+
+        it('Should successfully register token metadata', async () => {
+            const gasValue = 0;
+            const expectedPayload = defaultAbiCoder.encode(
+                ['uint256', 'bytes', 'uint8'],
+                [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, token.address, decimals],
+            );
+
+            await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
+
+            await expect(reportGas(service.registerTokenMetadata(token.address, gasValue), 'registerTokenMetadata'))
+                .to.emit(service, 'TokenMetadataRegistered')
+                .withArgs(token.address, decimals)
+                .to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(expectedPayload), expectedPayload);
+        });
+    });
+
     describe('Custom Token Manager Deployment', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
@@ -878,6 +912,14 @@ describe('Interchain Token Service', () => {
                 service,
                 'CannotDeploy',
                 [NATIVE_INTERCHAIN_TOKEN],
+            );
+        });
+
+        it('Should revert on linking a token with empty token address', async () => {
+            await expectRevert(
+                (gasOptions) => service.linkToken(salt, '', '0x', MINT_BURN, wallet.address, 0, gasOptions),
+                service,
+                'EmptyTokenAddress',
             );
         });
 
