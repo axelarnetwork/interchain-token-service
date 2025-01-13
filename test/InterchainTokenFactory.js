@@ -21,6 +21,8 @@ const {
     MINT_BURN,
     MINT_BURN_FROM,
     LOCK_UNLOCK_FEE_ON_TRANSFER,
+    ITS_HUB_CHAIN_NAME,
+    ITS_HUB_ADDRESS,
 } = require('./constants');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 
@@ -691,13 +693,48 @@ describe('InterchainTokenFactory', () => {
                 );
             });
 
+            it('Should register a custom token with no operator', async () => {
+                const salt = getRandomBytes32();
+                const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+                const deploySalt = await tokenFactory.linkedTokenDeploySalt(wallet.address, salt);
+                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+                const gasValue = 1;
+                const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
+
+                await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
+
+                await expect(tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, AddressZero, gasValue, { value: gasValue }))
+                    .to.emit(service, 'InterchainTokenIdClaimed')
+                    .withArgs(tokenId, AddressZero, deploySalt)
+                    .to.emit(service, 'TokenManagerDeployed')
+                    .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
+            });
+
+            it('Should register a custom token with a custom operator', async () => {
+                const salt = getRandomBytes32();
+                const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+                const deploySalt = await tokenFactory.linkedTokenDeploySalt(wallet.address, salt);
+                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+                const gasValue = 1;
+                const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+
+                await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
+
+                await expect(tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, wallet.address, gasValue, { value: gasValue }))
+                    .to.emit(service, 'InterchainTokenIdClaimed')
+                    .withArgs(tokenId, AddressZero, deploySalt)
+                    .to.emit(service, 'TokenManagerDeployed')
+                    .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
+            });
+
             it('Should deploy a lock_unlock token manager', async () => {
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
+                const gasValue = 1;
 
                 await expect(
                     reportGas(
-                        tokenFactory.linkToken(salt, '', token.address, LOCK_UNLOCK, wallet.address, 0),
+                        tokenFactory.linkToken(salt, '', token.address, LOCK_UNLOCK, wallet.address, gasValue, { value: gasValue }),
                         'Call deployTokenManager on source chain',
                     ),
                 )
