@@ -295,24 +295,15 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_REGISTER_TOKEN_METADATA, tokenAddress.toBytes(), decimals);
 
-        string memory destinationAddress = trustedAddress(ITS_HUB_CHAIN_NAME);
-        // Check whether no trusted address was set for ITS Hub chain
-        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
-
         emit TokenMetadataRegistered(tokenAddress, decimals);
 
-        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
-            abi.encodeWithSelector(
-                IGatewayCaller.callContract.selector,
-                ITS_HUB_CHAIN_NAME,
-                destinationAddress,
-                payload,
-                IGatewayCaller.MetadataVersion.CONTRACT_CALL,
-                gasValue
-            )
+        _callContract(
+            ITS_HUB_CHAIN_NAME,
+            trustedAddress(ITS_HUB_CHAIN_NAME),
+            payload,
+            IGatewayCaller.MetadataVersion.CONTRACT_CALL,
+            gasValue
         );
-
-        if (!success) revert GatewayCallFailed(returnData);
     }
 
     /**
@@ -792,14 +783,14 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Calls a contract on a specific destination chain with the given payload
+     * @notice Route the ITS message to the destination chain with the given payload
      * @dev This method also determines whether the ITS call should be routed via the ITS Hub.
      * If the `trustedAddress(destinationChain) == 'hub'`, then the call is wrapped and routed to the ITS Hub destination.
      * @param destinationChain The target chain where the contract will be called.
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _callContract(
+    function _routeMessage(
         string memory destinationChain,
         bytes memory payload,
         IGatewayCaller.MetadataVersion metadataVersion,
@@ -808,6 +799,27 @@ contract InterchainTokenService is
         string memory destinationAddress;
 
         (destinationChain, destinationAddress, payload) = _getCallParams(destinationChain, payload);
+
+        _callContract(destinationChain, destinationAddress, payload, metadataVersion, gasValue);
+    }
+
+    /**
+     * @notice Calls a contract on a destination chain via the gateway caller.
+     * @param destinationChain The chain where the contract will be called.
+     * @param destinationAddress The address of the contract to call.
+     * @param payload The data payload for the transaction.
+     * @param metadataVersion The version of the metadata.
+     * @param gasValue The amount of gas to be paid for the transaction.
+     */
+    function _callContract(
+        string memory destinationChain,
+        string memory destinationAddress,
+        bytes memory payload,
+        IGatewayCaller.MetadataVersion metadataVersion,
+        uint256 gasValue
+    ) internal {
+        // Check whether no trusted address was set for the destination chain
+        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
             abi.encodeWithSelector(
@@ -842,9 +854,6 @@ contract InterchainTokenService is
             destinationChain = ITS_HUB_CHAIN_NAME;
             destinationAddress = trustedAddress(ITS_HUB_CHAIN_NAME);
         }
-
-        // Check whether no trusted address was set for the destination chain
-        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         return (destinationChain, destinationAddress, payload);
     }
@@ -944,7 +953,7 @@ contract InterchainTokenService is
             params
         );
 
-        _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -977,7 +986,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter);
 
-        _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -1120,7 +1129,7 @@ contract InterchainTokenService is
             data
         );
 
-        _callContract(destinationChain, payload, metadataVersion, gasValue);
+        _routeMessage(destinationChain, payload, metadataVersion, gasValue);
     }
 
     /**
