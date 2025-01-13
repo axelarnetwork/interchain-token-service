@@ -307,6 +307,34 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Only to be used by the InterchainTokenFactory to register custom tokens to this chain. Then link token can be used to register those tokens to other chains.
+     * @param salt a unique salt to derive tokenId from.
+     * @param tokenManagerType the type of the token manager to use for the token registration.
+     * @param linkParams the operator for the token.
+     */
+    function registerCustomToken(
+        bytes32 salt,
+        address tokenAddress,
+        TokenManagerType tokenManagerType,
+        bytes calldata linkParams
+    ) external payable whenNotPaused returns (bytes32 tokenId) {
+        // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
+        if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
+
+        if ( msg.sender != interchainTokenFactory ) {
+            revert NotInterchainTokenFactory(msg.sender);
+        }
+
+        address deployer = TOKEN_FACTORY_DEPLOYER;
+
+        tokenId = interchainTokenId(deployer, salt);
+
+        emit InterchainTokenIdClaimed(tokenId, deployer, salt);
+
+        _deployTokenManager(tokenId, tokenManagerType, tokenAddress, linkParams);
+    }
+
+    /**
      * @notice If `destinationChain` is an empty string, this function will register the token address on the current chain.
      * Otherwise, it will link the token address on the destination chain with the token corresponding to the tokenId on the current chain.
      * A token manager is deployed on EVM chains that's responsible for managing the linked token.
@@ -332,27 +360,29 @@ contract InterchainTokenService is
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
+        // Cannot deploy to this chain using linkToken anymore
+        if (bytes(destinationChain).length == 0) {
+            revert NotSupported();
+        }
+
+        // Cannot deploy to this chain using linkToken anymore
+        if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
+
         address deployer = msg.sender;
 
         if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
-        } else if (bytes(destinationChain).length == 0) {
-            // TODO: Only support linking new tokens via ITS factory, to include chain name in token id derivation
-            // Custom token usage needs to be moved to ITS factory tests
-            // revert NotSupported();
         }
 
         tokenId = interchainTokenId(deployer, salt);
 
+        // Make sure that the token manager already exists on this chain.
+        deployedTokenManager(tokenId);
+
         emit InterchainTokenIdClaimed(tokenId, deployer, salt);
 
-        if (bytes(destinationChain).length == 0) {
-            _deployTokenManager(tokenId, tokenManagerType, destinationTokenAddress.toAddress(), linkParams);
-        } else {
-            if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
-
-            _linkToken(tokenId, destinationChain, destinationTokenAddress, tokenManagerType, linkParams, gasValue);
-        }
+        _linkToken(tokenId, destinationChain, destinationTokenAddress, tokenManagerType, linkParams, gasValue);
+        
     }
 
     /**

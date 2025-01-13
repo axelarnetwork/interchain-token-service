@@ -55,6 +55,7 @@ interface IInterchainTokenService is
     error EmptyDestinationAddress();
     error EmptyTokenAddress();
     error NotSupported();
+    error NotInterchainTokenFactory(address sender);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
@@ -180,6 +181,19 @@ interface IInterchainTokenService is
      * @param gasValue The cross-chain gas value for sending the registration message to ITS Hub.
      */
     function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable;
+
+    /**
+     * @notice Only to be used by the InterchainTokenFactory to register custom tokens to this chain. Then link token can be used to register those tokens to other chains.
+     * @param salt a unique salt to derive tokenId from.
+     * @param tokenManagerType the type of the token manager to use for the token registration.
+     * @param linkParams the operator for the token.
+     */
+    function registerCustomToken(
+        bytes32 salt,
+        address tokenAddress,
+        TokenManagerType tokenManagerType,
+        bytes calldata linkParams
+    ) external payable returns (bytes32 tokenId);
 
     /**
      * @notice If `destinationChain` is an empty string, this function will register the token address on the current chain.

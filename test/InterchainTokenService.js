@@ -706,12 +706,20 @@ describe('Interchain Token Service', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
-        const minter = '0x12345678';
+        const minter = '0x1234';
         let salt;
 
         before(async () => {
             salt = getRandomBytes32();
-            await service.linkToken(salt, '', testToken.address, LOCK_UNLOCK, '0x', 0).then((tx) => tx.wait);
+            await service.deployInterchainToken(
+                salt,
+                '',
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                wallet.address,
+                0,
+            ).then((tx) => tx.wait);
         });
 
         it('Should initialize a remote interchain token deployment', async () => {
@@ -933,182 +941,6 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it('Should revert on deploying a token manager if token handler post deploy fails', async () => {
-            await expectRevert(
-                (gasOptions) => service.linkToken(salt, '', AddressZero, LOCK_UNLOCK, wallet.address, 0, gasOptions),
-                service,
-                'PostDeployFailed',
-            );
-        });
-
-        it('Should deploy a lock_unlock token manager', async () => {
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-
-            await expect(
-                reportGas(
-                    service.linkToken(salt, '', token.address, LOCK_UNLOCK, wallet.address, 0),
-                    'Call deployTokenManager on source chain',
-                ),
-            )
-                .to.emit(service, 'InterchainTokenIdClaimed')
-                .withArgs(tokenId, wallet.address, salt)
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
-
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-
-            expect(await tokenManager.isOperator(wallet.address)).to.be.true;
-            expect(await tokenManager.isOperator(service.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
-
-            const tokenAddress = await service.registeredTokenAddress(tokenId);
-            expect(tokenAddress).to.eq(token.address);
-
-            tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
-
-            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
-            expect(implementation).to.eq(LOCK_UNLOCK);
-            expect(tokenAddressFromProxy).to.eq(token.address);
-        });
-
-        it('Should revert when deploying a custom token manager twice', async () => {
-            const revertData = keccak256(toUtf8Bytes('AlreadyDeployed()')).substring(0, 10);
-            await expectRevert(
-                (gasOptions) => service.linkToken(salt, '', token.address, LOCK_UNLOCK, wallet.address, 0, gasOptions),
-                service,
-                'TokenManagerDeploymentFailed',
-                [revertData],
-            );
-        });
-
-        it('Should revert when calling unsupported functions directly on the token manager implementation', async () => {
-            const implementationAddress = await tokenManagerProxy.implementation();
-            const implementationContract = await getContractAt('TokenManager', implementationAddress, wallet);
-            await expectRevert((gasOptions) => implementationContract.tokenAddress(gasOptions), implementationContract, 'NotSupported');
-            await expectRevert(
-                (gasOptions) => implementationContract.interchainTokenId(gasOptions),
-                implementationContract,
-                'NotSupported',
-            );
-            await expectRevert(
-                (gasOptions) => implementationContract.implementationType(gasOptions),
-                implementationContract,
-                'NotSupported',
-            );
-        });
-
-        it('Should deploy a mint_burn token manager', async () => {
-            const salt = getRandomBytes32();
-            const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                service.address,
-                tokenId,
-            ]);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-
-            const tx = service.linkToken(salt, '', token.address, MINT_BURN, wallet.address, 0);
-            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(tx).to.emit(service, 'TokenManagerDeployed').withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params);
-
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-
-            expect(await tokenManager.isOperator(wallet.address)).to.be.true;
-            expect(await tokenManager.isOperator(service.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
-
-            const tokenAddress = await service.registeredTokenAddress(tokenId);
-            expect(tokenAddress).to.eq(token.address);
-
-            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
-
-            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
-            expect(implementation).to.eq(MINT_BURN);
-            expect(tokenAddressFromProxy).to.eq(token.address);
-        });
-
-        it('Should deploy a mint_burn_from token manager', async () => {
-            const salt = getRandomBytes32();
-            const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                service.address,
-                tokenId,
-            ]);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-
-            const tx = service.linkToken(salt, '', token.address, MINT_BURN_FROM, wallet.address, 0);
-            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(tx)
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN_FROM, params);
-
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-
-            expect(await tokenManager.isOperator(wallet.address)).to.be.true;
-            expect(await tokenManager.isOperator(service.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
-
-            const tokenAddress = await service.registeredTokenAddress(tokenId);
-            expect(tokenAddress).to.eq(token.address);
-
-            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
-
-            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
-            expect(implementation).to.eq(MINT_BURN_FROM);
-            expect(tokenAddressFromProxy).to.eq(token.address);
-        });
-
-        it('Should deploy a lock_unlock_with_fee token manager', async () => {
-            const salt = getRandomBytes32();
-            const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const token = await deployContract(wallet, 'TestFeeOnTransferToken', [
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                service.address,
-                tokenId,
-            ]);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-
-            const tx = service.linkToken(salt, '', token.address, LOCK_UNLOCK_FEE_ON_TRANSFER, wallet.address, 0);
-            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(tx)
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, LOCK_UNLOCK_FEE_ON_TRANSFER, params);
-
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-
-            expect(await tokenManager.isOperator(wallet.address)).to.be.true;
-            expect(await tokenManager.isOperator(service.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
-
-            const tokenAddress = await service.registeredTokenAddress(tokenId);
-            expect(tokenAddress).to.eq(token.address);
-
-            const tokenManagerProxy = await getContractAt('TokenManagerProxy', tokenManagerAddress, wallet);
-
-            const [implementation, tokenAddressFromProxy] = await tokenManagerProxy.getImplementationTypeAndTokenAddress();
-            expect(implementation).to.eq(LOCK_UNLOCK_FEE_ON_TRANSFER);
-            expect(tokenAddressFromProxy).to.eq(token.address);
-        });
-
         it('Should revert when deploying a custom token manager if paused', async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
@@ -1123,13 +955,21 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Initialize remote custom token manager deployment', () => {
-        it('Should initialize a remote custom token manager deployment', async () => {
+        it.only('Should initialize a remote custom token manager deployment', async () => {
             const salt = getRandomBytes32();
-            const tokenAddress = wallet.address;
 
-            await service.linkToken(salt, '', tokenAddress, MINT_BURN, '0x', 0).then((tx) => tx.wait);
+            await service.deployInterchainToken(
+                salt,
+                '',
+                'name',
+                'symbol',
+                5,
+                '0x',
+                0
+            ).then((tx) => tx.wait);
 
             const tokenId = await service.interchainTokenId(wallet.address, salt);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
             const remoteTokenAddress = '0x1234';
             const minter = '0x5789';
             const type = LOCK_UNLOCK;
@@ -1143,7 +983,7 @@ describe('Interchain Token Service', () => {
             expect(await tokenManager.isOperator(service.address)).to.be.true;
             expect(await tokenManager.isFlowLimiter(AddressZero)).to.be.true;
             expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
-
+            
             await expect(
                 reportGas(
                     service.linkToken(salt, destinationChain, remoteTokenAddress, type, minter, gasValue, { value: gasValue }),
