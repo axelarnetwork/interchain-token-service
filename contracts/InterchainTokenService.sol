@@ -80,7 +80,7 @@ contract InterchainTokenService is
 
     uint256 private constant MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
     uint256 private constant MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
-    //uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
+    // uint256 private constant MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
     uint256 private constant MESSAGE_TYPE_SEND_TO_HUB = 3;
     uint256 private constant MESSAGE_TYPE_RECEIVE_FROM_HUB = 4;
     uint256 private constant MESSAGE_TYPE_LINK_TOKEN = 5;
@@ -284,51 +284,57 @@ contract InterchainTokenService is
 
     /**
      * @notice Registers metadata for a token on the ITS Hub. This metadata is used for scaling linked tokens.
+     * The token metadata must be registered before linkToken can be called for the corresponding token.
      * @param tokenAddress The address of the token.
-     * @param gasValue The gas value for deployment.
+     * @param gasValue The cross-chain gas value for sending the registration message to ITS Hub.
      */
     function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable {
-        if (tokenAddress == address(0)) revert ZeroAddress();
+        if (tokenAddress == address(0)) revert EmptyTokenAddress();
 
         uint8 decimals = IERC20Named(tokenAddress).decimals();
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_REGISTER_TOKEN_METADATA, tokenAddress.toBytes(), decimals);
 
-        string memory destinationAddress = trustedAddress(ITS_HUB_CHAIN_NAME);
-        // Check whether no trusted address was set for ITS Hub chain
-        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
+        emit TokenMetadataRegistered(tokenAddress, decimals);
 
-        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
-            abi.encodeWithSelector(
-                IGatewayCaller.callContract.selector,
-                ITS_HUB_CHAIN_NAME,
-                destinationAddress,
-                payload,
-                IGatewayCaller.MetadataVersion.CONTRACT_CALL,
-                gasValue
-            )
+        _callContract(
+            ITS_HUB_CHAIN_NAME,
+            trustedAddress(ITS_HUB_CHAIN_NAME),
+            payload,
+            IGatewayCaller.MetadataVersion.CONTRACT_CALL,
+            gasValue
         );
-
-        if (!success) revert GatewayCallFailed(returnData);
     }
 
+    /**
+     * @notice If `destinationChain` is an empty string, this function will register the token address on the current chain.
+     * Otherwise, it will link the token address on the destination chain with the token corresponding to the tokenId on the current chain.
+     * A token manager is deployed on EVM chains that's responsible for managing the linked token.
+     * @dev This function replaces the prior `deployTokenManager` function.
+     * @param salt A unique identifier to allow for multiple tokens registered per deployer.
+     * @param destinationChain The chain to link the token to. Pass an empty string for this chain.
+     * @param destinationTokenAddress The token address to link, as bytes.
+     * @param tokenManagerType The type of the token manager to use to send and receive tokens.
+     * @param linkParams Additional parameteres to use to link the token. Fow not it is just the address of the operator.
+     * @param gasValue Pass a non-zero value only for remote linking, which should be the gas to use to pay for the contract call.
+     * @return tokenId The tokenId associated with the token manager.
+     */
     function linkToken(
         bytes32 salt,
         string calldata destinationChain,
-        bytes memory destinationTokenAddress,
+        bytes calldata destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bytes memory linkParams,
+        bytes calldata linkParams,
         uint256 gasValue
     ) public payable whenNotPaused returns (bytes32 tokenId) {
-        if (destinationTokenAddress.length == 0) revert EmptyDestinationAddress();
+        if (destinationTokenAddress.length == 0) revert EmptyTokenAddress();
 
-        // TODO: Should we only allow mint/burn or lock/unlock for remote linking for simplicity? Makes it easier for external chains
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
         address deployer = msg.sender;
 
-        if (msg.sender == interchainTokenFactory) {
+        if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
         } else if (bytes(destinationChain).length == 0) {
             // TODO: Only support linking new tokens via ITS factory, to include chain name in token id derivation
@@ -777,14 +783,14 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Calls a contract on a specific destination chain with the given payload
+     * @notice Route the ITS message to the destination chain with the given payload
      * @dev This method also determines whether the ITS call should be routed via the ITS Hub.
      * If the `trustedAddress(destinationChain) == 'hub'`, then the call is wrapped and routed to the ITS Hub destination.
      * @param destinationChain The target chain where the contract will be called.
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _callContract(
+    function _routeMessage(
         string memory destinationChain,
         bytes memory payload,
         IGatewayCaller.MetadataVersion metadataVersion,
@@ -793,6 +799,27 @@ contract InterchainTokenService is
         string memory destinationAddress;
 
         (destinationChain, destinationAddress, payload) = _getCallParams(destinationChain, payload);
+
+        _callContract(destinationChain, destinationAddress, payload, metadataVersion, gasValue);
+    }
+
+    /**
+     * @notice Calls a contract on a destination chain via the gateway caller.
+     * @param destinationChain The chain where the contract will be called.
+     * @param destinationAddress The address of the contract to call.
+     * @param payload The data payload for the transaction.
+     * @param metadataVersion The version of the metadata.
+     * @param gasValue The amount of gas to be paid for the transaction.
+     */
+    function _callContract(
+        string memory destinationChain,
+        string memory destinationAddress,
+        bytes memory payload,
+        IGatewayCaller.MetadataVersion metadataVersion,
+        uint256 gasValue
+    ) internal {
+        // Check whether no trusted address was set for the destination chain
+        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
             abi.encodeWithSelector(
@@ -827,9 +854,6 @@ contract InterchainTokenService is
             destinationChain = ITS_HUB_CHAIN_NAME;
             destinationAddress = trustedAddress(ITS_HUB_CHAIN_NAME);
         }
-
-        // Check whether no trusted address was set for the destination chain
-        if (bytes(destinationAddress).length == 0) revert UntrustedChain();
 
         return (destinationChain, destinationAddress, payload);
     }
@@ -890,9 +914,6 @@ contract InterchainTokenService is
 
             // Get message type of the inner ITS message
             messageType = _getMessageType(payload);
-
-            // Prevent link token to be usable on ITS HUB.
-            if (messageType == MESSAGE_TYPE_LINK_TOKEN) revert NotSupported();
         } else {
             // Prevent receiving a direct message from the ITS Hub. This is not supported yet.
             if (keccak256(abi.encodePacked(sourceChain)) == ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();
@@ -913,9 +934,9 @@ contract InterchainTokenService is
     function _linkToken(
         bytes32 tokenId,
         string calldata destinationChain,
-        bytes memory destinationTokenAddress,
+        bytes calldata destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bytes memory params,
+        bytes calldata params,
         uint256 gasValue
     ) internal {
         // slither-disable-next-line unused-return
@@ -932,7 +953,7 @@ contract InterchainTokenService is
             params
         );
 
-        _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -965,10 +986,10 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter);
 
-        _callContract(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
-    /*
+    /**
      * @notice Deploys a token manager.
      * @param tokenId The ID of the token.
      * @param tokenManagerType The type of the token manager to be deployed.
@@ -1108,7 +1129,7 @@ contract InterchainTokenService is
             data
         );
 
-        _callContract(destinationChain, payload, metadataVersion, gasValue);
+        _routeMessage(destinationChain, payload, metadataVersion, gasValue);
     }
 
     /**

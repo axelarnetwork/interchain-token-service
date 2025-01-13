@@ -405,6 +405,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes32 deploySalt = canonicalInterchainTokenDeploySalt(tokenAddress);
         string memory currentChain = '';
+        // No custom operator is set for canonical token registration
+        bytes memory linkParams = '';
         uint256 gasValue = 0;
 
         // Ensure that the ERC20 token has metadata before registering it
@@ -416,7 +418,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             currentChain,
             tokenAddress.toBytes(),
             TokenManagerType.LOCK_UNLOCK,
-            '',
+            linkParams,
             gasValue
         );
     }
