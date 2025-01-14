@@ -43,6 +43,8 @@ describe('Interchain Token Service Full Flow', () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
         ({ service, gateway, gasService, tokenFactory } = await deployAll(wallet, chainName, otherChains));
+
+        await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
     });
 
     /**
@@ -337,18 +339,17 @@ describe('Interchain Token Service Full Flow', () => {
      * - Transfer tokens via ITS between chains
      */
     describe('Pre-existing Token as Mint/Burn', () => {
-        // TODO: Fix this test
-        return;
         let token;
         const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
+        const registrationGasValue = 9012;
         const tokenCap = 1e9;
-        const salt = keccak256('0x697858');
+        const salt = getRandomBytes32();
 
         before(async () => {
             token = await deployContract(wallet, 'TestMintableBurnableERC20', [name, symbol, decimals]);
 
-            tokenId = await service.interchainTokenId(wallet.address, salt);
+            tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
             await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
         });
 
@@ -357,23 +358,24 @@ describe('Interchain Token Service Full Flow', () => {
             const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
             const params = await tokenManagerImplementation.params(wallet.address, token.address);
-            let tx = await service.populateTransaction.linkToken(salt, '', token.address, MINT_BURN, wallet.address, 0);
-
+            let tx = await tokenFactory.populateTransaction.registerCustomToken(salt, token.address, MINT_BURN, wallet.address, registrationGasValue);
             const calls = [tx.data];
-            let value = 0;
+            let value = registrationGasValue;
 
             for (const i in otherChains) {
                 // This should be replaced with the existing token address on each chain being linked
                 const remoteTokenAddress = token.address;
 
-                tx = await service.populateTransaction.linkToken(
+                tx = await tokenFactory.populateTransaction.linkToken(
                     salt,
                     otherChains[i],
                     remoteTokenAddress,
                     MINT_BURN,
                     wallet.address,
                     gasValues[i],
+                    {value: gasValues[i]}
                 );
+
                 calls.push(tx.data);
                 value += gasValues[i];
             }
@@ -384,7 +386,7 @@ describe('Interchain Token Service Full Flow', () => {
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            await expect(service.multicall(calls, { value }))
+            await expect(tokenFactory.multicall(calls, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
                 .and.to.emit(service, 'LinkTokenStarted')
