@@ -11,7 +11,13 @@ const {
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const { isHardhat, waitFor, getRandomBytes32, getPayloadAndProposalHash, getContractJSON } = require('./utils');
-const { deployContract, deployMockGateway, deployGasService, deployInterchainTokenService, deployInterchainTokenFactory } = require('../scripts/deploy');
+const {
+    deployContract,
+    deployMockGateway,
+    deployGasService,
+    deployInterchainTokenService,
+    deployInterchainTokenFactory,
+} = require('../scripts/deploy');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
@@ -108,7 +114,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
 
         await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
 
-        await service.transferOwnership(axelarServiceGovernance.address).then((tx) => tx.wait)
+        await service.transferOwnership(axelarServiceGovernance.address).then((tx) => tx.wait);
     });
 
     it('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {

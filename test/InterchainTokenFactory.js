@@ -655,7 +655,8 @@ describe('InterchainTokenFactory', () => {
 
             it('Should revert on deploying a local token manager with interchain token manager type', async () => {
                 await expectRevert(
-                    (gasOptions) => tokenFactory.registerCustomToken(salt, token.address, NATIVE_INTERCHAIN_TOKEN, wallet.address, 0, gasOptions),
+                    (gasOptions) =>
+                        tokenFactory.registerCustomToken(salt, token.address, NATIVE_INTERCHAIN_TOKEN, wallet.address, 0, gasOptions),
                     service,
                     'CannotDeploy',
                     [NATIVE_INTERCHAIN_TOKEN],
@@ -922,13 +923,15 @@ describe('InterchainTokenFactory', () => {
                 ]);
 
                 tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
-                await tokenFactory.registerCustomToken(salt, token.address, tokenManagerType, operator, gasValue, {value: gasValue}).then((tx) => tx.wait);
+                await tokenFactory
+                    .registerCustomToken(salt, token.address, tokenManagerType, operator, gasValue, { value: gasValue })
+                    .then((tx) => tx.wait);
                 await token.setTokenId(tokenId).then((tx) => tx.wait);
             }
 
             it('Should initialize a remote custom token manager deployment', async () => {
                 await deployAndRegisterToken();
-    
+
                 const remoteTokenAddress = '0x1234';
                 const minter = '0x5789';
                 const type = LOCK_UNLOCK;
@@ -936,12 +939,13 @@ describe('InterchainTokenFactory', () => {
                     ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
                     [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, token.address, remoteTokenAddress, minter],
                 );
-    
+
                 const tokenManager = await getContractAt('TokenManager', await service.deployedTokenManager(tokenId), wallet);
                 expect(await tokenManager.isOperator(AddressZero)).to.be.true;
                 expect(await tokenManager.isOperator(service.address)).to.be.true;
                 expect(await tokenManager.isFlowLimiter(AddressZero)).to.be.true;
                 expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
+                
                 await expect(
                     reportGas(
                         tokenFactory.linkToken(salt, destinationChain, remoteTokenAddress, type, minter, gasValue, { value: gasValue }),
@@ -964,27 +968,27 @@ describe('InterchainTokenFactory', () => {
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
             });
-    
+
             it('Should revert on a remote custom token manager deployment if the token manager does does not exist', async () => {
                 const salt = getRandomBytes32();
                 const tokenId = await service.interchainTokenId(wallet.address, salt);
                 const tokenAddress = '0x1234';
                 const minter = '0x5678';
                 const type = LOCK_UNLOCK;
-    
+
                 await expect(
                     tokenFactory.linkToken(salt, destinationChain, tokenAddress, type, minter, gasValue, { value: gasValue }),
                 ).to.be.revertedWithCustomError(service, 'TokenManagerDoesNotExist', [tokenId]);
             });
-    
+
             it('Should revert on remote custom token manager deployment if paused', async () => {
                 await service.setPauseStatus(true).then((tx) => tx.wait);
-    
+
                 const salt = getRandomBytes32();
                 const tokenAddress = '0x1234';
                 const minter = '0x5678';
                 const type = LOCK_UNLOCK;
-    
+
                 await expectRevert(
                     (gasOptions) =>
                         tokenFactory.linkToken(salt, destinationChain, tokenAddress, type, minter, gasValue, {
@@ -994,7 +998,7 @@ describe('InterchainTokenFactory', () => {
                     service,
                     'Pause',
                 );
-    
+
                 await service.setPauseStatus(false).then((tx) => tx.wait);
             });
         });

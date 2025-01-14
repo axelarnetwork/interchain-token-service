@@ -179,7 +179,6 @@ describe('Interchain Token Service', () => {
             const sourceTokenAddress = '0x1234';
             const minter = wallet.address;
 
-
             const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
                 tokenName,
                 tokenSymbol,
@@ -229,7 +228,7 @@ describe('Interchain Token Service', () => {
             [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter, operator],
         );
         const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-        
+
         await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
             .to.emit(service, 'InterchainTokenDeployed')
             .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
@@ -889,7 +888,6 @@ describe('Interchain Token Service', () => {
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
         let token, salt, tokenId;
-        let tokenManagerProxy;
 
         before(async () => {
             salt = getRandomBytes32();
@@ -956,12 +954,10 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Initialize remote custom token manager deployment', () => {
-        let salt, tokenId, sourceAddress;
-        before(async() => {
-            sourceAddress = service.address;
+        let salt, tokenId;
+        before(async () => {
             [, , tokenId, salt] = await deployFunctions.lockUnlock(service, 'Name', 'symbol', 6);
-            
-        })
+        });
         it('Should initialize a remote custom token manager deployment', async () => {
             const tokenAddress = await service.registeredTokenAddress(tokenId);
             const remoteTokenAddress = '0x1234';
@@ -971,7 +967,7 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
                 [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, tokenAddress, remoteTokenAddress, minter],
             );
-            
+
             await expect(
                 reportGas(
                     service.linkToken(salt, destinationChain, remoteTokenAddress, type, minter, gasValue, { value: gasValue }),
@@ -979,7 +975,7 @@ describe('Interchain Token Service', () => {
                 ),
             )
                 .to.emit(service, 'InterchainTokenIdClaimed')
-                //.withArgs(tokenId, wallet.address, salt)
+                .withArgs(tokenId, wallet.address, salt)
                 .to.emit(service, 'LinkTokenStarted')
                 .withArgs(
                     tokenId,

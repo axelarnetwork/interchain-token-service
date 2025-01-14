@@ -321,7 +321,7 @@ contract InterchainTokenService is
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
-        if ( msg.sender != interchainTokenFactory ) {
+        if (msg.sender != interchainTokenFactory) {
             revert NotInterchainTokenFactory(msg.sender);
         }
 
@@ -376,13 +376,22 @@ contract InterchainTokenService is
 
         tokenId = interchainTokenId(deployer, salt);
 
-        // Make sure that the token manager already exists on this chain.
-        deployedTokenManager(tokenId);
-
         emit InterchainTokenIdClaimed(tokenId, deployer, salt);
 
-        _linkToken(tokenId, destinationChain, destinationTokenAddress, tokenManagerType, linkParams, gasValue);
-        
+        bytes memory sourceTokenAddress = registeredTokenAddress(tokenId).toBytes();
+
+        emit LinkTokenStarted(tokenId, destinationChain, sourceTokenAddress, destinationTokenAddress, tokenManagerType, linkParams);
+
+        bytes memory payload = abi.encode(
+            MESSAGE_TYPE_LINK_TOKEN,
+            tokenId,
+            tokenManagerType,
+            sourceTokenAddress,
+            destinationTokenAddress,
+            linkParams
+        );
+
+        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -414,9 +423,6 @@ contract InterchainTokenService is
 
         if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
-        } else if (trustedAddressHash(chainName()) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
-            // Currently, deployments directly on ITS contract (instead of ITS Factory) are restricted for ITS contracts deployed on Amplifier, i.e registered with the Hub
-            revert NotSupported();
         } else if (bytes(destinationChain).length == 0) {
             // Only the factory can deploy tokens to this chain.
             revert NotSupported();
@@ -432,9 +438,6 @@ contract InterchainTokenService is
             _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, tokenAddress, minter);
         } else {
             if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
-
-            // Make sure that the token manager already exists on this chain.
-            deployedTokenManager(tokenId);
 
             _deployRemoteInterchainToken(tokenId, name, symbol, decimals, minter, destinationChain, gasValue);
         }
@@ -956,40 +959,6 @@ contract InterchainTokenService is
         }
 
         return (messageType, originalSourceChain, payload);
-    }
-
-    /**
-     * @notice Deploys a token manager on a destination chain.
-     * @param tokenId The ID of the token.
-     * @param destinationChain The chain where the token manager will be deployed.
-     * @param destinationTokenAddress The address of the token on the destination chain.
-     * @param tokenManagerType The type of token manager to be deployed.
-     * @param params Additional parameters for the token linking.
-     * @param gasValue The amount of gas to be paid for the transaction.
-     */
-    function _linkToken(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationTokenAddress,
-        TokenManagerType tokenManagerType,
-        bytes calldata params,
-        uint256 gasValue
-    ) internal {
-        // slither-disable-next-line unused-return
-        bytes memory sourceTokenAddress = registeredTokenAddress(tokenId).toBytes();
-
-        emit LinkTokenStarted(tokenId, destinationChain, sourceTokenAddress, destinationTokenAddress, tokenManagerType, params);
-
-        bytes memory payload = abi.encode(
-            MESSAGE_TYPE_LINK_TOKEN,
-            tokenId,
-            tokenManagerType,
-            sourceTokenAddress,
-            destinationTokenAddress,
-            params
-        );
-
-        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**

@@ -410,12 +410,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         // slither-disable-next-line unused-return
         _getTokenMetadata(tokenAddress);
 
-        tokenId = interchainTokenService.registerCustomToken(
-            deploySalt,
-            tokenAddress,
-            TokenManagerType.LOCK_UNLOCK,
-            linkParams
-        );
+        tokenId = interchainTokenService.registerCustomToken(deploySalt, tokenAddress, TokenManagerType.LOCK_UNLOCK, linkParams);
     }
 
     /**
