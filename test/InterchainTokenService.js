@@ -626,6 +626,20 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should revert when deploying a remote interchain token to self using an empty destination chain as not the factory', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const salt = getRandomBytes32();
+
+            await expectRevert(
+                (gasOptions) =>
+                    serviceTest.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
+                serviceTest,
+                'NotSupported',
+            );
+        });
+
         it('Should revert when deploying a remote token manager to self', async () => {
             const salt = getRandomBytes32();
 
@@ -901,6 +915,15 @@ describe('Interchain Token Service', () => {
             ]);
         });
 
+        it('Should revert when calling registerCustomToken as not the factory', async () => {
+            await expectRevert(
+                (gasOptions) => service.registerCustomToken(salt, AddressZero, LOCK_UNLOCK, '0x', gasOptions),
+                service,
+                'NotInterchainTokenFactory',
+                [wallet.address],
+            );
+        });
+
         it('Should revert on deploying an invalid token manager', async () => {
             await expectRevert((gasOptions) => service.linkToken(salt, '', token.address, 6, wallet.address, 0, gasOptions));
         });
@@ -919,6 +942,14 @@ describe('Interchain Token Service', () => {
                 service,
                 'CannotDeploy',
                 [NATIVE_INTERCHAIN_TOKEN],
+            );
+        });
+
+        it('Should revert on deploying a local token manager with invalid params', async () => {
+            await expectRevert(
+                (gasOptions) => service.linkToken(salt, '', token.address, LOCK_UNLOCK, '0x12', 0, gasOptions),
+                service,
+                'NotSupported',
             );
         });
 
