@@ -184,9 +184,9 @@ interface IInterchainTokenService is
 
     /**
      * @notice Only to be used by the InterchainTokenFactory to register custom tokens to this chain. Then link token can be used to register those tokens to other chains.
-     * @param salt a unique salt to derive tokenId from.
-     * @param tokenManagerType the type of the token manager to use for the token registration.
-     * @param linkParams the operator for the token.
+     * @param salt A unique salt to derive tokenId from.
+     * @param tokenManagerType The type of the token manager to use for the token registration.
+     * @param linkParams The operator for the token.
      */
     function registerCustomToken(
         bytes32 salt,
