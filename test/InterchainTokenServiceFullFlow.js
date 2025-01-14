@@ -358,7 +358,13 @@ describe('Interchain Token Service Full Flow', () => {
             const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
             const params = await tokenManagerImplementation.params(wallet.address, token.address);
-            let tx = await tokenFactory.populateTransaction.registerCustomToken(salt, token.address, MINT_BURN, wallet.address, registrationGasValue);
+            let tx = await tokenFactory.populateTransaction.registerCustomToken(
+                salt,
+                token.address,
+                MINT_BURN,
+                wallet.address,
+                registrationGasValue,
+            );
             const calls = [tx.data];
             let value = registrationGasValue;
 
@@ -373,7 +379,7 @@ describe('Interchain Token Service Full Flow', () => {
                     MINT_BURN,
                     wallet.address,
                     gasValues[i],
-                    {value: gasValues[i]}
+                    { value: gasValues[i] },
                 );
 
                 calls.push(tx.data);

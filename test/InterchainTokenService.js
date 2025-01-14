@@ -634,16 +634,7 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    serviceTest.deployInterchainToken(
-                        salt,
-                        '',
-                        tokenName,
-                        tokenSymbol,
-                        tokenDecimals,
-                        wallet.address,
-                        0,
-                        gasOptions,
-                    ),
+                    serviceTest.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
                 serviceTest,
                 'NotSupported',
             );
@@ -929,7 +920,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) => service.registerCustomToken(salt, AddressZero, LOCK_UNLOCK, '0x', gasOptions),
                 service,
                 'NotInterchainTokenFactory',
-                [ wallet.address ],
+                [wallet.address],
             );
         });
 

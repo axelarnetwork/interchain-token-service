@@ -945,7 +945,7 @@ describe('InterchainTokenFactory', () => {
                 expect(await tokenManager.isOperator(service.address)).to.be.true;
                 expect(await tokenManager.isFlowLimiter(AddressZero)).to.be.true;
                 expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
-                
+
                 await expect(
                     reportGas(
                         tokenFactory.linkToken(salt, destinationChain, remoteTokenAddress, type, minter, gasValue, { value: gasValue }),
