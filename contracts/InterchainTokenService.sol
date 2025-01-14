@@ -517,6 +517,8 @@ contract InterchainTokenService is
      * @param destinationAddress The address on the destination chain to send the tokens to.
      * @param amount The amount of tokens to be transferred.
      * @param metadata Optional metadata for the call for additional effects (such as calling a destination contract).
+     * The first 4 bytes of the metadata are the metadata version: use 0x00000000 for a regular contract call and 0x00000001 for an express call
+     * If there are no additional bytes the tokens are transfered to the destination. If there are additional bytes a contract call is invoced alongside the token transfer.
      */
     function interchainTransfer(
         bytes32 tokenId,
