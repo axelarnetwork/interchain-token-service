@@ -2838,11 +2838,12 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive token only if it does not trigger the mint limit', async () => {
-            const tokenFlowLimit = await service.flowLimit(tokenId);
+            const tokenManager = await getContractAt('ITokenManager', await service.deployedTokenManager(tokenId), wallet);
+            const tokenFlowLimit = await tokenManager.flowLimit();
             expect(tokenFlowLimit).to.eq(flowLimit);
 
-            let flowIn = await service.flowInAmount(tokenId);
-            let flowOut = await service.flowOutAmount(tokenId);
+            let flowIn = await tokenManager.flowInAmount();
+            let flowOut = await tokenManager.flowOutAmount();
 
             expect(flowIn).to.eq(0);
             expect(flowOut).to.eq(sendAmount);
@@ -2859,8 +2860,8 @@ describe('Interchain Token Service', () => {
 
             await receiveToken(sendAmount).then((tx) => tx.wait);
 
-            flowIn = await service.flowInAmount(tokenId);
-            flowOut = await service.flowOutAmount(tokenId);
+            flowIn = await tokenManager.flowInAmount();
+            flowOut = await tokenManager.flowOutAmount();
 
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(sendAmount);
@@ -2878,11 +2879,12 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert if the flow limit overflows', async () => {
-            const tokenFlowLimit = await service.flowLimit(tokenId);
+            const tokenManager = await getContractAt('ITokenManager', await service.deployedTokenManager(tokenId), wallet);
+            const tokenFlowLimit = await tokenManager.flowLimit();
             expect(tokenFlowLimit).to.eq(flowLimit);
 
-            const flowIn = await service.flowInAmount(tokenId);
-            const flowOut = await service.flowOutAmount(tokenId);
+            const flowIn = await tokenManager.flowInAmount();
+            const flowOut = await tokenManager.flowOutAmount();
 
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(sendAmount);
@@ -2912,11 +2914,12 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert if the flow addition overflows', async () => {
-            const tokenFlowLimit = await service.flowLimit(tokenId);
+            const tokenManager = await getContractAt('ITokenManager', await service.deployedTokenManager(tokenId), wallet);
+            const tokenFlowLimit = await tokenManager.flowLimit();
             expect(tokenFlowLimit).to.eq(MaxUint256);
 
-            const flowIn = await service.flowInAmount(tokenId);
-            const flowOut = await service.flowOutAmount(tokenId);
+            const flowIn = await tokenManager.flowInAmount();
+            const flowOut = await tokenManager.flowOutAmount();
 
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(sendAmount);
