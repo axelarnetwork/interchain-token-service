@@ -628,6 +628,74 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
         });
 
+        it('Should revert when deploying a remote interchain token to self', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const salt = getRandomBytes32();
+
+            await tokenFactory.deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, 0, wallet.address).then((tx) => tx.wait);
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
+                        salt,
+                        wallet.address,
+                        chainName,
+                        0,
+                        gasOptions,
+                    ),
+                service,
+                'CannotDeployRemotelyToSelf',
+            );
+        });
+
+        it('Should revert on remote interchain token deployment with invalid token symbol', async () => {
+            const salt = getRandomBytes32();
+            const tokenName = 'name';
+            const tokenDecimals = 9;
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.deployInterchainToken(salt, tokenName, '', tokenDecimals, 0, minter, gasOptions),
+                service,
+                'EmptyTokenSymbol',
+            );
+        });
+
+        it('Should revert on remote interchain token deployment if destination chain is not trusted', async () => {
+            const tokenName = 'Token Name';
+            const tokenSymbol = 'TN';
+            const tokenDecimals = 13;
+            const salt = getRandomBytes32();
+
+            await tokenFactory.deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, 0, wallet.address).then((tx) => tx.wait);
+
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
+                        salt,
+                        wallet.address,
+                        'untrusted chain',
+                        0,
+                        gasOptions,
+                    ),
+                service,
+                'UntrustedChain',
+            );
+        });
+
+        it('Should revert on remote interchain token deployment with invalid token name', async () => {
+            const salt = getRandomBytes32();
+            const tokenSymbol = 'symbol';
+            const tokenDecimals = 9;
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.deployInterchainToken(salt, '', tokenSymbol, tokenDecimals, 0, minter, gasOptions),
+                service,
+                'EmptyTokenName',
+            );
+        });
+
         describe('Custom Token Manager Deployment', () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';

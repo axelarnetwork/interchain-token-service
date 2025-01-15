@@ -175,6 +175,15 @@ contract InterchainTokenService is
         _;
     }
 
+    /**
+     * @notice This modifier is used to ensure that only a the token factory can call a function.
+     */
+    modifier onlyTokenFactory() {
+        if (msg.sender != interchainTokenFactory) revert NotInterchainTokenFactory(msg.sender);
+
+        _;
+    }
+
     /*****\
     GETTERS
     \*****/
@@ -290,13 +299,9 @@ contract InterchainTokenService is
         address tokenAddress,
         TokenManagerType tokenManagerType,
         bytes calldata linkParams
-    ) external payable whenNotPaused returns (bytes32 tokenId) {
+    ) external payable whenNotPaused onlyTokenFactory returns (bytes32 tokenId) {
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
-
-        if (msg.sender != interchainTokenFactory) {
-            revert NotInterchainTokenFactory(msg.sender);
-        }
 
         address deployer = TOKEN_FACTORY_DEPLOYER;
 
@@ -391,15 +396,8 @@ contract InterchainTokenService is
         uint8 decimals,
         bytes memory minter,
         uint256 gasValue
-    ) external payable whenNotPaused returns (bytes32 tokenId) {
-        address deployer = msg.sender;
-
-        if (deployer == interchainTokenFactory) {
-            deployer = TOKEN_FACTORY_DEPLOYER;
-        } else if (bytes(destinationChain).length == 0) {
-            // Only the factory can deploy tokens to this chain.
-            revert NotSupported();
-        }
+    ) external payable whenNotPaused onlyTokenFactory returns (bytes32 tokenId) {
+        address deployer = TOKEN_FACTORY_DEPLOYER;
 
         tokenId = interchainTokenId(deployer, salt);
 

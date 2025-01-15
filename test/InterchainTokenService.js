@@ -603,30 +603,7 @@ describe('Interchain Token Service', () => {
             await deployContract(wallet, 'TokenManagerProxy', [service.address, LOCK_UNLOCK, tokenId, validParams]);
         });
 
-        it('Should revert when deploying a remote interchain token to self', async () => {
-            const tokenName = 'Token Name';
-            const tokenSymbol = 'TN';
-            const tokenDecimals = 13;
-            const salt = getRandomBytes32();
-
-            await expectRevert(
-                (gasOptions) =>
-                    serviceTest.deployInterchainToken(
-                        salt,
-                        chainName,
-                        tokenName,
-                        tokenSymbol,
-                        tokenDecimals,
-                        wallet.address,
-                        0,
-                        gasOptions,
-                    ),
-                serviceTest,
-                'CannotDeployRemotelyToSelf',
-            );
-        });
-
-        it('Should revert when deploying a remote interchain token to self using an empty destination chain as not the factory', async () => {
+        it('Should revert when deploying a remote interchain token to self as not the factory', async () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
             const tokenDecimals = 13;
@@ -636,7 +613,7 @@ describe('Interchain Token Service', () => {
                 (gasOptions) =>
                     serviceTest.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
                 serviceTest,
-                'NotSupported',
+                'NotInterchainTokenFactory',
             );
         });
 
@@ -734,67 +711,6 @@ describe('Interchain Token Service', () => {
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
-        });
-
-        it('Should initialize a remote interchain token deployment', async () => {
-            const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter],
-            );
-
-            await expect(
-                reportGas(
-                    service.deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue, {
-                        value: gasValue,
-                    }),
-                    'Send deployInterchainToken to remote chain',
-                ),
-            )
-                .to.emit(service, 'InterchainTokenIdClaimed')
-                .withArgs(tokenId, wallet.address, salt)
-                .to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, tokenName, tokenSymbol, tokenDecimals, minter, destinationChain)
-                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
-                .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
-        });
-
-        it('Should revert on remote interchain token deployment if destination chain is not trusted', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    service.deployInterchainToken(salt, 'untrusted chain', tokenName, tokenSymbol, tokenDecimals, minter, gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
-                service,
-                'UntrustedChain',
-            );
-        });
-
-        it('Should revert on remote interchain token deployment with invalid token name', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    service.deployInterchainToken(salt, destinationChain, '', tokenSymbol, tokenDecimals, minter, gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
-                service,
-                'EmptyTokenName',
-            );
-        });
-
-        it('Should revert on remote interchain token deployment with invalid token symbol', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    service.deployInterchainToken(salt, destinationChain, tokenName, '', tokenDecimals, minter, gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
-                service,
-                'EmptyTokenSymbol',
-            );
         });
 
         it('Should revert on remote interchain token deployment if paused', async () => {
