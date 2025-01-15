@@ -1445,8 +1445,6 @@ describe('Interchain Token Service', () => {
     describe('Gateway call', () => {
         const amount = 1234;
         const destAddress = '0x5678';
-        const data = '0x1234';
-        let tokenId;
         let serviceTestGatewayCaller;
 
         before(async () => {
@@ -1653,7 +1651,6 @@ describe('Interchain Token Service', () => {
     describe('Send Token With Data', () => {
         const amount = 1234;
         const destAddress = '0x5678';
-        const data = '0x1234';
         let sourceAddress;
         let token, tokenManager, tokenId;
 
