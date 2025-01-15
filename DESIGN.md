@@ -41,6 +41,8 @@ Most current bridge designs aim to transfer a pre-existing, popular token to dif
 
 We designed an [interface](./contracts/interfaces/IInterchainTokenStandard.sol) along with an [example implementation](./contracts/interchain-token/InterchainTokenStandard.sol) of an ERC20 that can use the `InterchainTokenService` internally. This has the main benefit that for `TokenManagers` that require user approval (Lock/Unlock, Lock/Unlock Fee and Mint/BurnFrom), the token can provide this approval within the same call, providing better UX for users, and saving them some gas.
 
+Interchain Tokens function the same as mint/burn tokens do: The `tokenManager` that manages them will ask them to `burn` tokens on the sending chain, and to `mint` tokens on the receiving chain.
+
 ## Interchain Communication Spec
 
 The messages going through the Axelar Network between `InterchainTokenServices` need to have a consistent format to be understood properly. We chose to use `abi` encoding because it is easy to use in EVM chains, which are at the front and center of programmable blockchains, and because it is easy to implement in other ecosystems which tend to be more gas efficient. There are currently three supported message types: `INTERCHAIN_TRANSFER`, `DEPLOY_INTERCHAIN_TOKEN`, `DEPLOY_TOKEN_MANAGER`.

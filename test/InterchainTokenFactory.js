@@ -216,7 +216,7 @@ describe('InterchainTokenFactory', () => {
         const checkRoles = async (tokenManager, minter) => {
             const token = await getContractAt('InterchainToken', await tokenManager.tokenAddress(), wallet);
             expect(await token.isMinter(minter)).to.be.true;
-            expect(await token.isMinter(service.address)).to.be.true;
+            expect(await token.isMinter(tokenManager.address)).to.be.true;
 
             expect(await tokenManager.isOperator(minter)).to.be.true;
             expect(await tokenManager.isOperator(service.address)).to.be.true;
@@ -342,7 +342,11 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << OPERATOR_ROLE)
                 .and.to.emit(tokenManager, 'RolesRemoved')
-                .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
+                .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE)
+                .and.to.emit(token, 'RolesRemoved')
+                .withArgs(service.address, 1 << MINTER_ROLE)
+                .and.to.emit(token, 'RolesAdded')
+                .withArgs(tokenManager.address, 1 << MINTER_ROLE);
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
@@ -398,7 +402,7 @@ describe('InterchainTokenFactory', () => {
                         },
                     ),
                 tokenFactory,
-                'InvalidMinter',
+                'NotMinter',
                 [service.address],
             );
 
@@ -451,7 +455,7 @@ describe('InterchainTokenFactory', () => {
                         },
                     ),
                 tokenFactory,
-                'InvalidMinter',
+                'NotMinter',
                 [service.address],
             );
 

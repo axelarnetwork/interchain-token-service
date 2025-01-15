@@ -680,6 +680,26 @@ describe('Interchain Token Service', () => {
         });
     });
 
+    describe('Deploy and Register Interchain Token', () => {
+        const tokenName = 'Token Name';
+        const tokenSymbol = 'TN';
+        const tokenDecimals = 13;
+        const salt = getRandomBytes32();
+
+        it('Should revert when registering an interchain token when service is paused', async () => {
+            await service.setPauseStatus(true).then((tx) => tx.wait);
+
+            await expectRevert(
+                (gasOptions) =>
+                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
+                service,
+                'Pause',
+            );
+
+            await service.setPauseStatus(false).then((tx) => tx.wait);
+        });
+    });
+
     describe('Deploy and Register remote Interchain Token', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
