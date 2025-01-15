@@ -40,10 +40,10 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         /// @dev Track the flow amount being received via the message
         ITokenManager(tokenManager).addFlowIn(amount);
 
-        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _mintToken(ITokenManager(tokenManager), tokenAddress, to, amount);
-        } else if (
-            tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
+        if (
+            tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) ||
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN) ||
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
         ) {
             _mintToken(ITokenManager(tokenManager), tokenAddress, to, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
@@ -74,9 +74,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         _migrateToken(tokenManager, tokenAddress, tokenManagerType);
 
-        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _burnToken(ITokenManager(tokenManager), tokenAddress, from, amount);
-        } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
+        if (
+            tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN)
+        ) {
             _burnToken(ITokenManager(tokenManager), tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
             _burnTokenFrom(tokenAddress, from, amount);
