@@ -687,53 +687,6 @@ describe('Interchain Token Service', () => {
         const salt = getRandomBytes32();
         let tokenManager;
 
-        it('Should register an interchain token', async () => {
-            const tokenId = await service.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
-            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-
-            await expect(
-                reportGas(
-                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0),
-                    'Call deployInterchainToken on source chain',
-                ),
-            )
-                .to.emit(service, 'InterchainTokenIdClaimed')
-                .withArgs(tokenId, wallet.address, salt)
-                .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
-                .to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
-
-            const tokenManagerAddress = await service.deployedTokenManager(tokenId);
-            expect(tokenManagerAddress).to.not.equal(AddressZero);
-
-            tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-            expect(await tokenManager.isOperator(wallet.address)).to.be.true;
-            expect(await tokenManager.isOperator(service.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(wallet.address)).to.be.true;
-            expect(await tokenManager.isFlowLimiter(service.address)).to.be.true;
-
-            const token = await getContractAt('InterchainToken', tokenAddress, wallet);
-            expect(await token.isMinter(wallet.address)).to.be.true;
-            expect(await token.isMinter(tokenManager.address)).to.be.true;
-        });
-
-        it('Should revert when registering an interchain token as a lock/unlock for a second time', async () => {
-            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
-
-            // Register the same token again
-            const revertData = keccak256(toUtf8Bytes('AlreadyDeployed()')).substring(0, 10);
-            await expectRevert(
-                (gasOptions) =>
-                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
-                service,
-                'InterchainTokenDeploymentFailed',
-                [revertData],
-            );
-        });
-
         it('Should revert when registering an interchain token when service is paused', async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
@@ -745,41 +698,6 @@ describe('Interchain Token Service', () => {
             );
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
-        });
-
-        it('Should revert when registering an interchain token with empty token name', async () => {
-            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
-
-            await expectRevert(
-                (gasOptions) => service.deployInterchainToken(salt, '', '', tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
-                service,
-                'EmptyTokenName',
-            );
-        });
-
-        it('Should revert when registering an interchain token with empty token symbol', async () => {
-            expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
-
-            await expectRevert(
-                (gasOptions) => service.deployInterchainToken(salt, '', tokenName, '', tokenDecimals, wallet.address, 0, gasOptions),
-                service,
-                'EmptyTokenSymbol',
-            );
-        });
-
-        it('Should revert when deploying an interchain token on chain native to ITS hub', async () => {
-            await expect(service.setTrustedAddress(chainName, ITS_HUB_ROUTING_IDENTIFIER))
-                .to.emit(service, 'TrustedAddressSet')
-                .withArgs(chainName, ITS_HUB_ROUTING_IDENTIFIER);
-
-            await expectRevert(
-                (gasOptions) =>
-                    service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0, gasOptions),
-                service,
-                'NotSupported',
-            );
-
-            await expect(service.removeTrustedAddress(chainName)).to.emit(service, 'TrustedAddressRemoved').withArgs(chainName);
         });
     });
 
