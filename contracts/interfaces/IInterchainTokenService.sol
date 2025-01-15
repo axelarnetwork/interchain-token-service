@@ -242,49 +242,11 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
-     * @notice Initiates an interchain call contract with interchain token to a destination chain.
-     * @param tokenId The unique identifier of the token to be transferred.
-     * @param destinationChain The destination chain to send the tokens to.
-     * @param destinationAddress The address on the destination chain to send the tokens to.
-     * @param amount The amount of tokens to be transferred.
-     * @param data Additional data to be passed along with the transfer.
-     */
-    function callContractWithInterchainToken(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes calldata data,
-        uint256 gasValue
-    ) external payable;
-
-    /**
      * @notice Sets the flow limits for multiple tokens.
      * @param tokenIds An array of tokenIds.
      * @param flowLimits An array of flow limits corresponding to the tokenIds.
      */
     function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
-
-    /**
-     * @notice Returns the flow limit for a specific token.
-     * @param tokenId The tokenId of the token.
-     * @return flowLimit_ The flow limit for the token.
-     */
-    function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_);
-
-    /**
-     * @notice Returns the total amount of outgoing flow for a specific token.
-     * @param tokenId The tokenId of the token.
-     * @return flowOutAmount_ The total amount of outgoing flow for the token.
-     */
-    function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_);
-
-    /**
-     * @notice Returns the total amount of incoming flow for a specific token.
-     * @param tokenId The tokenId of the token.
-     * @return flowInAmount_ The total amount of incoming flow for the token.
-     */
-    function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_);
 
     /**
      * @notice Allows the owner to pause/unpause the token service.
