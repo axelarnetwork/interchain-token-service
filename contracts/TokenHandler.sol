@@ -35,31 +35,26 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
+        _migrateToken(tokenManager, tokenAddress, tokenManagerType);
+
         /// @dev Track the flow amount being received via the message
         ITokenManager(tokenManager).addFlowIn(amount);
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _migrateToken(tokenManager, tokenAddress);
             _mintToken(ITokenManager(tokenManager), tokenAddress, to, amount);
-            return (amount, tokenAddress);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)) {
+        } else if (
+            tokenManagerType == uint256(TokenManagerType.MINT_BURN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN_FROM)
+        ) {
             _mintToken(ITokenManager(tokenManager), tokenAddress, to, amount);
-            return (amount, tokenAddress);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
+        } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
             _transferTokenFrom(tokenAddress, tokenManager, to, amount);
-            return (amount, tokenAddress);
-        }
-
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
+        } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             amount = _transferTokenFromWithFee(tokenAddress, tokenManager, to, amount);
-            return (amount, tokenAddress);
+        } else {
+            revert UnsupportedTokenManagerType(tokenManagerType);
         }
 
-        revert UnsupportedTokenManagerType(tokenManagerType);
+        return (amount, tokenAddress);
     }
 
     /**
@@ -77,8 +72,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
 
+        _migrateToken(tokenManager, tokenAddress, tokenManagerType);
+
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            _migrateToken(tokenManager, tokenAddress);
             _burnToken(ITokenManager(tokenManager), tokenAddress, from, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.MINT_BURN)) {
             _burnToken(ITokenManager(tokenManager), tokenAddress, from, amount);
@@ -181,13 +177,14 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     /**
-     * @notice This transfers mintership to the tokenManager if this is still the minter.
-     * It does nothing if the service is not the minter.
-     * @param tokenManager the token manager address to transfer mintership to.
-     * @param tokenAddress the address of the token to transfer mintership of.
+     * @notice This transfers mintership of a native Interchain token to the tokenManager if ITS is still its minter.
+     * It does nothing if ITS is not the minter. This ensures that interchain tokens are auto-migrated without requiring a downtime for ITS.
+     * @param tokenManager The token manager address to transfer mintership to.
+     * @param tokenAddress The address of the token to transfer mintership of.
+     * @param tokenManagerType The token manager type for the token.
      */
-    function _migrateToken(address tokenManager, address tokenAddress) internal {
-        if (IMinter(tokenAddress).isMinter(address(this))) {
+    function _migrateToken(address tokenManager, address tokenAddress, uint256 tokenManagerType) internal {
+        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) && IMinter(tokenAddress).isMinter(address(this))) {
             IMinter(tokenAddress).transferMintership(tokenManager);
         }
     }
