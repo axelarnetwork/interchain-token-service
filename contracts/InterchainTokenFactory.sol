@@ -403,23 +403,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes32 deploySalt = canonicalInterchainTokenDeploySalt(tokenAddress);
-        string memory currentChain = '';
         // No custom operator is set for canonical token registration
         bytes memory linkParams = '';
-        uint256 gasValue = 0;
 
         // Ensure that the ERC20 token has metadata before registering it
         // slither-disable-next-line unused-return
         _getTokenMetadata(tokenAddress);
 
-        tokenId = interchainTokenService.linkToken(
-            deploySalt,
-            currentChain,
-            tokenAddress.toBytes(),
-            TokenManagerType.LOCK_UNLOCK,
-            linkParams,
-            gasValue
-        );
+        tokenId = interchainTokenService.registerCustomToken(deploySalt, tokenAddress, TokenManagerType.LOCK_UNLOCK, linkParams);
     }
 
     /**
@@ -530,13 +521,12 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
         bytes32 deploySalt = linkedTokenDeploySalt(msg.sender, salt);
-        string memory currentChain = '';
         bytes memory linkParams = '';
         if (operator != address(0)) {
             linkParams = operator.toBytes();
         }
 
-        tokenId = interchainTokenService.linkToken(deploySalt, currentChain, tokenAddress.toBytes(), tokenManagerType, linkParams, 0);
+        tokenId = interchainTokenService.registerCustomToken(deploySalt, tokenAddress, tokenManagerType, linkParams);
 
         interchainTokenService.registerTokenMetadata{ value: gasValue }(tokenAddress, gasValue);
     }
