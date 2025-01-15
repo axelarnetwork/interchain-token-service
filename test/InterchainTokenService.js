@@ -685,7 +685,6 @@ describe('Interchain Token Service', () => {
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
         const salt = getRandomBytes32();
-        let tokenManager;
 
         it('Should revert when registering an interchain token when service is paused', async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
