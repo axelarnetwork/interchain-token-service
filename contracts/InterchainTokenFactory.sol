@@ -7,7 +7,6 @@ import { Multicall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/uti
 import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/Upgradable.sol';
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
-import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
@@ -16,7 +15,7 @@ import { IERC20Named } from './interfaces/IERC20Named.sol';
  * @title InterchainTokenFactory
  * @notice This contract is responsible for deploying new interchain tokens and managing their token managers.
  */
-contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, Multicall, Upgradable {
+contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradable {
     using AddressBytes for address;
 
     /// @dev This slot contains the storage for this contract in an upgrade-compatible manner
@@ -27,6 +26,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
     bytes32 internal constant PREFIX_CANONICAL_TOKEN_SALT = keccak256('canonical-token-salt');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('interchain-token-salt');
     bytes32 internal constant PREFIX_DEPLOY_APPROVAL = keccak256('deploy-approval');
+    bytes32 internal constant PREFIX_CUSTOM_TOKEN_SALT = keccak256('custom-token-salt');
     address private constant TOKEN_FACTORY_DEPLOYER = address(0);
 
     IInterchainTokenService public immutable interchainTokenService;
@@ -402,16 +402,24 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @return tokenId The tokenId corresponding to the registered canonical token.
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
-        bytes memory params = abi.encode('', tokenAddress);
         bytes32 deploySalt = canonicalInterchainTokenDeploySalt(tokenAddress);
         string memory currentChain = '';
+        // No custom operator is set for canonical token registration
+        bytes memory linkParams = '';
         uint256 gasValue = 0;
 
         // Ensure that the ERC20 token has metadata before registering it
         // slither-disable-next-line unused-return
         _getTokenMetadata(tokenAddress);
 
-        tokenId = interchainTokenService.deployTokenManager(deploySalt, currentChain, TokenManagerType.LOCK_UNLOCK, params, gasValue);
+        tokenId = interchainTokenService.linkToken(
+            deploySalt,
+            currentChain,
+            tokenAddress.toBytes(),
+            TokenManagerType.LOCK_UNLOCK,
+            linkParams,
+            gasValue
+        );
     }
 
     /**
@@ -482,6 +490,85 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         if (bytes(originalChain).length != 0) revert NotSupported();
 
         tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
+    }
+
+    /**
+     * @notice Computes the deploy salt for a linked interchain token.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @return deploySalt The deploy salt for the interchain token.
+     */
+    function linkedTokenDeploySalt(address deployer, bytes32 salt) public view returns (bytes32 deploySalt) {
+        deploySalt = keccak256(abi.encode(PREFIX_CUSTOM_TOKEN_SALT, chainNameHash, deployer, salt));
+    }
+
+    /**
+     * @notice Computes the ID for a linked token based on its address.
+     * @param deployer The address of the deployer.
+     * @param salt The unique salt for deploying the token.
+     * @return tokenId The ID of the linked token.
+     */
+    function linkedTokenId(address deployer, bytes32 salt) external view returns (bytes32 tokenId) {
+        bytes32 deploySalt = linkedTokenDeploySalt(deployer, salt);
+        tokenId = _interchainTokenId(deploySalt);
+    }
+
+    /**
+     * @notice Register an existing ERC20 token under a `tokenId` computed from the provided `salt`.
+     * A token metadata registration message will also be sent to the ITS Hub.
+     * @param salt The salt used to derive the tokenId for the custom token registration. The same salt must be used when linking this token on other chains under the same tokenId.
+     * @param tokenAddress The token address of the token being registered.
+     * @param tokenManagerType The token manager type used for the token link.
+     * @param operator The operator of the token manager.
+     * @param gasValue The cross-chain gas value used to register the token metadata on the ITS Hub.
+     */
+    function registerCustomToken(
+        bytes32 salt,
+        address tokenAddress,
+        TokenManagerType tokenManagerType,
+        address operator,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId) {
+        bytes32 deploySalt = linkedTokenDeploySalt(msg.sender, salt);
+        string memory currentChain = '';
+        bytes memory linkParams = '';
+        if (operator != address(0)) {
+            linkParams = operator.toBytes();
+        }
+
+        tokenId = interchainTokenService.linkToken(deploySalt, currentChain, tokenAddress.toBytes(), tokenManagerType, linkParams, 0);
+
+        interchainTokenService.registerTokenMetadata{ value: gasValue }(tokenAddress, gasValue);
+    }
+
+    /**
+     * @notice Links a remote token on `destinationChain` to a local token corresponding to the `tokenId` computed from the provided `salt`.
+     * A local token must have been registered first using the `registerCustomToken` function.
+     * @param salt The salt used to derive the tokenId for the custom token registration. The same salt must be used when linking this token on other chains under the same tokenId.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationTokenAddress The token address of the token being linked.
+     * @param tokenManagerType The token manager type used for the token link.
+     * @param linkParams Additional parameters for the token link depending on the destination chain. For EVM destination chains, this is an optional custom operator address.
+     * @param gasValue The cross-chain gas value used to link the token on the destination chain.
+     * @return tokenId The tokenId corresponding to the linked token.
+     */
+    function linkToken(
+        bytes32 salt,
+        string calldata destinationChain,
+        bytes calldata destinationTokenAddress,
+        TokenManagerType tokenManagerType,
+        bytes calldata linkParams,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId) {
+        bytes32 deploySalt = linkedTokenDeploySalt(msg.sender, salt);
+        tokenId = interchainTokenService.linkToken{ value: gasValue }(
+            deploySalt,
+            destinationChain,
+            destinationTokenAddress,
+            tokenManagerType,
+            linkParams,
+            gasValue
+        );
     }
 
     /********************\
