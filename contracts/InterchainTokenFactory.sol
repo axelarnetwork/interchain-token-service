@@ -239,21 +239,19 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
     }
 
     /**
-     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @notice Deploys a remote interchain token on a specified destination chain. No additional minter is set on the deployed token.
+     * Use the `deployRemoteInterchainTokenWithMinter` method to do so.
      * @param salt The unique salt for deploying the token.
-     * @param minter The address to use as the minter of the deployed token on the destination chain. If the destination chain is not EVM,
-     * then use the more generic `deployRemoteInterchainToken` function below that allows setting an arbitrary destination minter that was approved by the current minter.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteInterchainToken(
         bytes32 salt,
-        address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
-        return deployRemoteInterchainTokenWithMinter(salt, minter, destinationChain, new bytes(0), gasValue);
+        return deployRemoteInterchainTokenWithMinter(salt, address(0), destinationChain, new bytes(0), gasValue);
     }
 
     /**
@@ -271,7 +269,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
     function deployRemoteInterchainTokenWithMinter(
         bytes32 salt,
         address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         bytes memory destinationMinter,
         uint256 gasValue
     ) public payable returns (bytes32 tokenId) {
@@ -316,7 +314,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         string calldata originalChainName,
         bytes32 salt,
         address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
         if (bytes(originalChainName).length != 0) revert NotSupported();
@@ -380,7 +378,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
      */
     function _deployRemoteInterchainToken(
         bytes32 deploySalt,
-        string memory destinationChain,
+        string calldata destinationChain,
         bytes memory minter,
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {

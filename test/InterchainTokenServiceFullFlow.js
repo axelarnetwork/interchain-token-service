@@ -178,10 +178,11 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainTokenWithMinter(bytes32,address,string,bytes,uint256)'](
                     salt,
                     wallet.address,
                     otherChains[i],
+                    '0x',
                     gasValues[i],
                 );
                 calls.push(tx.data);
@@ -514,9 +515,8 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,string,uint256)'](
                     salt,
-                    AddressZero,
                     otherChains[i],
                     gasValues[i],
                 );
@@ -719,7 +719,7 @@ describe('Interchain Token Service Full Flow', () => {
             const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, token.address]);
             const itsMessage = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, wallet.address],
+                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
             );
 
             // Deploy a new Interchain token on the local chain.
@@ -731,9 +731,8 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,address,string,uint256)'](
+                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,string,uint256)'](
                     salt,
-                    wallet.address,
                     otherChains[i],
                     gasValues[i],
                 );
@@ -754,13 +753,13 @@ describe('Interchain Token Service Full Flow', () => {
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), otherChains[0])
+                .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(payloads[0]), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(payloads[0]), payloads[0])
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), otherChains[1])
+                .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(payloads[1]), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')

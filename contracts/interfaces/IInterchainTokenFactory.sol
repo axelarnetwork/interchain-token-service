@@ -112,18 +112,16 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
     function revokeDeployRemoteInterchainToken(address deployer, bytes32 salt, string calldata destinationChain) external;
 
     /**
-     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @notice Deploys a remote interchain token on a specified destination chain. No additional minter is set on the deployed token.
+     * Use the `deployRemoteInterchainTokenWithMinter` method to do so.
      * @param salt The unique salt for deploying the token.
-     * @param minter The address to use as the minter of the deployed token on the destination chain. If the destination chain is not EVM,
-     * then use the more generic `deployRemoteInterchainToken` function below that allows setting an arbitrary destination minter that was approved by the current minter.
      * @param destinationChain The name of the destination chain.
      * @param gasValue The amount of gas to send for the deployment.
      * @return tokenId The tokenId corresponding to the deployed InterchainToken.
      */
     function deployRemoteInterchainToken(
         bytes32 salt,
-        address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 
@@ -141,13 +139,14 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
     function deployRemoteInterchainTokenWithMinter(
         bytes32 salt,
         address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         bytes memory destinationMinter,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @notice Deprecated: Use `deployRemoteInterchainToken` or `deployRemoteInterchainTokenWithMinter` instead.
+     * Deploys a remote interchain token on a specified destination chain.
      * @dev originalChainName is only allowed to be '', i.e the current chain.
      * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChainName The name of the chain where the token originally exists.
@@ -161,7 +160,7 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
         string calldata originalChainName,
         bytes32 salt,
         address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 
