@@ -252,7 +252,7 @@ describe('Interchain Token Service', () => {
             await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
             if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait);
         }
-        
+
         if (minter) {
             await token.transferMintership(minter).then((tx) => tx.wait);
         }
