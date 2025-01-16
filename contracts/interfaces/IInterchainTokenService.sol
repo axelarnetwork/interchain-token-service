@@ -267,4 +267,10 @@ interface IInterchainTokenService is
      * @param paused whether to pause or unpause.
      */
     function setPauseStatus(bool paused) external;
+
+    /**
+     * @notice Allows the owner to migrate legacy tokens that cannot be migrated automatically.
+     * @param tokenId the tokenId of the registered token.
+     */
+    function migrateInterchainToken(bytes32 tokenId) external;
 }

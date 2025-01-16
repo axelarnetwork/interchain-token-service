@@ -31,6 +31,7 @@ const {
     ITS_HUB_CHAIN_NAME,
     ITS_HUB_ROUTING_IDENTIFIER,
     ITS_HUB_ADDRESS,
+    MINTER_ROLE,
     MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
 } = require('./constants');
 
@@ -213,19 +214,26 @@ describe('Interchain Token Service', () => {
             return [token, tokenManager, tokenId];
         };
 
-    async function deployNewInterchainToken(service, tokenName, tokenSymbol, tokenDecimals, mintAmount = 0, skipApprove = false) {
+    async function deployNewInterchainToken(
+        service,
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        minter = null,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const sourceAddress = service.address;
 
         const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-        const minter = wallet.address;
         const operator = '0x';
         const tokenAddress = await service.interchainTokenAddress(tokenId);
-        const params = defaultAbiCoder.encode(['bytes', 'address'], [minter, tokenAddress]);
+        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
         const payload = defaultAbiCoder.encode(
             ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
-            [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter, operator],
+            [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, wallet.address, operator],
         );
         const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
@@ -243,6 +251,10 @@ describe('Interchain Token Service', () => {
         if (mintAmount > 0) {
             await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
             if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait);
+        }
+
+        if (minter) {
+            await token.transferMintership(minter).then((tx) => tx.wait);
         }
 
         return [token, tokenManager, tokenId, salt];
@@ -1172,6 +1184,20 @@ describe('Interchain Token Service', () => {
                     }),
                 service,
                 'EmptyDestinationAddress',
+            );
+        });
+
+        it('Should revert on initiate an interchain token transfer to the ITS HUB', async () => {
+            const [, , tokenId] = await deployFunctions.lockUnlockFee(service, 'Test Token lockUnlockFee', 'TT', 12, amount, false, 'free');
+
+            await expectRevert(
+                (gasOptions) =>
+                    service.interchainTransfer(tokenId, ITS_HUB_CHAIN_NAME, destAddress, amount, '0x', gasValue, {
+                        value: gasValue,
+                        ...gasOptions,
+                    }),
+                service,
+                'UntrustedChain',
             );
         });
 
@@ -2905,6 +2931,55 @@ describe('Interchain Token Service', () => {
 
             expect(tokenAddress).to.eq(token.address);
             expect(returnedAmount).to.eq(amount);
+        });
+    });
+
+    describe('Interchain Token Migration', () => {
+        it('Should migrate a token succesfully', async () => {
+            const name = 'migrated token';
+            const symbol = 'MT';
+            const decimals = 53;
+
+            const [token, tokenManager, tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
+
+            await expect(service.migrateInterchainToken(tokenId))
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(service.address, 1 << MINTER_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(tokenManager.address, 1 << MINTER_ROLE);
+        });
+
+        it('Should not be able to migrate a token twice', async () => {
+            const name = 'migrated token';
+            const symbol = 'MT';
+            const decimals = 53;
+
+            const [token, tokenManager, tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
+
+            await expect(service.migrateInterchainToken(tokenId))
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(service.address, 1 << MINTER_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(tokenManager.address, 1 << MINTER_ROLE);
+
+            await expectRevert((gasOptions) => service.migrateInterchainToken(tokenId, { gasOptions }), token, 'MissingRole', [
+                service.address,
+                MINTER_ROLE,
+            ]);
+        });
+
+        it('Should not be able to migrate a token as not the owner', async () => {
+            const name = 'migrated token';
+            const symbol = 'MT';
+            const decimals = 53;
+
+            const [, , tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
+
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).migrateInterchainToken(tokenId, gasOptions),
+                service,
+                'NotOwner',
+            );
         });
     });
 
