@@ -176,6 +176,15 @@ contract InterchainTokenService is
         _;
     }
 
+    /**
+     * @notice This modifier is used to ensure that only a the token factory can call a function.
+     */
+    modifier onlyTokenFactory() {
+        if (msg.sender != interchainTokenFactory) revert NotInterchainTokenFactory(msg.sender);
+
+        _;
+    }
+
     /*****\
     GETTERS
     \*****/
@@ -281,6 +290,30 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Only to be used by the InterchainTokenFactory to register custom tokens to this chain. Then link token can be used to register those tokens to other chains.
+     * @param salt A unique salt to derive tokenId from.
+     * @param tokenManagerType The type of the token manager to use for the token registration.
+     * @param linkParams The operator for the token.
+     */
+    function registerCustomToken(
+        bytes32 salt,
+        address tokenAddress,
+        TokenManagerType tokenManagerType,
+        bytes calldata linkParams
+    ) external payable whenNotPaused onlyTokenFactory returns (bytes32 tokenId) {
+        // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
+        if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
+
+        address deployer = TOKEN_FACTORY_DEPLOYER;
+
+        tokenId = interchainTokenId(deployer, salt);
+
+        emit InterchainTokenIdClaimed(tokenId, deployer, salt);
+
+        _deployTokenManager(tokenId, tokenManagerType, tokenAddress, linkParams);
+    }
+
+    /**
      * @notice If `destinationChain` is an empty string, this function will register the token address on the current chain.
      * Otherwise, it will link the token address on the destination chain with the token corresponding to the tokenId on the current chain.
      * A token manager is deployed on EVM chains that's responsible for managing the linked token.
@@ -306,27 +339,38 @@ contract InterchainTokenService is
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
+        // Cannot deploy to this chain using linkToken anymore
+        if (bytes(destinationChain).length == 0) {
+            revert NotSupported();
+        }
+
+        // Cannot deploy to this chain using linkToken anymore
+        if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
+
         address deployer = msg.sender;
 
         if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
-        } else if (bytes(destinationChain).length == 0) {
-            // TODO: Only support linking new tokens via ITS factory, to include chain name in token id derivation
-            // Custom token usage needs to be moved to ITS factory tests
-            // revert NotSupported();
         }
 
         tokenId = interchainTokenId(deployer, salt);
 
         emit InterchainTokenIdClaimed(tokenId, deployer, salt);
 
-        if (bytes(destinationChain).length == 0) {
-            _deployTokenManager(tokenId, tokenManagerType, destinationTokenAddress.toAddress(), linkParams);
-        } else {
-            if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
+        bytes memory sourceTokenAddress = registeredTokenAddress(tokenId).toBytes();
 
-            _linkToken(tokenId, destinationChain, destinationTokenAddress, tokenManagerType, linkParams, gasValue);
-        }
+        emit LinkTokenStarted(tokenId, destinationChain, sourceTokenAddress, destinationTokenAddress, tokenManagerType, linkParams);
+
+        bytes memory payload = abi.encode(
+            MESSAGE_TYPE_LINK_TOKEN,
+            tokenId,
+            tokenManagerType,
+            sourceTokenAddress,
+            destinationTokenAddress,
+            linkParams
+        );
+
+        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -353,15 +397,8 @@ contract InterchainTokenService is
         uint8 decimals,
         bytes memory minter,
         uint256 gasValue
-    ) external payable whenNotPaused returns (bytes32 tokenId) {
-        address deployer = msg.sender;
-
-        if (deployer == interchainTokenFactory) {
-            deployer = TOKEN_FACTORY_DEPLOYER;
-        } else if (trustedAddressHash(chainName()) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
-            // Currently, deployments directly on ITS contract (instead of ITS Factory) are restricted for ITS contracts deployed on Amplifier, i.e registered with the Hub
-            revert NotSupported();
-        }
+    ) external payable whenNotPaused onlyTokenFactory returns (bytes32 tokenId) {
+        address deployer = TOKEN_FACTORY_DEPLOYER;
 
         tokenId = interchainTokenId(deployer, salt);
 
@@ -872,40 +909,6 @@ contract InterchainTokenService is
         }
 
         return (messageType, originalSourceChain, payload);
-    }
-
-    /**
-     * @notice Deploys a token manager on a destination chain.
-     * @param tokenId The ID of the token.
-     * @param destinationChain The chain where the token manager will be deployed.
-     * @param destinationTokenAddress The address of the token on the destination chain.
-     * @param tokenManagerType The type of token manager to be deployed.
-     * @param params Additional parameters for the token linking.
-     * @param gasValue The amount of gas to be paid for the transaction.
-     */
-    function _linkToken(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationTokenAddress,
-        TokenManagerType tokenManagerType,
-        bytes calldata params,
-        uint256 gasValue
-    ) internal {
-        // slither-disable-next-line unused-return
-        bytes memory sourceTokenAddress = registeredTokenAddress(tokenId).toBytes();
-
-        emit LinkTokenStarted(tokenId, destinationChain, sourceTokenAddress, destinationTokenAddress, tokenManagerType, params);
-
-        bytes memory payload = abi.encode(
-            MESSAGE_TYPE_LINK_TOKEN,
-            tokenId,
-            tokenManagerType,
-            sourceTokenAddress,
-            destinationTokenAddress,
-            params
-        );
-
-        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**

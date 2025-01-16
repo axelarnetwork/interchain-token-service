@@ -142,5 +142,6 @@ module.exports = {
     deployMockGateway,
     deployGasService,
     deployInterchainTokenService,
+    deployInterchainTokenFactory,
     deployAll,
 };
