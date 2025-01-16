@@ -18,7 +18,7 @@ const { approveContractCall } = require('../scripts/utils');
 const {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
+    MESSAGE_TYPE_LINK_TOKEN,
     MESSAGE_TYPE_SEND_TO_HUB,
     MESSAGE_TYPE_RECEIVE_FROM_HUB,
     NATIVE_INTERCHAIN_TOKEN,
@@ -43,6 +43,8 @@ describe('Interchain Token Service Full Flow', () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
         ({ service, gateway, gasService, tokenFactory } = await deployAll(wallet, chainName, otherChains));
+
+        await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
     });
 
     /**
@@ -340,13 +342,14 @@ describe('Interchain Token Service Full Flow', () => {
         let token;
         const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
+        const registrationGasValue = 9012;
         const tokenCap = 1e9;
-        const salt = keccak256('0x697858');
+        const salt = getRandomBytes32();
 
         before(async () => {
             token = await deployContract(wallet, 'TestMintableBurnableERC20', [name, symbol, decimals]);
 
-            tokenId = await service.interchainTokenId(wallet.address, salt);
+            tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
             await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
         });
 
@@ -355,37 +358,65 @@ describe('Interchain Token Service Full Flow', () => {
             const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
             const params = await tokenManagerImplementation.params(wallet.address, token.address);
-            let tx = await service.populateTransaction.deployTokenManager(salt, '', MINT_BURN, params, 0);
-
+            let tx = await tokenFactory.populateTransaction.registerCustomToken(
+                salt,
+                token.address,
+                MINT_BURN,
+                wallet.address,
+                registrationGasValue,
+            );
             const calls = [tx.data];
-            let value = 0;
+            let value = registrationGasValue;
 
             for (const i in otherChains) {
                 // This should be replaced with the existing token address on each chain being linked
                 const remoteTokenAddress = token.address;
-                const params = await tokenManagerImplementation.params(wallet.address, remoteTokenAddress);
 
-                tx = await service.populateTransaction.deployTokenManager(salt, otherChains[i], MINT_BURN, params, gasValues[i]);
+                tx = await tokenFactory.populateTransaction.linkToken(
+                    salt,
+                    otherChains[i],
+                    remoteTokenAddress,
+                    MINT_BURN,
+                    wallet.address,
+                    gasValues[i],
+                    { value: gasValues[i] },
+                );
+
                 calls.push(tx.data);
                 value += gasValues[i];
             }
 
             const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'uint256', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, MINT_BURN, params],
+                ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+                [MESSAGE_TYPE_LINK_TOKEN, tokenId, MINT_BURN, token.address, token.address, wallet.address],
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(service.multicall(calls, { value }))
+
+            await expect(tokenFactory.multicall(calls, { value }))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, MINT_BURN, params)
-                .and.to.emit(service, 'TokenManagerDeploymentStarted')
-                .withArgs(tokenId, otherChains[0], MINT_BURN, params)
+                .and.to.emit(service, 'LinkTokenStarted')
+                .withArgs(
+                    tokenId,
+                    otherChains[0],
+                    token.address.toLowerCase(),
+                    token.address.toLowerCase(),
+                    MINT_BURN,
+                    wallet.address.toLowerCase(),
+                )
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[0], service.address, keccak256(payload), gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, otherChains[0], service.address, keccak256(payload), payload)
-                .and.to.emit(service, 'TokenManagerDeploymentStarted')
-                .withArgs(tokenId, otherChains[1], MINT_BURN, params)
+                .and.to.emit(service, 'LinkTokenStarted')
+                .withArgs(
+                    tokenId,
+                    otherChains[1],
+                    token.address.toLowerCase(),
+                    token.address.toLowerCase(),
+                    MINT_BURN,
+                    wallet.address.toLowerCase(),
+                )
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, otherChains[1], service.address, keccak256(payload), gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')

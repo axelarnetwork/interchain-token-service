@@ -47,22 +47,6 @@ if (isHardhat) {
         });
 
         describe('Interchain Token Service Deployments', () => {
-            it('Should derive the correct token address for interchain token deployment on source chain', async () => {
-                const salt = getSaltFromKey('deployInterchainToken');
-                const tokenId = await service.interchainTokenId(wallet.address, salt);
-
-                const expectedTokenAddress = '0x2b7c2c1f7297BB9a573Fb970D086F0d113722Ceb';
-                const expectedTokenManagerAddress = '0x1248d7831b5B231147bfbDb5e2b29B0110EeC9C8';
-
-                const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, expectedTokenAddress]);
-
-                await expect(service.deployInterchainToken(salt, '', tokenName, tokenSymbol, tokenDecimals, wallet.address, 0))
-                    .to.emit(service, 'InterchainTokenDeployed')
-                    .withArgs(tokenId, expectedTokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
-                    .to.emit(service, 'TokenManagerDeployed')
-                    .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
-            });
-
             it('Should derive the correct token address for remote interchain token deployment', async () => {
                 const salt = getSaltFromKey('deployRemoteInterchainToken');
                 const tokenId = await service.interchainTokenId(wallet.address, salt);

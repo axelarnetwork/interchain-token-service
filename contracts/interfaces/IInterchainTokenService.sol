@@ -53,7 +53,9 @@ interface IInterchainTokenService is
     error EmptyTokenSymbol();
     error EmptyParams();
     error EmptyDestinationAddress();
+    error EmptyTokenAddress();
     error NotSupported();
+    error NotInterchainTokenFactory(address sender);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
@@ -72,9 +74,12 @@ interface IInterchainTokenService is
         uint256 amount,
         bytes32 dataHash
     );
-    event TokenManagerDeploymentStarted(
+    event TokenMetadataRegistered(address indexed tokenAddress, uint8 decimals);
+    event LinkTokenStarted(
         bytes32 indexed tokenId,
         string destinationChain,
+        bytes sourceTokenAddress,
+        bytes destinationTokenAddress,
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
@@ -170,19 +175,45 @@ interface IInterchainTokenService is
     function interchainTokenId(address operator_, bytes32 salt) external view returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys a custom token manager contract on a remote chain.
-     * @param salt The salt used for token manager deployment.
-     * @param destinationChain The name of the destination chain.
-     * @param tokenManagerType The type of token manager. Cannot be NATIVE_INTERCHAIN_TOKEN.
-     * @param params The deployment parameters.
-     * @param gasValue The gas value for deployment.
+     * @notice Registers metadata for a token on the ITS Hub. This metadata is used for scaling linked tokens.
+     * The token metadata must be registered before linkToken can be called for the corresponding token.
+     * @param tokenAddress The address of the token.
+     * @param gasValue The cross-chain gas value for sending the registration message to ITS Hub.
+     */
+    function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable;
+
+    /**
+     * @notice Only to be used by the InterchainTokenFactory to register custom tokens to this chain. Then link token can be used to register those tokens to other chains.
+     * @param salt A unique salt to derive tokenId from.
+     * @param tokenManagerType The type of the token manager to use for the token registration.
+     * @param linkParams The operator for the token.
+     */
+    function registerCustomToken(
+        bytes32 salt,
+        address tokenAddress,
+        TokenManagerType tokenManagerType,
+        bytes calldata linkParams
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice If `destinationChain` is an empty string, this function will register the token address on the current chain.
+     * Otherwise, it will link the token address on the destination chain with the token corresponding to the tokenId on the current chain.
+     * A token manager is deployed on EVM chains that's responsible for managing the linked token.
+     * @dev This function replaces the prior `deployTokenManager` function.
+     * @param salt A unique identifier to allow for multiple tokens registered per deployer.
+     * @param destinationChain The chain to link the token to. Pass an empty string for this chain.
+     * @param destinationTokenAddress The token address to link, as bytes.
+     * @param tokenManagerType The type of the token manager to use to send and receive tokens.
+     * @param linkParams Additional parameteres to use to link the token. Fow not it is just the address of the operator.
+     * @param gasValue Pass a non-zero value only for remote linking, which should be the gas to use to pay for the contract call.
      * @return tokenId The tokenId associated with the token manager.
      */
-    function deployTokenManager(
+    function linkToken(
         bytes32 salt,
         string calldata destinationChain,
+        bytes memory destinationTokenAddress,
         TokenManagerType tokenManagerType,
-        bytes calldata params,
+        bytes memory linkParams,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 
@@ -225,49 +256,11 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
-     * @notice Initiates an interchain call contract with interchain token to a destination chain.
-     * @param tokenId The unique identifier of the token to be transferred.
-     * @param destinationChain The destination chain to send the tokens to.
-     * @param destinationAddress The address on the destination chain to send the tokens to.
-     * @param amount The amount of tokens to be transferred.
-     * @param data Additional data to be passed along with the transfer.
-     */
-    function callContractWithInterchainToken(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes calldata data,
-        uint256 gasValue
-    ) external payable;
-
-    /**
      * @notice Sets the flow limits for multiple tokens.
      * @param tokenIds An array of tokenIds.
      * @param flowLimits An array of flow limits corresponding to the tokenIds.
      */
     function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
-
-    /**
-     * @notice Returns the flow limit for a specific token.
-     * @param tokenId The tokenId of the token.
-     * @return flowLimit_ The flow limit for the token.
-     */
-    function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_);
-
-    /**
-     * @notice Returns the total amount of outgoing flow for a specific token.
-     * @param tokenId The tokenId of the token.
-     * @return flowOutAmount_ The total amount of outgoing flow for the token.
-     */
-    function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_);
-
-    /**
-     * @notice Returns the total amount of incoming flow for a specific token.
-     * @param tokenId The tokenId of the token.
-     * @return flowInAmount_ The total amount of incoming flow for the token.
-     */
-    function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_);
 
     /**
      * @notice Allows the owner to pause/unpause the token service.
