@@ -121,7 +121,7 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
      */
     function deployRemoteInterchainToken(
         bytes32 salt,
-        string memory destinationChain,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 
@@ -139,13 +139,14 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
     function deployRemoteInterchainTokenWithMinter(
         bytes32 salt,
         address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         bytes memory destinationMinter,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 
     /**
-     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @notice Deprecated: Use `deployRemoteInterchainToken` or `deployRemoteInterchainTokenWithMinter` instead.
+     * Deploys a remote interchain token on a specified destination chain.
      * @dev originalChainName is only allowed to be '', i.e the current chain.
      * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
      * @param originalChainName The name of the chain where the token originally exists.
@@ -159,7 +160,7 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
         string calldata originalChainName,
         bytes32 salt,
         address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
 

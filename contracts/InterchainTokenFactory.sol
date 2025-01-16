@@ -248,7 +248,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
      */
     function deployRemoteInterchainToken(
         bytes32 salt,
-        string memory destinationChain,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
         return deployRemoteInterchainTokenWithMinter(salt, address(0), destinationChain, new bytes(0), gasValue);
@@ -269,7 +269,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
     function deployRemoteInterchainTokenWithMinter(
         bytes32 salt,
         address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         bytes memory destinationMinter,
         uint256 gasValue
     ) public payable returns (bytes32 tokenId) {
@@ -314,7 +314,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         string calldata originalChainName,
         bytes32 salt,
         address minter,
-        string memory destinationChain,
+        string calldata destinationChain,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId) {
         if (bytes(originalChainName).length != 0) revert NotSupported();
@@ -378,7 +378,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
      */
     function _deployRemoteInterchainToken(
         bytes32 deploySalt,
-        string memory destinationChain,
+        string calldata destinationChain,
         bytes memory minter,
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {
