@@ -634,6 +634,23 @@ describe('InterchainTokenFactory', () => {
             );
         });
 
+        it('Should not be able to migrate a token deployed after this upgrade', async () => {
+            const salt = getRandomBytes32();
+            const name = 'migrated token';
+            const symbol = 'MT';
+            const decimals = 53;
+            const tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
+
+            await tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, wallet.address).then((tx) => tx.wait);
+            const tokenAddress = await service.interchainTokenAddress(tokenId);
+            const token = await getContractAt('InterchainToken', tokenAddress, wallet);
+
+            await expectRevert((gasOptions) => service.migrateInterchainToken(tokenId, { gasOptions }), token, 'MissingRole', [
+                service.address,
+                MINTER_ROLE,
+            ]);
+        });
+
         describe('Custom Token Manager Deployment', () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';
@@ -693,6 +710,25 @@ describe('InterchainTokenFactory', () => {
                     service,
                     'PostDeployFailed',
                 );
+            });
+
+            it('Should revert when deploying a custom token when the service is paused', async () => {
+                const salt = getRandomBytes32();
+                const gasValue = 1;
+
+                await service.setPauseStatus(true).then((tx) => tx.wait);
+
+                await expectRevert(
+                    (gasOptions) =>
+                        tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, AddressZero, gasValue, {
+                            value: gasValue,
+                            ...gasOptions,
+                        }),
+                    service,
+                    'Pause',
+                );
+
+                await service.setPauseStatus(false).then((tx) => tx.wait);
             });
 
             it('Should register a custom token with no operator', async () => {
