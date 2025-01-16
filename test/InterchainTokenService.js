@@ -252,7 +252,7 @@ describe('Interchain Token Service', () => {
             await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
             if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait);
         }
-        
+
         if (minter) {
             await token.transferMintership(minter).then((tx) => tx.wait);
         }
@@ -2980,6 +2980,62 @@ describe('Interchain Token Service', () => {
                 service,
                 'NotOwner',
             );
+        });
+
+        it('Should migrate a token automatically when sending token only once', async () => {
+            const name = 'migrated token';
+            const symbol = 'MT';
+            const decimals = 53;
+            const amount1 = 123;
+            const amount2 = 456;
+            const destinationAddress = '0x1234';
+
+            const [token, tokenManager, tokenId] = await deployFunctions.interchainToken(
+                service,
+                name,
+                symbol,
+                decimals,
+                service.address,
+                amount1 + amount2,
+            );
+
+            await expect(service.interchainTransfer(tokenId, destinationChain, destinationAddress, amount1, '0x', 0))
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(service.address, 1 << MINTER_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(tokenManager.address, 1 << MINTER_ROLE);
+
+            await expect(service.interchainTransfer(tokenId, destinationChain, destinationAddress, amount2, '0x', 0))
+                .to.not.emit(token, 'RolesRemoved')
+                .to.not.emit(token, 'RolesAdded');
+        });
+
+        it('Should migrate a token automatically when receiving token', async () => {
+            const name = 'migrated token';
+            const symbol = 'MT';
+            const decimals = 53;
+            const amount = 123;
+            const sourceAddress = '0x1234';
+
+            const [token, tokenManager, tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
+
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, wallet.address, amount, '0x'],
+            );
+            let commandId = await approveContractCall(gateway, destinationChain, service.address, service.address, payload);
+
+            await expect(service.execute(commandId, destinationChain, service.address, payload))
+                .to.emit(token, 'RolesRemoved')
+                .withArgs(service.address, 1 << MINTER_ROLE)
+                .to.emit(token, 'RolesAdded')
+                .withArgs(tokenManager.address, 1 << MINTER_ROLE);
+
+            commandId = await approveContractCall(gateway, destinationChain, service.address, service.address, payload);
+
+            await expect(service.execute(commandId, destinationChain, service.address, payload))
+                .to.not.emit(token, 'RolesRemoved')
+                .to.not.emit(token, 'RolesAdded');
         });
     });
 
