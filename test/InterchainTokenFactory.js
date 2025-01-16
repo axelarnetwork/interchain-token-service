@@ -780,15 +780,19 @@ describe('InterchainTokenFactory', () => {
 
             it('Should revert when deploying a custom token when the service is paused', async () => {
                 const salt = getRandomBytes32();
-                const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
-                const deploySalt = await tokenFactory.linkedTokenDeploySalt(wallet.address, salt);
-                const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
                 const gasValue = 1;
-                const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
 
                 await service.setPauseStatus(true).then((tx) => tx.wait);
 
-                await expectRevert((gasOptions) => tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, AddressZero, gasValue, { value: gasValue, ...gasOptions }), service, 'Pause');
+                await expectRevert(
+                    (gasOptions) =>
+                        tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, AddressZero, gasValue, {
+                            value: gasValue,
+                            ...gasOptions,
+                        }),
+                    service,
+                    'Pause',
+                );
 
                 await service.setPauseStatus(false).then((tx) => tx.wait);
             });

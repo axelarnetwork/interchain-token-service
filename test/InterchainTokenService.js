@@ -214,7 +214,15 @@ describe('Interchain Token Service', () => {
             return [token, tokenManager, tokenId];
         };
 
-    async function deployNewInterchainToken(service, tokenName, tokenSymbol, tokenDecimals, minter = null, mintAmount = 0, skipApprove = false) {
+    async function deployNewInterchainToken(
+        service,
+        tokenName,
+        tokenSymbol,
+        tokenDecimals,
+        minter = null,
+        mintAmount = 0,
+        skipApprove = false,
+    ) {
         const salt = getRandomBytes32();
         const tokenId = await service.interchainTokenId(wallet.address, salt);
         const sourceAddress = service.address;
@@ -244,6 +252,7 @@ describe('Interchain Token Service', () => {
             await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
             if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait);
         }
+        
         if (minter) {
             await token.transferMintership(minter).then((tx) => tx.wait);
         }
@@ -1179,17 +1188,17 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on initiate an interchain token transfer to the ITS HUB', async () => {
-            const [, , tokenId] = await deployFunctions.lockUnlockFee(
-                service,
-                'Test Token lockUnlockFee',
-                'TT',
-                12,
-                amount,
-                false,
-                'free',
-            );
+            const [, , tokenId] = await deployFunctions.lockUnlockFee(service, 'Test Token lockUnlockFee', 'TT', 12, amount, false, 'free');
 
-            await expectRevert((gasOptions) => service.interchainTransfer(tokenId, ITS_HUB_CHAIN_NAME, destAddress, amount, '0x', gasValue, { value: gasValue, ...gasOptions }), service, 'UntrustedChain');
+            await expectRevert(
+                (gasOptions) =>
+                    service.interchainTransfer(tokenId, ITS_HUB_CHAIN_NAME, destAddress, amount, '0x', gasValue, {
+                        value: gasValue,
+                        ...gasOptions,
+                    }),
+                service,
+                'UntrustedChain',
+            );
         });
 
         it('Should revert on initiate interchain token transfer when service is paused', async () => {
@@ -2944,7 +2953,7 @@ describe('Interchain Token Service', () => {
             const name = 'migrated token';
             const symbol = 'MT';
             const decimals = 53;
-            
+
             const [token, tokenManager, tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
 
             await expect(service.migrateInterchainToken(tokenId))
@@ -2966,8 +2975,12 @@ describe('Interchain Token Service', () => {
 
             const [, , tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
 
-            await expectRevert((gasOptions) => service.connect(otherWallet).migrateInterchainToken(tokenId, gasOptions), service, 'NotOwner');
-        })
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).migrateInterchainToken(tokenId, gasOptions),
+                service,
+                'NotOwner',
+            );
+        });
     });
 
     describe('Bytecode checks [ @skip-on-coverage ]', () => {
