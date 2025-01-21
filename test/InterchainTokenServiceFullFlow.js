@@ -334,7 +334,7 @@ describe('Interchain Token Service Full Flow', () => {
 
     /**
      * This test creates a token link between pre-existing tokens by giving mint/burn permission to ITS.
-     * - Deploy or select a mint/burn ERC20 registered with an owner
+     * - Choose the tokens being linked across chains. For the test, a mint/burn ERC20 is deployed for the source chain.
      * - Register token metadata of the token on each chain being linked via ITS
      * - Link the source chain token to each remote token via ITS Factory
      * - Give/transfer mint/burn permission to the corresponding token manager on each chain
