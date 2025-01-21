@@ -358,9 +358,9 @@ describe('Interchain Token Service Full Flow', () => {
         it('Should register token metadata', async () => {
             // Register token metadata being linked from the source chain
             // Similarly, submit this registration from ITS contract of all chains for the corresponding token addresses being linked
-            await expect(service.registerTokenMetadata(token.address, { value: registrationGasValue }))
+            await expect(service.registerTokenMetadata(token.address, registrationGasValue, { value: registrationGasValue }))
                 .to.emit(service, 'TokenMetadataRegistered')
-                .withArgs(token.address, registrationGasValue, wallet.address);
+                .withArgs(token.address, decimals);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
