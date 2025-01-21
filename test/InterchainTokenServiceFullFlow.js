@@ -357,7 +357,10 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register token metadata', async () => {
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes', 'uint8'], [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, token.address, decimals]);
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes', 'uint8'],
+                [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, token.address, decimals],
+            );
             const payloadHash = keccak256(payload);
 
             // Register token metadata being linked from the source chain
