@@ -28,6 +28,7 @@ const {
     ITS_HUB_CHAIN_NAME,
     ITS_HUB_ROUTING_IDENTIFIER,
     ITS_HUB_ADDRESS,
+    MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
 } = require('./constants');
 
 describe('Interchain Token Service Full Flow', () => {
@@ -334,16 +335,17 @@ describe('Interchain Token Service Full Flow', () => {
 
     /**
      * This test creates a token link between pre-existing tokens by giving mint/burn permission to ITS.
-     * - Deploy a normal mint/burn ERC20 registered with an owner
-     * - Deploy a mint/burn token manager for the token on all chains
-     * - Transfer mint/burn permission (minter role) to ITS
+     * - Choose the tokens being linked across chains. For the test, a mint/burn ERC20 is deployed for the source chain.
+     * - Register token metadata of the token on each chain being linked via ITS
+     * - Link the source chain token to each remote token via ITS Factory
+     * - Give/transfer mint/burn permission to the corresponding token manager on each chain
      * - Transfer tokens via ITS between chains
      */
     describe('Pre-existing Token as Mint/Burn', () => {
         let token;
         const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
-        const registrationGasValue = 9012;
+        const registrationGasValue = 1234;
         const tokenCap = 1e9;
         const salt = getRandomBytes32();
 
@@ -354,20 +356,30 @@ describe('Interchain Token Service Full Flow', () => {
             await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
         });
 
+        it('Should register token metadata', async () => {
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes', 'uint8'],
+                [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, token.address, decimals],
+            );
+            const payloadHash = keccak256(payload);
+
+            // Register token metadata being linked from the source chain
+            // Similarly, submit this registration from ITS contract of all chains for the corresponding token addresses being linked
+            await expect(service.registerTokenMetadata(token.address, registrationGasValue, { value: registrationGasValue }))
+                .to.emit(service, 'TokenMetadataRegistered')
+                .withArgs(token.address, decimals)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, payload);
+        });
+
         it('Should register the token and initiate its deployment on other chains', async () => {
             const tokenManagerImplementationAddress = await service.tokenManager();
             const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
             const params = await tokenManagerImplementation.params(wallet.address, token.address);
-            let tx = await tokenFactory.populateTransaction.registerCustomToken(
-                salt,
-                token.address,
-                MINT_BURN,
-                wallet.address,
-                registrationGasValue,
-            );
+            let tx = await tokenFactory.populateTransaction.registerCustomToken(salt, token.address, MINT_BURN, wallet.address);
             const calls = [tx.data];
-            let value = registrationGasValue;
+            let value = 0;
 
             for (const i in otherChains) {
                 // This should be replaced with the existing token address on each chain being linked
