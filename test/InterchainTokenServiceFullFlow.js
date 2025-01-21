@@ -28,6 +28,7 @@ const {
     ITS_HUB_CHAIN_NAME,
     ITS_HUB_ROUTING_IDENTIFIER,
     ITS_HUB_ADDRESS,
+    MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
 } = require('./constants');
 
 describe('Interchain Token Service Full Flow', () => {
@@ -356,11 +357,16 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register token metadata', async () => {
+            const payload = defaultAbiCoder.encode(['uint256', 'bytes', 'uint8'], [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, token.address, decimals]);
+            const payloadHash = keccak256(payload);
+
             // Register token metadata being linked from the source chain
             // Similarly, submit this registration from ITS contract of all chains for the corresponding token addresses being linked
             await expect(service.registerTokenMetadata(token.address, registrationGasValue, { value: registrationGasValue }))
                 .to.emit(service, 'TokenMetadataRegistered')
-                .withArgs(token.address, decimals);
+                .withArgs(token.address, decimals)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, payload);
         });
 
         it('Should register the token and initiate its deployment on other chains', async () => {
