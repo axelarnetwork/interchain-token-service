@@ -234,20 +234,19 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
 
     /**
      * @notice Register an existing ERC20 token under a `tokenId` computed from the provided `salt`.
-     * A token metadata registration message will also be sent to the ITS Hub.
+     * The token metadata must have been registered for tokens on each chain via `InterchainTokenService.registerTokenMetadata`.
      * This token can then be linked to remote tokens on different chains by submitting the `linkToken` function from the same `msg.sender` and using the same `salt`.
+     * @dev This function is marked as payable since it can be called within a multicall with other payable methods.
      * @param salt The salt used to derive the tokenId for the custom token registration. The same salt must be used when linking this token on other chains under the same tokenId.
      * @param tokenAddress The token address of the token being registered.
      * @param tokenManagerType The token manager type used for the token link.
      * @param operator The operator of the token manager.
-     * @param gasValue The cross-chain gas value used to register the token metadata on the ITS Hub.
      */
     function registerCustomToken(
         bytes32 salt,
         address tokenAddress,
         TokenManagerType tokenManagerType,
-        address operator,
-        uint256 gasValue
+        address operator
     ) external payable returns (bytes32 tokenId);
 
     /**

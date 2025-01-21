@@ -334,16 +334,17 @@ describe('Interchain Token Service Full Flow', () => {
 
     /**
      * This test creates a token link between pre-existing tokens by giving mint/burn permission to ITS.
-     * - Deploy a normal mint/burn ERC20 registered with an owner
-     * - Deploy a mint/burn token manager for the token on all chains
-     * - Transfer mint/burn permission (minter role) to ITS
+     * - Deploy or select a mint/burn ERC20 registered with an owner
+     * - Register token metadata of the token on each chain being linked via ITS
+     * - Link the source chain token to each remote token via ITS Factory
+     * - Give/transfer mint/burn permission to the corresponding token manager on each chain
      * - Transfer tokens via ITS between chains
      */
     describe('Pre-existing Token as Mint/Burn', () => {
         let token;
         const otherChains = ['chain 1', 'chain 2'];
         const gasValues = [1234, 5678];
-        const registrationGasValue = 9012;
+        const registrationGasValue = 1234;
         const tokenCap = 1e9;
         const salt = getRandomBytes32();
 
@@ -354,20 +355,22 @@ describe('Interchain Token Service Full Flow', () => {
             await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
         });
 
+        it('Should register token metadata', async () => {
+            // Register token metadata being linked from the source chain
+            // Similarly, submit this registration from ITS contract of all chains for the corresponding token addresses being linked
+            await expect(service.registerTokenMetadata(token.address, { value: registrationGasValue }))
+                .to.emit(service, 'TokenMetadataRegistered')
+                .withArgs(token.address, registrationGasValue, wallet.address);
+        });
+
         it('Should register the token and initiate its deployment on other chains', async () => {
             const tokenManagerImplementationAddress = await service.tokenManager();
             const tokenManagerImplementation = await getContractAt('TokenManager', tokenManagerImplementationAddress, wallet);
 
             const params = await tokenManagerImplementation.params(wallet.address, token.address);
-            let tx = await tokenFactory.populateTransaction.registerCustomToken(
-                salt,
-                token.address,
-                MINT_BURN,
-                wallet.address,
-                registrationGasValue,
-            );
+            let tx = await tokenFactory.populateTransaction.registerCustomToken(salt, token.address, MINT_BURN, wallet.address);
             const calls = [tx.data];
-            let value = registrationGasValue;
+            let value = 0;
 
             for (const i in otherChains) {
                 // This should be replaced with the existing token address on each chain being linked
