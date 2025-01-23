@@ -1,5 +1,19 @@
 # @axelar-network/interchain-token-service
 
+## 2.1.0
+
+### Minor Changes
+
+-   9ada6d4: Remove callContractWithInterchainToken to reduce bytecode size. Apps should use interchainTransfer instead.
+-   8bf4b60: Interchain tokens now get minted/burnt by the token manager to be consistent with custom tokens
+-   d61ef1b: Remove auto-registration of token metadata in ITS factory registerCustomToken. registerTokenMetadata on ITS should be called instead for every token being linked explicitly.
+-   1c09736: Add auto-migration of minter for native interchain tokens
+-   869b412: Remove minter arg from deployRemoteInterchainToken. deployRemoteInterchainTokenWithMinter can be used instead.
+
+### Patch Changes
+
+-   1c98f3c: Remove flow limit queries from ITS to reduce bytecode size. They can still be queried from the corresponding token manager.
+
 ## 2.0.1
 
 ### Patch Changes
