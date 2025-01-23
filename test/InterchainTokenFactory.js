@@ -1002,9 +1002,7 @@ describe('InterchainTokenFactory', () => {
             it('Should initialize a remote link as interchain token deployment', async () => {
                 await deployAndRegisterToken();
 
-                const remoteTokenAddress = '0x1234';
                 const minter = '0x5789';
-                const type = LOCK_UNLOCK;
                 const payload = defaultAbiCoder.encode(
                     ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                     [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter],
@@ -1018,21 +1016,16 @@ describe('InterchainTokenFactory', () => {
 
                 await expect(
                     reportGas(
-                        tokenFactory.linkAsInterchainToken(salt, destinationChain, name, symbol, decimals, minter, gasValue, { value: gasValue }),
+                        tokenFactory.linkAsInterchainToken(salt, destinationChain, name, symbol, decimals, minter, gasValue, {
+                            value: gasValue,
+                        }),
                         'Send deployInterchainToken to link a token to remote chain',
                     ),
                 )
                     .to.emit(service, 'InterchainTokenIdClaimed')
                     .withArgs(tokenId, AddressZero, await tokenFactory.linkedTokenDeploySalt(wallet.address, salt))
                     .to.emit(service, 'InterchainTokenDeploymentStarted')
-                    .withArgs(
-                        tokenId,
-                        name,
-                        symbol,
-                        decimals,
-                        minter.toLowerCase(),
-                        destinationChain,
-                    )
+                    .withArgs(tokenId, name, symbol, decimals, minter.toLowerCase(), destinationChain)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                     .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
                     .and.to.emit(gateway, 'ContractCall')
