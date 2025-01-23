@@ -557,6 +557,34 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         );
     }
 
+    /**
+     * @notice Links a remote token on `destinationChain` to a local token corresponding to the `tokenId` computed from the provided `salt`.
+     * A local token must have been registered first using the `registerCustomToken` function.
+     * @param salt The salt used to derive the tokenId for the custom token registration. The same salt must be used when linking this token on other chains under the same tokenId.
+     * @param destinationChain The name of the destination chain.
+     * @param name The token name on destination chain.
+     * @param symbol The token symbol on destination chain.
+     * @param decimals The token decimals on destination chain.
+     * @param linkParams Additional parameters for the token link depending on the destination chain. For EVM destination chains, this is an optional custom operator address.
+     * @param gasValue The cross-chain gas value used to link the token on the destination chain.
+     * @return tokenId The tokenId corresponding to the linked token.
+     */
+    function linkAsInterchainToken(
+        bytes32 salt,
+        string calldata destinationChain,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        bytes calldata linkParams,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId) {
+        bytes32 deploySalt = linkedTokenDeploySalt(msg.sender, salt);
+        if (bytes(destinationChain).length == 0) {
+            revert CannotLinkTokenToThisChain();
+        }
+        tokenId = _deployInterchainToken(deploySalt, destinationChain, name, symbol, decimals, linkParams, gasValue);
+    }
+
     /********************\
     |* Pure Key Getters *|
     \********************/

@@ -22,6 +22,7 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
     error InvalidTokenId(bytes32 tokenId, bytes32 expectedTokenId);
     error ZeroSupplyToken();
     error NotToken(address tokenAddress);
+    error CannotLinkTokenToThisChain();
 
     /// @notice Emitted when a minter approves a deployer for a remote interchain token deployment that uses a custom destinationMinter address.
     event DeployRemoteInterchainTokenApproval(
@@ -265,6 +266,28 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
         string calldata destinationChain,
         bytes calldata destinationTokenAddress,
         TokenManagerType tokenManagerType,
+        bytes calldata linkParams,
+        uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Links a remote token on `destinationChain` to a local token corresponding to the `tokenId` computed from the provided `salt`.
+     * A local token must have been registered first using the `registerCustomToken` function.
+     * @param salt The salt used to derive the tokenId for the custom token registration. The same salt must be used when linking this token on other chains under the same tokenId.
+     * @param destinationChain The name of the destination chain.
+     * @param name The token name on destination chain.
+     * @param symbol The token symbol on destination chain.
+     * @param decimals The token decimals on destination chain.
+     * @param linkParams Additional parameters for the token link depending on the destination chain. For EVM destination chains, this is an optional custom operator address.
+     * @param gasValue The cross-chain gas value used to link the token on the destination chain.
+     * @return tokenId The tokenId corresponding to the linked token.
+     */
+    function linkAsInterchainToken(
+        bytes32 salt,
+        string calldata destinationChain,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
         bytes calldata linkParams,
         uint256 gasValue
     ) external payable returns (bytes32 tokenId);
