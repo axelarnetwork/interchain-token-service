@@ -1,7 +1,7 @@
 name: Upload Docs
 
 on:
-  pull_request:
+  push:
     branches:
       - main
       - ci/evm-docs-to-github-pages
@@ -22,15 +22,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup tools
+        uses: ./.github/actions/setup-tools
         with:
-          node-version: '18'
+          install-nodejs: 'true'
 
-      - name: Install dependencies
-        run: |
-          npm install
-          npm install -g solidity-docgen
+      - name: Install docgen
+        run: npm install -g solidity-docgen
 
       - name: Build Solidity documentation
         run: npx hardhat docgen
@@ -54,13 +52,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
 
-  # deploy:
-  #   needs: build
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-  #   runs-on: blacksmith-2vcpu-ubuntu-2204
-  #   steps:
-  #     - name: Deploy to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@v4
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
