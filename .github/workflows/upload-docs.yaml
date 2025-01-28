@@ -43,8 +43,8 @@ jobs:
         run: |
           find docs -name '*.md' -exec sh -c 'sed -i "" "s/href=\"\([^\"]*\)\.md\([#^\"]*\)\?\"/href=\"\1.html\2\"/g" "$0"' {} \;
 
-      # - name: Setup Pages
-      #   uses: actions/configure-pages@v5
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
@@ -59,7 +59,7 @@ jobs:
   #   environment:
   #     name: github-pages
   #     url: ${{ steps.deployment.outputs.page_url }}
-  #   runs-on: ubuntu-latest
+  #   runs-on: blacksmith-2vcpu-ubuntu-2204
   #   steps:
   #     - name: Deploy to GitHub Pages
   #       id: deployment
