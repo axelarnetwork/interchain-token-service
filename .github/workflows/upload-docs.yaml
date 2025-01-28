@@ -35,15 +35,15 @@ jobs:
       - name: Build Solidity documentation
         run: npx hardhat docgen
 
-      - name: Add YAML front matter
+      - name: Add YAML front matter for Jekyll
         run: |
           find docs -name '*.md' -exec sh -c 'sed -i "" "1s/^/---\nlayout: default\n---\n/" "$0"' {} \;
 
-      - name: Update Links in Markdown Files
+      - name: Update Links in Markdown Files to HTML
         run: |
           find docs -name '*.md' -exec sh -c 'sed -i "" "s/href=\"\([^\"]*\)\.md\([#^\"]*\)\?\"/href=\"\1.html\2\"/g" "$0"' {} \;
 
-      - name: Setup Pages
+      - name: Setup Github Pages
         uses: actions/configure-pages@v5
 
       - name: Build with Jekyll
@@ -54,13 +54,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
 
-  # deploy:
-  #   needs: build
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-  #   runs-on: blacksmith-2vcpu-ubuntu-2204
-  #   steps:
-  #     - name: Deploy to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@v4
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
