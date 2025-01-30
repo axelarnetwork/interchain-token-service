@@ -1,6 +1,6 @@
 # Solidity API
 
-## Top-Level Files
+# Contracts
 - [TokenHandler](TokenHandler.md)
 - [InterchainTokenFactory](InterchainTokenFactory.md)
 - [InterchainTokenService](InterchainTokenService.md)
