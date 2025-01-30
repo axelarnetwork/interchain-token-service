@@ -1,6 +1,6 @@
 # Solidity API
 
-# Contracts
+## Contracts
 - [TokenHandler](TokenHandler.md)
 - [InterchainTokenFactory](InterchainTokenFactory.md)
 - [InterchainTokenService](InterchainTokenService.md)
