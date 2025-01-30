@@ -91,6 +91,6 @@ module.exports = {
     docgen: {
         path: 'docs',
         clear: true,
-        pages: "files"
+        pages: 'files',
     },
 };

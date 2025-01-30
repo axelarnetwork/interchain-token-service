@@ -30,8 +30,8 @@ jobs:
       - name: Install Solidity docgen
         run: npm install -g solidity-docgen
 
-      # - name: Build Solidity documentation
-      #   run: npx hardhat docgen
+      - name: Build Solidity documentation
+        run: npx hardhat docgen
 
       - name: Add YAML front matter for Jekyll
         run: |
