@@ -1,4 +1,4 @@
-# Solodity API
+# Solidity API
 
 ## Top-Level Files
 - [TokenHandler](TokenHandler.md)
