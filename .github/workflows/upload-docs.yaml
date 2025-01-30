@@ -27,7 +27,7 @@ jobs:
         with:
           install-nodejs: 'true'
 
-      - name: Install docgen
+      - name: Install Solidity docgen
         run: npm install -g solidity-docgen
 
       - name: Build Solidity documentation
