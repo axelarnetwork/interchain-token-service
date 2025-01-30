@@ -1,3 +1,5 @@
+# Solidity API
+
 ## IBaseTokenManager
 
 This contract is defines the base token manager interface implemented by all token managers.
@@ -32,3 +34,4 @@ function getTokenAddressFromParams(bytes params) external pure returns (address)
 ```
 
 A function that should return the token address from the init params.
+

@@ -1,3 +1,5 @@
+# Solidity API
+
 ## IAddressTracker
 
 This interface allows setting and removing a trusted address for a specific chain.
@@ -32,3 +34,4 @@ Remove the trusted address of the chain.
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | chain | string | Chain name to remove the trusted address for. |
+

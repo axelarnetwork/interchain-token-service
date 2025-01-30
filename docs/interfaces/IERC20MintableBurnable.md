@@ -1,3 +1,5 @@
+# Solidity API
+
 ## IERC20MintableBurnable
 
 _Interface of the ERC20 standard as defined in the EIP._
@@ -35,3 +37,4 @@ _Can only be called by the minter address._
 | ---- | ---- | ----------- |
 | from | address | The address that will have its tokens burnt. |
 | amount | uint256 | The amount of tokens to burn. |
+

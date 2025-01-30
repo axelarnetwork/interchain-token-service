@@ -1,3 +1,5 @@
+# Solidity API
+
 ## IERC20Named
 
 _Interface of the ERC20 standard as defined in the EIP._
@@ -43,3 +45,4 @@ Getter for the decimals of the token.
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint8 | uint8 The decimals of the token. |
+
