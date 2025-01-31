@@ -1,3 +1,0 @@
-# Types
-
-- [InterchainTokenServiceTypes](InterchainTokenServiceTypes.md)

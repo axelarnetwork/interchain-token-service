@@ -16,7 +16,8 @@
     "coverage": "cross-env COVERAGE=true hardhat coverage",
     "release": "npm run build && npm run build:ts && npm run flatten && npm run clean:artifacts && changeset publish",
     "release-snapshot": "npm run build && npm run build:ts && npm run flatten && npm run clean:artifacts && npm version 0.0.0-snapshot.$(git rev-parse --short HEAD) --git-tag-version=false && npm publish --no-git-checks --tag snapshot --access public",
-    "cs": "changeset"
+    "cs": "changeset",
+    "generate-overview-docs": "node scripts/generateOverviewDocs.js"
   },
   "keywords": [
     "axelar",

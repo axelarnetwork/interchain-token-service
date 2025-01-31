@@ -32,6 +32,9 @@ jobs:
       - name: Build Solidity documentation
         run: npx hardhat docgen
 
+      - name: Generate Overview Documentation
+        run: npm run generate-overview-docs
+
       - name: Add YAML front matter for Jekyll
         run: |
           find docs -name '*.md' -exec sh -c 'sed -i "" "1s/^/---\nlayout: default\n---\n/" "$0"' {} \;
