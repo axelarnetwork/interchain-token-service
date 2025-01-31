@@ -88,4 +88,9 @@ module.exports = {
         strict: process.env.CHECK_CONTRACT_SIZE,
         except: ['contracts/test'],
     },
+    docgen: {
+        path: 'docs',
+        clear: true,
+        pages: 'files',
+    },
 };
