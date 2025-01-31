@@ -28,6 +28,9 @@ jobs:
 
       - name: Install Solidity docgen
         run: npm install -g solidity-docgen
+      
+      - name: Create docs directory
+        run: mkdir -p docs
 
       - name: Build Solidity documentation
         run: npx hardhat docgen
