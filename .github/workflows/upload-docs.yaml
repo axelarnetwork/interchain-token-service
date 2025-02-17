@@ -36,7 +36,7 @@ jobs:
           branches: main,ci/evm-docs-to-github-pages
           environment_name: github-pages
           script: scripts/generate-docs.js
-          
+
   deploy:
     needs: upload-docs
     environment:
