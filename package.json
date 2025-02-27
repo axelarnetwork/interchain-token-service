@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@axelar-network/axelar-cgp-solidity": "6.4.0",
-    "@axelar-network/axelar-gmp-sdk-solidity": "6.0.5"
+    "@axelar-network/axelar-gmp-sdk-solidity": "6.0.6"
   },
   "devDependencies": {
     "@axelar-network/axelar-chains-config": "^1.3.0",
