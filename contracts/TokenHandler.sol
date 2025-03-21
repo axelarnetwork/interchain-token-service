@@ -35,8 +35,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
-        _migrateToken(tokenManager, tokenAddress, tokenManagerType);
-
         /// @dev Track the flow amount being received via the message
         ITokenManager(tokenManager).addFlowIn(amount);
 
@@ -71,8 +69,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
 
         if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
-
-        _migrateToken(tokenManager, tokenAddress, tokenManagerType);
 
         if (
             tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) || tokenManagerType == uint256(TokenManagerType.MINT_BURN)
@@ -174,18 +170,5 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
     function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {
         IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
-    }
-
-    /**
-     * @notice This transfers mintership of a native Interchain token to the tokenManager if ITS is still its minter.
-     * It does nothing if ITS is not the minter. This ensures that interchain tokens are auto-migrated without requiring a downtime for ITS.
-     * @param tokenManager The token manager address to transfer mintership to.
-     * @param tokenAddress The address of the token to transfer mintership of.
-     * @param tokenManagerType The token manager type for the token.
-     */
-    function _migrateToken(address tokenManager, address tokenAddress, uint256 tokenManagerType) internal {
-        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN) && IMinter(tokenAddress).isMinter(address(this))) {
-            IMinter(tokenAddress).transferMintership(tokenManager);
-        }
     }
 }
