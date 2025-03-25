@@ -105,14 +105,13 @@ describe('Interchain Token Service Upgrade Flow', () => {
             tokenHandler.address,
             gatewayCaller.address,
             chainName,
+            ITS_HUB_ADDRESS,
             [],
             deploymentKey,
             wallet.address,
         );
 
         tokenFactory = await deployInterchainTokenFactory(wallet, create3Deployer.address, service.address, deploymentKey + 'Factory');
-
-        await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
 
         await service.transferOwnership(axelarServiceGovernance.address).then((tx) => tx.wait);
     });

@@ -10,9 +10,9 @@ const {
     getContractAt,
 } = ethers;
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
-const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
+const { getCreate3Address, deployAndInitContractConstant } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
-const { getRandomBytes32, getRandomInt, expectRevert, gasReporter, getEVMVersion } = require('./utils');
+const { getRandomBytes32, getRandomInt, expectRevert, gasReporter, getEVMVersion, waitFor } = require('./utils');
 const { deployAll, deployContract, deployInterchainTokenService } = require('../scripts/deploy');
 const {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
@@ -33,6 +33,7 @@ const {
     ITS_HUB_ADDRESS,
     MINTER_ROLE,
     MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
+    MESSAGE_TYPE_SEND_TO_HUB,
 } = require('./constants');
 
 const reportGas = gasReporter('Interchain Token Service');
@@ -74,16 +75,19 @@ describe('Interchain Token Service', () => {
             tokenId,
         ]);
 
-        const sourceAddress = service.address;
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
         const payload = defaultAbiCoder.encode(
             ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
             [MESSAGE_TYPE_LINK_TOKEN, tokenId, tokenManagerType, sourceTokenAddress, token.address, minter],
         );
-        const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+        const wrappedPayload = defaultAbiCoder.encode(
+            ['uint256', 'string', 'bytes'],
+            [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+        );
+        const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
         const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-        await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
+        await expect(reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
             .to.emit(service, 'TokenManagerDeployed')
             .withArgs(tokenId, expectedTokenManagerAddress, tokenManagerType, params);
 
@@ -149,10 +153,14 @@ describe('Interchain Token Service', () => {
             ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
             [MESSAGE_TYPE_LINK_TOKEN, tokenId, tokenManagerType, sourceTokenAddress, token.address, minter],
         );
-        const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+        const wrappedPayload = defaultAbiCoder.encode(
+            ['uint256', 'string', 'bytes'],
+            [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+        );
+        const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
         const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-        await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
+        await expect(reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
             .to.emit(service, 'TokenManagerDeployed')
             .withArgs(tokenId, expectedTokenManagerAddress, tokenManagerType, params);
 
@@ -202,10 +210,14 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
                 [MESSAGE_TYPE_LINK_TOKEN, tokenId, tokenManagerType, sourceTokenAddress, token.address, minter],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
+            await expect(reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, tokenManagerType, params);
 
@@ -235,9 +247,13 @@ describe('Interchain Token Service', () => {
             ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
             [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, wallet.address, operator],
         );
-        const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+        const wrappedPayload = defaultAbiCoder.encode(
+            ['uint256', 'string', 'bytes'],
+            [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+        );
+        const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-        await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+        await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
             .to.emit(service, 'InterchainTokenDeployed')
             .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
             .and.to.emit(service, 'TokenManagerDeployed')
@@ -270,6 +286,7 @@ describe('Interchain Token Service', () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
         otherWallet = wallets[1];
+
         ({
             service,
             gateway,
@@ -281,7 +298,7 @@ describe('Interchain Token Service', () => {
             tokenManager,
             tokenHandler,
             gatewayCaller,
-        } = await deployAll(wallet, 'Test', [sourceChain, destinationChain]));
+        } = await deployAll(wallet, 'Test', ITS_HUB_ADDRESS, [sourceChain, destinationChain]));
 
         testToken = await deployContract(wallet, 'TestInterchainTokenStandard', [
             'Test Token',
@@ -336,15 +353,6 @@ describe('Interchain Token Service', () => {
             );
 
             await expectRevert((gasOptions) => serviceTest.setupTest(params, gasOptions), serviceTest, 'InvalidChainName');
-
-            trustedAddresses.pop();
-
-            params = defaultAbiCoder.encode(
-                ['address', 'string', 'string[]', 'string[]'],
-                [operator, chainName, trustedChainNames, trustedAddresses],
-            );
-
-            await expectRevert((gasOptions) => serviceTest.setupTest(params, gasOptions), serviceTest, 'LengthMismatch');
         });
 
         it('Should revert on invalid interchain token factory', async () => {
@@ -362,6 +370,7 @@ describe('Interchain Token Service', () => {
                         tokenHandler.address,
                         gatewayCaller.address,
                         chainName,
+                        ITS_HUB_ADDRESS,
                         [],
                         deploymentKey,
                         gasOptions,
@@ -386,6 +395,7 @@ describe('Interchain Token Service', () => {
                         tokenHandler.address,
                         gatewayCaller.address,
                         chainName,
+                        ITS_HUB_ADDRESS,
                         [],
                         deploymentKey,
                         gasOptions,
@@ -410,6 +420,7 @@ describe('Interchain Token Service', () => {
                         tokenHandler.address,
                         gatewayCaller.address,
                         '',
+                        ITS_HUB_ADDRESS,
                         [],
                         deploymentKey,
                         gasOptions,
@@ -455,6 +466,7 @@ describe('Interchain Token Service', () => {
                         tokenHandler.address,
                         gatewayCaller.address,
                         chainName,
+                        ITS_HUB_ADDRESS,
                         [],
                         deploymentKey,
                         gasOptions,
@@ -479,6 +491,7 @@ describe('Interchain Token Service', () => {
                         tokenHandler.address,
                         gatewayCaller.address,
                         chainName,
+                        ITS_HUB_ADDRESS,
                         [],
                         deploymentKey,
                         gasOptions,
@@ -503,6 +516,7 @@ describe('Interchain Token Service', () => {
                         tokenHandler.address,
                         gatewayCaller.address,
                         chainName,
+                        ITS_HUB_ADDRESS,
                         [],
                         deploymentKey,
                         gasOptions,
@@ -527,6 +541,7 @@ describe('Interchain Token Service', () => {
                         AddressZero,
                         gatewayCaller.address,
                         chainName,
+                        ITS_HUB_ADDRESS,
                         [],
                         deploymentKey,
                         gasOptions,
@@ -551,12 +566,35 @@ describe('Interchain Token Service', () => {
                         tokenHandler.address,
                         AddressZero,
                         chainName,
+                        ITS_HUB_ADDRESS,
                         [],
                         deploymentKey,
                         gasOptions,
                     ),
                 service,
                 'ZeroAddress',
+            );
+        });
+
+        it('Should revert on invalid its hub address', async () => {
+            await expectRevert(
+                (gasOptions) =>
+                    deployInterchainTokenService(
+                        wallet,
+                        create3Deployer.address,
+                        tokenManagerDeployer.address,
+                        interchainTokenDeployer.address,
+                        gateway.address,
+                        gasService.address,
+                        interchainTokenFactoryAddress,
+                        tokenManager.address,
+                        tokenHandler.address,
+                        gatewayCaller.address,
+                        chainName,
+                        '',
+                        [],
+                        deploymentKey,
+                    ),
             );
         });
 
@@ -647,30 +685,28 @@ describe('Interchain Token Service', () => {
             await expectRevert((gasOptions) => service.connect(otherWallet).setPauseStatus(true, gasOptions), service, 'NotOwner');
         });
 
-        it('Should revert on set trusted address when not called by the owner', async () => {
+        it('Should revert on set trusted chain when not called by the owner', async () => {
             const trustedAddress = otherWallet.address.toString();
 
             await expectRevert(
-                (gasOptions) => service.connect(otherWallet).setTrustedAddress(chain, trustedAddress, gasOptions),
+                (gasOptions) => service.connect(otherWallet).setTrustedChain(chain, gasOptions),
                 service,
                 'NotOwner',
             );
         });
 
-        it('Should set trusted address', async () => {
-            const trustedAddress = otherWallet.address.toString();
-
-            await expect(service.setTrustedAddress(chain, trustedAddress))
-                .to.emit(service, 'TrustedAddressSet')
-                .withArgs(chain, trustedAddress);
+        it('Should set trusted chain', async () => {
+            await expect(service.setTrustedChain(chain))
+                .to.emit(service, 'TrustedChainSet')
+                .withArgs(chain);
         });
 
         it('Should revert on remove trusted address when not called by the owner', async () => {
-            await expectRevert((gasOptions) => service.connect(otherWallet).removeTrustedAddress(chain, gasOptions), service, 'NotOwner');
+            await expectRevert((gasOptions) => service.connect(otherWallet).removeTrustedChain(chain, gasOptions), service, 'NotOwner');
         });
 
         it('Should remove trusted address', async () => {
-            await expect(service.removeTrustedAddress(chain)).to.emit(service, 'TrustedAddressRemoved').withArgs(chain);
+            await expect(service.removeTrustedChain(chain)).to.emit(service, 'TrustedChainRemoved').withArgs(chain);
         });
     });
 
@@ -722,7 +758,6 @@ describe('Interchain Token Service', () => {
         before(async () => {
             salt = getRandomBytes32();
             tokenId = await service.interchainTokenId(wallet.address, salt);
-            sourceAddress = service.address;
 
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const minter = '0x';
@@ -733,9 +768,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter, operator],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, destinationChain, payload],
+            )
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
@@ -766,11 +805,6 @@ describe('Interchain Token Service', () => {
         const tokenName = 'Token Name';
         const tokenSymbol = 'TN';
         const tokenDecimals = 13;
-        let sourceAddress;
-
-        before(async () => {
-            sourceAddress = service.address;
-        });
 
         it('Should revert on receiving a remote interchain token deployment if not approved by the gateway', async () => {
             const tokenId = getRandomBytes32();
@@ -780,9 +814,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, destinationChain, payload],
+            );
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'NotApprovedByGateway',
             );
@@ -799,9 +837,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'],
                 [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter, operator],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, destinationChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(service, 'InterchainTokenDeployed')
                 .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
@@ -824,18 +866,12 @@ describe('Interchain Token Service', () => {
             await expectRevert((gasOptions) => service.registerTokenMetadata(AddressZero, 0, gasOptions), service, 'EmptyTokenAddress');
         });
 
-        it('Should revert if ITS Hub chain is not trusted', async () => {
-            await expectRevert((gasOptions) => service.registerTokenMetadata(token.address, 0, gasOptions), service, 'UntrustedChain');
-        });
-
         it('Should successfully register token metadata', async () => {
             const gasValue = 0;
             const expectedPayload = defaultAbiCoder.encode(
                 ['uint256', 'bytes', 'uint8'],
                 [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, token.address, decimals],
             );
-
-            await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
 
             await expect(reportGas(service.registerTokenMetadata(token.address, gasValue), 'registerTokenMetadata'))
                 .to.emit(service, 'TokenMetadataRegistered')
@@ -946,6 +982,10 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
                 [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, tokenAddress, remoteTokenAddress, minter],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+            );
 
             await expect(
                 reportGas(
@@ -965,9 +1005,9 @@ describe('Interchain Token Service', () => {
                     minter.toLowerCase(),
                 )
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destinationChain, service.address, keccak256(payload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destinationChain, service.address, keccak256(payload), payload);
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
         });
 
         it('Should revert on a remote custom token manager deployment if the token manager does does not exist', async () => {
@@ -1034,10 +1074,15 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
                 [MESSAGE_TYPE_LINK_TOKEN, tokenId, tokenManagerType, sourceTokenAddress, token.address, minter],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            await expect(reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
+            await expect(reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload), 'Receive GMP DEPLOY_TOKEN_MANAGER'))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, tokenManagerType, params);
 
@@ -1066,10 +1111,14 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
                 [MESSAGE_TYPE_LINK_TOKEN, tokenId, tokenManagerType, sourceTokenAddress, token.address, minter],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, expectedTokenManagerAddress, tokenManagerType, params);
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
@@ -1095,10 +1144,14 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
                 [MESSAGE_TYPE_LINK_TOKEN, tokenId, tokenManagerType, sourceTokenAddress, token.address, minter],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'CannotDeploy',
                 [NATIVE_INTERCHAIN_TOKEN],
@@ -1131,7 +1184,11 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x'],
             );
-            const payloadHash = keccak256(payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+            );
+            const payloadHash = keccak256(wrappedPayload);
 
             const transferToAddress = tokenManager.address;
 
@@ -1139,9 +1196,9 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, transferToAddress, amount)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
         });
@@ -1286,6 +1343,7 @@ describe('Interchain Token Service', () => {
                 tokenHandler.address,
                 gatewayCaller.address,
                 'Test',
+                ITS_HUB_ADDRESS,
                 [sourceChain, destinationChain],
                 'InterchainTokenService',
             );
@@ -1330,9 +1388,9 @@ describe('Interchain Token Service', () => {
         it('Should revert on execute if the service is paused', async () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, '0x');
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, '0x');
 
-            await expectRevert((gasOptions) => service.execute(commandId, sourceChain, sourceAddress, '0x', gasOptions), service, 'Pause');
+            await expectRevert((gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, '0x', gasOptions), service, 'Pause');
 
             await service.setPauseStatus(false).then((tx) => tx.wait);
         });
@@ -1344,10 +1402,14 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'uint256'],
                 [INVALID_MESSAGE_TYPE, tokenId, destAddress, amount],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'InvalidMessageType',
                 [INVALID_MESSAGE_TYPE],
@@ -1369,11 +1431,15 @@ describe('Interchain Token Service', () => {
             const invalidPayload = defaultAbiCoder
                 .encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, hexlify(wallet.address)])
                 .slice(0, 32);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, invalidPayload],
+            );
 
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, invalidPayload);
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, invalidPayload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'InvalidPayload',
             );
@@ -1387,10 +1453,14 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expect(
-                reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP INTERCHAIN_TRANSFER lock/unlock'),
+                reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload), 'Receive GMP INTERCHAIN_TRANSFER lock/unlock'),
             )
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
@@ -1405,10 +1475,14 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expect(
-                reportGas(service.execute(commandId, sourceChain, sourceAddress, payload), 'Receive GMP INTERCHAIN_TRANSFER mint/burn'),
+                reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload), 'Receive GMP INTERCHAIN_TRANSFER mint/burn'),
             )
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, destAddress, amount)
@@ -1430,9 +1504,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
@@ -1455,9 +1533,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
@@ -1485,7 +1567,11 @@ describe('Interchain Token Service', () => {
                     ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
                 );
-                const payloadHash = keccak256(payload);
+                const wrappedPayload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+                );
+                const payloadHash = keccak256(wrappedPayload);
 
                 const metadataExpress = '0x00000001';
 
@@ -1509,9 +1595,9 @@ describe('Interchain Token Service', () => {
                     .to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
 
@@ -1526,9 +1612,9 @@ describe('Interchain Token Service', () => {
                     .to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                     .and.to.emit(gasService, 'NativeGasPaidForExpressCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
             });
@@ -1543,7 +1629,11 @@ describe('Interchain Token Service', () => {
                     ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
                 );
-                const payloadHash = keccak256(payload);
+                const wrappedPayload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+                );
+                const payloadHash = keccak256(wrappedPayload);
 
                 const transferToAddress = tokenManager.address;
 
@@ -1559,7 +1649,7 @@ describe('Interchain Token Service', () => {
                     .to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
             });
@@ -1627,9 +1717,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .to.emit(token, 'Transfer')
@@ -1651,9 +1745,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .and.to.emit(service, 'InterchainTransferReceived')
@@ -1670,11 +1768,15 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expect(
                 reportGas(
-                    service.execute(commandId, sourceChain, sourceAddress, payload),
+                    service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload),
                     'Receive GMP INTERCHAIN_TRANSFER_WITH_DATA mint/burn',
                 ),
             )
@@ -1699,11 +1801,15 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expect(
                 reportGas(
-                    service.execute(commandId, sourceChain, sourceAddress, payload),
+                    service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload),
                     'Receive GMP INTERCHAIN_TRANSFER_WITH_DATA mint/burn from',
                 ),
             )
@@ -1734,9 +1840,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, destAddress, amount)
                 .to.emit(token, 'Transfer')
@@ -1758,13 +1868,17 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, AddressZero, amount, data],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             const errorSignatureHash = id('TokenTransferFailed()');
             const errorData = errorSignatureHash.substring(0, 10);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'GiveTokenFailed',
                 [errorData],
@@ -1780,25 +1894,17 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, invalidExecutable.address, amount, data],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'ExecuteWithInterchainTokenFailed',
                 [invalidExecutable.address],
-            );
-        });
-
-        it('Should revert with UntrustedChain when the message type is RECEIVE_FROM_HUB and untrusted chain', async () => {
-            const data = '0x';
-            const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [MESSAGE_TYPE_RECEIVE_FROM_HUB, data]);
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
-
-            await expectRevert(
-                (gasOptions) => service.execute(commandId, sourceChain, sourceAddress, payload, gasOptions),
-                service,
-                'UntrustedChain',
             );
         });
 
@@ -1809,10 +1915,6 @@ describe('Interchain Token Service', () => {
                 [MESSAGE_TYPE_RECEIVE_FROM_HUB, 'untrustedSourceChain', data],
             );
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, payload);
-
-            await expect(service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS))
-                .to.emit(service, 'TrustedAddressSet')
-                .withArgs(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS);
 
             await expectRevert(
                 (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload, gasOptions),
@@ -1833,9 +1935,9 @@ describe('Interchain Token Service', () => {
             );
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, payload);
 
-            await expect(service.setTrustedAddress(sourceChain, ITS_HUB_ROUTING_IDENTIFIER))
-                .to.emit(service, 'TrustedAddressSet')
-                .withArgs(sourceChain, ITS_HUB_ROUTING_IDENTIFIER);
+            await expect(service.setTrustedChain(sourceChain))
+                .to.emit(service, 'TrustedChainSet')
+                .withArgs(sourceChain);
 
             await expectRevert(
                 (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload, gasOptions),
@@ -1878,13 +1980,9 @@ describe('Interchain Token Service', () => {
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, payload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
-            await expect(service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS))
-                .to.emit(service, 'TrustedAddressSet')
-                .withArgs(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS);
-
-            await expect(service.setTrustedAddress(sourceChain, ITS_HUB_ROUTING_IDENTIFIER))
-                .to.emit(service, 'TrustedAddressSet')
-                .withArgs(sourceChain, ITS_HUB_ROUTING_IDENTIFIER);
+            await expect(service.setTrustedChain(sourceChain))
+                .to.emit(service, 'TrustedChainSet')
+                .withArgs(sourceChain);
 
             await expect(
                 reportGas(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload), 'Receive GMP DEPLOY_TOKEN_MANAGER'),
@@ -1900,15 +1998,14 @@ describe('Interchain Token Service', () => {
         it('Should revert with UntrustedChain when receiving a direct message from the ITS Hub. Not supported yet', async () => {
             const data = '0x';
             const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, data]);
-
-            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, payload);
-
-            await expect(service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS))
-                .to.emit(service, 'TrustedAddressSet')
-                .withArgs(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, ITS_HUB_CHAIN_NAME, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'UntrustedChain',
             );
@@ -1929,7 +2026,11 @@ describe('Interchain Token Service', () => {
                     ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x'],
                 );
-                const payloadHash = keccak256(payload);
+                const wrappedPayload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+                );
+                const payloadHash = keccak256(wrappedPayload);
 
                 let transferToAddress = AddressZero;
 
@@ -1946,9 +2047,9 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
 
@@ -1962,9 +2063,9 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, otherWallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, gasValue, otherWallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
             });
@@ -1978,7 +2079,11 @@ describe('Interchain Token Service', () => {
                     ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x'],
                 );
-                const payloadHash = keccak256(payload);
+                const wrappedPayload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+                );
+                const payloadHash = keccak256(wrappedPayload);
 
                 let transferToAddress = AddressZero;
 
@@ -1995,7 +2100,7 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
             });
@@ -2007,7 +2112,11 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x'],
             );
-            const payloadHash = keccak256(payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+            );
+            const payloadHash = keccak256(wrappedPayload);
 
             const transferToAddress = tokenManager.address;
 
@@ -2026,9 +2135,9 @@ describe('Interchain Token Service', () => {
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, transferToAddress, amount)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, spender.address)
+                .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, gasValue, spender.address)
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, sender.address, destinationChain, destAddress, sendAmount, HashZero);
         });
@@ -2069,7 +2178,11 @@ describe('Interchain Token Service', () => {
                     ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, data],
                 );
-                const payloadHash = keccak256(payload);
+                const wrappedPayload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+                );
+                const payloadHash = keccak256(wrappedPayload);
 
                 let transferToAddress = AddressZero;
 
@@ -2082,9 +2195,9 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, transferToAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, payload)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, destinationChain, service.address, payloadHash, gasValue, wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, keccak256(data));
             });
@@ -2171,9 +2284,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destinationAddress, amount, '0x'],
             );
-            await expect(service.expressExecute(commandId, sourceChain, sourceAddress, payload))
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            await expect(service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(service, 'ExpressExecuted')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address)
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, destinationAddress, amount);
         });
@@ -2183,12 +2300,16 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', ' bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, AddressZero, amount, data],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
 
             const errorSignatureHash = id('TokenTransferFailed()');
             const errorData = errorSignatureHash.substring(0, 10);
 
             await expectRevert(
-                (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'TokenHandlerFailed',
                 [errorData],
@@ -2200,9 +2321,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', ' bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, invalidExecutable.address, amount, data],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
 
             await expectRevert(
-                (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'ExpressExecuteWithInterchainTokenFailed',
                 [invalidExecutable.address],
@@ -2214,9 +2339,13 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', ' bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, executable.address, amount, data],
             );
-            await expect(service.expressExecute(commandId, sourceChain, sourceAddress, payload))
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            await expect(service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(service, 'ExpressExecuted')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address)
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address)
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, executable.address, amount)
                 .and.to.emit(token, 'Transfer')
@@ -2321,11 +2450,15 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
 
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expectRevert(
-                (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'AlreadyExecuted',
             );
@@ -2339,10 +2472,14 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'uint256'],
                 [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, destAddress, amount],
             );
-            const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
             await expectRevert(
-                (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
+                (gasOptions) => service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
                 service,
                 'InvalidExpressMessageType',
                 [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER],
@@ -2357,16 +2494,20 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
 
             const commandId = getRandomBytes32();
-            await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
         });
 
         it('Should be able to receive native_interchain token', async () => {
@@ -2379,18 +2520,21 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
             const commandId = getRandomBytes32();
+            
+            await (await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload)).wait();
+            expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(wallet.address);
 
-            await (await service.expressExecute(commandId, sourceChain, sourceAddress, payload)).wait();
-            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
-
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
-
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
         });
 
         it('Should be able to receive mint_burn token', async () => {
@@ -2402,18 +2546,22 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
             const commandId = getRandomBytes32();
 
-            await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
-            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(wallet.address);
 
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
         });
 
         it('Should be able to receive mint_burn_from token', async () => {
@@ -2425,18 +2573,22 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
             const commandId = getRandomBytes32();
 
-            await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
-            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(wallet.address);
 
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
         });
 
         it('Should be able to receive lock_unlock_with_fee token', async () => {
@@ -2454,18 +2606,22 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
             const commandId = getRandomBytes32();
 
-            await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
-            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(wallet.address);
 
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
         });
 
         it('Should be able to receive lock_unlock_with_fee token with normal ERC20 token', async () => {
@@ -2485,18 +2641,22 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destAddress, amount, '0x'],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
             const commandId = getRandomBytes32();
 
-            await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
-            expect(await service.getExpressExecutor(commandId, sourceChain, sourceAddress, keccak256(payload))).to.equal(wallet.address);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(wallet.address);
 
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
         });
     });
 
@@ -2530,17 +2690,21 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
 
             const commandId = getRandomBytes32();
-            await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
 
-            const tx = service.execute(commandId, sourceChain, sourceAddress, payload);
+            const tx = service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload);
             await expect(tx)
                 .to.emit(token, 'Transfer')
                 .withArgs(tokenManager.address, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -2557,16 +2721,20 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
 
             const commandId = getRandomBytes32();
-            await (await service.expressExecute(commandId, sourceChain, sourceAddress, payload)).wait();
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+            await (await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload)).wait();
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -2581,16 +2749,20 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddressForService, destAddress, amount, data],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
 
             const commandId = getRandomBytes32();
-            await service.expressExecute(commandId, sourceChain, sourceAddress, payload).then((tx) => tx.wait);
-            await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload, getRandomBytes32(), 0, commandId);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload, getRandomBytes32(), 0, commandId);
 
-            await expect(service.execute(commandId, sourceChain, sourceAddress, payload))
+            await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
                 .to.emit(token, 'Transfer')
                 .withArgs(AddressZero, wallet.address, amount)
                 .and.to.emit(service, 'ExpressExecutionFulfilled')
-                .withArgs(commandId, sourceChain, sourceAddress, keccak256(payload), wallet.address);
+                .withArgs(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wallet.address);
 
             expect(await executable.lastMessage()).to.equal(msg);
         });
@@ -2661,9 +2833,13 @@ describe('Interchain Token Service', () => {
                     ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), wallet.address, amount, '0x'],
                 );
-                const commandId = await approveContractCall(gateway, destinationChain, service.address, service.address, payload);
+                const wrappedPayload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+                );
+                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-                return service.execute(commandId, destinationChain, service.address, payload);
+                return service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload);
             }
 
             await receiveToken(sendAmount).then((tx) => tx.wait);
@@ -2707,9 +2883,13 @@ describe('Interchain Token Service', () => {
                     ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), wallet.address, amount, '0x'],
                 );
-                const commandId = await approveContractCall(gateway, destinationChain, service.address, service.address, payload);
+                const wrappedPayload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+                );
+                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-                return service.execute(commandId, destinationChain, service.address, payload);
+                return service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload);
             }
 
             const errorSignatureHash = id('FlowLimitOverflow(uint256,uint256,address)');
@@ -2894,7 +3074,7 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
             await expectRevert(
-                (gasOptions) => service.contractCallValue(sourceChain, trustedAddress, payload, gasOptions),
+                (gasOptions) => service.contractCallValue(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload, gasOptions),
                 service,
                 'Pause',
             );
@@ -2911,7 +3091,7 @@ describe('Interchain Token Service', () => {
             );
 
             await expectRevert(
-                (gasOptions) => service.contractCallValue(sourceChain, trustedAddress, payload, gasOptions),
+                (gasOptions) => service.contractCallValue(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, payload, gasOptions),
                 service,
                 'InvalidExpressMessageType',
                 [message],
@@ -2926,8 +3106,12 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [message, tokenId, '0x', '0x', amount, '0x'],
             );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
+            );
 
-            const [tokenAddress, returnedAmount] = await service.contractCallValue(sourceChain, trustedAddress, payload);
+            const [tokenAddress, returnedAmount] = await service.contractCallValue(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload);
 
             expect(tokenAddress).to.eq(token.address);
             expect(returnedAmount).to.eq(amount);

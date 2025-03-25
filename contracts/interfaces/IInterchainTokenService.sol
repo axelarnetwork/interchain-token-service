@@ -12,7 +12,7 @@ import { ITokenManager } from './ITokenManager.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 import { IOperator } from './IOperator.sol';
-import { IAddressTracker } from './IAddressTracker.sol';
+import { IChainTracker } from './IChainTracker.sol';
 
 /**
  * @title IInterchainTokenService Interface
@@ -26,7 +26,7 @@ interface IInterchainTokenService is
     IOperator,
     IPausable,
     IMulticall,
-    IAddressTracker,
+    IChainTracker,
     IUpgradable
 {
     error InvalidChainName();
@@ -56,6 +56,7 @@ interface IInterchainTokenService is
     error EmptyTokenAddress();
     error NotSupported();
     error NotInterchainTokenFactory(address sender);
+    error InvalidHubAddress();
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
