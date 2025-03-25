@@ -3137,7 +3137,7 @@ describe('Interchain Token Service', () => {
     describe('Call contract value', () => {
         const untrustedAddress = 'untrusted address';
         const amount = 100;
-        
+
         it('Should revert on contractCallValue if not called by remote service', async () => {
             const payload = '0x';
 

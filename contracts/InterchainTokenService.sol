@@ -658,17 +658,17 @@ contract InterchainTokenService is
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        (address operator, string memory chainName_, string memory itsHubAddress, string[] memory trustedChainNames) = abi.decode(
+        (address operator, string memory chainName_, string memory itsHubAddress_, string[] memory trustedChainNames) = abi.decode(
             params,
             (address, string, string, string[])
         );
         if (operator == address(0)) revert ZeroAddress();
         if (bytes(chainName_).length == 0 || keccak256(bytes(chainName_)) != chainNameHash) revert InvalidChainName();
-        if (bytes(itsHubAddress).length == 0) revert InvalidHubAddress();
+        if (bytes(itsHubAddress_).length == 0) revert InvalidHubAddress();
 
         _addOperator(operator);
         _setChainName(chainName_);
-        _setItsHubAddress(itsHubAddress);
+        _setItsHubAddress(itsHubAddress_);
 
         uint256 length = trustedChainNames.length;
         for (uint256 i; i < length; ++i) {
