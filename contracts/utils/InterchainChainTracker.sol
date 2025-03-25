@@ -34,7 +34,7 @@ contract InterchainChainTracker is IInterchainChainTracker {
         }
         emit ItsHubAddressSet(hubAddress);
     }
-    
+
     function itsHubAddress() public view returns (string memory hubAddress) {
         hubAddress = StringStorage.get(ITS_HUB_ADDRESS_SLOT);
     }
@@ -52,7 +52,7 @@ contract InterchainChainTracker is IInterchainChainTracker {
         }
         emit TrustedChainSet(chain);
     }
-    
+
     function _removeTrustedChain(string memory chain) internal {
         bytes32 slot = _getTrustedChainSlot(chain);
         assembly {

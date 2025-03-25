@@ -21,7 +21,7 @@ const {
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
-const { MINT_BURN, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS } = require('./constants');
+const { MINT_BURN, ITS_HUB_ADDRESS } = require('./constants');
 
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, operator;

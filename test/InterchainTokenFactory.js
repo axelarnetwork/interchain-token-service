@@ -549,7 +549,7 @@ describe('InterchainTokenFactory', () => {
             const wrappedPayload = defaultAbiCoder.encode(
                 ['uint256', 'string', 'bytes'],
                 [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-            )
+            );
 
             await expect(
                 tokenFactory['deployRemoteInterchainToken(string,bytes32,address,string,uint256)'](
@@ -985,7 +985,7 @@ describe('InterchainTokenFactory', () => {
                 const wrappedPayload = defaultAbiCoder.encode(
                     ['uint256', 'string', 'bytes'],
                     [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-                )
+                );
 
                 const tokenManager = await getContractAt('TokenManager', await service.deployedTokenManager(tokenId), wallet);
                 expect(await tokenManager.isOperator(AddressZero)).to.be.true;

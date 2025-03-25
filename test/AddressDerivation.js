@@ -12,7 +12,13 @@ const { approveContractCall } = require('../scripts/utils');
 const { getRandomBytes32, getSaltFromKey, isHardhat, getContractJSON } = require('./utils');
 const { create3DeployContract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const Token = getContractJSON('TestInterchainTokenStandard');
-const { NATIVE_INTERCHAIN_TOKEN, MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, MESSAGE_TYPE_RECEIVE_FROM_HUB, ITS_HUB_ADDRESS, ITS_HUB_CHAIN_NAME } = require('./constants');
+const {
+    NATIVE_INTERCHAIN_TOKEN,
+    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+    MESSAGE_TYPE_RECEIVE_FROM_HUB,
+    ITS_HUB_ADDRESS,
+    ITS_HUB_CHAIN_NAME,
+} = require('./constants');
 
 if (isHardhat) {
     describe('Token Address Derivation [ @skip-on-coverage ]', () => {
@@ -33,7 +39,10 @@ if (isHardhat) {
             const wallets = await ethers.getSigners();
             wallet = wallets[0];
 
-            ({ service, gateway, tokenFactory, create3Deployer } = await deployAll(wallet, 'Test', ITS_HUB_ADDRESS, [sourceChain, destinationChain]));
+            ({ service, gateway, tokenFactory, create3Deployer } = await deployAll(wallet, 'Test', ITS_HUB_ADDRESS, [
+                sourceChain,
+                destinationChain,
+            ]));
             token = await create3DeployContract(create3Deployer.address, wallet, Token, 'Test', [
                 tokenName,
                 tokenSymbol,
@@ -61,7 +70,7 @@ if (isHardhat) {
                 const wrappedPayload = defaultAbiCoder.encode(
                     ['uint256', 'string', 'bytes'],
                     [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
-                )
+                );
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
                 await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
@@ -87,7 +96,7 @@ if (isHardhat) {
                 );
                 const wrappedPayload = defaultAbiCoder.encode(
                     ['uint256', 'string', 'bytes'],
-                    [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload]
+                    [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
                 );
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
@@ -131,10 +140,10 @@ if (isHardhat) {
                 const payload = defaultAbiCoder.encode(
                     ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
                     [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, tokenName, tokenSymbol, tokenDecimals, minter],
-                );                
+                );
                 const wrappedPayload = defaultAbiCoder.encode(
                     ['uint256', 'string', 'bytes'],
-                    [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload]
+                    [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
                 );
 
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
@@ -191,7 +200,7 @@ if (isHardhat) {
                     ['uint256', 'string', 'bytes'],
                     [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
                 );
-                
+
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
                 await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
