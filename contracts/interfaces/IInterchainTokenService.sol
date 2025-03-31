@@ -56,7 +56,6 @@ interface IInterchainTokenService is
     error EmptyTokenAddress();
     error NotSupported();
     error NotInterchainTokenFactory(address sender);
-    error InvalidHubAddress();
 
     event InterchainTransfer(
         bytes32 indexed tokenId,

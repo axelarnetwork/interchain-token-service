@@ -327,6 +327,7 @@ describe('Interchain Token Service', () => {
                 gasService.address,
                 interchainTokenFactoryAddress,
                 chainName,
+                ITS_HUB_ADDRESS,
                 tokenManager.address,
                 tokenHandler.address,
                 gatewayCaller.address,

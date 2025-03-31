@@ -15,6 +15,7 @@ contract TestInterchainTokenService is InterchainTokenService {
         address gasService_,
         address interchainTokenFactory_,
         string memory chainName_,
+        string memory itsHubAddress_,
         address tokenManager_,
         address tokenHandler_,
         address gatewayCaller_
@@ -26,6 +27,7 @@ contract TestInterchainTokenService is InterchainTokenService {
             gasService_,
             interchainTokenFactory_,
             chainName_,
+            itsHubAddress_,
             tokenManager_,
             tokenHandler_,
             gatewayCaller_

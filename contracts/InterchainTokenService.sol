@@ -127,10 +127,11 @@ contract InterchainTokenService is
         address gasService_,
         address interchainTokenFactory_,
         string memory chainName_,
+        string memory itsHubAddress_,
         address tokenManagerImplementation_,
         address tokenHandler_,
         address gatewayCaller_
-    ) {
+    ) InterchainChainTracker(itsHubAddress_) {
         if (
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
@@ -166,7 +167,7 @@ contract InterchainTokenService is
      * @param sourceAddress The source address that the call came from.
      */
     modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
-        if (keccak256(bytes(sourceChain)) != ITS_HUB_CHAIN_NAME_HASH || keccak256(bytes(sourceAddress)) != itsHubAddressHash())
+        if (keccak256(bytes(sourceChain)) != ITS_HUB_CHAIN_NAME_HASH || keccak256(bytes(sourceAddress)) != itsHubAddressHash)
             revert NotRemoteService();
 
         _;
@@ -617,18 +618,18 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to set a trusted address for a chain.
-     * @param chain The chain to set the trusted address of.
+     * @param chainName The chain to set the trusted address of.
      */
-    function setTrustedChain(string memory chain) external onlyOwner {
-        _setTrustedChain(chain);
+    function setTrustedChain(string memory chainName) external onlyOwner {
+        _setTrustedChain(chainName);
     }
 
     /**
      * @notice Used to remove a trusted address for a chain.
-     * @param chain The chain to set the trusted address of.
+     * @param chainName The chain to set the trusted address of.
      */
-    function removeTrustedChain(string memory chain) external onlyOwner {
-        _removeTrustedChain(chain);
+    function removeTrustedChain(string memory chainName) external onlyOwner {
+        _removeTrustedChain(chainName);
     }
 
     /**
@@ -658,17 +659,15 @@ contract InterchainTokenService is
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        (address operator, string memory chainName_, string memory itsHubAddress_, string[] memory trustedChainNames) = abi.decode(
+        (address operator, string memory chainName_, string[] memory trustedChainNames) = abi.decode(
             params,
-            (address, string, string, string[])
+            (address, string, string[])
         );
         if (operator == address(0)) revert ZeroAddress();
         if (bytes(chainName_).length == 0 || keccak256(bytes(chainName_)) != chainNameHash) revert InvalidChainName();
-        if (bytes(itsHubAddress_).length == 0) revert InvalidHubAddress();
 
         _addOperator(operator);
         _setChainName(chainName_);
-        _setItsHubAddress(itsHubAddress_);
 
         uint256 length = trustedChainNames.length;
         for (uint256 i; i < length; ++i) {
@@ -774,7 +773,7 @@ contract InterchainTokenService is
     /**
      * @notice Route the ITS message to the destination chain with the given payload
      * @dev This method also determines whether the ITS call should be routed via the ITS Hub.
-     * If the `trustedAddress(destinationChain) == 'hub'`, then the call is wrapped and routed to the ITS Hub destination.
+     * Only routes calls that return true for isTrustedChain(destinationChain)
      * @param destinationChain The target chain where the contract will be called.
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.

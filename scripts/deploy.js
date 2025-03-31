@@ -50,6 +50,7 @@ async function deployInterchainTokenService(
         gasServiceAddress,
         interchainTokenFactoryAddress,
         chainName,
+        itsHubAddress,
         tokenManagerAddress,
         tokenHandlerAddress,
         gatewayCaller,
@@ -57,7 +58,7 @@ async function deployInterchainTokenService(
     const proxy = await create3DeployContract(create3DeployerAddress, wallet, Proxy, deploymentKey, [
         implementation.address,
         ownerAddress,
-        defaultAbiCoder.encode(['address', 'string', 'string', 'string[]'], [operatorAddress, chainName, itsHubAddress, evmChains]),
+        defaultAbiCoder.encode(['address', 'string', 'string[]'], [operatorAddress, chainName, evmChains]),
     ]);
     const service = new Contract(proxy.address, implementation.interface, wallet);
     return service;
