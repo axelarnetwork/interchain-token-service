@@ -24,7 +24,8 @@ import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
 import { IMinter } from './interfaces/IMinter.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { Operator } from './utils/Operator.sol';
-import { InterchainChainTracker } from './utils/InterchainChainTracker.sol';
+import { ChainTracker } from './utils/ChainTracker.sol';
+import { ItsHubAddressTracker } from './utils/ItsHubAddressTracker.sol';
 
 /**
  * @title The Interchain Token Service
@@ -41,7 +42,8 @@ contract InterchainTokenService is
     Create3AddressFixed,
     ExpressExecutorTracker,
     InterchainAddressTracker,
-    InterchainChainTracker,
+    ChainTracker,
+    ItsHubAddressTracker,
     IInterchainTokenService
 {
     using AddressBytes for bytes;
@@ -131,7 +133,7 @@ contract InterchainTokenService is
         address tokenManagerImplementation_,
         address tokenHandler_,
         address gatewayCaller_
-    ) InterchainChainTracker(itsHubAddress_) {
+    ) ItsHubAddressTracker(itsHubAddress_) {
         if (
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
@@ -166,9 +168,9 @@ contract InterchainTokenService is
      * @param sourceChain The source chain of the contract call.
      * @param sourceAddress The source address that the call came from.
      */
-    modifier onlyRemoteService(string calldata sourceChain, string calldata sourceAddress) {
+    modifier onlyItsHub(string calldata sourceChain, string calldata sourceAddress) {
         if (keccak256(bytes(sourceChain)) != ITS_HUB_CHAIN_NAME_HASH || keccak256(bytes(sourceAddress)) != itsHubAddressHash)
-            revert NotRemoteService();
+            revert NotItsHub();
 
         _;
     }
@@ -277,7 +279,7 @@ contract InterchainTokenService is
 
         emit TokenMetadataRegistered(tokenAddress, decimals);
 
-        _callContract(payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        _sendToHub(payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
     }
 
     /**
@@ -419,7 +421,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public view virtual onlyRemoteService(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
+    ) public view virtual onlyItsHub(sourceChain, sourceAddress) whenNotPaused returns (address, uint256) {
         return _contractCallValue(payload);
     }
 
@@ -435,7 +437,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+    ) external onlyItsHub(sourceChain, sourceAddress) whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) revert NotApprovedByGateway();
@@ -447,6 +449,7 @@ contract InterchainTokenService is
      * @notice Express executes operations based on the payload and selector.
      * @dev This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
      * @param commandId The unique message id.
+     * @param sourceChain The chain where the transaction originates from.
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
      * @param payload The encoded data payload for the transaction.
      */
@@ -459,12 +462,8 @@ contract InterchainTokenService is
         bytes32 payloadHash = keccak256(payload);
         uint256 messageType;
         string memory originalSourceChain;
-        (messageType, originalSourceChain, payload) = abi.decode(payload, (uint256, string, bytes));
-        if (messageType != MESSAGE_TYPE_RECEIVE_FROM_HUB) {
-            revert InvalidExpressMessageType(messageType);
-        }
+        (messageType, originalSourceChain, payload) = _decodeHubMessage(payload);
 
-        messageType = abi.decode(payload, (uint256));
         if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidExpressMessageType(messageType);
         }
@@ -659,10 +658,7 @@ contract InterchainTokenService is
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        (address operator, string memory chainName_, string[] memory trustedChainNames) = abi.decode(
-            params,
-            (address, string, string[])
-        );
+        (address operator, string memory chainName_, string[] memory trustedChainNames) = abi.decode(params, (address, string, string[]));
         if (operator == address(0)) revert ZeroAddress();
         if (bytes(chainName_).length == 0 || keccak256(bytes(chainName_)) != chainNameHash) revert InvalidChainName();
 
@@ -673,7 +669,7 @@ contract InterchainTokenService is
         for (uint256 i; i < length; ++i) {
             string memory trustedChainName = trustedChainNames[i];
             _setTrustedChain(trustedChainName);
-            // Remove previously set trusted addresses.
+            // Migration: Remove previously set trusted addresses.
             if (trustedAddressHash(trustedChainName) != 0) {
                 _removeTrustedAddress(trustedChainName);
             }
@@ -789,7 +785,7 @@ contract InterchainTokenService is
         payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
         destinationChain = ITS_HUB_CHAIN_NAME;
 
-        _callContract(payload, metadataVersion, gasValue);
+        _sendToHub(payload, metadataVersion, gasValue);
     }
 
     /**
@@ -798,7 +794,7 @@ contract InterchainTokenService is
      * @param metadataVersion The version of the metadata.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _callContract(bytes memory payload, IGatewayCaller.MetadataVersion metadataVersion, uint256 gasValue) internal {
+    function _sendToHub(bytes memory payload, IGatewayCaller.MetadataVersion metadataVersion, uint256 gasValue) internal {
         string memory hubAddress = itsHubAddress();
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
@@ -817,7 +813,7 @@ contract InterchainTokenService is
     ) internal {
         uint256 messageType;
         string memory originalSourceChain;
-        (messageType, originalSourceChain, payload) = _getExecuteParams(sourceChain, payload);
+        (messageType, originalSourceChain, payload) = _decodeHubMessage(payload);
 
         if (messageType == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             address expressExecutor = _getExpressExecutorAndEmitEvent(commandId, sourceChain, sourceAddress, payloadHash);
@@ -843,22 +839,17 @@ contract InterchainTokenService is
     /**
      * @dev Return the parameters for the execute call, taking routing via ITS Hub into account.
      */
-    function _getExecuteParams(
-        string calldata sourceChain,
-        bytes memory payload
-    ) internal view returns (uint256, string memory, bytes memory) {
+    function _decodeHubMessage(bytes memory payload) internal view returns (uint256, string memory, bytes memory) {
         // Read the first 32 bytes of the payload to determine the message type
         uint256 messageType = _getMessageType(payload);
 
-        // True source chain, this is overridden if the ITS call is coming via the ITS hub
-        string memory originalSourceChain = sourceChain;
+        // True source chain, this is found in the HUB payload.
+        string memory originalSourceChain;
 
         // Unwrap ITS message if coming from ITS hub
         if (messageType != MESSAGE_TYPE_RECEIVE_FROM_HUB) {
             revert InvalidMessageType(messageType);
         }
-
-        if (keccak256(bytes(sourceChain)) != ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();
 
         (, originalSourceChain, payload) = abi.decode(payload, (uint256, string, bytes));
 
@@ -1082,10 +1073,7 @@ contract InterchainTokenService is
      */
     function _contractCallValue(bytes memory payload) internal view returns (address, uint256) {
         uint256 messageType;
-        (messageType, , payload) = abi.decode(payload, (uint256, string, bytes));
-        if (messageType != MESSAGE_TYPE_RECEIVE_FROM_HUB) {
-            revert InvalidExpressMessageType(messageType);
-        }
+        (messageType, , payload) = _decodeHubMessage(payload);
         bytes32 tokenId;
         uint256 amount;
         (messageType, tokenId, , , amount) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256));

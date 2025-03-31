@@ -13,6 +13,7 @@ import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 import { IOperator } from './IOperator.sol';
 import { IChainTracker } from './IChainTracker.sol';
+import { IItsHubAddressTracker } from './IItsHubAddressTracker.sol';
 
 /**
  * @title IInterchainTokenService Interface
@@ -27,10 +28,11 @@ interface IInterchainTokenService is
     IPausable,
     IMulticall,
     IChainTracker,
+    IItsHubAddressTracker,
     IUpgradable
 {
     error InvalidChainName();
-    error NotRemoteService();
+    error NotItsHub();
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);

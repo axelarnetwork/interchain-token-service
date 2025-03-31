@@ -17,7 +17,7 @@ const {
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
     MESSAGE_TYPE_RECEIVE_FROM_HUB,
     ITS_HUB_ADDRESS,
-    ITS_HUB_CHAIN_NAME,
+    ITS_HUB_CHAIN,
 } = require('./constants');
 
 if (isHardhat) {
@@ -71,9 +71,9 @@ if (isHardhat) {
                     ['uint256', 'string', 'bytes'],
                     [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
                 );
-                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
+                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-                await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
+                await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload))
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
@@ -98,9 +98,9 @@ if (isHardhat) {
                     ['uint256', 'string', 'bytes'],
                     [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
                 );
-                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
+                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-                await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
+                await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload))
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
@@ -146,9 +146,9 @@ if (isHardhat) {
                     [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
                 );
 
-                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
+                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-                await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
+                await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload))
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
@@ -174,9 +174,9 @@ if (isHardhat) {
                     [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
                 );
 
-                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
+                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-                await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
+                await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload))
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
@@ -201,9 +201,9 @@ if (isHardhat) {
                     [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
                 );
 
-                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, service.address, wrappedPayload);
+                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
 
-                await expect(service.execute(commandId, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS, wrappedPayload))
+                await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload))
                     .to.emit(service, 'InterchainTokenDeployed')
                     .withArgs(tokenId, expectedTokenAddress, minter, tokenName, tokenSymbol, tokenDecimals)
                     .and.to.emit(service, 'TokenManagerDeployed')
