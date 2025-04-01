@@ -36,6 +36,7 @@ abstract contract ItsHubAddressTracker is IItsHubAddressTracker {
         bytes32 itsHubAddressMiddle_ = itsHubAddressMiddle;
         uint8 itsHubAddressSuffix_ = itsHubAddressSuffix;
         hubAddress = new string(65);
+
         assembly {
             mstore(add(hubAddress, 32), itsHubAddressPrefix_)
             mstore(add(hubAddress, 65), itsHubAddressSuffix_)
