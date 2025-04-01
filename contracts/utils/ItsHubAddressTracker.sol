@@ -15,9 +15,11 @@ abstract contract ItsHubAddressTracker is IItsHubAddressTracker {
 
     constructor(string memory hubAddress) {
         if (bytes(hubAddress).length != 65) revert InvalidHubAddress();
+
         bytes32 itsHubAddressPrefix_;
         bytes32 itsHubAddressMiddle_;
         uint8 itsHubAddressSuffix_;
+
         assembly {
             itsHubAddressPrefix_ := mload(add(hubAddress, 32))
             itsHubAddressMiddle_ := mload(add(hubAddress, 64))
