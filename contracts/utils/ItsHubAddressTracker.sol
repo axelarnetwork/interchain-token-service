@@ -23,9 +23,11 @@ abstract contract ItsHubAddressTracker is IItsHubAddressTracker {
             itsHubAddressMiddle_ := mload(add(hubAddress, 64))
             itsHubAddressSuffix_ := mload(add(hubAddress, 65))
         }
+
         itsHubAddressPrefix = itsHubAddressPrefix_;
         itsHubAddressMiddle = itsHubAddressMiddle_;
         itsHubAddressSuffix = itsHubAddressSuffix_;
+
         itsHubAddressHash = keccak256(bytes(hubAddress));
     }
 
