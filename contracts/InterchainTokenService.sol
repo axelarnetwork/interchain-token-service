@@ -769,8 +769,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Route the ITS message to the destination chain with the given payload via the ITS Hub.
-     * Only routes calls that return true for isTrustedChain(destinationChain)
-     * @param destinationChain The target chain where the contract will be called.
+     * @param destinationChain The target chain where the contract will be called. The destinationChain must be set as trusted.
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
