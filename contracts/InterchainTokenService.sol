@@ -768,8 +768,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Route the ITS message to the destination chain with the given payload
-     * @dev This method also determines whether the ITS call should be routed via the ITS Hub.
+     * @notice Route the ITS message to the destination chain with the given payload via the ITS Hub.
      * Only routes calls that return true for isTrustedChain(destinationChain)
      * @param destinationChain The target chain where the contract will be called.
      * @param payload The data payload for the transaction.
