@@ -842,7 +842,7 @@ contract InterchainTokenService is
         // Read the first 32 bytes of the payload to determine the message type
         uint256 messageType = _getMessageType(payload);
 
-        // True source chain, this is found in the HUB payload.
+        // True source chain, this is found in the ITS Hub message.
         string memory originalSourceChain;
 
         // Unwrap ITS message if coming from ITS hub
