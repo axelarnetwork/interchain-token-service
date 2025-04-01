@@ -118,6 +118,7 @@ contract InterchainTokenService is
      * @param gasService_ The address of the AxelarGasService.
      * @param interchainTokenFactory_ The address of the InterchainTokenFactory.
      * @param chainName_ The name of the chain that this contract is deployed on.
+     * @param itsHubAddress_ The address of the ITS Hub.
      * @param tokenManagerImplementation_ The tokenManager implementation.
      * @param tokenHandler_ The tokenHandler implementation.
      * @param gatewayCaller_ The gatewayCaller implementation.
