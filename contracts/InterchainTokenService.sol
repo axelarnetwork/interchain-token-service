@@ -1074,17 +1074,13 @@ contract InterchainTokenService is
         uint256 messageType;
         (messageType, , payload) = _decodeHubMessage(payload);
 
-        if (messageType != MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             revert InvalidExpressMessageType(messageType);
         }
 
         bytes32 tokenId;
         uint256 amount;
-        (messageType, tokenId, , , amount) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256));
-        
-        if (messageType != MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            revert InvalidExpressMessageType(messageType);
-        }
+        (, tokenId, , , amount) = abi.decode(payload, (uint256, bytes32, bytes, bytes, uint256));
 
         return (registeredTokenAddress(tokenId), amount);
     }
