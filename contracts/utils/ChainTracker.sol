@@ -20,6 +20,7 @@ abstract contract ChainTracker is IChainTracker {
 
     function _removeTrustedChain(string memory chainName) internal {
         _chainTrackerStorage().trustedChains[chainName] = false;
+
         emit TrustedChainRemoved(chainName);
     }
 
