@@ -12,22 +12,27 @@ abstract contract ItsHubAddressTracker is IItsHubAddressTracker {
     /// @dev The ITS Hub Address Hash
     bytes32 public immutable itsHubAddressHash;
 
+    uint256 internal constant ADDRESS_LENGTH = 65;
+    uint256 internal constant PREFIX_OFFSET = 32;
+    uint256 internal constant MIDDLE_OFFSET = 64;
+    uint256 internal constant SUFFIX_OFFSET = 65;
+
     /// @dev we need 3 32 byte slots to store the 65 bytes of the hub address.
     bytes32 private immutable itsHubAddressPrefix;
     bytes32 private immutable itsHubAddressMiddle;
     uint8 private immutable itsHubAddressSuffix;
 
     constructor(string memory hubAddress) {
-        if (bytes(hubAddress).length != 65) revert InvalidHubAddress();
+        if (bytes(hubAddress).length != ADDRESS_LENGTH) revert InvalidHubAddress();
 
         bytes32 itsHubAddressPrefix_;
         bytes32 itsHubAddressMiddle_;
         uint8 itsHubAddressSuffix_;
 
         assembly ('memory-safe') {
-            itsHubAddressPrefix_ := mload(add(hubAddress, 32))
-            itsHubAddressMiddle_ := mload(add(hubAddress, 64))
-            itsHubAddressSuffix_ := mload(add(hubAddress, 65))
+            itsHubAddressPrefix_ := mload(add(hubAddress, PREFIX_OFFSET))
+            itsHubAddressMiddle_ := mload(add(hubAddress, MIDDLE_OFFSET))
+            itsHubAddressSuffix_ := mload(add(hubAddress, SUFFIX_OFFSET))
         }
 
         itsHubAddressPrefix = itsHubAddressPrefix_;
@@ -41,13 +46,13 @@ abstract contract ItsHubAddressTracker is IItsHubAddressTracker {
         bytes32 itsHubAddressPrefix_ = itsHubAddressPrefix;
         bytes32 itsHubAddressMiddle_ = itsHubAddressMiddle;
         uint8 itsHubAddressSuffix_ = itsHubAddressSuffix;
-        hubAddress = new string(65);
+        hubAddress = new string(ADDRESS_LENGTH);
 
         assembly ('memory-safe') {
-            mstore(add(hubAddress, 32), itsHubAddressPrefix_)
+            mstore(add(hubAddress, PREFIX_OFFSET), itsHubAddressPrefix_)
             // This writes the 1-byte suffix to the 65th position, but also 31 other bytes into the middle. Hence, the middle is written after this to prevent it from being overwritten.
-            mstore(add(hubAddress, 65), itsHubAddressSuffix_)
-            mstore(add(hubAddress, 64), itsHubAddressMiddle_)
+            mstore(add(hubAddress, SUFFIX_OFFSET), itsHubAddressSuffix_)
+            mstore(add(hubAddress, MIDDLE_OFFSET), itsHubAddressMiddle_)
         }
     }
 }
