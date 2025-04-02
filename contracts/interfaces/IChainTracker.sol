@@ -14,19 +14,20 @@ interface IChainTracker {
     /**
      * @notice Getter for whether a chain is trusted or not.
      * @dev Needs to be overwitten.
+     * @param chainName the name of the chain to query for.
      * @return trusted whether the chain is trusted or not.
      */
-    function isTrustedChain(string memory chain) external view returns (bool trusted);
+    function isTrustedChain(string memory chainName) external view returns (bool trusted);
 
     /**
      * @notice Sets the trusted address for the specified chain.
-     * @param chain Chain name to be trusted.
+     * @param chainName Chain name to be trusted.
      */
-    function setTrustedChain(string memory chain) external;
+    function setTrustedChain(string memory chainName) external;
 
     /**
      * @notice Remove the trusted address of the chain.
-     * @param chain Chain name to remove the trusted address for.
+     * @param chainName Chain name to remove the trusted address for.
      */
-    function removeTrustedChain(string calldata chain) external;
+    function removeTrustedChain(string calldata chainName) external;
 }

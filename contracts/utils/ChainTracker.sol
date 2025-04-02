@@ -6,7 +6,7 @@ import { IChainTracker } from '../interfaces/IChainTracker.sol';
 
 abstract contract ChainTracker is IChainTracker {
     // uint256(keccak256('ChainTracker.Slot')) - 1
-    bytes32 internal constant CHAIN_TRACKER_SLOT = 0xf310e759ad8669c4c98a2d6d3513430e0a108b0d6decc0cb580bedc5f185d123;
+    uint256 internal constant CHAIN_TRACKER_SLOT = 0xf310e759ad8669c4c98a2d6d3513430e0a108b0d6decc0cb580bedc5f185d123;
 
     struct ChainTrackerStorage {
         mapping(string => bool) trustedChains;
