@@ -460,6 +460,7 @@ describe('Interchain Token Service', () => {
                     tokenHandler.address,
                     gatewayCaller.address,
                     chainName,
+                    ITS_HUB_ADDRESS,
                     [],
                     deploymentKey,
                     gasOptions,
