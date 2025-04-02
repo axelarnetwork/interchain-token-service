@@ -10,9 +10,9 @@ interface IItsHubAddressTracker {
     error InvalidHubAddress();
 
     /**
-     * @notice Getter for the ITS HUB address.
-     * @dev Needs to be overwitten.
-     * @return hubAddress The ITS HUB address.
+     * @notice Getter for the ITS Hub address.
+     * @dev Needs to be overwritten.
+     * @return hubAddress The ITS Hub address.
      */
     function itsHubAddress() external view returns (string memory hubAddress);
 
