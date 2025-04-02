@@ -45,7 +45,7 @@ abstract contract ItsHubAddressTracker is IItsHubAddressTracker {
 
         assembly ('memory-safe') {
             mstore(add(hubAddress, 32), itsHubAddressPrefix_)
-            // The below writes 32 bytes into the middle slot and 1 bytes into the suffix slot, so it is done before the middle write.
+            // This writes the 1-byte suffix to the 65th position, but also 31 other bytes into the middle. Hence, the middle is written after this to prevent it from being overwritten.
             mstore(add(hubAddress, 65), itsHubAddressSuffix_)
             mstore(add(hubAddress, 64), itsHubAddressMiddle_)
         }
