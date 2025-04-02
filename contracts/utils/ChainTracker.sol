@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 import { IChainTracker } from '../interfaces/IChainTracker.sol';
 
 abstract contract ChainTracker is IChainTracker {
-    // uint256(keccak256('chain_tracker_slot')) - 1
-    bytes32 internal constant CHAIN_TRACKER_SLOT = 0x6c51f1695661c243e1b0c3337f0f4c4f45116119470fb2cb0eb05fd857f16ac2;
+    // uint256(keccak256('ChainTracker.Slot')) - 1
+    bytes32 internal constant CHAIN_TRACKER_SLOT = 0xf310e759ad8669c4c98a2d6d3513430e0a108b0d6decc0cb580bedc5f185d123;
 
     struct ChainTrackerStorage {
         mapping(string => bool) trustedChains;
