@@ -17,9 +17,9 @@ interface IItsHubAddressTracker {
     function itsHubAddress() external view returns (string memory hubAddress);
 
     /**
-     * @notice Getter for the ITS HUB address hash.
-     * @dev Needs to be overwitten.
-     * @return hubAddressHash The ITS HUB address hash.
+     * @notice Getter for the ITS Hub address hash.
+     * @dev Needs to be overwritten.
+     * @return hubAddressHash The ITS Hub address hash.
      */
     function itsHubAddressHash() external view returns (bytes32 hubAddressHash);
 }
