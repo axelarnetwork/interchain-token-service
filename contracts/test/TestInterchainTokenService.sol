@@ -37,6 +37,10 @@ contract TestInterchainTokenService is InterchainTokenService {
             revert LatestMetadataVersionMismatch(LATEST_METADATA_VERSION, uint32(type(IGatewayCaller.MetadataVersion).max));
     }
 
+    function setTrustedAddress(string calldata chainName, string calldata trustedAddress_) external {
+        _setTrustedAddress(chainName, trustedAddress_);
+    }
+
     function setupTest(bytes calldata params) external {
         _setup(params);
     }
