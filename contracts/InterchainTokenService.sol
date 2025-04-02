@@ -842,13 +842,13 @@ contract InterchainTokenService is
         // Read the first 32 bytes of the payload to determine the message type
         uint256 messageType = _getMessageType(payload);
 
-        // True source chain, this is found in the ITS Hub message.
-        string memory originalSourceChain;
-
         // Unwrap ITS message if coming from ITS hub
         if (messageType != MESSAGE_TYPE_RECEIVE_FROM_HUB) {
             revert InvalidMessageType(messageType);
         }
+
+        // True source chain, this is found in the ITS Hub message.
+        string memory originalSourceChain;
 
         (, originalSourceChain, payload) = abi.decode(payload, (uint256, string, bytes));
 

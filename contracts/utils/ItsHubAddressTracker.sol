@@ -4,6 +4,10 @@ pragma solidity ^0.8.0;
 
 import { IItsHubAddressTracker } from '../interfaces/IItsHubAddressTracker.sol';
 
+/**
+ * @title ItsHubAddressTracker
+ * @notice This contract is used to track the address of ITS Hub, and it uses immutable variables to save gas.
+ */
 abstract contract ItsHubAddressTracker is IItsHubAddressTracker {
     /// @dev The ITS Hub Address Hash
     bytes32 public immutable itsHubAddressHash;
