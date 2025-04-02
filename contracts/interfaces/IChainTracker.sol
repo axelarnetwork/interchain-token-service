@@ -2,14 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
-
 /**
  * @title IAddressTracker Interface
  * @notice This interface allows setting and removing a trusted address for a specific chain.
  * @dev Extends the IInterchainAddressTracker interface.
  */
-interface IChainTracker is IInterchainAddressTracker {
+interface IChainTracker {
     event TrustedChainSet(string chainName);
     event TrustedChainRemoved(string chainName);
 
