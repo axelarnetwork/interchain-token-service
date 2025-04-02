@@ -311,7 +311,7 @@ describe('Interchain Token Service', () => {
         ]);
     });
 
-    describe.only('Interchain Token Service Deployment', () => {
+    describe('Interchain Token Service Deployment', () => {
         let interchainTokenFactoryAddress;
         let serviceTest;
 
