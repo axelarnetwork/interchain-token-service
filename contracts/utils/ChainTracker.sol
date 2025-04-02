@@ -14,6 +14,7 @@ abstract contract ChainTracker is IChainTracker {
 
     function _setTrustedChain(string memory chainName) internal {
         _chainTrackerStorage().trustedChains[chainName] = true;
+
         emit TrustedChainSet(chainName);
     }
 
