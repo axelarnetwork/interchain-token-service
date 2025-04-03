@@ -331,7 +331,7 @@ describe('Interchain Token Service', () => {
             ]);
         });
 
-        it('Should cleat previously set addresses', async () => {
+        it('Should clear previously set addresses', async () => {
             const operator = wallet.address;
             const trustedChainName = 'ChainA';
             const trustedAddress = wallet.address;
