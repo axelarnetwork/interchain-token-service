@@ -620,7 +620,7 @@ contract InterchainTokenService is
      * @notice Used to set a trusted address for a chain.
      * @param chainName The chain to set the trusted address of.
      */
-    function setTrustedChain(string memory chainName) external onlyOwner {
+    function setTrustedChain(string memory chainName) external onlyRole(uint8(Roles.OPERATOR)) {
         _setTrustedChain(chainName);
     }
 
@@ -628,7 +628,7 @@ contract InterchainTokenService is
      * @notice Used to remove a trusted address for a chain.
      * @param chainName The chain to set the trusted address of.
      */
-    function removeTrustedChain(string memory chainName) external onlyOwner {
+    function removeTrustedChain(string memory chainName) external onlyRole(uint8(Roles.OPERATOR)) {
         _removeTrustedChain(chainName);
     }
 
