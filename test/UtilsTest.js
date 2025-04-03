@@ -256,6 +256,31 @@ describe('FlowLimit', async () => {
     });
 });
 
+describe('ChainTracker', async () => {
+    let test;
+    const chainName = 'Chain Name';
+
+    before(async () => {
+        test = await deployContract(ownerWallet, 'TestChainTracker');
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestChainTracker`, [])).to.not.be.reverted;
+    });
+
+    it('Should set remove and query a chain properly', async () => {
+        expect(await test.isTrustedChain(chainName)).to.equal(false);
+
+        await expect(test.setTrustedChain(chainName)).to.emit(test, 'TrustedChainSet').withArgs(chainName);
+
+        expect(await test.isTrustedChain(chainName)).to.equal(true);
+
+        await expect(test.removeTrustedChain(chainName)).to.emit(test, 'TrustedChainRemoved').withArgs(chainName);
+
+        expect(await test.isTrustedChain(chainName)).to.equal(false);
+    });
+});
+
 describe('InterchainTokenDeployer', () => {
     let interchainToken, interchainTokenDeployer;
     const service = new Wallet(getRandomBytes32()).address;

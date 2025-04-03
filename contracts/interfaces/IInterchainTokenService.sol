@@ -6,13 +6,15 @@ import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-s
 import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
+import { IInterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IInterchainAddressTracker.sol';
 
 import { ITransmitInterchainToken } from './ITransmitInterchainToken.sol';
 import { ITokenManager } from './ITokenManager.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 import { IOperator } from './IOperator.sol';
-import { IAddressTracker } from './IAddressTracker.sol';
+import { IChainTracker } from './IChainTracker.sol';
+import { IItsHubAddressTracker } from './IItsHubAddressTracker.sol';
 
 /**
  * @title IInterchainTokenService Interface
@@ -23,14 +25,16 @@ interface IInterchainTokenService is
     ITokenManagerType,
     ITokenManagerImplementation,
     IAxelarValuedExpressExecutable,
+    IInterchainAddressTracker,
     IOperator,
     IPausable,
     IMulticall,
-    IAddressTracker,
+    IChainTracker,
+    IItsHubAddressTracker,
     IUpgradable
 {
     error InvalidChainName();
-    error NotRemoteService();
+    error NotItsHub();
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);

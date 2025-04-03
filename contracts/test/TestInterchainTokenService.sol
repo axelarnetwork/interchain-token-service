@@ -15,6 +15,7 @@ contract TestInterchainTokenService is InterchainTokenService {
         address gasService_,
         address interchainTokenFactory_,
         string memory chainName_,
+        string memory itsHubAddress_,
         address tokenManager_,
         address tokenHandler_,
         address gatewayCaller_
@@ -26,6 +27,7 @@ contract TestInterchainTokenService is InterchainTokenService {
             gasService_,
             interchainTokenFactory_,
             chainName_,
+            itsHubAddress_,
             tokenManager_,
             tokenHandler_,
             gatewayCaller_
@@ -33,6 +35,10 @@ contract TestInterchainTokenService is InterchainTokenService {
     {
         if (LATEST_METADATA_VERSION != uint32(type(IGatewayCaller.MetadataVersion).max))
             revert LatestMetadataVersionMismatch(LATEST_METADATA_VERSION, uint32(type(IGatewayCaller.MetadataVersion).max));
+    }
+
+    function setTrustedAddress(string calldata chainName, string calldata trustedAddress_) external {
+        _setTrustedAddress(chainName, trustedAddress_);
     }
 
     function setupTest(bytes calldata params) external {

@@ -6,6 +6,7 @@ const {
 const Proxy = require('../artifacts/contracts/proxies/InterchainProxy.sol/InterchainProxy.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
+const { ITS_HUB_ADDRESS } = require('../test/constants');
 
 async function deployContract(wallet, contractName, args = []) {
     const factory = await ethers.getContractFactory(contractName, wallet);
@@ -36,12 +37,12 @@ async function deployInterchainTokenService(
     tokenHandlerAddress,
     gatewayCaller,
     chainName,
+    itsHubAddress,
     evmChains = [],
     deploymentKey,
     ownerAddress = wallet.address,
     operatorAddress = wallet.address,
 ) {
-    const interchainTokenServiceAddress = await getCreate3Address(create3DeployerAddress, wallet, deploymentKey);
     const implementation = await deployContract(wallet, 'InterchainTokenService', [
         tokenManagerDeployerAddress,
         interchainTokenDeployerAddress,
@@ -49,6 +50,7 @@ async function deployInterchainTokenService(
         gasServiceAddress,
         interchainTokenFactoryAddress,
         chainName,
+        itsHubAddress,
         tokenManagerAddress,
         tokenHandlerAddress,
         gatewayCaller,
@@ -56,10 +58,7 @@ async function deployInterchainTokenService(
     const proxy = await create3DeployContract(create3DeployerAddress, wallet, Proxy, deploymentKey, [
         implementation.address,
         ownerAddress,
-        defaultAbiCoder.encode(
-            ['address', 'string', 'string[]', 'string[]'],
-            [operatorAddress, chainName, evmChains, evmChains.map(() => interchainTokenServiceAddress)],
-        ),
+        defaultAbiCoder.encode(['address', 'string', 'string[]'], [operatorAddress, chainName, evmChains]),
     ]);
     const service = new Contract(proxy.address, implementation.interface, wallet);
     return service;
@@ -79,6 +78,7 @@ async function deployInterchainTokenFactory(wallet, create3DeployerAddress, inte
 async function deployAll(
     wallet,
     chainName,
+    itsHubAddress = ITS_HUB_ADDRESS,
     evmChains = [],
     deploymentKey = 'InterchainTokenService',
     factoryDeploymentKey = deploymentKey + 'Factory',
@@ -111,6 +111,7 @@ async function deployAll(
         tokenHandler.address,
         gatewayCaller.address,
         chainName,
+        itsHubAddress,
         evmChains,
         deploymentKey,
     );
