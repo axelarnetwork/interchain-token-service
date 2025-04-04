@@ -704,9 +704,12 @@ describe('Interchain Token Service', () => {
         const chain = 'Test';
 
         it('Should revert on set trusted chain when not called by the owner', async () => {
-            await expectRevert((gasOptions) => service.connect(otherWallet).setTrustedChain(chain, gasOptions), service, 'NotOperatorOrOwner', [
-                otherWallet.address,
-            ]);
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).setTrustedChain(chain, gasOptions),
+                service,
+                'NotOperatorOrOwner',
+                [otherWallet.address],
+            );
         });
 
         it('Should set trusted chain', async () => {
@@ -714,9 +717,12 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remove trusted address when not called by the owner', async () => {
-            await expectRevert((gasOptions) => service.connect(otherWallet).removeTrustedChain(chain, gasOptions), service, 'NotOperatorOrOwner', [
-                otherWallet.address,
-            ]);
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).removeTrustedChain(chain, gasOptions),
+                service,
+                'NotOperatorOrOwner',
+                [otherWallet.address],
+            );
         });
 
         it('Should remove trusted address', async () => {
