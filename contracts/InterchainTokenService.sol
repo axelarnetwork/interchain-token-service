@@ -181,7 +181,8 @@ contract InterchainTokenService is
      */
     modifier onlyOperatorOrOwner() {
         address sender = msg.sender;
-        if (owner() != sender && !hasRole(sender, uint8(Roles.OPERATOR))) revert NotOperatorOrOwner(sender);
+
+        if (!hasRole(sender, uint8(Roles.OPERATOR)) && sender != owner()) revert NotOperatorOrOwner(sender);
 
         _;
     }
