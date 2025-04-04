@@ -60,6 +60,7 @@ interface IInterchainTokenService is
     error EmptyTokenAddress();
     error NotSupported();
     error NotInterchainTokenFactory(address sender);
+    error NotOperatorOrOwner(address sender);
 
     event InterchainTransfer(
         bytes32 indexed tokenId,
