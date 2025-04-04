@@ -177,6 +177,16 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice This modifier is used to ensure that only an operator or the owner can call a function
+     */
+    modifier onlyOperatorOrOwner() {
+        address sender = msg.sender;
+        if (owner() != sender && !hasRole(sender, uint8(Roles.OPERATOR))) revert NotOperatorOrOwner(sender);
+
+        _;
+    }
+
+    /**
      * @notice This modifier is used to ensure that only a the token factory can call a function.
      */
     modifier onlyTokenFactory() {
@@ -620,7 +630,7 @@ contract InterchainTokenService is
      * @notice Used to set a trusted address for a chain.
      * @param chainName The chain to set the trusted address of.
      */
-    function setTrustedChain(string memory chainName) external onlyRole(uint8(Roles.OPERATOR)) {
+    function setTrustedChain(string memory chainName) external onlyOperatorOrOwner() {
         _setTrustedChain(chainName);
     }
 
@@ -628,7 +638,7 @@ contract InterchainTokenService is
      * @notice Used to remove a trusted address for a chain.
      * @param chainName The chain to set the trusted address of.
      */
-    function removeTrustedChain(string memory chainName) external onlyRole(uint8(Roles.OPERATOR)) {
+    function removeTrustedChain(string memory chainName) external onlyOperatorOrOwner() {
         _removeTrustedChain(chainName);
     }
 
