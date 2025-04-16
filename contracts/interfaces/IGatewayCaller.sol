@@ -11,8 +11,7 @@ interface IGatewayCaller {
      * @dev Enum representing different metadata versions
      */
     enum MetadataVersion {
-        CONTRACT_CALL,
-        EXPRESS_CALL
+        CONTRACT_CALL
     }
 
     /**
