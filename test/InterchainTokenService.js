@@ -1686,13 +1686,13 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on interchainTransfer function with invalid metadata version', async () => {
-            const metadata = '0x00000002';
+            const invalidMetadata = '0x00000001';
 
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, 0, gasOptions),
+                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, invalidMetadata, 0, gasOptions),
                 service,
                 'InvalidMetadataVersion',
-                [Number(metadata)],
+                [Number(invalidMetadata)],
             );
         });
     });
