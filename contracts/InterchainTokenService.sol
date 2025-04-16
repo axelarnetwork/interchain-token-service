@@ -100,7 +100,7 @@ contract InterchainTokenService is
     /**
      * @dev Latest version of metadata that's supported.
      */
-    uint32 internal constant LATEST_METADATA_VERSION = 1;
+    uint32 internal constant LATEST_METADATA_VERSION = 0;
 
     /**
      * @dev Chain name where ITS Hub exists. This is used for routing ITS calls via ITS hub.

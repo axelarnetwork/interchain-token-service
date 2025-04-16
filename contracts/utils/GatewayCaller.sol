@@ -50,16 +50,6 @@ contract GatewayCaller is IGatewayCaller {
                     // solhint-disable-next-line avoid-tx-origin
                     tx.origin
                 );
-            } else if (metadataVersion == MetadataVersion.EXPRESS_CALL) {
-                // slither-disable-next-line arbitrary-send-eth
-                gasService.payNativeGasForExpressCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
             } else {
                 revert InvalidMetadataVersion(uint32(metadataVersion));
             }

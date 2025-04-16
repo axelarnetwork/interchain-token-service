@@ -1596,8 +1596,6 @@ describe('Interchain Token Service', () => {
                 );
                 const payloadHash = keccak256(wrappedPayload);
 
-                const metadataExpress = '0x00000001';
-
                 let transferToAddress = AddressZero;
 
                 if (type === 'lockUnlock' || type === 'lockUnlockFee') {
@@ -1620,23 +1618,6 @@ describe('Interchain Token Service', () => {
                     .and.to.emit(gateway, 'ContractCall')
                     .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
-
-                await expect(
-                    reportGas(
-                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadataExpress, gasValue, {
-                            value: gasValue,
-                        }),
-                        `Call service.interchainTransfer with metadata ${type} (express call)`,
-                    ),
-                )
-                    .to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, transferToAddress, amount)
-                    .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
-                    .and.to.emit(gasService, 'NativeGasPaidForExpressCall')
                     .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
@@ -1705,13 +1686,13 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on interchainTransfer function with invalid metadata version', async () => {
-            const metadata = '0x00000002';
+            const invalidMetadata = '0x00000001';
 
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, 0, gasOptions),
+                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, invalidMetadata, 0, gasOptions),
                 service,
                 'InvalidMetadataVersion',
-                [Number(metadata)],
+                [Number(invalidMetadata)],
             );
         });
     });
