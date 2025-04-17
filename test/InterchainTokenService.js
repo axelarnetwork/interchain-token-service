@@ -1181,7 +1181,7 @@ describe('Interchain Token Service', () => {
         const destAddress = '0x5678';
         let token, tokenId;
 
-        async function testLockUnlockFeeInterchainTransferWithERC20(includeMetadata) {
+        async function testInterchainTransferWithERC20(includeMetadata) {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
                 service,
                 'Test Token lockUnlockFee',
@@ -1228,13 +1228,12 @@ describe('Interchain Token Service', () => {
             [token, , tokenId] = await deployFunctions.lockUnlock(service, 'Test Token lockUnlock', 'TT', 12, amount);
         });
 
-        it('Should be able to initiate an interchain token transfer for lockUnlockFee with a normal ERC20 token (with metadata)', async () => {
-            await testLockUnlockFeeInterchainTransferWithERC20(true);
-        });
-
-        it('Should be able to initiate an interchain token transfer for lockUnlockFee with a normal ERC20 token (without metadata)', async () => {
-            await testLockUnlockFeeInterchainTransferWithERC20(false);
-        });
+        for (const includeMetadata of [true, false]) {
+            const label = includeMetadata ? 'with metadata' : 'without metadata';
+            it(`Should be able to initiate an interchain token transfer for lockUnlockFee with a normal ERC20 token (${label})`, async () => {
+                await testInterchainTransferWithERC20(includeMetadata);
+            });
+        }
 
         it('Should revert on initiating an interchain token transfer for lockUnlockFee with reentrant token', async () => {
             const [, , tokenId] = await deployFunctions.lockUnlockFee(service, 'Test Token lockUnlockFee', 'TT', 12, amount, 'reentrant');
@@ -1640,7 +1639,7 @@ describe('Interchain Token Service', () => {
         let sourceAddress;
         let token, tokenManager, tokenId;
 
-        async function testInterchainTransferWithERC20(type, includeMetadata) {
+        async function testInterchainTransferWithTokenType(type, includeMetadata) {
             const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount * 2);
             const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
             const metadata = '0x00000000';
@@ -1686,7 +1685,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
         }
 
-        async function testInterchainTransferWithERC20WithApproval(type, includeMetadata) {
+        async function testInterchainTransferWithTokenTypeAndApproval(type, includeMetadata) {
             const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount);
             const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
             const metadata = '0x00000000';
@@ -1730,23 +1729,21 @@ describe('Interchain Token Service', () => {
         });
 
         for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee', 'mintBurnFrom']) {
-            it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}] (with metadata)`, async () => {
-                testInterchainTransferWithERC20(type, true);
-            });
-
-            it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}] (without metadata)`, async () => {
-                testInterchainTransferWithERC20(type, false);
-            });
+            for (const includeMetadata of [true, false]) {
+                const label = includeMetadata ? 'with metadata' : 'without metadata';
+                it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}] (${label})`, async () => {
+                    await testInterchainTransferWithTokenType(type, includeMetadata);
+                });
+            }
         }
 
         for (const type of ['lockUnlock', 'lockUnlockFee']) {
-            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}] (with metadata)`, async () => {
-                testInterchainTransferWithERC20WithApproval(type, true);
-            });
-
-            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}] (without metadata)`, async () => {
-                testInterchainTransferWithERC20WithApproval(type, false);
-            });
+            for (const includeMetadata of [true, false]) {
+                const label = includeMetadata ? 'with metadata' : 'without metadata';
+                it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}] (${label})`, async () => {
+                    await testInterchainTransferWithTokenTypeAndApproval(type, includeMetadata);
+                });
+            }
         }
 
         it('Should revert on interchainTransfer function when service is paused', async () => {

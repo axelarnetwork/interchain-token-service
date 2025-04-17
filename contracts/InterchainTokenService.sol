@@ -557,6 +557,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Initiates an interchain transfer of a specified token to a destination chain.
+     * @dev This is a simplified version of interchainTransfer which does not include metadata and gas value for multicall.
      * @dev The function retrieves the TokenManager associated with the tokenId.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
