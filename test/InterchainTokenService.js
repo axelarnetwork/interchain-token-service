@@ -1242,18 +1242,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
-                        tokenId,
-                        destinationChain,
-                        destAddress,
-                        amount,
-                        '0x',
-                        gasValue,
-                        {
-                            ...gasOptions,
-                            value: gasValue,
-                        },
-                    ),
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destinationChain, destAddress, amount, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'TakeTokenFailed',
                 [revertData],
@@ -1263,18 +1255,10 @@ describe('Interchain Token Service', () => {
         it('Should revert on initiate interchain token transfer with zero amount', async () => {
             await expectRevert(
                 (gasOptions) =>
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
-                        tokenId,
-                        destinationChain,
-                        destAddress,
-                        0,
-                        '0x',
-                        gasValue,
-                        {
-                            ...gasOptions,
-                            value: gasValue,
-                        },
-                    ),
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destinationChain, destAddress, 0, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'ZeroAmount',
             );
@@ -1283,18 +1267,10 @@ describe('Interchain Token Service', () => {
         it('Should revert on initiate interchain token transfer with invalid destination address', async () => {
             await expectRevert(
                 (gasOptions) =>
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
-                        tokenId,
-                        destinationChain,
-                        '0x',
-                        amount,
-                        '0x',
-                        gasValue,
-                        {
-                            ...gasOptions,
-                            value: gasValue,
-                        },
-                    ),
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destinationChain, '0x', amount, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'EmptyDestinationAddress',
             );
@@ -1305,18 +1281,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
-                        tokenId,
-                        ITS_HUB_CHAIN,
-                        destAddress,
-                        amount,
-                        '0x',
-                        gasValue,
-                        {
-                            value: gasValue,
-                            ...gasOptions,
-                        },
-                    ),
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, ITS_HUB_CHAIN, destAddress, amount, {
+                        value: gasValue,
+                        ...gasOptions,
+                    }),
                 service,
                 'UntrustedChain',
             );
@@ -1327,18 +1295,10 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
-                        tokenId,
-                        destinationChain,
-                        destAddress,
-                        amount,
-                        '0x',
-                        gasValue,
-                        {
-                            ...gasOptions,
-                            value: gasValue,
-                        },
-                    ),
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destinationChain, destAddress, amount, {
+                        ...gasOptions,
+                        value: gasValue,
+                    }),
                 service,
                 'Pause',
             );
@@ -1423,16 +1383,13 @@ describe('Interchain Token Service', () => {
 
         it('Should revert on initiating an interchain token transfer when gateway call failed', async () => {
             const [, , tokenId] = await deployFunctions.mintBurn(serviceTestGatewayCaller, 'Test Token', 'TG1', 12, amount);
-            const metadata = '0x00000000';
             await expectRevert(
                 (gasOptions) =>
-                    serviceTestGatewayCaller['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                    serviceTestGatewayCaller['interchainTransfer(bytes32,string,bytes,uint256)'](
                         tokenId,
                         destinationChain,
                         destAddress,
                         amount,
-                        metadata,
-                        gasValue,
                         {
                             value: gasValue,
                             ...gasOptions,
@@ -1747,22 +1704,13 @@ describe('Interchain Token Service', () => {
         }
 
         it('Should revert on interchainTransfer function when service is paused', async () => {
-            const metadata = '0x';
             const tokenId = HashZero;
 
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
             await expectRevert(
                 (gasOptions) =>
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
-                        tokenId,
-                        destinationChain,
-                        destAddress,
-                        amount,
-                        metadata,
-                        0,
-                        gasOptions,
-                    ),
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destinationChain, destAddress, amount, gasOptions),
                 service,
                 'Pause',
             );
@@ -2993,13 +2941,11 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
-            await service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+            await service['interchainTransfer(bytes32,string,bytes,uint256)'](
                 tokenId,
                 destinationChain,
                 destinationAddress,
                 sendAmount,
-                '0x',
-                0,
             ).then((tx) => tx.wait);
 
             const errorSignatureHash = id('FlowLimitExceeded(uint256,uint256,address)');
@@ -3008,13 +2954,11 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](
                         tokenId,
                         destinationChain,
                         destinationAddress,
                         sendAmount,
-                        '0x',
-                        0,
                         gasOptions,
                     ),
                 service,
@@ -3126,13 +3070,11 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](
                         tokenId,
                         destinationChain,
                         destinationAddress,
                         newSendAmount,
-                        '0x',
-                        0,
                         gasOptions,
                     ),
                 service,

@@ -855,15 +855,9 @@ describe('Interchain Token Service Full Flow', () => {
 
             it('Should send some tokens to another chain via ITS', async () => {
                 await expect(
-                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
-                        tokenId,
-                        destChain,
-                        destAddress,
-                        amount,
-                        '0x',
-                        gasValue,
-                        { value: gasValue },
-                    ),
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destChain, destAddress, amount, {
+                        value: gasValue,
+                    }),
                 )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
