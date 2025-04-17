@@ -557,6 +557,35 @@ contract InterchainTokenService is
 
     /**
      * @notice Initiates an interchain transfer of a specified token to a destination chain.
+     * @dev This is a simplified version of interchainTransfer which does not include metadata and gas value for multicall.
+     * @dev The function retrieves the TokenManager associated with the tokenId.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param amount The amount of tokens to be transferred.
+     */
+    function interchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable whenNotPaused {
+        amount = _takeToken(tokenId, msg.sender, amount, false);
+
+        _transmitInterchainTransfer(
+            tokenId,
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            IGatewayCaller.MetadataVersion.CONTRACT_CALL,
+            '',
+            msg.value
+        );
+    }
+
+    /**
+     * @notice Initiates an interchain transfer of a specified token to a destination chain.
      * @dev The function retrieves the TokenManager associated with the tokenId.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
