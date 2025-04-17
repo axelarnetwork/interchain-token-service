@@ -135,7 +135,11 @@ describe('Interchain Token Service Full Flow', () => {
                     .to.emit(token, 'Approval')
                     .withArgs(wallet.address, service.address, amount);
 
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
+                await expect(
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destChain, destAddress, amount, {
+                        value: gasValue,
+                    }),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, tokenManagerAddress, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -255,7 +259,11 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
+                await expect(
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destChain, destAddress, amount, {
+                        value: gasValue,
+                    }),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -272,7 +280,7 @@ describe('Interchain Token Service Full Flow', () => {
                 let value = 0;
 
                 for (const i in otherChains) {
-                    const tx = await service.populateTransaction.interchainTransfer(
+                    const tx = await service.populateTransaction['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
                         tokenId,
                         otherChains[i],
                         destAddress,
@@ -494,7 +502,11 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
+                await expect(
+                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destChain, destAddress, amount, {
+                        value: gasValue,
+                    }),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -590,7 +602,7 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await service.populateTransaction.interchainTransfer(
+                const tx = await service.populateTransaction['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
                     tokenId,
                     otherChains[i],
                     destAddress,
@@ -684,7 +696,15 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Initiate the contract call with transfer
             await expect(
-                service.interchainTransfer(tokenId, destChain, executable.address, amount, metadata, gasValue, { value: gasValue }),
+                service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                    tokenId,
+                    destChain,
+                    executable.address,
+                    amount,
+                    metadata,
+                    gasValue,
+                    { value: gasValue },
+                ),
             )
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, AddressZero, amount)
@@ -834,7 +854,17 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
-                await expect(service.interchainTransfer(tokenId, destChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
+                await expect(
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destChain,
+                        destAddress,
+                        amount,
+                        '0x',
+                        gasValue,
+                        { value: gasValue },
+                    ),
+                )
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
                     .and.to.emit(gateway, 'ContractCall')
@@ -856,7 +886,7 @@ describe('Interchain Token Service Full Flow', () => {
                 );
 
                 for (const i in otherChains) {
-                    const tx = await service.populateTransaction.interchainTransfer(
+                    const tx = await service.populateTransaction['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
                         tokenId,
                         otherChains[i],
                         destAddress,
@@ -916,7 +946,15 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Initiate the contract call with transfer
             await expect(
-                service.interchainTransfer(tokenId, destChain, executable.address, amount, metadata, gasValue, { value: gasValue }),
+                service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                    tokenId,
+                    destChain,
+                    executable.address,
+                    amount,
+                    metadata,
+                    gasValue,
+                    { value: gasValue },
+                ),
             )
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, AddressZero, amount)

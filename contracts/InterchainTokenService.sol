@@ -562,6 +562,34 @@ contract InterchainTokenService is
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The address on the destination chain to send the tokens to.
      * @param amount The amount of tokens to be transferred.
+     */
+    function interchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable whenNotPaused {
+        amount = _takeToken(tokenId, msg.sender, amount, false);
+
+        _transmitInterchainTransfer(
+            tokenId,
+            msg.sender,
+            destinationChain,
+            destinationAddress,
+            amount,
+            IGatewayCaller.MetadataVersion.CONTRACT_CALL,
+            '',
+            msg.value
+        );
+    }
+
+    /**
+     * @notice Initiates an interchain transfer of a specified token to a destination chain.
+     * @dev The function retrieves the TokenManager associated with the tokenId.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param amount The amount of tokens to be transferred.
      * @param metadata Optional metadata for the transfer. The first 4 bytes is the metadata version. To call the `destinationAddress` as a contract with a payload, provide `bytes.concat(bytes4(0), payload)` as the metadata. The token will be transferred to the destination app contract before it is executed.
      */
     function interchainTransfer(

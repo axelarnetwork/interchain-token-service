@@ -1181,11 +1181,7 @@ describe('Interchain Token Service', () => {
         const destAddress = '0x5678';
         let token, tokenId;
 
-        before(async () => {
-            [token, , tokenId] = await deployFunctions.lockUnlock(service, 'Test Token lockUnlock', 'TT', 12, amount);
-        });
-
-        it('Should be able to initiate an interchain token transfer for lockUnlockFee with a normal ERC20 token', async () => {
+        async function testLockUnlockFeeInterchainTransferWithERC20(includeMetadata) {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlockFee(
                 service,
                 'Test Token lockUnlockFee',
@@ -1209,7 +1205,15 @@ describe('Interchain Token Service', () => {
 
             const transferToAddress = tokenManager.address;
 
-            await expect(service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, { value: gasValue }))
+            const method = includeMetadata
+                ? 'interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'
+                : 'interchainTransfer(bytes32,string,bytes,uint256)';
+
+            const args = includeMetadata
+                ? [tokenId, destinationChain, destAddress, amount, '0x', gasValue, { value: gasValue }]
+                : [tokenId, destinationChain, destAddress, amount, { value: gasValue }];
+
+            await expect(service[method](...args))
                 .and.to.emit(token, 'Transfer')
                 .withArgs(wallet.address, transferToAddress, amount)
                 .and.to.emit(gateway, 'ContractCall')
@@ -1218,6 +1222,18 @@ describe('Interchain Token Service', () => {
                 .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .to.emit(service, 'InterchainTransfer')
                 .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
+        }
+
+        before(async () => {
+            [token, , tokenId] = await deployFunctions.lockUnlock(service, 'Test Token lockUnlock', 'TT', 12, amount);
+        });
+
+        it('Should be able to initiate an interchain token transfer for lockUnlockFee with a normal ERC20 token (with metadata)', async () => {
+            await testLockUnlockFeeInterchainTransferWithERC20(true);
+        });
+
+        it('Should be able to initiate an interchain token transfer for lockUnlockFee with a normal ERC20 token (without metadata)', async () => {
+            await testLockUnlockFeeInterchainTransferWithERC20(false);
         });
 
         it('Should revert on initiating an interchain token transfer for lockUnlockFee with reentrant token', async () => {
@@ -1227,10 +1243,18 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        destAddress,
+                        amount,
+                        '0x',
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
                 service,
                 'TakeTokenFailed',
                 [revertData],
@@ -1240,10 +1264,18 @@ describe('Interchain Token Service', () => {
         it('Should revert on initiate interchain token transfer with zero amount', async () => {
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, destAddress, 0, '0x', gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        destAddress,
+                        0,
+                        '0x',
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
                 service,
                 'ZeroAmount',
             );
@@ -1252,10 +1284,18 @@ describe('Interchain Token Service', () => {
         it('Should revert on initiate interchain token transfer with invalid destination address', async () => {
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, '0x', amount, '0x', gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        '0x',
+                        amount,
+                        '0x',
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
                 service,
                 'EmptyDestinationAddress',
             );
@@ -1266,10 +1306,18 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, ITS_HUB_CHAIN, destAddress, amount, '0x', gasValue, {
-                        value: gasValue,
-                        ...gasOptions,
-                    }),
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        ITS_HUB_CHAIN,
+                        destAddress,
+                        amount,
+                        '0x',
+                        gasValue,
+                        {
+                            value: gasValue,
+                            ...gasOptions,
+                        },
+                    ),
                 service,
                 'UntrustedChain',
             );
@@ -1280,10 +1328,18 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, destAddress, amount, '0x', gasValue, {
-                        ...gasOptions,
-                        value: gasValue,
-                    }),
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        destAddress,
+                        amount,
+                        '0x',
+                        gasValue,
+                        {
+                            ...gasOptions,
+                            value: gasValue,
+                        },
+                    ),
                 service,
                 'Pause',
             );
@@ -1371,10 +1427,18 @@ describe('Interchain Token Service', () => {
             const metadata = '0x00000000';
             await expectRevert(
                 (gasOptions) =>
-                    serviceTestGatewayCaller.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, {
-                        value: gasValue,
-                        ...gasOptions,
-                    }),
+                    serviceTestGatewayCaller['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        destAddress,
+                        amount,
+                        metadata,
+                        gasValue,
+                        {
+                            value: gasValue,
+                            ...gasOptions,
+                        },
+                    ),
                 serviceTestGatewayCaller,
                 'GatewayCallFailed',
             );
@@ -1576,86 +1640,112 @@ describe('Interchain Token Service', () => {
         let sourceAddress;
         let token, tokenManager, tokenId;
 
+        async function testInterchainTransferWithERC20(type, includeMetadata) {
+            const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount * 2);
+            const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
+            const metadata = '0x00000000';
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
+            );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+            );
+            const payloadHash = keccak256(wrappedPayload);
+
+            let transferToAddress = AddressZero;
+
+            if (type === 'lockUnlock' || type === 'lockUnlockFee') {
+                transferToAddress = tokenManager.address;
+            }
+
+            if (type === 'mintBurnFrom') {
+                const txApprove = await token.approve(service.address, amount * 2);
+                await txApprove.wait();
+            }
+
+            const method = includeMetadata
+                ? 'interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'
+                : 'interchainTransfer(bytes32,string,bytes,uint256)';
+
+            const args = includeMetadata
+                ? [tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }]
+                : [tokenId, destinationChain, destAddress, amount, { value: gasValue }];
+
+            const tx = service[method](...args);
+
+            await expect(reportGas(tx, `Call service.interchainTransfer with ${type}`))
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
+                .and.to.emit(gasService, 'NativeGasPaidForContractCall')
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
+                .to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+        }
+
+        async function testInterchainTransferWithERC20WithApproval(type, includeMetadata) {
+            const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount);
+            const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
+            const metadata = '0x00000000';
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
+            );
+            const wrappedPayload = defaultAbiCoder.encode(
+                ['uint256', 'string', 'bytes'],
+                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
+            );
+            const payloadHash = keccak256(wrappedPayload);
+
+            const transferToAddress = tokenManager.address;
+
+            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.approve(tokenManager.address, 0).then((tx) => tx.wait);
+
+            const method = includeMetadata
+                ? 'interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'
+                : 'interchainTransfer(bytes32,string,bytes,uint256)';
+
+            const args = includeMetadata
+                ? [tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }]
+                : [tokenId, destinationChain, destAddress, amount, { value: gasValue }];
+
+            const tx = service[method](...args);
+
+            await expect(reportGas(tx, `Call service.interchainTransfer with metadata ${type}`))
+                .to.emit(token, 'Transfer')
+                .withArgs(wallet.address, transferToAddress, amount)
+                .and.to.emit(gateway, 'ContractCall')
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
+                .to.emit(service, 'InterchainTransfer')
+                .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+        }
+
         before(async () => {
             sourceAddress = wallet.address;
             [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, 'Test Token lockUnlock', 'TT', 12, amount);
         });
 
         for (const type of ['lockUnlock', 'mintBurn', 'lockUnlockFee', 'mintBurnFrom']) {
-            it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}]`, async () => {
-                const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount * 2);
-                const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
-                const metadata = '0x00000000';
-                const payload = defaultAbiCoder.encode(
-                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
-                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
-                );
-                const wrappedPayload = defaultAbiCoder.encode(
-                    ['uint256', 'string', 'bytes'],
-                    [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-                );
-                const payloadHash = keccak256(wrappedPayload);
+            it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}] (with metadata)`, async () => {
+                testInterchainTransferWithERC20(type, true);
+            });
 
-                let transferToAddress = AddressZero;
-
-                if (type === 'lockUnlock' || type === 'lockUnlockFee') {
-                    transferToAddress = tokenManager.address;
-                }
-
-                if (type === 'mintBurnFrom') {
-                    const txApprove = await token.approve(service.address, amount * 2);
-                    await txApprove.wait();
-                }
-
-                await expect(
-                    reportGas(
-                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, gasValue, { value: gasValue }),
-                        `Call service.interchainTransfer with metadata ${type}`,
-                    ),
-                )
-                    .to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, transferToAddress, amount)
-                    .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
-                    .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
-                    .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+            it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}] (without metadata)`, async () => {
+                testInterchainTransferWithERC20(type, false);
             });
         }
 
         for (const type of ['lockUnlock', 'lockUnlockFee']) {
-            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}]`, async () => {
-                const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount);
-                const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
-                const metadata = '0x00000000';
-                const payload = defaultAbiCoder.encode(
-                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
-                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, sourceAddress, destAddress, sendAmount, '0x'],
-                );
-                const wrappedPayload = defaultAbiCoder.encode(
-                    ['uint256', 'string', 'bytes'],
-                    [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-                );
-                const payloadHash = keccak256(wrappedPayload);
+            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}] (with metadata)`, async () => {
+                testInterchainTransferWithERC20WithApproval(type, true);
+            });
 
-                const transferToAddress = tokenManager.address;
-
-                await token.approve(service.address, amount).then((tx) => tx.wait);
-                await token.approve(tokenManager.address, 0).then((tx) => tx.wait);
-
-                await expect(
-                    reportGas(
-                        service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, 0),
-                        `Call service.interchainTransfer with metadata ${type}`,
-                    ),
-                )
-                    .to.emit(token, 'Transfer')
-                    .withArgs(wallet.address, transferToAddress, amount)
-                    .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, wrappedPayload)
-                    .to.emit(service, 'InterchainTransfer')
-                    .withArgs(tokenId, sourceAddress, destinationChain, destAddress, sendAmount, HashZero);
+            it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}] (without metadata)`, async () => {
+                testInterchainTransferWithERC20WithApproval(type, false);
             });
         }
 
@@ -1666,7 +1756,16 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(true).then((tx) => tx.wait);
 
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, metadata, 0, gasOptions),
+                (gasOptions) =>
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        destAddress,
+                        amount,
+                        metadata,
+                        0,
+                        gasOptions,
+                    ),
                 service,
                 'Pause',
             );
@@ -1689,7 +1788,16 @@ describe('Interchain Token Service', () => {
             const invalidMetadata = '0x00000001';
 
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destAddress, amount, invalidMetadata, 0, gasOptions),
+                (gasOptions) =>
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        destAddress,
+                        amount,
+                        invalidMetadata,
+                        0,
+                        gasOptions,
+                    ),
                 service,
                 'InvalidMetadataVersion',
                 [Number(invalidMetadata)],
@@ -2888,14 +2996,30 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
-            await service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x', 0).then((tx) => tx.wait);
+            await service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                tokenId,
+                destinationChain,
+                destinationAddress,
+                sendAmount,
+                '0x',
+                0,
+            ).then((tx) => tx.wait);
 
             const errorSignatureHash = id('FlowLimitExceeded(uint256,uint256,address)');
             const selector = errorSignatureHash.substring(0, 10);
             const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [flowLimit, 2 * sendAmount, tokenManager.address]);
 
             await expectRevert(
-                (gasOptions) => service.interchainTransfer(tokenId, destinationChain, destinationAddress, sendAmount, '0x', 0, gasOptions),
+                (gasOptions) =>
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        destinationAddress,
+                        sendAmount,
+                        '0x',
+                        0,
+                        gasOptions,
+                    ),
                 service,
                 'TakeTokenFailed',
                 [selector + errorData.substring(2)],
@@ -3005,7 +3129,15 @@ describe('Interchain Token Service', () => {
 
             await expectRevert(
                 (gasOptions) =>
-                    service.interchainTransfer(tokenId, destinationChain, destinationAddress, newSendAmount, '0x', 0, gasOptions),
+                    service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                        tokenId,
+                        destinationChain,
+                        destinationAddress,
+                        newSendAmount,
+                        '0x',
+                        0,
+                        gasOptions,
+                    ),
                 service,
                 'TakeTokenFailed',
                 [selector + errorData.substring(2)],
