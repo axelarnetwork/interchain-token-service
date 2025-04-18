@@ -2959,7 +2959,7 @@ describe('Interchain Token Service', () => {
 
             const newSendAmount = MaxUint256;
 
-            const errorSignatureHash = id('FlowAdditionOverflow(uint256,uint256,address)');
+            const errorSignatureHash = id('FlowAmountOverflow(uint256,uint256,address)');
             const selector = errorSignatureHash.substring(0, 10);
             const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [newSendAmount, flowOut, tokenManager.address]);
 
