@@ -100,12 +100,11 @@ contract FlowLimit is IFlowLimit {
             flowToCompare := sload(slotToCompare)
         }
 
-        // Overflow checks for flowToAdd + flowAmount and flowToCompare + flowLimit_
-        if (flowToAdd > type(uint256).max - flowAmount) revert FlowAdditionOverflow(flowAmount, flowToAdd, address(this));
-
         if (flowAmount > flowLimit_) {
             revert FlowAmountExceededLimit(flowLimit_, flowAmount, address(this));
         }
+
+        if (flowToAdd > type(uint256).max - flowAmount) revert FlowAdditionOverflow(flowAmount, flowToAdd, address(this));
 
         uint256 newFlow = flowToAdd + flowAmount;
         uint256 netFlowDelta = newFlow >= flowToCompare ? newFlow - flowToCompare : flowToCompare - newFlow;
