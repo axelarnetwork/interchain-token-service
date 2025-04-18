@@ -102,11 +102,17 @@ contract FlowLimit is IFlowLimit {
 
         // Overflow checks for flowToAdd + flowAmount and flowToCompare + flowLimit_
         if (flowToAdd > type(uint256).max - flowAmount) revert FlowAdditionOverflow(flowAmount, flowToAdd, address(this));
-        if (flowToCompare > type(uint256).max - flowLimit_) revert FlowLimitOverflow(flowLimit_, flowToCompare, address(this));
 
-        if (flowToAdd + flowAmount > flowToCompare + flowLimit_)
-            revert FlowLimitExceeded((flowToCompare + flowLimit_), flowToAdd + flowAmount, address(this));
-        if (flowAmount > flowLimit_) revert FlowLimitExceeded(flowLimit_, flowAmount, address(this));
+        if (flowAmount > flowLimit_) {
+            revert FlowAmountExceededLimit(flowLimit_, flowAmount, address(this));
+        }
+
+        uint256 newFlow = flowToAdd + flowAmount;
+        uint256 netFlowDelta = newFlow >= flowToCompare ? newFlow - flowToCompare : flowToCompare - newFlow;
+
+        if (netFlowDelta > flowLimit_) {
+            revert FlowLimitExceeded(flowLimit_, netFlowDelta, address(this));
+        }
 
         assembly {
             sstore(slotToAdd, add(flowToAdd, flowAmount))

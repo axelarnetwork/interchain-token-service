@@ -248,7 +248,7 @@ describe('FlowLimit', async () => {
 
         await test.addFlowIn(flowLimit - 1).then((tx) => tx.wait);
 
-        await expectRevert((gasOptions) => test.addFlowIn(excessiveFlowAmount, gasOptions), test, 'FlowLimitExceeded', [
+        await expectRevert((gasOptions) => test.addFlowIn(excessiveFlowAmount, gasOptions), test, 'FlowAmountExceededLimit', [
             flowLimit,
             excessiveFlowAmount,
             test.address,

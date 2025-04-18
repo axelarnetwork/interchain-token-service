@@ -2935,59 +2935,19 @@ describe('Interchain Token Service', () => {
             expect(flowIn).to.eq(sendAmount);
             expect(flowOut).to.eq(sendAmount);
 
-            const errorSignatureHash = id('FlowLimitExceeded(uint256,uint256,address)');
+            const errorSignatureHash = id('FlowAmountExceededLimit(uint256,uint256,address)');
             const selector = errorSignatureHash.substring(0, 10);
-            const errorData = defaultAbiCoder.encode(
-                ['uint256', 'uint256', 'address'],
-                [(5 * sendAmount) / 2, 3 * sendAmount, tokenManager.address],
-            );
+            const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [flowLimit, 2 * sendAmount, tokenManager.address]);
 
             await expectRevert((gasOptions) => receiveToken(2 * sendAmount, gasOptions), service, 'GiveTokenFailed', [
                 selector + errorData.substring(2),
             ]);
         });
 
-        it('Should revert if the flow limit overflows', async () => {
-            const tokenManager = await getContractAt('ITokenManager', await service.deployedTokenManager(tokenId), wallet);
-            const tokenFlowLimit = await tokenManager.flowLimit();
-            expect(tokenFlowLimit).to.eq(flowLimit);
-
-            const flowIn = await tokenManager.flowInAmount();
-            const flowOut = await tokenManager.flowOutAmount();
-
-            expect(flowIn).to.eq(sendAmount);
-            expect(flowOut).to.eq(sendAmount);
-
-            const newSendAmount = 1;
-            const newFlowLimit = MaxUint256;
-
-            await tokenManager.setFlowLimit(newFlowLimit).then((tx) => tx.wait);
-
-            async function receiveToken(amount) {
-                const payload = defaultAbiCoder.encode(
-                    ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
-                    [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), wallet.address, amount, '0x'],
-                );
-                const wrappedPayload = defaultAbiCoder.encode(
-                    ['uint256', 'string', 'bytes'],
-                    [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
-                );
-                const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
-
-                return service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload);
-            }
-
-            const errorSignatureHash = id('FlowLimitOverflow(uint256,uint256,address)');
-            const selector = errorSignatureHash.substring(0, 10);
-            const errorData = defaultAbiCoder.encode(['uint256', 'uint256', 'address'], [newFlowLimit, flowIn, tokenManager.address]);
-
-            await expectRevert((gasOptions) => receiveToken(newSendAmount, gasOptions), service, 'GiveTokenFailed', [
-                selector + errorData.substring(2),
-            ]);
-        });
-
         it('Should revert if the flow addition overflows', async () => {
             const tokenManager = await getContractAt('ITokenManager', await service.deployedTokenManager(tokenId), wallet);
+            await tokenManager.setFlowLimit(MaxUint256).then((tx) => tx.wait);
+
             const tokenFlowLimit = await tokenManager.flowLimit();
             expect(tokenFlowLimit).to.eq(MaxUint256);
 
