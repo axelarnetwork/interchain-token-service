@@ -92,29 +92,29 @@ contract FlowLimit is IFlowLimit {
      * @param flowAmount The flow amount to add.
      */
     function _addFlow(uint256 flowLimit_, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal {
-        uint256 flowToAdd;
-        uint256 flowToCompare;
+        uint256 flow;
+        uint256 reverseFlow;
 
         assembly {
-            flowToAdd := sload(slotToAdd)
-            flowToCompare := sload(slotToCompare)
+            flow := sload(slotToAdd)
+            reverseFlow := sload(slotToCompare)
         }
 
         if (flowAmount > flowLimit_) {
             revert FlowAmountExceededLimit(flowLimit_, flowAmount, address(this));
         }
 
-        if (flowToAdd > type(uint256).max - flowAmount) revert FlowAmountOverflow(flowAmount, flowToAdd, address(this));
+        if (flow > type(uint256).max - flowAmount) revert FlowAmountOverflow(flowAmount, flow, address(this));
 
-        uint256 newFlow = flowToAdd + flowAmount;
-        uint256 netFlowDelta = newFlow >= flowToCompare ? newFlow - flowToCompare : flowToCompare - newFlow;
+        uint256 newFlow = flow + flowAmount;
+        uint256 netFlow = newFlow >= reverseFlow ? newFlow - reverseFlow : reverseFlow - newFlow;
 
-        if (netFlowDelta > flowLimit_) {
-            revert FlowLimitExceeded(flowLimit_, netFlowDelta, address(this));
+        if (netFlow > flowLimit_) {
+            revert FlowLimitExceeded(flowLimit_, netFlow, address(this));
         }
 
         assembly {
-            sstore(slotToAdd, add(flowToAdd, flowAmount))
+            sstore(slotToAdd, newFlow)
         }
     }
 
