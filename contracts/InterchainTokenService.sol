@@ -1055,15 +1055,15 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Internal helper to perform token intake and initiate an interchain transfer with fixed metadata version.
+     * @notice Internal helper to perform token intake and initiate an interchain transfer.
      * @dev This function consolidates logic for `interchainTransfer` and `callContractWithInterchainToken` flows.
      * @param tokenId The unique identifier of the token to be transferred.
-     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationChain The name of the chain to send tokens to.
      * @param destinationAddress The address on the destination chain to receive the tokens.
-     * @param amount The amount of tokens to be transferred.
-     * @param metadataVersion The version of metadata used for the interchain transfer.
-     * @param data Optional payload to be executed on the destination chain. If empty, no contract call will be made.
-     * @param gasValue Native token amount to be used for covering cross-chain gas fees.
+     * @param amount The amount of tokens to send.
+     * @param metadataVersion The version of the metadata.
+     * @param data The data to be passed with the token transfer.
+     * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _takeTokenAndTransmit(
         bytes32 tokenId,
