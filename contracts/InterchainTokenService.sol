@@ -570,11 +570,8 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount
     ) external payable whenNotPaused {
-        amount = _takeToken(tokenId, msg.sender, amount, false);
-
-        _transmitInterchainTransfer(
+        _takeTokenAndTransmit(
             tokenId,
-            msg.sender,
             destinationChain,
             destinationAddress,
             amount,
@@ -601,20 +598,18 @@ contract InterchainTokenService is
         bytes calldata metadata,
         uint256 gasValue
     ) external payable whenNotPaused {
-        amount = _takeToken(tokenId, msg.sender, amount, false);
-
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
+        _takeTokenAndTransmit(tokenId, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
     }
 
     /**
-     * @notice Initiates an interchain call contract with interchain token to a destination chain.
+     * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
-     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
      * @param amount The amount of tokens to be transferred.
-     * @param data Additional data to be passed along with the transfer.
+     * @param data Additional data to be provided to the destination contract when executed along with the token transfer.
      */
     function callContractWithInterchainToken(
         bytes32 tokenId,
@@ -625,11 +620,8 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         if (data.length == 0) revert EmptyData();
 
-        amount = _takeToken(tokenId, msg.sender, amount, false);
-
-        _transmitInterchainTransfer(
+        _takeTokenAndTransmit(
             tokenId,
-            msg.sender,
             destinationChain,
             destinationAddress,
             amount,
@@ -1060,6 +1052,31 @@ contract InterchainTokenService is
         if (metadata.length == 4) return (version, data);
 
         data = metadata[4:];
+    }
+
+    /**
+     * @notice Internal helper to perform token intake and initiate an interchain transfer with fixed metadata version.
+     * @dev This function consolidates logic for `interchainTransfer` and `callContractWithInterchainToken` flows.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to receive the tokens.
+     * @param amount The amount of tokens to be transferred.
+     * @param metadataVersion The version of metadata used for the interchain transfer.
+     * @param data Optional payload to be executed on the destination chain. If empty, no contract call will be made.
+     * @param gasValue Native token amount to be used for covering cross-chain gas fees.
+     */
+    function _takeTokenAndTransmit(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        IGatewayCaller.MetadataVersion metadataVersion,
+        bytes memory data,
+        uint256 gasValue
+    ) internal {
+        amount = _takeToken(tokenId, msg.sender, amount, false);
+
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
     }
 
     /**

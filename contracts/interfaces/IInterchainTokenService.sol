@@ -277,12 +277,12 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
-     * @notice Initiates an interchain call contract with interchain token to a destination chain.
+     * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
-     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
      * @param amount The amount of tokens to be transferred.
-     * @param data Additional data to be passed along with the transfer.
+     * @param data Additional data to be provided to the destination contract when executed along with the token transfer.
      */
     function callContractWithInterchainToken(
         bytes32 tokenId,
