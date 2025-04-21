@@ -1058,11 +1058,11 @@ contract InterchainTokenService is
      * @notice Internal helper to perform token intake and initiate an interchain transfer.
      * @dev This function consolidates logic for `interchainTransfer` and `callContractWithInterchainToken` flows.
      * @param tokenId The unique identifier of the token to be transferred.
-     * @param destinationChain The name of the chain to send tokens to.
-     * @param destinationAddress The address on the destination chain to receive the tokens.
-     * @param amount The amount of tokens to send.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
+     * @param amount The amount of tokens to be transferred.
      * @param metadataVersion The version of the metadata.
-     * @param data The data to be passed with the token transfer.
+     * @param data Additional data to be provided to the destination contract when executed along with the token transfer.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
     function _takeTokenAndTransmit(
