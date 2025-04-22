@@ -570,7 +570,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount
     ) external payable whenNotPaused {
-        _takeTokenAndTransmit(
+        _interchainTransfer(
             tokenId,
             destinationChain,
             destinationAddress,
@@ -600,11 +600,11 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
-        _takeTokenAndTransmit(tokenId, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
+        _interchainTransfer(tokenId, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
     }
 
     /**
-     * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data.
+     * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data. The destination contract must implement the `InterchainTokenExecutable` interface.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
@@ -620,7 +620,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         if (data.length == 0) revert EmptyData();
 
-        _takeTokenAndTransmit(
+        _interchainTransfer(
             tokenId,
             destinationChain,
             destinationAddress,
@@ -1055,8 +1055,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Internal helper to perform token intake and initiate an interchain transfer.
-     * @dev This function consolidates logic for `interchainTransfer` and `callContractWithInterchainToken` flows.
+     * @dev Performs an interchain transfer from `msg.sender` to the address on the destination chain.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
@@ -1065,7 +1064,7 @@ contract InterchainTokenService is
      * @param data Additional data to be provided to the destination contract when executed along with the token transfer.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _takeTokenAndTransmit(
+    function _interchainTransfer(
         bytes32 tokenId,
         string calldata destinationChain,
         bytes calldata destinationAddress,
