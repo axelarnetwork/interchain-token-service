@@ -245,8 +245,7 @@ interface IInterchainTokenService is
 
     /**
      * @notice Initiates an interchain transfer of a specified token to a destination chain.
-     * @dev This is a simplified version of interchainTransfer which does not include metadata and gas value for multicall.
-     * @dev The function retrieves the TokenManager associated with the tokenId.
+     * @dev This is the base version of interchainTransfer that handles simple token transfers without additional metadata or gas value customization.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The address on the destination chain to send the tokens to.
