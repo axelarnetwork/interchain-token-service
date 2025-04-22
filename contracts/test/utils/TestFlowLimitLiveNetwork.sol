@@ -52,20 +52,22 @@ contract TestFlowLimitLiveNetwork is IFlowLimit {
         }
     }
 
-    function _addFlow(uint256 flowLimit_, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal {
+    function _addFlow(uint256 flowLimit_, uint256 flowSlot, uint256 reverseFlowSlot, uint256 flowAmount) internal {
         uint256 flow;
         uint256 reverseFlow;
 
         assembly {
-            flow := sload(slotToAdd)
-            reverseFlow := sload(slotToCompare)
+            flow := sload(flowSlot)
+            reverseFlow := sload(reverseFlowSlot)
         }
 
         if (flowAmount > flowLimit_) {
             revert FlowAmountExceededLimit(flowLimit_, flowAmount, address(this));
         }
 
-        if (flow > type(uint256).max - flowAmount) revert FlowAmountOverflow(flowAmount, flow, address(this));
+        if (flow > type(uint256).max - flowAmount) {
+            revert FlowAmountOverflow(flowAmount, flow, address(this));
+        }
 
         uint256 newFlow = flow + flowAmount;
         uint256 netFlow = newFlow >= reverseFlow ? newFlow - reverseFlow : reverseFlow - newFlow;
@@ -75,7 +77,7 @@ contract TestFlowLimitLiveNetwork is IFlowLimit {
         }
 
         assembly {
-            sstore(slotToAdd, newFlow)
+            sstore(flowSlot, newFlow)
         }
     }
 
@@ -84,10 +86,10 @@ contract TestFlowLimitLiveNetwork is IFlowLimit {
         if (flowLimit_ == 0) return;
 
         uint256 epoch = block.timestamp / EPOCH_TIME;
-        uint256 slotToAdd = _getFlowOutSlot(epoch);
-        uint256 slotToCompare = _getFlowInSlot(epoch);
+        uint256 flowSlot = _getFlowOutSlot(epoch);
+        uint256 reverseFlowSlot = _getFlowInSlot(epoch);
 
-        _addFlow(flowLimit_, slotToAdd, slotToCompare, flowOutAmount_);
+        _addFlow(flowLimit_, flowSlot, reverseFlowSlot, flowOutAmount_);
     }
 
     function _addFlowIn(uint256 flowInAmount_) internal {
@@ -95,10 +97,10 @@ contract TestFlowLimitLiveNetwork is IFlowLimit {
         if (flowLimit_ == 0) return;
 
         uint256 epoch = block.timestamp / EPOCH_TIME;
-        uint256 slotToAdd = _getFlowInSlot(epoch);
-        uint256 slotToCompare = _getFlowOutSlot(epoch);
+        uint256 flowSlot = _getFlowInSlot(epoch);
+        uint256 reverseFlowSlot = _getFlowOutSlot(epoch);
 
-        _addFlow(flowLimit_, slotToAdd, slotToCompare, flowInAmount_);
+        _addFlow(flowLimit_, flowSlot, reverseFlowSlot, flowInAmount_);
     }
 
     function setFlowLimit(uint256 flowLimit_) external {

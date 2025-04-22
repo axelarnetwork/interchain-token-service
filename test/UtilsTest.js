@@ -4,6 +4,7 @@ const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
     Wallet,
+    BigNumber,
     getContractAt,
     constants: { AddressZero, MaxUint256 },
 } = ethers;
@@ -244,44 +245,24 @@ describe('FlowLimit', async () => {
 
     it('should allow valid flow patterns without exceeding the limit', async () => {
         const testCases = [
-            { flowLimit: 1, flows: [{ dir: 'in', amount: 1 }] },
-            { flowLimit: 1000, flows: [{ dir: 'in', amount: 1000 }] },
-            { flowLimit: MaxUint256, flows: [{ dir: 'in', amount: MaxUint256 }] },
+            { flowLimit: 1, flows: [{ in: 1 }] },
+            { flowLimit: 1000, flows: [{ in: 1000 }] },
+            { flowLimit: MaxUint256, flows: [{ in: MaxUint256 }] },
             {
                 flowLimit: 1,
-                flows: [
-                    { dir: 'in', amount: 1 },
-                    { dir: 'out', amount: 1 },
-                    { dir: 'in', amount: 1 },
-                ],
+                flows: [{ in: 1 }, { out: 1 }, { in: 1 }],
             },
             {
                 flowLimit: 10,
-                flows: [
-                    { dir: 'in', amount: 5 },
-                    { dir: 'in', amount: 5 },
-                    { dir: 'out', amount: 10 },
-                    { dir: 'out', amount: 10 },
-                    { dir: 'in', amount: 1 },
-                    { dir: 'in', amount: 10 },
-                    { dir: 'in', amount: 9 },
-                ],
+                flows: [{ in: 5 }, { in: 5 }, { out: 10 }, { out: 10 }, { in: 1 }, { in: 10 }, { in: 9 }],
             },
             {
                 flowLimit: MaxUint256,
-                flows: [
-                    { dir: 'in', amount: 1 },
-                    { dir: 'out', amount: 1 },
-                    { dir: 'in', amount: 1 },
-                ],
+                flows: [{ in: 1 }, { out: 1 }, { in: 1 }],
             },
             {
                 flowLimit: MaxUint256,
-                flows: [
-                    { dir: 'in', amount: MaxUint256.sub(1) },
-                    { dir: 'out', amount: MaxUint256 },
-                    { dir: 'in', amount: 1 },
-                ],
+                flows: [{ in: MaxUint256.sub(1) }, { out: MaxUint256 }, { in: 1 }],
             },
         ];
 
@@ -289,167 +270,99 @@ describe('FlowLimit', async () => {
             await nextEpoch();
             await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
 
-            for (const { dir, amount } of flows) {
+            for (const flow of flows) {
+                const [dir, amount] = Object.entries(flow)[0];
                 const fn = dir === 'in' ? test.addFlowIn : test.addFlowOut;
                 await fn(amount).then((tx) => tx.wait);
             }
         }
     });
 
-    it('Should revert when flow amount exceeds the flow limit: simple over limit', async () => {
-        await test.setFlowLimit(1).then((tx) => tx.wait);
+    const flipFlows = (flows) => flows.map((f) => (f.in != null ? { out: f.in } : { in: f.out }));
 
-        await expectRevert((gasOptions) => test.addFlowIn(2, gasOptions), test, 'FlowAmountExceededLimit', [1, 2, test.address]);
-    });
+    const calculateExpectedArgs = async (error, isIn, amount, flowIn, flowOut, flowLimit, test) => {
+        const addr = test.address;
 
-    it('Should revert if single flow amount exceeds the flow limit', async () => {
-        const excessiveFlowAmount = flowLimit + 1;
+        if (error === 'FlowAmountOverflow') {
+            const current = isIn ? await test.flowInAmount() : await test.flowOutAmount();
+            return [amount, BigNumber.from(current), addr];
+        } else if (error === 'FlowLimitExceeded') {
+            const forwardFlow = isIn ? flowIn.add(amount) : flowOut.add(amount);
+            const reverseFlow = isIn ? flowOut : flowIn;
+            const netFlow = forwardFlow.gt(reverseFlow) ? forwardFlow.sub(reverseFlow) : reverseFlow.sub(forwardFlow);
+            return [flowLimit, netFlow, addr];
+        }
 
-        await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
-        await test.addFlowIn(flowLimit - 1).then((tx) => tx.wait);
+        // Default case: FlowAmountExceededLimit
+        return [flowLimit, amount, addr];
+    };
 
-        await expectRevert((gasOptions) => test.addFlowIn(excessiveFlowAmount, gasOptions), test, 'FlowAmountExceededLimit', [
-            flowLimit,
-            excessiveFlowAmount,
-            test.address,
-        ]);
-    });
+    const executeTestCases = (error, testCases) => {
+        const allCases = [
+            ...testCases,
+            ...testCases.map(({ flowLimit, flows }) => ({
+                flowLimit,
+                flows: flipFlows(flows),
+            })),
+        ];
 
-    it('Should revert when flow amount equals i128::MAX and limit is i128::MAX - 1', async () => {
-        const limit = MaxUint256.sub(1);
-        const amount = MaxUint256;
+        for (const { flowLimit, flows } of allCases) {
+            const desc = `Should revert with ${error} (limit=${flowLimit}, steps=${flows.length})`;
 
-        await test.setFlowLimit(limit).then((tx) => tx.wait);
+            it(desc, async () => {
+                await nextEpoch();
+                await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
 
-        await expectRevert((gasOptions) => test.addFlowIn(amount, gasOptions), test, 'FlowAmountExceededLimit', [
-            limit,
-            amount,
-            test.address,
-        ]);
-    });
+                let flowIn = BigNumber.from(0);
+                let flowOut = BigNumber.from(0);
 
-    it('Should revert when net flow from in + out causes flowAmount to exceed limit', async () => {
-        await test.setFlowLimit(1).then((tx) => tx.wait);
-        await test.addFlowIn(1).then((tx) => tx.wait);
+                for (let i = 0; i < flows.length; i++) {
+                    const { in: inAmount, out: outAmount } = flows[i];
+                    const isIn = inAmount != null;
+                    const amount = BigNumber.from(inAmount ?? outAmount);
+                    const fn = isIn ? test.addFlowIn : test.addFlowOut;
+                    const isLast = i === flows.length - 1;
 
-        await expectRevert((gasOptions) => test.addFlowOut(2, gasOptions), test, 'FlowAmountExceededLimit', [1, 2, test.address]);
-    });
+                    if (isLast) {
+                        const expectedArgs = await calculateExpectedArgs(error, isIn, amount, flowIn, flowOut, flowLimit, test);
+                        await expectRevert((gasOptions) => fn(amount, gasOptions), test, error, expectedArgs);
+                    } else {
+                        await fn(amount).then((tx) => tx.wait);
+                        isIn ? (flowIn = flowIn.add(amount)) : (flowOut = flowOut.add(amount));
+                    }
+                }
+            });
+        }
+    };
 
-    it('Should revert when reverse flow exists and added flow exceeds limit', async () => {
-        const limit = MaxUint256.sub(1);
-        const outAmount = MaxUint256;
+    const testCasesForFlowAmountExceededLimit = [
+        { flowLimit: 1, flows: [{ in: 2 }] },
+        { flowLimit: MaxUint256.sub(1), flows: [{ in: MaxUint256 }] },
+        { flowLimit: 1, flows: [{ in: 1 }, { out: 2 }] },
+        { flowLimit: MaxUint256.sub(1), flows: [{ in: 1 }, { out: MaxUint256 }] },
+        { flowLimit: 1, flows: [{ in: 1 }, { out: 1 }, { out: 1 }, { in: 2 }] },
+    ];
+    executeTestCases('FlowAmountExceededLimit', testCasesForFlowAmountExceededLimit);
 
-        await test.setFlowLimit(limit).then((tx) => tx.wait);
-        await test.addFlowIn(1).then((tx) => tx.wait);
+    const testCasesForFlowAmountOverflow = [
+        { flowLimit: MaxUint256, flows: [{ in: MaxUint256 }, { in: 1 }] },
+        { flowLimit: MaxUint256.sub(1), flows: [{ in: 1 }, { out: 2 }, { out: MaxUint256.sub(1) }] },
+        { flowLimit: MaxUint256.sub(1), flows: [{ in: 10 }, { out: 1 }, { in: MaxUint256.sub(2) }] },
+        {
+            flowLimit: MaxUint256.div(2).add(2),
+            flows: [{ in: MaxUint256.div(2) }, { out: MaxUint256.div(2) }, { in: MaxUint256.div(2).add(2) }],
+        },
+    ];
+    executeTestCases('FlowAmountOverflow', testCasesForFlowAmountOverflow);
 
-        await expectRevert((gasOptions) => test.addFlowOut(outAmount, gasOptions), test, 'FlowAmountExceededLimit', [
-            limit,
-            outAmount,
-            test.address,
-        ]);
-    });
-
-    it('Should revert after multiple ins and outs when final in flow exceeds limit', async () => {
-        await test.setFlowLimit(1).then((tx) => tx.wait);
-        await test.addFlowIn(1).then((tx) => tx.wait);
-        await test.addFlowOut(1).then((tx) => tx.wait);
-        await test.addFlowOut(1).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(2, gasOptions), test, 'FlowAmountExceededLimit', [1, 2, test.address]);
-    });
-
-    it('Should revert when flow + amount exceeds uint256 max', async () => {
-        await test.setFlowLimit(MaxUint256).then((tx) => tx.wait);
-        await test.addFlowIn(MaxUint256).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowAmountOverflow', [1, MaxUint256, test.address]);
-    });
-
-    it('Should revert when accumulated out flow overflows', async () => {
-        const limit = MaxUint256.sub(1);
-
-        await test.setFlowLimit(limit).then((tx) => tx.wait);
-        await test.addFlowIn(1).then((tx) => tx.wait);
-        await test.addFlowOut(2).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowOut(limit, gasOptions), test, 'FlowAmountOverflow', [limit, 2, test.address]);
-    });
-
-    it('Should revert after multiple ins and outs when final in overflows', async () => {
-        const limit = MaxUint256.sub(1);
-        const largeAmount = MaxUint256.sub(2);
-
-        await test.setFlowLimit(limit).then((tx) => tx.wait);
-        await test.addFlowIn(10).then((tx) => tx.wait);
-        await test.addFlowOut(1).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(largeAmount, gasOptions), test, 'FlowAmountOverflow', [
-            largeAmount,
-            10,
-            test.address,
-        ]);
-    });
-
-    it('Should revert in large in/out/in sequence that causes final in to overflow', async () => {
-        const half = MaxUint256.div(2);
-        const limit = half.add(2);
-
-        await test.setFlowLimit(limit).then((tx) => tx.wait);
-        await test.addFlowIn(half).then((tx) => tx.wait);
-        await test.addFlowOut(half).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(half.add(2), gasOptions), test, 'FlowAmountOverflow', [
-            half.add(2),
-            half,
-            test.address,
-        ]);
-    });
-
-    it('Should revert when total flow exceeds limit despite individual valid flows', async () => {
-        await test.setFlowLimit(1).then((tx) => tx.wait);
-        await test.addFlowIn(1).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [1, 2, test.address]);
-    });
-
-    it('Should revert when flow drift exceeds limit after in/out/in/in', async () => {
-        await test.setFlowLimit(10).then((tx) => tx.wait);
-        await test.addFlowIn(10).then((tx) => tx.wait);
-        await test.addFlowOut(10).then((tx) => tx.wait);
-        await test.addFlowIn(1).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(10, gasOptions), test, 'FlowLimitExceeded', [10, 11, test.address]);
-    });
-
-    it('Should revert when flow slightly exceeds large limit', async () => {
-        const limit = MaxUint256.sub(1);
-
-        await test.setFlowLimit(limit).then((tx) => tx.wait);
-        await test.addFlowIn(limit).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [limit, limit.add(1), test.address]);
-    });
-
-    it('Should revert when out-flow drift exceeds max limit', async () => {
-        const limit = MaxUint256.sub(2);
-
-        await test.setFlowLimit(limit).then((tx) => tx.wait);
-        await test.addFlowIn(1).then((tx) => tx.wait);
-        await test.addFlowOut(limit).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowOut(2, gasOptions), test, 'FlowLimitExceeded', [limit, limit.add(1), test.address]);
-    });
-
-    it('Should revert when in/out/in combination creates net imbalance over the limit', async () => {
-        const half = MaxUint256.div(2);
-        const limit = half;
-
-        await test.setFlowLimit(limit).then((tx) => tx.wait);
-        await test.addFlowIn(half).then((tx) => tx.wait);
-        await test.addFlowOut(1).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(2, gasOptions), test, 'FlowLimitExceeded', [limit, half.add(1), test.address]);
-    });
+    const testCasesForFlowLimitExceeded = [
+        { flowLimit: 1, flows: [{ in: 1 }, { in: 1 }] },
+        { flowLimit: 10, flows: [{ in: 10 }, { out: 10 }, { in: 1 }, { in: 10 }] },
+        { flowLimit: MaxUint256.sub(1), flows: [{ in: MaxUint256.sub(1) }, { in: 1 }] },
+        { flowLimit: MaxUint256.sub(2), flows: [{ in: 1 }, { out: MaxUint256.sub(2) }, { out: 2 }] },
+        { flowLimit: MaxUint256.div(2), flows: [{ in: MaxUint256.div(2) }, { out: 1 }, { in: 2 }] },
+    ];
+    executeTestCases('FlowLimitExceeded', testCasesForFlowLimitExceeded);
 });
 
 describe('ChainTracker', async () => {
