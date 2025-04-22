@@ -277,6 +277,22 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
+     * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
+     * @param amount The amount of tokens to be transferred.
+     * @param data Additional data to be provided to the destination contract when executed along with the token transfer.
+     */
+    function callContractWithInterchainToken(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable;
+
+    /**
      * @notice Sets the flow limits for multiple tokens.
      * @param tokenIds An array of tokenIds.
      * @param flowLimits An array of flow limits corresponding to the tokenIds.
