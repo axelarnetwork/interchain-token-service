@@ -12,7 +12,7 @@ contract TestFlowLimitLiveNetwork is FlowLimit {
      * @return The epoch time in seconds for testing (60 seconds)
      */
     function epochTime() public pure override returns (uint256) {
-        return 60; // 60 seconds for testing
+        return 60;
     }
 
     function setFlowLimit(uint256 flowLimit_) external {

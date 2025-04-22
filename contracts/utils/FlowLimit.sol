@@ -19,7 +19,7 @@ contract FlowLimit is IFlowLimit {
 
     /**
      * @notice Returns the epoch time duration
-     * @return The epoch time in seconds
+     * @return The epoch time (6 hours)
      */
     function epochTime() public view virtual returns (uint256) {
         return EPOCH_TIME;
