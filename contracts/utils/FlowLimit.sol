@@ -18,6 +18,14 @@ contract FlowLimit is IFlowLimit {
     uint256 internal constant EPOCH_TIME = 6 hours;
 
     /**
+     * @notice Returns the epoch time duration
+     * @return The epoch time in seconds
+     */
+    function epochTime() public view virtual returns (uint256) {
+        return EPOCH_TIME;
+    }
+
+    /**
      * @notice Returns the current flow limit.
      * @return flowLimit_ The current flow limit value.
      */
@@ -63,7 +71,7 @@ contract FlowLimit is IFlowLimit {
      * @return flowOutAmount_ The current flow out amount.
      */
     function flowOutAmount() external view returns (uint256 flowOutAmount_) {
-        uint256 epoch = block.timestamp / EPOCH_TIME;
+        uint256 epoch = block.timestamp / epochTime();
         uint256 slot = _getFlowOutSlot(epoch);
 
         assembly {
@@ -76,7 +84,7 @@ contract FlowLimit is IFlowLimit {
      * @return flowInAmount_ The current flow in amount.
      */
     function flowInAmount() external view returns (uint256 flowInAmount_) {
-        uint256 epoch = block.timestamp / EPOCH_TIME;
+        uint256 epoch = block.timestamp / epochTime();
         uint256 slot = _getFlowInSlot(epoch);
 
         assembly {
@@ -85,11 +93,20 @@ contract FlowLimit is IFlowLimit {
     }
 
     /**
-     * @notice Adds a flow amount while ensuring it does not exceed the flow limit.
-     * @param flowLimit_ The current flow limit value.
-     * @param flowSlot The slot to add the flow to.
-     * @param reverseFlowSlot The slot to compare the flow against.
-     * @param flowAmount The flow amount to add.
+     * @notice Adds flow amount in the specified direction (in/out) for a token.
+     * @dev Flow amounts are stored in temporary storage since they only need to persist
+     *      for the epoch duration (default: 6 hours).
+     *
+     *      Reverts if:
+     *      - Flow amount exceeds the flow limit
+     *      - The flow in either direction exceeds `uint256::MAX`
+     *      - Net flow (difference between in and out) exceeds the flow limit,
+     *        i.e., |flow - reverse_flow| > flow_limit
+     *
+     * @param flowLimit_ The allowed maximum net flow during the epoch.
+     * @param flowSlot The storage slot for the current direction's flow (in or out).
+     * @param reverseFlowSlot The storage slot for the opposite direction's flow.
+     * @param flowAmount The amount of flow to add.
      */
     function _addFlow(uint256 flowLimit_, uint256 flowSlot, uint256 reverseFlowSlot, uint256 flowAmount) internal {
         uint256 flow;
@@ -128,7 +145,7 @@ contract FlowLimit is IFlowLimit {
         uint256 flowLimit_ = flowLimit();
         if (flowLimit_ == 0) return;
 
-        uint256 epoch = block.timestamp / EPOCH_TIME;
+        uint256 epoch = block.timestamp / epochTime();
         uint256 flowSlot = _getFlowOutSlot(epoch);
         uint256 reverseFlowSlot = _getFlowInSlot(epoch);
 
@@ -143,7 +160,7 @@ contract FlowLimit is IFlowLimit {
         uint256 flowLimit_ = flowLimit();
         if (flowLimit_ == 0) return;
 
-        uint256 epoch = block.timestamp / EPOCH_TIME;
+        uint256 epoch = block.timestamp / epochTime();
         uint256 flowSlot = _getFlowInSlot(epoch);
         uint256 reverseFlowSlot = _getFlowOutSlot(epoch);
 

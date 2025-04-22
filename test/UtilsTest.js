@@ -307,7 +307,7 @@ describe('FlowLimit', async () => {
         ];
 
         for (const { flowLimit, flows } of allCases) {
-            const desc = `Should revert with ${error} (limit=${flowLimit}, steps=${flows.length})`;
+            const desc = `Should revert with ${error} (flowLimit=${flowLimit}, steps=${flows.length})`;
 
             it(desc, async () => {
                 await nextEpoch();
