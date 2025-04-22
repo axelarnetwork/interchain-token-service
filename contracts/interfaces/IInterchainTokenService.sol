@@ -277,7 +277,7 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
-     * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data.
+     * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data. The destination contract must implement the `InterchainTokenExecutable` interface.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
