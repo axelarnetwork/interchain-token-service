@@ -207,7 +207,7 @@ describe('FlowLimit', async () => {
 
     it('Should test flow in', async () => {
         for (let i = 0; i < flowLimit; i++) {
-            await test.addFlowIn(1).then((tx) => tx.wait);
+            await test.addFlowIn(1).then((tx) => tx.wait());
             expect(await test.flowInAmount()).to.equal(i + 1);
         }
 
@@ -221,12 +221,12 @@ describe('FlowLimit', async () => {
 
         expect(await test.flowInAmount()).to.equal(0);
 
-        await test.addFlowIn(flowLimit).then((tx) => tx.wait);
+        await test.addFlowIn(flowLimit).then((tx) => tx.wait());
     });
 
     it('Should test flow out', async () => {
         for (let i = 0; i < flowLimit; i++) {
-            await test.addFlowOut(1).then((tx) => tx.wait);
+            await test.addFlowOut(1).then((tx) => tx.wait());
             expect(await test.flowOutAmount()).to.equal(i + 1);
         }
 
@@ -240,7 +240,7 @@ describe('FlowLimit', async () => {
 
         expect(await test.flowOutAmount()).to.equal(0);
 
-        await test.addFlowOut(flowLimit).then((tx) => tx.wait);
+        await test.addFlowOut(flowLimit).then((tx) => tx.wait());
     });
 
     const flipFlows = (flows) => flows.map((f) => (f.in ? { out: f.in } : { in: f.out }));
@@ -284,7 +284,7 @@ describe('FlowLimit', async () => {
 
             it(label, async () => {
                 await nextEpoch();
-                await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
+                await test.setFlowLimit(flowLimit).then((tx) => tx.wait());
 
                 let flowIn = BigNumber.from(0);
                 let flowOut = BigNumber.from(0);
@@ -296,7 +296,7 @@ describe('FlowLimit', async () => {
                     const fn = isInbound ? test.addFlowIn : test.addFlowOut;
 
                     if (!error || index < lastIndex) {
-                        await fn(flowAmount).then((tx) => tx.wait);
+                        await fn(flowAmount).then((tx) => tx.wait());
 
                         if (isInbound) {
                             flowIn = flowIn.add(flowAmount);
@@ -346,6 +346,7 @@ describe('FlowLimit', async () => {
             { flowLimit: MaxUint256.sub(1), flows: [{ in: 1 }, { out: MaxUint256 }] },
             { flowLimit: 1, flows: [{ in: 1 }, { out: 1 }, { out: 1 }, { in: 2 }] },
         ];
+
         executeTestCases(testCases, 'FlowAmountExceededLimit');
     });
 
@@ -359,6 +360,7 @@ describe('FlowLimit', async () => {
                 flows: [{ in: MaxUint256.div(2) }, { out: MaxUint256.div(2) }, { in: MaxUint256.div(2).add(2) }],
             },
         ];
+
         executeTestCases(testCases, 'FlowAmountOverflow');
     });
 
@@ -370,6 +372,7 @@ describe('FlowLimit', async () => {
             { flowLimit: MaxUint256.sub(2), flows: [{ in: 1 }, { out: MaxUint256.sub(2) }, { out: 2 }] },
             { flowLimit: MaxUint256.div(2), flows: [{ in: MaxUint256.div(2) }, { out: 1 }, { in: 2 }] },
         ];
+
         executeTestCases(testCases, 'FlowLimitExceeded');
     });
 });
