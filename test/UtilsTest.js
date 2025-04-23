@@ -243,7 +243,76 @@ describe('FlowLimit', async () => {
         await test.addFlowOut(flowLimit).then((tx) => tx.wait);
     });
 
-    it('should allow valid flow patterns without exceeding the limit', async () => {
+    const flipFlows = (flows) => flows.map((f) => (f.in ? { out: f.in } : { in: f.out }));
+
+    const getErrorArgs = async (error, isInbound, flowAmount, flowIn, flowOut, flowLimit, test) => {
+        const contract = test.address;
+
+        if (error === 'FlowAmountOverflow') {
+            const flow = isInbound ? await test.flowInAmount() : await test.flowOutAmount();
+            return [flowAmount, BigNumber.from(flow), contract];
+        }
+
+        if (error === 'FlowLimitExceeded') {
+            const flow = isInbound ? flowIn.add(flowAmount) : flowOut.add(flowAmount);
+            const reverseFlow = isInbound ? flowOut : flowIn;
+            const netFlow = flow.sub(reverseFlow).abs();
+            return [flowLimit, netFlow, contract];
+        }
+
+        if (error === 'FlowAmountExceededLimit') {
+            return [flowLimit, flowAmount, contract];
+        }
+
+        throw new Error(`Unknown error type passed to getErrorArgs: ${error}`);
+    };
+
+    const executeTestCases = (testCases, error) => {
+        // Flipped test cases should produce the same expected behavior
+        const allCases = [
+            ...testCases,
+            ...testCases.map(({ flowLimit, flows }) => ({
+                flowLimit,
+                flows: flipFlows(flows),
+            })),
+        ];
+
+        for (const { flowLimit, flows } of allCases) {
+            const label = error
+                ? `Should revert with ${error} (flowLimit=${flowLimit}, steps=${flows.length})`
+                : `Should allow valid flow patterns (flowLimit=${flowLimit}, steps=${flows.length})`;
+
+            it(label, async () => {
+                await nextEpoch();
+                await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
+
+                let flowIn = BigNumber.from(0);
+                let flowOut = BigNumber.from(0);
+                const lastIndex = flows.length - 1;
+
+                for (const [index, flow] of flows.entries()) {
+                    const isInbound = flow.in;
+                    const flowAmount = BigNumber.from(flow.in || flow.out);
+                    const fn = isInbound ? test.addFlowIn : test.addFlowOut;
+
+                    if (!error || index < lastIndex) {
+                        await fn(flowAmount).then((tx) => tx.wait);
+
+                        if (isInbound) {
+                            flowIn = flowIn.add(flowAmount);
+                        } else {
+                            flowOut = flowOut.add(flowAmount);
+                        }
+                    } else {
+                        const expectedArgs = await getErrorArgs(error, isInbound, flowAmount, flowIn, flowOut, flowLimit, test);
+                        await expectRevert((gasOptions) => fn(flowAmount, gasOptions), test, error, expectedArgs);
+                    }
+                }
+            });
+        }
+    };
+
+    describe('FlowLimit - Valid flows', () => {
         const testCases = [
             { flowLimit: 1, flows: [{ in: 1 }] },
             { flowLimit: 1000, flows: [{ in: 1000 }] },
@@ -266,103 +335,43 @@ describe('FlowLimit', async () => {
             },
         ];
 
-        for (const { flowLimit, flows } of testCases) {
-            await nextEpoch();
-            await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
-
-            for (const flow of flows) {
-                const [dir, amount] = Object.entries(flow)[0];
-                const fn = dir === 'in' ? test.addFlowIn : test.addFlowOut;
-                await fn(amount).then((tx) => tx.wait);
-            }
-        }
+        executeTestCases(testCases);
     });
 
-    const flipFlows = (flows) => flows.map((f) => (f.in != null ? { out: f.in } : { in: f.out }));
-
-    const calculateExpectedArgs = async (error, isIn, amount, flowIn, flowOut, flowLimit, test) => {
-        const addr = test.address;
-
-        if (error === 'FlowAmountOverflow') {
-            const current = isIn ? await test.flowInAmount() : await test.flowOutAmount();
-            return [amount, BigNumber.from(current), addr];
-        } else if (error === 'FlowLimitExceeded') {
-            const forwardFlow = isIn ? flowIn.add(amount) : flowOut.add(amount);
-            const reverseFlow = isIn ? flowOut : flowIn;
-            const netFlow = forwardFlow.gt(reverseFlow) ? forwardFlow.sub(reverseFlow) : reverseFlow.sub(forwardFlow);
-            return [flowLimit, netFlow, addr];
-        }
-
-        // Default case: FlowAmountExceededLimit
-        return [flowLimit, amount, addr];
-    };
-
-    const executeTestCases = (error, testCases) => {
-        const allCases = [
-            ...testCases,
-            ...testCases.map(({ flowLimit, flows }) => ({
-                flowLimit,
-                flows: flipFlows(flows),
-            })),
+    describe('FlowLimit - FlowAmountExceededLimit', () => {
+        const testCases = [
+            { flowLimit: 1, flows: [{ in: 2 }] },
+            { flowLimit: MaxUint256.sub(1), flows: [{ in: MaxUint256 }] },
+            { flowLimit: 1, flows: [{ in: 1 }, { out: 2 }] },
+            { flowLimit: MaxUint256.sub(1), flows: [{ in: 1 }, { out: MaxUint256 }] },
+            { flowLimit: 1, flows: [{ in: 1 }, { out: 1 }, { out: 1 }, { in: 2 }] },
         ];
+        executeTestCases(testCases, 'FlowAmountExceededLimit');
+    });
 
-        for (const { flowLimit, flows } of allCases) {
-            const desc = `Should revert with ${error} (flowLimit=${flowLimit}, steps=${flows.length})`;
+    describe('FlowLimit - FlowAmountOverflow', () => {
+        const testCases = [
+            { flowLimit: MaxUint256, flows: [{ in: MaxUint256 }, { in: 1 }] },
+            { flowLimit: MaxUint256.sub(1), flows: [{ in: 1 }, { out: 2 }, { out: MaxUint256.sub(1) }] },
+            { flowLimit: MaxUint256.sub(1), flows: [{ in: 10 }, { out: 1 }, { in: MaxUint256.sub(2) }] },
+            {
+                flowLimit: MaxUint256.div(2).add(2),
+                flows: [{ in: MaxUint256.div(2) }, { out: MaxUint256.div(2) }, { in: MaxUint256.div(2).add(2) }],
+            },
+        ];
+        executeTestCases(testCases, 'FlowAmountOverflow');
+    });
 
-            it(desc, async () => {
-                await nextEpoch();
-                await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
-
-                let flowIn = BigNumber.from(0);
-                let flowOut = BigNumber.from(0);
-
-                for (let i = 0; i < flows.length; i++) {
-                    const { in: inAmount, out: outAmount } = flows[i];
-                    const isIn = inAmount != null;
-                    const amount = BigNumber.from(inAmount ?? outAmount);
-                    const fn = isIn ? test.addFlowIn : test.addFlowOut;
-                    const isLast = i === flows.length - 1;
-
-                    if (isLast) {
-                        const expectedArgs = await calculateExpectedArgs(error, isIn, amount, flowIn, flowOut, flowLimit, test);
-                        await expectRevert((gasOptions) => fn(amount, gasOptions), test, error, expectedArgs);
-                    } else {
-                        await fn(amount).then((tx) => tx.wait);
-                        isIn ? (flowIn = flowIn.add(amount)) : (flowOut = flowOut.add(amount));
-                    }
-                }
-            });
-        }
-    };
-
-    const testCasesForFlowAmountExceededLimit = [
-        { flowLimit: 1, flows: [{ in: 2 }] },
-        { flowLimit: MaxUint256.sub(1), flows: [{ in: MaxUint256 }] },
-        { flowLimit: 1, flows: [{ in: 1 }, { out: 2 }] },
-        { flowLimit: MaxUint256.sub(1), flows: [{ in: 1 }, { out: MaxUint256 }] },
-        { flowLimit: 1, flows: [{ in: 1 }, { out: 1 }, { out: 1 }, { in: 2 }] },
-    ];
-    executeTestCases('FlowAmountExceededLimit', testCasesForFlowAmountExceededLimit);
-
-    const testCasesForFlowAmountOverflow = [
-        { flowLimit: MaxUint256, flows: [{ in: MaxUint256 }, { in: 1 }] },
-        { flowLimit: MaxUint256.sub(1), flows: [{ in: 1 }, { out: 2 }, { out: MaxUint256.sub(1) }] },
-        { flowLimit: MaxUint256.sub(1), flows: [{ in: 10 }, { out: 1 }, { in: MaxUint256.sub(2) }] },
-        {
-            flowLimit: MaxUint256.div(2).add(2),
-            flows: [{ in: MaxUint256.div(2) }, { out: MaxUint256.div(2) }, { in: MaxUint256.div(2).add(2) }],
-        },
-    ];
-    executeTestCases('FlowAmountOverflow', testCasesForFlowAmountOverflow);
-
-    const testCasesForFlowLimitExceeded = [
-        { flowLimit: 1, flows: [{ in: 1 }, { in: 1 }] },
-        { flowLimit: 10, flows: [{ in: 10 }, { out: 10 }, { in: 1 }, { in: 10 }] },
-        { flowLimit: MaxUint256.sub(1), flows: [{ in: MaxUint256.sub(1) }, { in: 1 }] },
-        { flowLimit: MaxUint256.sub(2), flows: [{ in: 1 }, { out: MaxUint256.sub(2) }, { out: 2 }] },
-        { flowLimit: MaxUint256.div(2), flows: [{ in: MaxUint256.div(2) }, { out: 1 }, { in: 2 }] },
-    ];
-    executeTestCases('FlowLimitExceeded', testCasesForFlowLimitExceeded);
+    describe('FlowLimit - FlowLimitExceeded', () => {
+        const testCases = [
+            { flowLimit: 1, flows: [{ in: 1 }, { in: 1 }] },
+            { flowLimit: 10, flows: [{ in: 10 }, { out: 10 }, { in: 1 }, { in: 10 }] },
+            { flowLimit: MaxUint256.sub(1), flows: [{ in: MaxUint256.sub(1) }, { in: 1 }] },
+            { flowLimit: MaxUint256.sub(2), flows: [{ in: 1 }, { out: MaxUint256.sub(2) }, { out: 2 }] },
+            { flowLimit: MaxUint256.div(2), flows: [{ in: MaxUint256.div(2) }, { out: 1 }, { in: 2 }] },
+        ];
+        executeTestCases(testCases, 'FlowLimitExceeded');
+    });
 });
 
 describe('ChainTracker', async () => {
