@@ -248,26 +248,28 @@ describe('FlowLimit', async () => {
     const getErrorArgs = async (error, isInbound, flowAmount, flowIn, flowOut, flowLimit, test) => {
         const contract = test.address;
 
-        if (error === 'FlowAmountOverflow') {
-            const flow = isInbound ? await test.flowInAmount() : await test.flowOutAmount();
-            return [flowAmount, BigNumber.from(flow), contract];
-        }
+        switch (error) {
+            case 'FlowAmountOverflow': {
+                const flow = isInbound ? await test.flowInAmount() : await test.flowOutAmount();
+                return [flowAmount, BigNumber.from(flow), contract];
+            }
 
-        if (error === 'FlowLimitExceeded') {
-            const flow = isInbound ? flowIn.add(flowAmount) : flowOut.add(flowAmount);
-            const reverseFlow = isInbound ? flowOut : flowIn;
-            const netFlow = flow.sub(reverseFlow).abs();
-            return [flowLimit, netFlow, contract];
-        }
+            case 'FlowLimitExceeded': {
+                const flow = isInbound ? flowIn.add(flowAmount) : flowOut.add(flowAmount);
+                const reverseFlow = isInbound ? flowOut : flowIn;
+                const netFlow = flow.sub(reverseFlow).abs();
+                return [flowLimit, netFlow, contract];
+            }
 
-        if (error === 'FlowAmountExceededLimit') {
-            return [flowLimit, flowAmount, contract];
-        }
+            case 'FlowAmountExceededLimit':
+                return [flowLimit, flowAmount, contract];
 
-        throw new Error(`Unknown error type passed to getErrorArgs: ${error}`);
+            default:
+                throw new Error(`Unknown error type passed to getErrorArgs: ${error}`);
+        }
     };
 
-    const executeTestCases = (testCases, error) => {
+    const executeTestCases = (testCases, expectedError) => {
         // Flipped test cases should produce the same expected behavior
         const allCases = [
             ...testCases,
@@ -278,8 +280,8 @@ describe('FlowLimit', async () => {
         ];
 
         for (const { flowLimit, flows } of allCases) {
-            const label = error
-                ? `Should revert with ${error} (flowLimit=${flowLimit}, steps=${flows.length})`
+            const label = expectedError
+                ? `Should revert with ${expectedError} (flowLimit=${flowLimit}, steps=${flows.length})`
                 : `Should allow valid flow patterns (flowLimit=${flowLimit}, steps=${flows.length})`;
 
             it(label, async () => {
@@ -295,7 +297,7 @@ describe('FlowLimit', async () => {
                     const flowAmount = BigNumber.from(flow.in || flow.out);
                     const fn = isInbound ? test.addFlowIn : test.addFlowOut;
 
-                    if (!error || index < lastIndex) {
+                    if (!expectedError || index < lastIndex) {
                         await fn(flowAmount).then((tx) => tx.wait());
 
                         if (isInbound) {
@@ -304,8 +306,8 @@ describe('FlowLimit', async () => {
                             flowOut = flowOut.add(flowAmount);
                         }
                     } else {
-                        const expectedArgs = await getErrorArgs(error, isInbound, flowAmount, flowIn, flowOut, flowLimit, test);
-                        await expectRevert((gasOptions) => fn(flowAmount, gasOptions), test, error, expectedArgs);
+                        const expectedArgs = await getErrorArgs(expectedError, isInbound, flowAmount, flowIn, flowOut, flowLimit, test);
+                        await expectRevert((gasOptions) => fn(flowAmount, gasOptions), test, expectedError, expectedArgs);
                     }
                 }
             });
