@@ -28,6 +28,10 @@ const {
     ITS_HUB_CHAIN,
     ITS_HUB_ADDRESS,
     MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
+    DEPLOY_REMOTE_INTERCHAIN_TOKEN,
+    DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN,
+    INTERCHAIN_TRANSFER,
+    INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE,
 } = require('./constants');
 
 describe('Interchain Token Service Full Flow', () => {
@@ -73,7 +77,7 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteCanonicalInterchainToken(address,string,uint256)'](
+                tx = await tokenFactory.populateTransaction[DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN](
                     token.address,
                     otherChains[i],
                     gasValues[i],
@@ -136,7 +140,7 @@ describe('Interchain Token Service Full Flow', () => {
                     .withArgs(wallet.address, service.address, amount);
 
                 await expect(
-                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destChain, destAddress, amount, {
+                    service[INTERCHAIN_TRANSFER](tokenId, destChain, destAddress, amount, {
                         value: gasValue,
                     }),
                 )
@@ -260,7 +264,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             it('Should send some tokens to another chain via ITS', async () => {
                 await expect(
-                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destChain, destAddress, amount, {
+                    service[INTERCHAIN_TRANSFER](tokenId, destChain, destAddress, amount, {
                         value: gasValue,
                     }),
                 )
@@ -280,7 +284,7 @@ describe('Interchain Token Service Full Flow', () => {
                 let value = 0;
 
                 for (const i in otherChains) {
-                    const tx = await service.populateTransaction['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                    const tx = await service.populateTransaction[INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE](
                         tokenId,
                         otherChains[i],
                         destAddress,
@@ -503,7 +507,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             it('Should send some tokens to another chain via ITS', async () => {
                 await expect(
-                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destChain, destAddress, amount, {
+                    service[INTERCHAIN_TRANSFER](tokenId, destChain, destAddress, amount, {
                         value: gasValue,
                     }),
                 )
@@ -550,11 +554,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,string,uint256)'](
-                    salt,
-                    otherChains[i],
-                    gasValues[i],
-                );
+                tx = await tokenFactory.populateTransaction[DEPLOY_REMOTE_INTERCHAIN_TOKEN](salt, otherChains[i], gasValues[i]);
                 calls.push(tx.data);
                 value += gasValues[i];
             }
@@ -602,7 +602,7 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                const tx = await service.populateTransaction['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                const tx = await service.populateTransaction[INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE](
                     tokenId,
                     otherChains[i],
                     destAddress,
@@ -696,7 +696,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Initiate the contract call with transfer
             await expect(
-                service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                service[INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE](
                     tokenId,
                     destChain,
                     executable.address,
@@ -786,11 +786,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction['deployRemoteInterchainToken(bytes32,string,uint256)'](
-                    salt,
-                    otherChains[i],
-                    gasValues[i],
-                );
+                tx = await tokenFactory.populateTransaction[DEPLOY_REMOTE_INTERCHAIN_TOKEN](salt, otherChains[i], gasValues[i]);
                 calls.push(tx.data);
                 value += gasValues[i];
                 payloads.push(
@@ -855,7 +851,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             it('Should send some tokens to another chain via ITS', async () => {
                 await expect(
-                    service['interchainTransfer(bytes32,string,bytes,uint256)'](tokenId, destChain, destAddress, amount, {
+                    service[INTERCHAIN_TRANSFER](tokenId, destChain, destAddress, amount, {
                         value: gasValue,
                     }),
                 )
@@ -880,7 +876,7 @@ describe('Interchain Token Service Full Flow', () => {
                 );
 
                 for (const i in otherChains) {
-                    const tx = await service.populateTransaction['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                    const tx = await service.populateTransaction[INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE](
                         tokenId,
                         otherChains[i],
                         destAddress,
@@ -940,7 +936,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Initiate the contract call with transfer
             await expect(
-                service['interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)'](
+                service[INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE](
                     tokenId,
                     destChain,
                     executable.address,

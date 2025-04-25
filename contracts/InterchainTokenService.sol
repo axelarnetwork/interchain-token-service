@@ -512,12 +512,8 @@ contract InterchainTokenService is
      * @notice Initiates an interchain transfer of a specified token to a destination chain.
      * @dev This is the base version of interchainTransfer that handles simple token transfers without additional metadata or gas value customization.
      *
-     * The `destinationAddress` must be correctly encoded depending on the destination chain:
-     * - EVM, Sui, and other supported chains: pass the address directly as `bytes`.
-     * - Stellar: convert the address to an ASCII byte array.
-     *
-     * For encoding reference, see:
-     * https://github.com/axelarnetwork/axelar-contract-deployments/blob/main/common/utils.js#L590 (`encodeITSDestination`)
+     * The `destinationAddress` must be correctly encoded depending on the destination chain.
+     * - For encoding reference: https://github.com/axelarnetwork/axelar-contract-deployments/blob/main/common/utils.js#L590 (`encodeITSDestination`)
      *
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
@@ -539,41 +535,6 @@ contract InterchainTokenService is
             '',
             msg.value
         );
-    }
-
-    /**
-     * @notice Initiates an interchain transfer of a specified token to a destination chain with extended options.
-     * @dev This version allows for customized metadata and gas value.
-     * - The first 4 bytes of `metadata` specify the metadata version.
-     * - To call the `destinationAddress` as a contract with a payload, provide `bytes.concat(bytes4(0), payload)` as the metadata.
-     * - The token will be transferred to the destination app contract before it is executed.
-     * - `gasValue` specifies the native token amount to be paid for covering the cross-chain execution gas.
-     *
-     * The `destinationAddress` must be correctly encoded depending on the destination chain:
-     * - EVM, Sui, and other supported chains: pass the address directly as `bytes`.
-     * - Stellar: convert the address to an ASCII byte array.
-     *
-     * For encoding reference, see:
-     * https://github.com/axelarnetwork/axelar-contract-deployments/blob/main/common/utils.js#L590 (`encodeITSDestination`)
-     *
-     * @param tokenId The unique identifier of the token to be transferred.
-     * @param destinationChain The destination chain to send the tokens to.
-     * @param destinationAddress The address on the destination chain to send the tokens to.
-     * @param amount The amount of tokens to be transferred.
-     * @param metadata Optional metadata containing execution instructions (e.g. contract call payload).
-     * @param gasValue The amount of gas to be paid for the transaction.
-     */
-    function interchainTransfer(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes calldata metadata,
-        uint256 gasValue
-    ) external payable whenNotPaused {
-        (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
-
-        _interchainTransfer(tokenId, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
     }
 
     /**
@@ -602,6 +563,38 @@ contract InterchainTokenService is
             data,
             msg.value
         );
+    }
+
+    /**
+     * @notice Deprecated: Use `interchainTransfer` or `callContractWithInterchainToken` instead.
+     * Initiates an interchain transfer of a specified token to a destination chain.
+     * @dev This version allows for customized metadata and gas value.
+     * - The first 4 bytes of `metadata` specify the metadata version.
+     * - To call the `destinationAddress` as a contract with a payload, provide `bytes.concat(bytes4(0), payload)` as the metadata.
+     * - The token will be transferred to the destination app contract before it is executed.
+     * - `gasValue` specifies the native token amount to be paid for covering the cross-chain execution gas.
+     *
+     * The `destinationAddress` must be correctly encoded depending on the destination chain.
+     * - For encoding reference: https://github.com/axelarnetwork/axelar-contract-deployments/blob/main/common/utils.js#L590 (`encodeITSDestination`)
+     *
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param amount The amount of tokens to be transferred.
+     * @param metadata Optional metadata containing execution instructions (e.g. contract call payload).
+     * @param gasValue The amount of gas to be paid for the transaction.
+     */
+    function interchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata,
+        uint256 gasValue
+    ) external payable whenNotPaused {
+        (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+
+        _interchainTransfer(tokenId, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
     }
 
     /******************\
@@ -863,8 +856,8 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Uses the caller's tokens to fullfill a sendCall ahead of time. Use this only if you have detected an outgoing
-     * interchainTransfer that matches the parameters passed here.
+     * @notice Uses the caller's tokens to fulfill the transfer before the message arrives. Use this only if you have detected an outgoing
+     * interchainTransfer that matches the parameters passed here. The caller takes the risk of not receiving a refund if the source chain reorgs.
      * @param commandId The unique message id of the transfer being expressed.
      * @param sourceChain the name of the chain where the interchainTransfer originated from.
      * @param payload the payload of the receive token

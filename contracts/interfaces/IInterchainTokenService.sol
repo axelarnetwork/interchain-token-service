@@ -259,23 +259,6 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
-     * @notice Initiates an interchain transfer of a specified token to a destination chain.
-     * @param tokenId The unique identifier of the token to be transferred.
-     * @param destinationChain The destination chain to send the tokens to.
-     * @param destinationAddress The address on the destination chain to send the tokens to.
-     * @param amount The amount of tokens to be transferred.
-     * @param metadata Optional metadata for the call for additional effects (such as calling a destination contract).
-     */
-    function interchainTransfer(
-        bytes32 tokenId,
-        string calldata destinationChain,
-        bytes calldata destinationAddress,
-        uint256 amount,
-        bytes calldata metadata,
-        uint256 gasValue
-    ) external payable;
-
-    /**
      * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data. The destination contract must implement the `InterchainTokenExecutable` interface.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
@@ -289,6 +272,24 @@ interface IInterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount,
         bytes calldata data
+    ) external payable;
+
+    /**
+     * @notice Deprecated: Use `interchainTransfer` or `callContractWithInterchainToken` instead.
+     * Initiates an interchain transfer of a specified token to a destination chain.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param amount The amount of tokens to be transferred.
+     * @param metadata Optional metadata for the call for additional effects (such as calling a destination contract).
+     */
+    function interchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata metadata,
+        uint256 gasValue
     ) external payable;
 
     /**
