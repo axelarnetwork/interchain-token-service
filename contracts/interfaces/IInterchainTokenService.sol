@@ -245,6 +245,38 @@ interface IInterchainTokenService is
 
     /**
      * @notice Initiates an interchain transfer of a specified token to a destination chain.
+     * @dev This is the base version of interchainTransfer that handles simple token transfers without additional metadata or gas value customization.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The address on the destination chain to send the tokens to.
+     * @param amount The amount of tokens to be transferred.
+     */
+    function interchainTransfer(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount
+    ) external payable;
+
+    /**
+     * @notice Initiates an interchain transfer to a destination contract. The destination contract will be executed with the provided data. The destination contract must implement the `InterchainTokenExecutable` interface.
+     * @param tokenId The unique identifier of the token to be transferred.
+     * @param destinationChain The destination chain to send the tokens to.
+     * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
+     * @param amount The amount of tokens to be transferred.
+     * @param data Additional data to be provided to the destination contract when executed along with the token transfer.
+     */
+    function callContractWithInterchainToken(
+        bytes32 tokenId,
+        string calldata destinationChain,
+        bytes calldata destinationAddress,
+        uint256 amount,
+        bytes calldata data
+    ) external payable;
+
+    /**
+     * @notice Deprecated: Use the simpler `interchainTransfer` or `callContractWithInterchainToken` instead.
+     * Initiates an interchain transfer of a specified token to a destination chain.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The address on the destination chain to send the tokens to.
