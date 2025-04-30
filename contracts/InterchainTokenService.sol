@@ -513,7 +513,7 @@ contract InterchainTokenService is
      * @dev This is the base version of interchainTransfer that handles simple token transfers without additional metadata or gas value customization.
      *
      * The `destinationAddress` must be correctly encoded depending on the destination chain.
-     * - For encoding reference: https://github.com/axelarnetwork/axelar-contract-deployments/blob/main/common/utils.js#L590 (`encodeITSDestination`)
+     * - For encoding reference: https://github.com/axelarnetwork/axelar-contract-deployments/tree/main/common#interchain-token-service
      *
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
@@ -566,7 +566,7 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Deprecated: Use `interchainTransfer` or `callContractWithInterchainToken` instead.
+     * @notice Deprecated: Use the simpler `interchainTransfer` or `callContractWithInterchainToken` instead.
      * Initiates an interchain transfer of a specified token to a destination chain.
      * @dev This version allows for customized metadata and gas value.
      * - The first 4 bytes of `metadata` specify the metadata version.
@@ -575,7 +575,7 @@ contract InterchainTokenService is
      * - `gasValue` specifies the native token amount to be paid for covering the cross-chain execution gas.
      *
      * The `destinationAddress` must be correctly encoded depending on the destination chain.
-     * - For encoding reference: https://github.com/axelarnetwork/axelar-contract-deployments/blob/main/common/utils.js#L590 (`encodeITSDestination`)
+     * - For encoding reference: https://github.com/axelarnetwork/axelar-contract-deployments/tree/main/common#interchain-token-service
      *
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.

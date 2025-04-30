@@ -275,7 +275,7 @@ interface IInterchainTokenService is
     ) external payable;
 
     /**
-     * @notice Deprecated: Use `interchainTransfer` or `callContractWithInterchainToken` instead.
+     * @notice Deprecated: Use the simpler `interchainTransfer` or `callContractWithInterchainToken` instead.
      * Initiates an interchain transfer of a specified token to a destination chain.
      * @param tokenId The unique identifier of the token to be transferred.
      * @param destinationChain The destination chain to send the tokens to.
