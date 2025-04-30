@@ -15,7 +15,15 @@ contract FlowLimit is IFlowLimit {
     uint256 internal constant PREFIX_FLOW_OUT_AMOUNT = uint256(keccak256('flow-out-amount'));
     uint256 internal constant PREFIX_FLOW_IN_AMOUNT = uint256(keccak256('flow-in-amount'));
 
-    uint256 internal constant EPOCH_TIME = 6 hours;
+    uint256 private constant EPOCH_TIME = 6 hours;
+
+    /**
+     * @notice Returns the epoch duration for which the flow limit is applied
+     * @return The epoch time
+     */
+    function epochTime() internal view virtual returns (uint256) {
+        return EPOCH_TIME;
+    }
 
     /**
      * @notice Returns the current flow limit.
@@ -63,7 +71,7 @@ contract FlowLimit is IFlowLimit {
      * @return flowOutAmount_ The current flow out amount.
      */
     function flowOutAmount() external view returns (uint256 flowOutAmount_) {
-        uint256 epoch = block.timestamp / EPOCH_TIME;
+        uint256 epoch = block.timestamp / epochTime();
         uint256 slot = _getFlowOutSlot(epoch);
 
         assembly {
@@ -76,7 +84,7 @@ contract FlowLimit is IFlowLimit {
      * @return flowInAmount_ The current flow in amount.
      */
     function flowInAmount() external view returns (uint256 flowInAmount_) {
-        uint256 epoch = block.timestamp / EPOCH_TIME;
+        uint256 epoch = block.timestamp / epochTime();
         uint256 slot = _getFlowInSlot(epoch);
 
         assembly {
@@ -85,31 +93,42 @@ contract FlowLimit is IFlowLimit {
     }
 
     /**
-     * @notice Adds a flow amount while ensuring it does not exceed the flow limit.
-     * @param flowLimit_ The current flow limit value.
-     * @param slotToAdd The slot to add the flow to.
-     * @param slotToCompare The slot to compare the flow against.
-     * @param flowAmount The flow amount to add.
+     * @notice Adds flow amount in the specified direction (in/out) for a token, and applies the flow limit.
+     * @dev Reverts if:
+     *  - Flow amount exceeds the flow limit
+     *  - The flow in either direction exceeds `uint256::MAX`
+     *  - Net flow (difference between in and out) exceeds the flow limit, i.e. |flow - reverse_flow| > flow_limit
+     * @param flowSlot The storage slot for the current direction's flow (in or out).
+     * @param reverseFlowSlot The storage slot for the opposite direction's flow.
+     * @param flowAmount The amount of flow to add.
+     * @param flowLimit_ The allowed maximum net flow during the epoch.
      */
-    function _addFlow(uint256 flowLimit_, uint256 slotToAdd, uint256 slotToCompare, uint256 flowAmount) internal {
-        uint256 flowToAdd;
-        uint256 flowToCompare;
+    function _addFlow(uint256 flowSlot, uint256 reverseFlowSlot, uint256 flowAmount, uint256 flowLimit_) internal {
+        uint256 flow;
+        uint256 reverseFlow;
 
         assembly {
-            flowToAdd := sload(slotToAdd)
-            flowToCompare := sload(slotToCompare)
+            flow := sload(flowSlot)
+            reverseFlow := sload(reverseFlowSlot)
         }
 
-        // Overflow checks for flowToAdd + flowAmount and flowToCompare + flowLimit_
-        if (flowToAdd > type(uint256).max - flowAmount) revert FlowAdditionOverflow(flowAmount, flowToAdd, address(this));
-        if (flowToCompare > type(uint256).max - flowLimit_) revert FlowLimitOverflow(flowLimit_, flowToCompare, address(this));
+        if (flowAmount > flowLimit_) {
+            revert FlowAmountExceededLimit(flowLimit_, flowAmount, address(this));
+        }
 
-        if (flowToAdd + flowAmount > flowToCompare + flowLimit_)
-            revert FlowLimitExceeded((flowToCompare + flowLimit_), flowToAdd + flowAmount, address(this));
-        if (flowAmount > flowLimit_) revert FlowLimitExceeded(flowLimit_, flowAmount, address(this));
+        if (flow > type(uint256).max - flowAmount) {
+            revert FlowAmountOverflow(flowAmount, flow, address(this));
+        }
+
+        uint256 newFlow = flow + flowAmount;
+        uint256 netFlow = newFlow >= reverseFlow ? newFlow - reverseFlow : reverseFlow - newFlow;
+
+        if (netFlow > flowLimit_) {
+            revert FlowLimitExceeded(flowLimit_, netFlow, address(this));
+        }
 
         assembly {
-            sstore(slotToAdd, add(flowToAdd, flowAmount))
+            sstore(flowSlot, newFlow)
         }
     }
 
@@ -121,11 +140,11 @@ contract FlowLimit is IFlowLimit {
         uint256 flowLimit_ = flowLimit();
         if (flowLimit_ == 0) return;
 
-        uint256 epoch = block.timestamp / EPOCH_TIME;
-        uint256 slotToAdd = _getFlowOutSlot(epoch);
-        uint256 slotToCompare = _getFlowInSlot(epoch);
+        uint256 epoch = block.timestamp / epochTime();
+        uint256 flowSlot = _getFlowOutSlot(epoch);
+        uint256 reverseFlowSlot = _getFlowInSlot(epoch);
 
-        _addFlow(flowLimit_, slotToAdd, slotToCompare, flowOutAmount_);
+        _addFlow(flowSlot, reverseFlowSlot, flowOutAmount_, flowLimit_);
     }
 
     /**
@@ -136,10 +155,10 @@ contract FlowLimit is IFlowLimit {
         uint256 flowLimit_ = flowLimit();
         if (flowLimit_ == 0) return;
 
-        uint256 epoch = block.timestamp / EPOCH_TIME;
-        uint256 slotToAdd = _getFlowInSlot(epoch);
-        uint256 slotToCompare = _getFlowOutSlot(epoch);
+        uint256 epoch = block.timestamp / epochTime();
+        uint256 flowSlot = _getFlowInSlot(epoch);
+        uint256 reverseFlowSlot = _getFlowOutSlot(epoch);
 
-        _addFlow(flowLimit_, slotToAdd, slotToCompare, flowInAmount_);
+        _addFlow(flowSlot, reverseFlowSlot, flowInAmount_, flowLimit_);
     }
 }
