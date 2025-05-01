@@ -1466,19 +1466,17 @@ describe('Interchain Token Service', () => {
         it('Should revert on execute with invalid messageType', async () => {
             const tokenId = getRandomBytes32();
 
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'bytes', 'uint256'],
-                [INVALID_MESSAGE_TYPE, tokenId, destAddress, amount],
-            );
-            const wrappedPayload = defaultAbiCoder.encode(
-                ['uint256', 'string', 'bytes'],
-                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload],
-            );
+            const { payload } = encodeITSPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, [
+                INVALID_MESSAGE_TYPE,
+                tokenId,
+                destAddress,
+                amount,
+            ]);
 
-            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload, gasOptions),
                 service,
                 'InvalidMessageType',
                 [INVALID_MESSAGE_TYPE],
