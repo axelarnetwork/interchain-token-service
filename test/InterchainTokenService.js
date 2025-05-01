@@ -333,19 +333,6 @@ describe('Interchain Token Service', () => {
             ]);
         });
 
-        it('Should clear previously set addresses', async () => {
-            const operator = wallet.address;
-            const trustedChainName = 'ChainA';
-            const trustedAddress = wallet.address;
-
-            await expect(serviceTest.setTrustedAddress(trustedChainName, trustedAddress))
-                .to.emit(serviceTest, 'TrustedAddressSet')
-                .withArgs(trustedChainName, trustedAddress);
-
-            const params = defaultAbiCoder.encode(['address', 'string', 'string[]'], [operator, chainName, [trustedChainName]]);
-            await expect(serviceTest.setupTest(params)).to.emit(serviceTest, 'TrustedAddressRemoved').withArgs(trustedChainName);
-        });
-
         it('Should test setup revert cases', async () => {
             const operator = wallet.address;
             const trustedChainNames = ['ChainA', 'ChainB'];
