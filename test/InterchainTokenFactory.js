@@ -10,7 +10,7 @@ const {
     utils: { defaultAbiCoder, keccak256, toUtf8Bytes, arrayify },
 } = ethers;
 const { deployAll, deployContract } = require('../scripts/deploy');
-const { getRandomBytes32, expectRevert, gasReporter } = require('./utils');
+const { getRandomBytes32, expectRevert, gasReporter, encodeITSPayload } = require('./utils');
 const {
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
     MESSAGE_TYPE_LINK_TOKEN,
@@ -139,14 +139,14 @@ describe('InterchainTokenFactory', () => {
 
         it('Should initiate a remote interchain token deployment with no original chain name provided', async () => {
             const gasValue = 1234;
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
-            );
-            const wrappedPayload = defaultAbiCoder.encode(
-                ['uint256', 'string', 'bytes'],
-                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-            );
+            const { payload, payloadHash } = encodeITSPayload(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, [
+                MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+                tokenId,
+                name,
+                symbol,
+                decimals,
+                '0x',
+            ]);
 
             await expect(
                 tokenFactory[DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN_WITH_ORIGINAL_CHAIN]('', token.address, destinationChain, gasValue, {
@@ -156,9 +156,9 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
 
             await expect(
                 tokenFactory[DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN](token.address, destinationChain, gasValue, {
@@ -168,21 +168,21 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
         });
 
         it('Should initiate a remote interchain token deployment', async () => {
             const gasValue = 1234;
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
-            );
-            const wrappedPayload = defaultAbiCoder.encode(
-                ['uint256', 'string', 'bytes'],
-                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-            );
+            const { payload, payloadHash } = encodeITSPayload(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, [
+                MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+                tokenId,
+                name,
+                symbol,
+                decimals,
+                '0x',
+            ]);
 
             await expectRevert(
                 (gasOptions) =>
@@ -207,9 +207,9 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
         });
     });
 
@@ -353,14 +353,14 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(token, 'RolesAdded')
                 .withArgs(tokenManager.address, 1 << MINTER_ROLE);
 
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, wallet.address.toLowerCase()],
-            );
-            const wrappedPayload = defaultAbiCoder.encode(
-                ['uint256', 'string', 'bytes'],
-                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-            );
+            const { payload, payloadHash } = encodeITSPayload(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, [
+                MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+                tokenId,
+                name,
+                symbol,
+                decimals,
+                wallet.address.toLowerCase(),
+            ]);
 
             await expectRevert(
                 (gasOptions) =>
@@ -430,9 +430,9 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
 
             await expectRevert(
                 (gasOptions) =>
@@ -505,9 +505,9 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
         });
 
         it('Should initiate a remote interchain token deployment without the same minter', async () => {
@@ -540,14 +540,14 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
-                [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, '0x'],
-            );
-            const wrappedPayload = defaultAbiCoder.encode(
-                ['uint256', 'string', 'bytes'],
-                [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-            );
+            const { payload, payloadHash } = encodeITSPayload(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, [
+                MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+                tokenId,
+                name,
+                symbol,
+                decimals,
+                '0x',
+            ]);
 
             await expect(
                 tokenFactory[DEPLOY_REMOTE_INTERCHAIN_TOKEN_WITH_ORIGINAL_CHAIN_NAME_AND_MINTER](
@@ -564,9 +564,9 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
 
             await expect(
                 tokenFactory[DEPLOY_REMOTE_INTERCHAIN_TOKEN](salt, destinationChain, gasValue, {
@@ -576,9 +576,9 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
 
             await expect(
                 tokenFactory.deployRemoteInterchainTokenWithMinter(salt, AddressZero, destinationChain, '0x', gasValue, {
@@ -588,9 +588,9 @@ describe('InterchainTokenFactory', () => {
                 .to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', destinationChain)
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
-                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
         });
 
         it('Should revert when deploying a remote interchain token to self', async () => {
@@ -980,14 +980,14 @@ describe('InterchainTokenFactory', () => {
                 const remoteTokenAddress = '0x1234';
                 const minter = '0x5789';
                 const type = LOCK_UNLOCK;
-                const payload = defaultAbiCoder.encode(
-                    ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
-                    [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, token.address, remoteTokenAddress, minter],
-                );
-                const wrappedPayload = defaultAbiCoder.encode(
-                    ['uint256', 'string', 'bytes'],
-                    [MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload],
-                );
+                const { payload, payloadHash } = encodeITSPayload(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, [
+                    MESSAGE_TYPE_LINK_TOKEN,
+                    tokenId,
+                    type,
+                    token.address,
+                    remoteTokenAddress,
+                    minter,
+                ]);
 
                 const tokenManager = await getContractAt('TokenManager', await service.deployedTokenManager(tokenId), wallet);
                 expect(await tokenManager.isOperator(AddressZero)).to.be.true;
@@ -1013,9 +1013,9 @@ describe('InterchainTokenFactory', () => {
                         minter.toLowerCase(),
                     )
                     .and.to.emit(gasService, 'NativeGasPaidForContractCall')
-                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), gasValue, wallet.address)
+                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, gasValue, wallet.address)
                     .and.to.emit(gateway, 'ContractCall')
-                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload), wrappedPayload);
+                    .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
             });
 
             it('Should revert on a remote custom token manager deployment if the token manager does does not exist', async () => {

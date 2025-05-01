@@ -5,6 +5,14 @@ const path = require('path');
 const { ethers, network, config } = require('hardhat');
 const { expect } = require('chai');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
+const {
+    MESSAGE_TYPE_INTERCHAIN_TRANSFER,
+    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
+    MESSAGE_TYPE_LINK_TOKEN,
+    MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
+    INVALID_MESSAGE_TYPE,
+} = require('./constants');
 
 function getRandomBytes32() {
     return keccak256(defaultAbiCoder.encode(['uint256'], [Math.floor(new Date().getTime() * Math.random())]));
@@ -187,6 +195,60 @@ function getContractJSON(contractName, artifactPath) {
     }
 }
 
+/**
+ * Dynamically resolves the ABI types for a given ITS message based on value structure.
+ */
+function resolveITSTypes(messageType, values) {
+    switch (messageType) {
+        case MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN:
+            if (values.length === 7) {
+                return ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'];
+            }
+
+            return ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'];
+
+        case MESSAGE_TYPE_LINK_TOKEN:
+            return ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'];
+
+        case MESSAGE_TYPE_INTERCHAIN_TRANSFER:
+            return ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'];
+
+        case MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER:
+            return ['uint256', 'bytes32', 'bytes', 'uint256'];
+
+        case MESSAGE_TYPE_REGISTER_TOKEN_METADATA:
+            return ['uint256', 'bytes', 'uint8'];
+
+        case INVALID_MESSAGE_TYPE:
+            return ['uint256', 'bytes32', 'bytes', 'uint256'];
+
+        default:
+            throw new Error(`Unknown ITS message type: ${messageType}`);
+    }
+}
+
+/**
+ * ABI-encodes an Interchain Token Service (ITS) message with wrapping.
+ * Always returns an object with payload and hash.
+ *
+ * @param {number} wrapperType - Wrapper message type (e.g. RECEIVE_FROM_HUB, SEND_TO_HUB)
+ * @param {string} chain - The chain name (source or destination)
+ * @param {Array<any>} innerValues - Values for the ITS payload (first item must be messageType)
+ * @returns {{ payload: string, hash: string }} - Encoded ITS payload and its keccak256 hash
+ */
+function encodeITSPayload(wrapperType, chain, innerValues) {
+    const messageType = innerValues[0];
+    const innerTypes = resolveITSTypes(messageType, innerValues);
+
+    const innerPayload = defaultAbiCoder.encode(innerTypes, innerValues);
+    const wrappedPayload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, innerPayload]);
+
+    return {
+        payload: wrappedPayload,
+        payloadHash: keccak256(wrappedPayload),
+    };
+}
+
 module.exports = {
     getRandomBytes32,
     getSaltFromKey,
@@ -200,4 +262,5 @@ module.exports = {
     gasReporter,
     getEVMVersion,
     getContractJSON,
+    encodeITSPayload,
 };
