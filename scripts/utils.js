@@ -19,7 +19,7 @@ async function approveContractCall(
         ['string', 'string', 'address', 'bytes32', 'bytes32', 'uint256'],
         [sourceChain, sourceAddress, contractAddress, keccak256(payload), sourceTxHash, sourceEventIndex],
     );
-    await gateway.approveContractCall(params, commandId).then((tx) => tx.wait);
+    await gateway.approveContractCall(params, commandId).then((tx) => tx.wait());
 
     return commandId;
 }
