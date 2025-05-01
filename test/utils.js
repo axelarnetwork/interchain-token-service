@@ -224,8 +224,8 @@ function resolveITSMessageType(messageType, values) {
     }
 }
 
-function wrapPayload(wrapperType, chain, innerPayload) {
-    const wrappedPayload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, innerPayload]);
+function wrapPayload(wrapperType, chain, payload) {
+    const wrappedPayload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, payload]);
     return {
         payload: wrappedPayload,
         payloadHash: keccak256(wrappedPayload),
