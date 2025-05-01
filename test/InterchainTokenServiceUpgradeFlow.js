@@ -113,7 +113,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
 
         tokenFactory = await deployInterchainTokenFactory(wallet, create3Deployer.address, service.address, deploymentKey + 'Factory');
 
-        await service.transferOwnership(axelarServiceGovernance.address).then((tx) => tx.wait);
+        await service.transferOwnership(axelarServiceGovernance.address).then((tx) => tx.wait());
     });
 
     it('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {

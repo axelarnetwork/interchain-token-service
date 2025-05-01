@@ -99,8 +99,8 @@ describe('Interchain Token Service', () => {
         expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
         if (mintAmount > 0) {
-            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
-            if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait);
+            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait());
+            if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait());
         }
 
         return [token, tokenManager, tokenId, salt];
@@ -173,10 +173,10 @@ describe('Interchain Token Service', () => {
         expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
         if (mintAmount > 0) {
-            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
+            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait());
 
             if (!skipApprove) {
-                await token.approve(service.address, mintAmount).then((tx) => tx.wait);
+                await token.approve(service.address, mintAmount).then((tx) => tx.wait());
             }
         }
 
@@ -203,10 +203,10 @@ describe('Interchain Token Service', () => {
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
 
             if (mintAmount > 0) {
-                await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
+                await token.mint(wallet.address, mintAmount).then((tx) => tx.wait());
             }
 
-            await token.transferMintership(tokenManager.address).then((tx) => tx.wait);
+            await token.transferMintership(tokenManager.address).then((tx) => tx.wait());
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
             const payload = defaultAbiCoder.encode(
@@ -269,12 +269,12 @@ describe('Interchain Token Service', () => {
         const token = await getContractAt('IInterchainToken', tokenAddress, wallet);
 
         if (mintAmount > 0) {
-            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait);
-            if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait);
+            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait());
+            if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait());
         }
 
         if (minter) {
-            await token.transferMintership(minter).then((tx) => tx.wait);
+            await token.transferMintership(minter).then((tx) => tx.wait());
         }
 
         return [token, tokenManager, tokenId, salt];
@@ -757,7 +757,7 @@ describe('Interchain Token Service', () => {
         const salt = getRandomBytes32();
 
         it('Should revert when registering an interchain token when service is paused', async () => {
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) =>
@@ -766,7 +766,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
     });
 
@@ -807,7 +807,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote interchain token deployment if paused', async () => {
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) =>
@@ -819,7 +819,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
     });
 
@@ -978,7 +978,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert when deploying a custom token manager if paused', async () => {
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) => service.linkToken(salt, '', token.address, LOCK_UNLOCK, wallet.address, 0, gasOptions),
@@ -986,7 +986,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
     });
 
@@ -1045,7 +1045,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on remote custom token manager deployment if paused', async () => {
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             const salt = getRandomBytes32();
             const tokenAddress = '0x1234';
@@ -1062,7 +1062,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
     });
 
@@ -1314,7 +1314,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on initiate interchain token transfer when service is paused', async () => {
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) =>
@@ -1338,7 +1338,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
         it('Should revert on transmit send token when destination address is zero address', async () => {
@@ -1457,7 +1457,7 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on execute if the service is paused', async () => {
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, '0x');
 
@@ -1467,7 +1467,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
         it('Should revert on execute with invalid messageType', async () => {
@@ -1520,7 +1520,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive lock/unlock token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, 'Test Token Lock Unlock', 'TT', 12, amount);
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -1577,7 +1577,7 @@ describe('Interchain Token Service', () => {
                 12,
                 amount + 10,
             );
-            await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -1606,7 +1606,7 @@ describe('Interchain Token Service', () => {
                 false,
                 'free',
             );
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -1698,8 +1698,8 @@ describe('Interchain Token Service', () => {
 
                 const transferToAddress = tokenManager.address;
 
-                await token.approve(service.address, amount).then((tx) => tx.wait);
-                await token.approve(tokenManager.address, 0).then((tx) => tx.wait);
+                await token.approve(service.address, amount).then((tx) => tx.wait());
+                await token.approve(tokenManager.address, 0).then((tx) => tx.wait());
 
                 await expect(
                     reportGas(
@@ -1853,7 +1853,7 @@ describe('Interchain Token Service', () => {
         it('Should revert on callContractWithInterchainToken function when service is paused', async () => {
             const tokenId = HashZero;
 
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) => service.callContractWithInterchainToken(tokenId, destinationChain, destAddress, amount, data, gasOptions),
@@ -1865,7 +1865,7 @@ describe('Interchain Token Service', () => {
         it('Should revert on interchainTransfer function when service is paused', async () => {
             const tokenId = HashZero;
 
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) => service[INTERCHAIN_TRANSFER](tokenId, destinationChain, destAddress, amount, gasOptions),
@@ -1873,7 +1873,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
         it('Should revert on transferToTokenManager when not called by the correct tokenManager', async () => {
@@ -1923,7 +1923,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive lock/unlock token', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, 'Test Token Lock Unlock', 'TT', 12, amount);
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
             const payload = defaultAbiCoder.encode(
@@ -1951,7 +1951,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive lock/unlock token with empty data and not call destination contract', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, 'Test Token Lock Unlock', 'TT', 12, amount);
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
 
             const data = '0x';
             const payload = defaultAbiCoder.encode(
@@ -2046,7 +2046,7 @@ describe('Interchain Token Service', () => {
                 12,
                 amount + 10,
             );
-            await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait());
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
             const payload = defaultAbiCoder.encode(
@@ -2074,7 +2074,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert if token handler transfer token from fails', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, 'Test Token Lock Unlock', 'TT', 12, amount);
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
             const payload = defaultAbiCoder.encode(
@@ -2100,7 +2100,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert if execute with interchain token fails', async () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, 'Test Token Lock Unlock', 'TT', 12, amount);
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
             const payload = defaultAbiCoder.encode(
@@ -2260,7 +2260,7 @@ describe('Interchain Token Service', () => {
                     .to.emit(service, 'InterchainTransfer')
                     .withArgs(tokenId, wallet.address, destinationChain, destAddress, sendAmount, HashZero);
 
-                await token.approve(otherWallet.address, amount).then((tx) => tx.wait);
+                await token.approve(otherWallet.address, amount).then((tx) => tx.wait());
 
                 await expect(
                     token
@@ -2329,7 +2329,7 @@ describe('Interchain Token Service', () => {
 
             const sender = wallet;
             const spender = otherWallet;
-            await token.approve(spender.address, MaxUint256).then((tx) => tx.wait);
+            await token.approve(spender.address, MaxUint256).then((tx) => tx.wait());
 
             await expect(
                 reportGas(
@@ -2352,7 +2352,7 @@ describe('Interchain Token Service', () => {
         it('Should revert using interchainTransferFrom with zero amount', async () => {
             const sender = wallet;
             const spender = otherWallet;
-            await token.approve(spender.address, MaxUint256).then((tx) => tx.wait);
+            await token.approve(spender.address, MaxUint256).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) =>
@@ -2428,7 +2428,7 @@ describe('Interchain Token Service', () => {
 
         before(async () => {
             [token, , tokenId] = await deployFunctions.lockUnlock(service, tokenName, tokenSymbol, tokenDecimals, amount * 2, true);
-            await token.approve(service.address, amount * 2).then((tx) => tx.wait);
+            await token.approve(service.address, amount * 2).then((tx) => tx.wait());
             data = defaultAbiCoder.encode(['address', 'string'], [destinationAddress, message]);
             executable = await deployContract(wallet, 'TestInterchainExecutable', [service.address]);
             invalidExecutable = await deployContract(wallet, 'TestInvalidInterchainExecutable', [service.address]);
@@ -2475,7 +2475,7 @@ describe('Interchain Token Service', () => {
         it('Should revert on express execute when service is paused', async () => {
             const payload = '0x';
 
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
@@ -2483,7 +2483,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
         it('Should express execute', async () => {
@@ -2626,7 +2626,7 @@ describe('Interchain Token Service', () => {
                 [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destinationAddress, amount, '0x'],
             );
 
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) => service.expressExecute(commandId, sourceChain, sourceAddress, payload, gasOptions),
@@ -2634,7 +2634,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
     });
 
@@ -2648,8 +2648,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert if command is already executed by gateway', async () => {
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -2670,8 +2670,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert with invalid messageType', async () => {
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'uint256'],
@@ -2692,8 +2692,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should be able to receive lock_unlock token', async () => {
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -2705,7 +2705,7 @@ describe('Interchain Token Service', () => {
             );
 
             const commandId = getRandomBytes32();
-            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait());
             await approveContractCall(
                 gateway,
                 ITS_HUB_CHAIN,
@@ -2765,7 +2765,7 @@ describe('Interchain Token Service', () => {
         it('Should be able to receive mint_burn token', async () => {
             const [token, , tokenId] = await deployFunctions.mintBurn(service, 'Test Token Mint Burn', 'TT', 12, amount);
 
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -2777,7 +2777,7 @@ describe('Interchain Token Service', () => {
             );
             const commandId = getRandomBytes32();
 
-            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait());
             expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(
                 wallet.address,
             );
@@ -2803,7 +2803,7 @@ describe('Interchain Token Service', () => {
         it('Should be able to receive mint_burn_from token', async () => {
             const [token, , tokenId] = await deployFunctions.mintBurnFrom(service, 'Test Token Mint Burn From', 'TT', 12, amount);
 
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -2815,7 +2815,7 @@ describe('Interchain Token Service', () => {
             );
             const commandId = getRandomBytes32();
 
-            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait());
             expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(
                 wallet.address,
             );
@@ -2846,8 +2846,8 @@ describe('Interchain Token Service', () => {
                 12,
                 2 * amount + 10,
             );
-            await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait);
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait());
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -2859,7 +2859,7 @@ describe('Interchain Token Service', () => {
             );
             const commandId = getRandomBytes32();
 
-            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait());
             expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(
                 wallet.address,
             );
@@ -2892,8 +2892,8 @@ describe('Interchain Token Service', () => {
                 false,
                 'free',
             );
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const payload = defaultAbiCoder.encode(
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -2905,7 +2905,7 @@ describe('Interchain Token Service', () => {
             );
             const commandId = getRandomBytes32();
 
-            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait());
             expect(await service.getExpressExecutor(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, keccak256(wrappedPayload))).to.equal(
                 wallet.address,
             );
@@ -2950,8 +2950,8 @@ describe('Interchain Token Service', () => {
                 12,
                 amount * 2,
             );
-            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait);
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
@@ -2965,7 +2965,7 @@ describe('Interchain Token Service', () => {
             );
 
             const commandId = getRandomBytes32();
-            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait());
             await approveContractCall(
                 gateway,
                 ITS_HUB_CHAIN,
@@ -3028,7 +3028,7 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive mint_burn token', async () => {
             const [token, , tokenId] = await deployFunctions.mintBurn(service, 'Test Token Mint Burn', 'TT', 12, amount);
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const msg = 'mint/burn';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
@@ -3042,7 +3042,7 @@ describe('Interchain Token Service', () => {
             );
 
             const commandId = getRandomBytes32();
-            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait);
+            await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload).then((tx) => tx.wait());
             await approveContractCall(
                 gateway,
                 ITS_HUB_CHAIN,
@@ -3071,8 +3071,8 @@ describe('Interchain Token Service', () => {
                 12,
                 amount * 2 + 10,
             );
-            await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait);
-            await token.approve(service.address, amount).then((tx) => tx.wait);
+            await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait());
+            await token.approve(service.address, amount).then((tx) => tx.wait());
 
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
@@ -3095,11 +3095,11 @@ describe('Interchain Token Service', () => {
 
         before(async () => {
             [, tokenManager, tokenId] = await deployFunctions.mintBurn(service, 'Test Token Lock Unlock', 'TT', 12, mintAmount);
-            await tokenManager.setFlowLimit(flowLimit).then((tx) => tx.wait);
+            await tokenManager.setFlowLimit(flowLimit).then((tx) => tx.wait());
         });
 
         it('Should be able to send token only if it does not trigger the mint limit', async () => {
-            await service[INTERCHAIN_TRANSFER](tokenId, destinationChain, destinationAddress, sendAmount).then((tx) => tx.wait);
+            await service[INTERCHAIN_TRANSFER](tokenId, destinationChain, destinationAddress, sendAmount).then((tx) => tx.wait());
 
             const errorSignatureHash = id('FlowLimitExceeded(uint256,uint256,address)');
             const selector = errorSignatureHash.substring(0, 10);
@@ -3138,7 +3138,7 @@ describe('Interchain Token Service', () => {
                 return service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload);
             }
 
-            await receiveToken(sendAmount).then((tx) => tx.wait);
+            await receiveToken(sendAmount).then((tx) => tx.wait());
 
             flowIn = await tokenManager.flowInAmount();
             flowOut = await tokenManager.flowOutAmount();
@@ -3157,7 +3157,7 @@ describe('Interchain Token Service', () => {
 
         it('Should revert if the flow addition overflows', async () => {
             const tokenManager = await getContractAt('ITokenManager', await service.deployedTokenManager(tokenId), wallet);
-            await tokenManager.setFlowLimit(MaxUint256).then((tx) => tx.wait);
+            await tokenManager.setFlowLimit(MaxUint256).then((tx) => tx.wait());
 
             const tokenFlowLimit = await tokenManager.flowLimit();
             expect(tokenFlowLimit).to.eq(MaxUint256);
@@ -3321,7 +3321,7 @@ describe('Interchain Token Service', () => {
         it('Should revert on contractCallValue if service is paused', async () => {
             const payload = '0x';
 
-            await service.setPauseStatus(true).then((tx) => tx.wait);
+            await service.setPauseStatus(true).then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) => service.contractCallValue(ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload, gasOptions),
@@ -3329,7 +3329,7 @@ describe('Interchain Token Service', () => {
                 'Pause',
             );
 
-            await service.setPauseStatus(false).then((tx) => tx.wait);
+            await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
         it('Should revert on invalid express message type', async () => {

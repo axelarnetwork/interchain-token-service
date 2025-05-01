@@ -29,7 +29,7 @@ describe('Operator', () => {
     });
 
     it('Should be able to run the onlyOperatorable function as the operator', async () => {
-        await test.testOperatorable().then((tx) => tx.wait);
+        await test.testOperatorable().then((tx) => tx.wait());
 
         expect(await test.nonce()).to.equal(1);
     });
@@ -103,7 +103,7 @@ describe('Minter', () => {
     });
 
     it('Should be able to run the onlyMinter function as the minter', async () => {
-        await test.testMinter().then((tx) => tx.wait);
+        await test.testMinter().then((tx) => tx.wait());
 
         expect(await test.nonce()).to.equal(1);
     });

@@ -112,8 +112,8 @@ describe('InterchainTokenFactory', () => {
             ]);
             tokenId = await tokenFactory.canonicalInterchainTokenId(token.address);
             tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            await token.mint(wallet.address, tokenCap).then((tx) => tx.wait);
-            await token.setTokenId(tokenId).then((tx) => tx.wait);
+            await token.mint(wallet.address, tokenCap).then((tx) => tx.wait());
+            await token.setTokenId(tokenId).then((tx) => tx.wait());
         }
 
         before(async () => {
@@ -599,7 +599,9 @@ describe('InterchainTokenFactory', () => {
             const tokenDecimals = 13;
             const salt = getRandomBytes32();
 
-            await tokenFactory.deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, 0, wallet.address).then((tx) => tx.wait);
+            await tokenFactory
+                .deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, 0, wallet.address)
+                .then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) => tokenFactory[DEPLOY_REMOTE_INTERCHAIN_TOKEN](salt, chainName, 0, gasOptions),
@@ -626,7 +628,9 @@ describe('InterchainTokenFactory', () => {
             const tokenDecimals = 13;
             const salt = getRandomBytes32();
 
-            await tokenFactory.deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, 0, wallet.address).then((tx) => tx.wait);
+            await tokenFactory
+                .deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, 0, wallet.address)
+                .then((tx) => tx.wait());
 
             await expectRevert(
                 (gasOptions) => tokenFactory[DEPLOY_REMOTE_INTERCHAIN_TOKEN](salt, 'untrusted chain', 0, gasOptions),
@@ -654,7 +658,7 @@ describe('InterchainTokenFactory', () => {
             const decimals = 53;
             const tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
 
-            await tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, wallet.address).then((tx) => tx.wait);
+            await tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, wallet.address).then((tx) => tx.wait());
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             const token = await getContractAt('InterchainToken', tokenAddress, wallet);
 
@@ -728,7 +732,7 @@ describe('InterchainTokenFactory', () => {
             it('Should revert when deploying a custom token when the service is paused', async () => {
                 const salt = getRandomBytes32();
 
-                await service.setPauseStatus(true).then((tx) => tx.wait);
+                await service.setPauseStatus(true).then((tx) => tx.wait());
 
                 await expectRevert(
                     (gasOptions) => tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, AddressZero, gasOptions),
@@ -736,7 +740,7 @@ describe('InterchainTokenFactory', () => {
                     'Pause',
                 );
 
-                await service.setPauseStatus(false).then((tx) => tx.wait);
+                await service.setPauseStatus(false).then((tx) => tx.wait());
             });
 
             it('Should register a custom token with no operator', async () => {
@@ -936,7 +940,7 @@ describe('InterchainTokenFactory', () => {
             });
 
             it('Should revert on registering a token if ITS is paused', async () => {
-                await service.setPauseStatus(true).then((tx) => tx.wait);
+                await service.setPauseStatus(true).then((tx) => tx.wait());
 
                 await expectRevert(
                     (gasOptions) => tokenFactory.linkToken(salt, '', token.address, LOCK_UNLOCK, wallet.address, 0, gasOptions),
@@ -944,7 +948,7 @@ describe('InterchainTokenFactory', () => {
                     'Pause',
                 );
 
-                await service.setPauseStatus(false).then((tx) => tx.wait);
+                await service.setPauseStatus(false).then((tx) => tx.wait());
             });
         });
 
@@ -966,8 +970,8 @@ describe('InterchainTokenFactory', () => {
                 ]);
 
                 tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
-                await tokenFactory.registerCustomToken(salt, token.address, tokenManagerType, operator).then((tx) => tx.wait);
-                await token.setTokenId(tokenId).then((tx) => tx.wait);
+                await tokenFactory.registerCustomToken(salt, token.address, tokenManagerType, operator).then((tx) => tx.wait());
+                await token.setTokenId(tokenId).then((tx) => tx.wait());
             }
 
             it('Should initialize a remote custom token manager deployment', async () => {
@@ -1027,7 +1031,7 @@ describe('InterchainTokenFactory', () => {
             });
 
             it('Should revert on remote custom token manager deployment if paused', async () => {
-                await service.setPauseStatus(true).then((tx) => tx.wait);
+                await service.setPauseStatus(true).then((tx) => tx.wait());
 
                 const salt = getRandomBytes32();
                 const tokenAddress = '0x1234';
@@ -1044,7 +1048,7 @@ describe('InterchainTokenFactory', () => {
                     'Pause',
                 );
 
-                await service.setPauseStatus(false).then((tx) => tx.wait);
+                await service.setPauseStatus(false).then((tx) => tx.wait());
             });
         });
     });
