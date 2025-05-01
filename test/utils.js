@@ -195,7 +195,7 @@ function getContractJSON(contractName, artifactPath) {
     }
 }
 
-function resolveMessageType(messageType, values) {
+function resolveITSMessageType(messageType, values) {
     switch (messageType) {
         case MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN:
             if (values.length === 7) {
@@ -224,7 +224,7 @@ function resolveMessageType(messageType, values) {
     }
 }
 
-function encodeITSWrappedPayload(wrapperType, chain, innerPayload) {
+function wrapPayload(wrapperType, chain, innerPayload) {
     const wrappedPayload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, innerPayload]);
     return {
         payload: wrappedPayload,
@@ -238,19 +238,18 @@ function encodeITSWrappedPayload(wrapperType, chain, innerPayload) {
  *
  * @param {number} wrapperType - Wrapper message type (e.g. RECEIVE_FROM_HUB, SEND_TO_HUB)
  * @param {string|string[]} chain - Single chain name or array of chains
- * @param {Array<any>} innerValues - Values for the ITS payload (first item must be messageType)
+ * @param {Array<any>} values - Values for the ITS payload (first item must be messageType)
  * @returns {{ payload: string, hash: string } | { payload: string, hash: string }[]} - Wrapped payload(s) and hash(es)
  */
-function encodeITSPayload(wrapperType, chain, innerValues) {
-    const messageType = innerValues[0];
-    const innerTypes = resolveMessageType(messageType, innerValues);
-    const innerPayload = defaultAbiCoder.encode(innerTypes, innerValues);
+function encodeITSPayload(wrapperType, chain, values) {
+    const messageType = resolveITSMessageType(values[0], values);
+    const payload = defaultAbiCoder.encode(messageType, values);
 
     if (Array.isArray(chain)) {
-        return chain.map((chain) => encodeITSWrappedPayload(wrapperType, chain, innerPayload));
+        return chain.map((chain) => wrapPayload(wrapperType, chain, payload));
     }
 
-    return encodeITSWrappedPayload(wrapperType, chain, innerPayload);
+    return wrapPayload(wrapperType, chain, payload);
 }
 
 module.exports = {
