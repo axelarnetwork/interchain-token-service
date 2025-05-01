@@ -195,7 +195,7 @@ function getContractJSON(contractName, artifactPath) {
     }
 }
 
-function resolveITSMessageType(messageType, values) {
+function resolveMessageType(messageType, values) {
     switch (messageType) {
         case MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN:
             if (values.length === 7) {
@@ -242,7 +242,7 @@ function wrapPayload(wrapperType, chain, payload) {
  * @returns {{ payload: string, hash: string } | { payload: string, hash: string }[]} - Wrapped payload(s) and hash(es)
  */
 function encodeITSPayload(wrapperType, chain, values) {
-    const messageType = resolveITSMessageType(values[0], values);
+    const messageType = resolveMessageType(values[0], values);
     const payload = defaultAbiCoder.encode(messageType, values);
 
     if (Array.isArray(chain)) {
