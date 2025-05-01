@@ -195,10 +195,7 @@ function getContractJSON(contractName, artifactPath) {
     }
 }
 
-/**
- * Dynamically resolves the ABI types for a given ITS message based on value structure.
- */
-function resolveITSTypes(messageType, values) {
+function resolveMessageType(messageType, values) {
     switch (messageType) {
         case MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN:
             if (values.length === 7) {
@@ -227,26 +224,33 @@ function resolveITSTypes(messageType, values) {
     }
 }
 
-/**
- * ABI-encodes an Interchain Token Service (ITS) message with wrapping.
- * Always returns an object with payload and hash.
- *
- * @param {number} wrapperType - Wrapper message type (e.g. RECEIVE_FROM_HUB, SEND_TO_HUB)
- * @param {string} chain - The chain name (source or destination)
- * @param {Array<any>} innerValues - Values for the ITS payload (first item must be messageType)
- * @returns {{ payload: string, hash: string }} - Encoded ITS payload and its keccak256 hash
- */
-function encodeITSPayload(wrapperType, chain, innerValues) {
-    const messageType = innerValues[0];
-    const innerTypes = resolveITSTypes(messageType, innerValues);
-
-    const innerPayload = defaultAbiCoder.encode(innerTypes, innerValues);
+function encodeITSWrappedPayload(wrapperType, chain, innerPayload) {
     const wrappedPayload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, innerPayload]);
-
     return {
         payload: wrappedPayload,
         payloadHash: keccak256(wrappedPayload),
     };
+}
+
+/**
+ * Encodes an Interchain Token Service (ITS) message with wrapping.
+ * Supports single chain (returns object) or array of chains (returns array of objects).
+ *
+ * @param {number} wrapperType - Wrapper message type (e.g. RECEIVE_FROM_HUB, SEND_TO_HUB)
+ * @param {string|string[]} chain - Single chain name or array of chains
+ * @param {Array<any>} innerValues - Values for the ITS payload (first item must be messageType)
+ * @returns {{ payload: string, hash: string } | { payload: string, hash: string }[]} - Wrapped payload(s) and hash(es)
+ */
+function encodeITSPayload(wrapperType, chain, innerValues) {
+    const messageType = innerValues[0];
+    const innerTypes = resolveMessageType(messageType, innerValues);
+    const innerPayload = defaultAbiCoder.encode(innerTypes, innerValues);
+
+    if (Array.isArray(chain)) {
+        return chain.map((chain) => encodeITSWrappedPayload(wrapperType, chain, innerPayload));
+    }
+
+    return encodeITSWrappedPayload(wrapperType, chain, innerPayload);
 }
 
 module.exports = {
