@@ -15,10 +15,11 @@ const {
 const {
     getRandomBytes32,
     expectRevert,
-    encodeDeployInterchainToken,
-    encodeLinkToken,
-    encodeInterchainTransfer,
-    encodeRegisterTokenMetadata,
+    encodeInterchainTransferMessage,
+    encodeDeployInterchainTokenMessage,
+    encodeHubMessage,
+    encodeLinkTokenMessage,
+    encodeRegisterTokenMetadataMessage,
 } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { approveContractCall } = require('../scripts/utils');
@@ -92,7 +93,8 @@ describe('Interchain Token Service Full Flow', () => {
             }
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', token.address]);
-            const payloads = encodeDeployInterchainToken(MESSAGE_TYPE_SEND_TO_HUB, otherChains, tokenId, name, symbol, decimals, '0x');
+            const message = encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, '0x');
+            const payloads = otherChains.map((chain) => encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, chain, message));
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
             const multicall = await tokenFactory.multicall(calls, { value });
@@ -121,16 +123,8 @@ describe('Interchain Token Service Full Flow', () => {
             const gasValue = 6789;
 
             it('Should send some tokens to another chain via ITS', async () => {
-                const { payload, payloadHash } = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destChain,
-                    tokenId,
-                    arrayify(wallet.address),
-                    destAddress,
-                    amount,
-                    '0x',
-                );
-
+                const message = encodeInterchainTransferMessage(tokenId, arrayify(wallet.address), destAddress, amount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destChain, message);
                 const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
                 // Canonical (pre-existing) token requires an approval due to locking
@@ -199,15 +193,8 @@ describe('Interchain Token Service Full Flow', () => {
             }
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, token.address]);
-            const payloads = encodeDeployInterchainToken(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                otherChains,
-                tokenId,
-                name,
-                symbol,
-                decimals,
-                wallet.address,
-            );
+            const message = encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, wallet.address);
+            const payloads = otherChains.map((chain) => encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, chain, message));
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
 
@@ -240,23 +227,11 @@ describe('Interchain Token Service Full Flow', () => {
             const destAddress = '0x1234';
             const destChain = otherChains[0];
             const gasValue = 6789;
-            let payload, payloadHash;
-
-            before(async () => {
-                const encodedITSPayload = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destChain,
-                    tokenId,
-                    arrayify(wallet.address),
-                    destAddress,
-                    amount,
-                    '0x',
-                );
-                payload = encodedITSPayload.payload;
-                payloadHash = encodedITSPayload.payloadHash;
-            });
 
             it('Should send some tokens to another chain via the token', async () => {
+                const message = encodeInterchainTransferMessage(tokenId, arrayify(wallet.address), destAddress, amount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destChain, message);
+
                 await expect(token.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
@@ -269,6 +244,9 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
+                const message = encodeInterchainTransferMessage(tokenId, arrayify(wallet.address), destAddress, amount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destChain, message);
+
                 await expect(
                     service[INTERCHAIN_TRANSFER](tokenId, destChain, destAddress, amount, {
                         value: gasValue,
@@ -302,15 +280,8 @@ describe('Interchain Token Service Full Flow', () => {
                     value += gasValues[i];
                 }
 
-                const payloads = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    otherChains,
-                    tokenId,
-                    wallet.address,
-                    destAddress,
-                    amount,
-                    '0x',
-                );
+                const message = encodeInterchainTransferMessage(tokenId, wallet.address, destAddress, amount, '0x');
+                const payloads = otherChains.map((chain) => encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, chain, message));
 
                 const multicall = await service.multicall(calls, { value });
                 await expect(multicall)
@@ -384,7 +355,7 @@ describe('Interchain Token Service Full Flow', () => {
         });
 
         it('Should register token metadata', async () => {
-            const { payload, payloadHash } = encodeRegisterTokenMetadata(token.address, decimals);
+            const { payload, payloadHash } = encodeRegisterTokenMetadataMessage(token.address, decimals);
 
             // Register token metadata being linked from the source chain
             // Similarly, submit this registration from ITS contract of all chains for the corresponding token addresses being linked
@@ -422,15 +393,8 @@ describe('Interchain Token Service Full Flow', () => {
                 value += gasValues[i];
             }
 
-            const payloads = encodeLinkToken(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                otherChains,
-                tokenId,
-                MINT_BURN,
-                token.address,
-                token.address,
-                wallet.address,
-            );
+            const message = encodeLinkTokenMessage(tokenId, MINT_BURN, token.address, token.address, wallet.address);
+            const payloads = otherChains.map((chain) => encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, chain, message));
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
             await expect(tokenFactory.multicall(calls, { value }))
@@ -502,15 +466,8 @@ describe('Interchain Token Service Full Flow', () => {
             const gasValue = 6789;
 
             it('Should send some tokens to another chain via ITS', async () => {
-                const { payload, payloadHash } = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destChain,
-                    tokenId,
-                    arrayify(wallet.address),
-                    destAddress,
-                    amount,
-                    '0x',
-                );
+                const message = encodeInterchainTransferMessage(tokenId, arrayify(wallet.address), destAddress, amount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destChain, message);
 
                 await expect(
                     service[INTERCHAIN_TRANSFER](tokenId, destChain, destAddress, amount, {
@@ -566,7 +523,8 @@ describe('Interchain Token Service Full Flow', () => {
             }
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, token.address]);
-            const payloads = encodeDeployInterchainToken(MESSAGE_TYPE_SEND_TO_HUB, otherChains, tokenId, name, symbol, decimals, '0x');
+            const message = encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, '0x');
+            const payloads = otherChains.map((chain) => encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, chain, message));
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
 
@@ -614,15 +572,8 @@ describe('Interchain Token Service Full Flow', () => {
                 value += gasValues[i];
             }
 
-            const payloads = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                otherChains,
-                tokenId,
-                wallet.address,
-                destAddress,
-                tokenCap,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, wallet.address, destAddress, tokenCap, '0x');
+            const payloads = otherChains.map((chain) => encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, chain, message));
 
             const multicall = await service.multicall(calls, { value });
             await expect(multicall)
@@ -685,24 +636,10 @@ describe('Interchain Token Service Full Flow', () => {
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, message]);
             const metadataVersion = 0;
             const metadata = solidityPack(['uint32', 'bytes'], [metadataVersion, data]);
-            const outgoingPayload = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destChain,
-                tokenId,
-                sourceAddress,
-                executable.address,
-                amount,
-                data,
-            );
-            const incomingPayload = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddress,
-                executable.address,
-                amount,
-                data,
-            );
+            const outgoingMessage = encodeInterchainTransferMessage(tokenId, sourceAddress, executable.address, amount, data);
+            const outgoingPayload = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destChain, outgoingMessage);
+            const incomingMessage = encodeInterchainTransferMessage(tokenId, sourceAddress, executable.address, amount, data);
+            const incomingPayload = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, incomingMessage);
             const commandId = getRandomBytes32();
 
             // Initiate the contract call with transfer
@@ -837,23 +774,11 @@ describe('Interchain Token Service Full Flow', () => {
             const destAddress = '0x1234';
             const destChain = otherChains[0];
             const gasValue = 6789;
-            let payload, payloadHash;
-
-            before(async () => {
-                const encodedITSPayload = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destChain,
-                    tokenId,
-                    arrayify(wallet.address),
-                    destAddress,
-                    amount,
-                    '0x',
-                );
-                payload = encodedITSPayload.payload;
-                payloadHash = encodedITSPayload.payloadHash;
-            });
 
             it('Should send some tokens to another chain via the token', async () => {
+                const message = encodeInterchainTransferMessage(tokenId, arrayify(wallet.address), destAddress, amount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destChain, message);
+
                 await expect(token.interchainTransfer(destChain, destAddress, amount, '0x', { value: gasValue }))
                     .and.to.emit(token, 'Transfer')
                     .withArgs(wallet.address, AddressZero, amount)
@@ -866,6 +791,9 @@ describe('Interchain Token Service Full Flow', () => {
             });
 
             it('Should send some tokens to another chain via ITS', async () => {
+                const message = encodeInterchainTransferMessage(tokenId, arrayify(wallet.address), destAddress, amount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destChain, message);
+
                 await expect(
                     service[INTERCHAIN_TRANSFER](tokenId, destChain, destAddress, amount, {
                         value: gasValue,
@@ -939,24 +867,10 @@ describe('Interchain Token Service Full Flow', () => {
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, message]);
             const metadataVersion = 0;
             const metadata = solidityPack(['uint32', 'bytes'], [metadataVersion, data]);
-            const sendPayload = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destChain,
-                tokenId,
-                sourceAddress,
-                executable.address,
-                amount,
-                data,
-            );
-            const receivePayload = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddress,
-                executable.address,
-                amount,
-                data,
-            );
+            const sendMessage = encodeInterchainTransferMessage(tokenId, sourceAddress, executable.address, amount, data);
+            const sendPayload = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destChain, sendMessage);
+            const receiveMessage = encodeInterchainTransferMessage(tokenId, sourceAddress, executable.address, amount, data);
+            const receivePayload = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, receiveMessage);
             const commandId = getRandomBytes32();
 
             // Initiate the contract call with transfer

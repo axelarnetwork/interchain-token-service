@@ -194,63 +194,45 @@ function getContractJSON(contractName, artifactPath) {
     }
 }
 
-function encodeDeployInterchainToken(wrapperType, chain, tokenId, name, symbol, decimals, minter, operator = null) {
-    const values = operator
-        ? [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter, operator]
-        : [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter];
-    const types = operator
-        ? ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes']
-        : ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'];
-    const payload = defaultAbiCoder.encode(types, values);
-    return encodeITSWrappedPayload(wrapperType, chain, payload);
-}
-
-function encodeLinkToken(wrapperType, chain, tokenId, type, remoteAddress, localAddress, minter) {
-    const payload = defaultAbiCoder.encode(
-        ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
-        [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, remoteAddress, localAddress, minter],
-    );
-    return encodeITSWrappedPayload(wrapperType, chain, payload);
-}
-
-function encodeInterchainTransfer(wrapperType, chain, tokenId, from, to, amount, data) {
-    const payload = defaultAbiCoder.encode(
+function encodeInterchainTransferMessage(tokenId, from, to, amount, data) {
+    return defaultAbiCoder.encode(
         ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
         [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, from, to, amount, data],
     );
-    return encodeITSWrappedPayload(wrapperType, chain, payload);
 }
 
-function encodeDeployTokenManager(wrapperType, chain, tokenId, address, salt) {
-    const payload = defaultAbiCoder.encode(
-        ['uint256', 'bytes32', 'bytes', 'uint256'],
-        [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, address, salt],
+function encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, minter) {
+    return defaultAbiCoder.encode(
+        ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
+        [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter],
     );
-    return encodeITSWrappedPayload(wrapperType, chain, payload);
 }
 
-function encodeRegisterTokenMetadata(tokenAddress, decimals) {
-    const payload = defaultAbiCoder.encode(['uint256', 'bytes', 'uint8'], [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, tokenAddress, decimals]);
+function encodeDeployTokenManagerMessage(tokenId, address, salt) {
+    return defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'uint256'], [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, address, salt]);
+}
+
+function encodeHubMessage(wrapperType, chain, message) {
+    const payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, message]);
     return {
         payload,
         payloadHash: keccak256(payload),
     };
 }
 
-function encodeAndHashPayload(wrapperType, chain, payload) {
-    const wrappedPayload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, payload]);
-    return {
-        payload: wrappedPayload,
-        payloadHash: keccak256(wrappedPayload),
-    };
+function encodeLinkTokenMessage(tokenId, type, remoteAddress, localAddress, minter) {
+    return defaultAbiCoder.encode(
+        ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+        [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, remoteAddress, localAddress, minter],
+    );
 }
 
-function encodeITSWrappedPayload(wrapperType, chain, payload) {
-    if (Array.isArray(chain)) {
-        return chain.map((c) => encodeAndHashPayload(wrapperType, c, payload));
-    }
-
-    return encodeAndHashPayload(wrapperType, chain, payload);
+function encodeRegisterTokenMetadataMessage(tokenAddress, decimals) {
+    const payload = defaultAbiCoder.encode(['uint256', 'bytes', 'uint8'], [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, tokenAddress, decimals]);
+    return {
+        payload,
+        payloadHash: keccak256(payload),
+    };
 }
 
 module.exports = {
@@ -266,10 +248,10 @@ module.exports = {
     gasReporter,
     getEVMVersion,
     getContractJSON,
-    encodeDeployInterchainToken,
-    encodeLinkToken,
-    encodeInterchainTransfer,
-    encodeDeployTokenManager,
-    encodeRegisterTokenMetadata,
-    encodeITSWrappedPayload,
+    encodeInterchainTransferMessage,
+    encodeDeployInterchainTokenMessage,
+    encodeDeployTokenManagerMessage,
+    encodeHubMessage,
+    encodeLinkTokenMessage,
+    encodeRegisterTokenMetadataMessage,
 };

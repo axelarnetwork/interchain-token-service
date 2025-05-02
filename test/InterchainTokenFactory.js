@@ -10,7 +10,14 @@ const {
     utils: { defaultAbiCoder, keccak256, toUtf8Bytes, arrayify },
 } = ethers;
 const { deployAll, deployContract } = require('../scripts/deploy');
-const { getRandomBytes32, expectRevert, gasReporter, encodeDeployInterchainToken, encodeLinkToken } = require('./utils');
+const {
+    getRandomBytes32,
+    expectRevert,
+    gasReporter,
+    encodeDeployInterchainTokenMessage,
+    encodeHubMessage,
+    encodeLinkTokenMessage,
+} = require('./utils');
 const {
     NATIVE_INTERCHAIN_TOKEN,
     LOCK_UNLOCK,
@@ -137,15 +144,8 @@ describe('InterchainTokenFactory', () => {
 
         it('Should initiate a remote interchain token deployment with no original chain name provided', async () => {
             const gasValue = 1234;
-            const { payload, payloadHash } = encodeDeployInterchainToken(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                name,
-                symbol,
-                decimals,
-                '0x',
-            );
+            const message = encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
 
             await expect(
                 tokenFactory[DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN_WITH_ORIGINAL_CHAIN]('', token.address, destinationChain, gasValue, {
@@ -174,15 +174,8 @@ describe('InterchainTokenFactory', () => {
 
         it('Should initiate a remote interchain token deployment', async () => {
             const gasValue = 1234;
-            const { payload, payloadHash } = encodeDeployInterchainToken(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                name,
-                symbol,
-                decimals,
-                '0x',
-            );
+            const message = encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
 
             await expectRevert(
                 (gasOptions) =>
@@ -353,15 +346,8 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(token, 'RolesAdded')
                 .withArgs(tokenManager.address, 1 << MINTER_ROLE);
 
-            const { payload, payloadHash } = encodeDeployInterchainToken(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                name,
-                symbol,
-                decimals,
-                wallet.address.toLowerCase(),
-            );
+            const message = encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, wallet.address.toLowerCase());
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
 
             await expectRevert(
                 (gasOptions) =>
@@ -541,15 +527,8 @@ describe('InterchainTokenFactory', () => {
                 .and.to.emit(tokenManager, 'RolesRemoved')
                 .withArgs(tokenFactory.address, 1 << FLOW_LIMITER_ROLE);
 
-            const { payload, payloadHash } = encodeDeployInterchainToken(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                name,
-                symbol,
-                decimals,
-                '0x',
-            );
+            const message = encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
 
             await expect(
                 tokenFactory[DEPLOY_REMOTE_INTERCHAIN_TOKEN_WITH_ORIGINAL_CHAIN_NAME_AND_MINTER](
@@ -982,16 +961,8 @@ describe('InterchainTokenFactory', () => {
                 const remoteTokenAddress = '0x1234';
                 const minter = '0x5789';
                 const type = LOCK_UNLOCK;
-                const { payload, payloadHash } = encodeLinkToken(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destinationChain,
-                    tokenId,
-                    type,
-                    token.address,
-                    remoteTokenAddress,
-                    minter,
-                );
-
+                const message = encodeLinkTokenMessage(tokenId, type, token.address, remoteTokenAddress, minter);
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
                 const tokenManager = await getContractAt('TokenManager', await service.deployedTokenManager(tokenId), wallet);
                 expect(await tokenManager.isOperator(AddressZero)).to.be.true;
                 expect(await tokenManager.isOperator(service.address)).to.be.true;

@@ -18,12 +18,12 @@ const {
     expectRevert,
     gasReporter,
     getEVMVersion,
-    encodeDeployInterchainToken,
-    encodeLinkToken,
-    encodeInterchainTransfer,
-    encodeDeployTokenManager,
-    encodeRegisterTokenMetadata,
-    encodeITSWrappedPayload,
+    encodeInterchainTransferMessage,
+    encodeDeployInterchainTokenMessage,
+    encodeDeployTokenManagerMessage,
+    encodeHubMessage,
+    encodeLinkTokenMessage,
+    encodeRegisterTokenMetadataMessage,
 } = require('./utils');
 const { deployAll, deployContract, deployInterchainTokenService } = require('../scripts/deploy');
 const {
@@ -86,15 +86,8 @@ describe('Interchain Token Service', () => {
         ]);
 
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-        const { payload } = encodeLinkToken(
-            MESSAGE_TYPE_RECEIVE_FROM_HUB,
-            sourceChain,
-            tokenId,
-            tokenManagerType,
-            sourceTokenAddress,
-            token.address,
-            minter,
-        );
+        const message = encodeLinkTokenMessage(tokenId, tokenManagerType, sourceTokenAddress, token.address, minter);
+        const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
         const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
         const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
@@ -159,15 +152,8 @@ describe('Interchain Token Service', () => {
         }
 
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-        const { payload } = encodeLinkToken(
-            MESSAGE_TYPE_RECEIVE_FROM_HUB,
-            sourceChain,
-            tokenId,
-            tokenManagerType,
-            sourceTokenAddress,
-            token.address,
-            minter,
-        );
+        const message = encodeLinkTokenMessage(tokenId, tokenManagerType, sourceTokenAddress, token.address, minter);
+        const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
         const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
         const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
@@ -216,15 +202,8 @@ describe('Interchain Token Service', () => {
             await token.transferMintership(tokenManager.address).then((tx) => tx.wait());
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-            const { payload } = encodeLinkToken(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                tokenManagerType,
-                sourceTokenAddress,
-                token.address,
-                minter,
-            );
+            const message = encodeLinkTokenMessage(tokenId, tokenManagerType, sourceTokenAddress, token.address, minter);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
@@ -250,19 +229,10 @@ describe('Interchain Token Service', () => {
         const tokenId = await service.interchainTokenId(wallet.address, salt);
 
         const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-        const operator = '0x';
         const tokenAddress = await service.interchainTokenAddress(tokenId);
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
-        const { payload } = encodeDeployInterchainToken(
-            MESSAGE_TYPE_RECEIVE_FROM_HUB,
-            sourceChain,
-            tokenId,
-            tokenName,
-            tokenSymbol,
-            tokenDecimals,
-            wallet.address,
-            operator,
-        );
+        const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, wallet.address);
+        const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
         const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
         await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -795,16 +765,8 @@ describe('Interchain Token Service', () => {
             const operator = '0x';
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
-            const { payload } = encodeDeployInterchainToken(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                destinationChain,
-                tokenId,
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                minter,
-                operator,
-            );
+            const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, destinationChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -812,6 +774,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
+                
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
@@ -843,15 +806,8 @@ describe('Interchain Token Service', () => {
             const tokenId = getRandomBytes32();
             const minter = wallet.address;
             const commandId = getRandomBytes32();
-            const { payload } = encodeDeployInterchainToken(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                destinationChain,
-                tokenId,
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                minter,
-            );
+            const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, destinationChain, message);
 
             await expectRevert(
                 (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload, gasOptions),
@@ -867,16 +823,8 @@ describe('Interchain Token Service', () => {
             const operator = '0x';
             const tokenAddress = await service.interchainTokenAddress(tokenId);
             const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
-            const { payload } = encodeDeployInterchainToken(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                destinationChain,
-                tokenId,
-                tokenName,
-                tokenSymbol,
-                tokenDecimals,
-                minter,
-                operator,
-            );
+            const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, destinationChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -884,6 +832,7 @@ describe('Interchain Token Service', () => {
                 .withArgs(tokenId, tokenAddress, AddressZero, tokenName, tokenSymbol, tokenDecimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
                 .withArgs(tokenId, tokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
+
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
@@ -904,7 +853,7 @@ describe('Interchain Token Service', () => {
 
         it('Should successfully register token metadata', async () => {
             const gasValue = 0;
-            const { payload, payloadHash } = encodeRegisterTokenMetadata(token.address, decimals);
+            const { payload, payloadHash } = encodeRegisterTokenMetadataMessage(token.address, decimals);
 
             await expect(reportGas(service.registerTokenMetadata(token.address, gasValue), 'registerTokenMetadata'))
                 .to.emit(service, 'TokenMetadataRegistered')
@@ -1011,15 +960,8 @@ describe('Interchain Token Service', () => {
             const remoteTokenAddress = '0x1234';
             const minter = '0x5789';
             const type = LOCK_UNLOCK;
-            const { payload, payloadHash } = encodeLinkToken(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                type,
-                tokenAddress,
-                remoteTokenAddress,
-                minter,
-            );
+            const message = encodeLinkTokenMessage(tokenId, type, tokenAddress, remoteTokenAddress, minter);
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
 
             await expect(
                 reportGas(
@@ -1099,15 +1041,8 @@ describe('Interchain Token Service', () => {
             ]);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-            const { payload } = encodeLinkToken(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                tokenManagerType,
-                sourceTokenAddress,
-                token.address,
-                minter,
-            );
+            const message = encodeLinkTokenMessage(tokenId, tokenManagerType, sourceTokenAddress, token.address, minter);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
@@ -1136,15 +1071,8 @@ describe('Interchain Token Service', () => {
             ]);
 
             const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
-            const { payload } = encodeLinkToken(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                tokenManagerType,
-                sourceTokenAddress,
-                token.address,
-                minter,
-            );
+            const message = encodeLinkTokenMessage(tokenId, tokenManagerType, sourceTokenAddress, token.address, minter);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
@@ -1170,15 +1098,8 @@ describe('Interchain Token Service', () => {
                 tokenId,
             ]);
 
-            const { payload } = encodeLinkToken(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                tokenManagerType,
-                sourceTokenAddress,
-                token.address,
-                minter,
-            );
+            const message = encodeLinkTokenMessage(tokenId, tokenManagerType, sourceTokenAddress, token.address, minter);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expectRevert(
@@ -1210,15 +1131,8 @@ describe('Interchain Token Service', () => {
                 'free',
             );
 
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
             const transferToAddress = tokenManager.address;
 
             await expect(service[INTERCHAIN_TRANSFER](...[tokenId, destinationChain, destAddress, amount, { value: gasValue }]))
@@ -1243,15 +1157,8 @@ describe('Interchain Token Service', () => {
                 'free',
             );
 
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
             const transferToAddress = tokenManager.address;
 
             await expect(
@@ -1490,7 +1397,7 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'uint256'],
                 [INVALID_MESSAGE_TYPE, tokenId, destAddress, amount],
             );
-            const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload);
+            const wrappedPayload = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload.payload);
 
             await expectRevert(
@@ -1514,7 +1421,7 @@ describe('Interchain Token Service', () => {
             const invalidPayload = defaultAbiCoder
                 .encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, hexlify(wallet.address)])
                 .slice(0, 32);
-            const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, invalidPayload);
+            const wrappedPayload = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, invalidPayload);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload.payload);
 
             await expectRevert(
@@ -1528,15 +1435,8 @@ describe('Interchain Token Service', () => {
             const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, 'Test Token Lock Unlock', 'TT', 12, amount);
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
 
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(
@@ -1553,16 +1453,8 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to receive mint/burn token', async () => {
             const [token, , tokenId] = await deployFunctions.mintBurn(service, 'Test Token Mint Burn', 'TT', 12, 0);
-
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(
@@ -1584,15 +1476,8 @@ describe('Interchain Token Service', () => {
             );
             await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait());
 
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -1614,15 +1499,8 @@ describe('Interchain Token Service', () => {
             );
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
 
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -1649,16 +1527,8 @@ describe('Interchain Token Service', () => {
             it(`Should initiate an interchain token transfer via the interchainTransfer standard contract call & express call [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount * 2);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
-                const { payload, payloadHash } = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destinationChain,
-                    tokenId,
-                    sourceAddress,
-                    destAddress,
-                    sendAmount,
-                    '0x',
-                );
-
+                const message = encodeInterchainTransferMessage(tokenId, sourceAddress, destAddress, sendAmount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
                 let transferToAddress = AddressZero;
 
                 if (type === 'lockUnlock' || type === 'lockUnlockFee') {
@@ -1693,15 +1563,8 @@ describe('Interchain Token Service', () => {
             it(`Should be able to initiate an interchain token transfer via the interchainTransfer function on the service when the service is approved as well [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
-                const { payload, payloadHash } = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destinationChain,
-                    tokenId,
-                    sourceAddress,
-                    destAddress,
-                    sendAmount,
-                    '0x',
-                );
+                const message = encodeInterchainTransferMessage(tokenId, sourceAddress, destAddress, sendAmount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
                 const transferToAddress = tokenManager.address;
 
                 await token.approve(service.address, amount).then((tx) => tx.wait());
@@ -1726,15 +1589,8 @@ describe('Interchain Token Service', () => {
             const type = 'lockUnlock';
             const metadata = '0x00000000';
             const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount);
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                sourceAddress,
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddress, destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
             const transferToAddress = tokenManager.address;
 
             await expect(
@@ -1766,15 +1622,8 @@ describe('Interchain Token Service', () => {
         it('Should initiate an interchain token transfer via the callContractWithInterchainToken function on the service', async () => {
             const type = 'lockUnlock';
             const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount);
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                sourceAddress,
-                destAddress,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddress, destAddress, amount, data);
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
             const transferToAddress = tokenManager.address;
 
             await expect(
@@ -1797,15 +1646,8 @@ describe('Interchain Token Service', () => {
             const type = 'mintBurn';
             const [token, , tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount);
             const largeData = hexlify(randomBytes(8 * 1024)); // 8 KB
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                sourceAddress,
-                destAddress,
-                amount,
-                largeData,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddress, destAddress, amount, largeData);
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
             const transferToAddress = AddressZero;
 
             await expect(
@@ -1932,15 +1774,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -1961,15 +1796,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
 
             const data = '0x';
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -1985,15 +1813,8 @@ describe('Interchain Token Service', () => {
 
             const msg = 'mint/burn';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(
@@ -2019,15 +1840,8 @@ describe('Interchain Token Service', () => {
 
             const msg = 'mint/burn';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(
@@ -2059,15 +1873,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait());
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -2088,15 +1895,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                AddressZero,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, AddressZero, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             const errorSignatureHash = id('TokenTransferFailed()');
@@ -2115,15 +1915,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                invalidExecutable.address,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, invalidExecutable.address, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expectRevert(
@@ -2191,15 +1984,8 @@ describe('Interchain Token Service', () => {
             const remoteTokenAddress = '0x1234';
             const type = LOCK_UNLOCK;
             const sourceChain = 'hub chain 1';
-            const { payload } = encodeLinkToken(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                type,
-                remoteTokenAddress,
-                token.address,
-                minter,
-            );
+            const message = encodeLinkTokenMessage(tokenId, type, remoteTokenAddress, token.address, minter);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
@@ -2217,7 +2003,7 @@ describe('Interchain Token Service', () => {
         it('Should revert with UntrustedChain when receiving a direct message from the ITS Hub. Not supported yet', async () => {
             const data = '0x';
             const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, data]);
-            const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, ITS_HUB_CHAIN, payload);
+            const wrappedPayload = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, ITS_HUB_CHAIN, payload);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload.payload);
 
             await expectRevert(
@@ -2238,16 +2024,8 @@ describe('Interchain Token Service', () => {
             it(`Should be able to initiate an interchain token transfer via interchainTransfer & interchainTransferFrom [${type}]`, async () => {
                 [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount * 3, true);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
-                const { payload, payloadHash } = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destinationChain,
-                    tokenId,
-                    hexlify(wallet.address),
-                    destAddress,
-                    sendAmount,
-                    '0x',
-                );
-
+                const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
                 let transferToAddress = AddressZero;
 
                 if (type === 'lockUnlock' || type === 'lockUnlockFee') {
@@ -2291,16 +2069,8 @@ describe('Interchain Token Service', () => {
             it(`Should be able to initiate an interchain token transfer via interchainTransfer [${type}] without native gas`, async () => {
                 [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount * 3, true);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
-                const { payload, payloadHash } = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destinationChain,
-                    tokenId,
-                    hexlify(wallet.address),
-                    destAddress,
-                    sendAmount,
-                    '0x',
-                );
-
+                const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x');
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
                 let transferToAddress = AddressZero;
 
                 if (type === 'lockUnlock' || type === 'lockUnlockFee') {
@@ -2324,18 +2094,9 @@ describe('Interchain Token Service', () => {
 
         it('Should be able to initiate an interchain token transfer using interchainTransferFrom with max possible allowance', async () => {
             const sendAmount = amount;
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_SEND_TO_HUB,
-                destinationChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                sendAmount,
-                '0x',
-            );
-
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, sendAmount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
             const transferToAddress = tokenManager.address;
-
             const sender = wallet;
             const spender = otherWallet;
             await token.approve(spender.address, MaxUint256).then((tx) => tx.wait());
@@ -2389,17 +2150,8 @@ describe('Interchain Token Service', () => {
             it(`Should be able to initiate an interchain token transfer [${type}]`, async () => {
                 const [token, tokenManager, tokenId] = await deployFunctions[type](service, `Test Token ${type}`, 'TT', 12, amount, false);
                 const sendAmount = type === 'lockUnlockFee' ? amount - 10 : amount;
-
-                const { payload, payloadHash } = encodeInterchainTransfer(
-                    MESSAGE_TYPE_SEND_TO_HUB,
-                    destinationChain,
-                    tokenId,
-                    sourceAddress,
-                    destAddress,
-                    sendAmount,
-                    data,
-                );
-
+                const message = encodeInterchainTransferMessage(tokenId, sourceAddress, destAddress, sendAmount, data);
+                const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, message);
                 let transferToAddress = AddressZero;
 
                 if (type === 'lockUnlock' || type === 'lockUnlockFee') {
@@ -2496,15 +2248,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should express execute', async () => {
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destinationAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destinationAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
 
             await expect(service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
                 .to.emit(service, 'ExpressExecuted')
@@ -2514,15 +2259,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on express execute if token handler transfer token from fails', async () => {
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddress,
-                AddressZero,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddress, AddressZero, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
 
             const errorSignatureHash = id('TokenTransferFailed()');
             const errorData = errorSignatureHash.substring(0, 10);
@@ -2536,15 +2274,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on express execute with token if token transfer fails on destination chain', async () => {
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddress,
-                invalidExecutable.address,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddress, invalidExecutable.address, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
 
             await expectRevert(
                 (gasOptions) => service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload, gasOptions),
@@ -2555,15 +2286,8 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should express execute with token', async () => {
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddress,
-                executable.address,
-                amount,
-                data,
-            );
+            const itsMessage = encodeInterchainTransferMessage(tokenId, sourceAddress, executable.address, amount, data);
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, itsMessage);
 
             await expect(service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
                 .to.emit(service, 'ExpressExecuted')
@@ -2666,16 +2390,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             await token.approve(service.address, amount).then((tx) => tx.wait());
 
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
-
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expectRevert(
@@ -2689,7 +2405,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             await token.approve(service.address, amount).then((tx) => tx.wait());
 
-            const { payload } = encodeDeployTokenManager(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, tokenId, destAddress, amount);
+            const message = encodeDeployTokenManagerMessage(tokenId, destAddress, amount);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expectRevert(
@@ -2704,15 +2421,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             await token.approve(service.address, amount).then((tx) => tx.wait());
 
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
 
             const commandId = getRandomBytes32();
             await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload).then((tx) => tx.wait());
@@ -2731,15 +2441,8 @@ describe('Interchain Token Service', () => {
             await (await token.mint(wallet.address, amount)).wait();
             await (await token.approve(service.address, amount)).wait();
 
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = getRandomBytes32();
 
             await (await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload)).wait();
@@ -2758,15 +2461,8 @@ describe('Interchain Token Service', () => {
 
             await token.approve(service.address, amount).then((tx) => tx.wait());
 
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = getRandomBytes32();
 
             await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload).then((tx) => tx.wait());
@@ -2786,15 +2482,8 @@ describe('Interchain Token Service', () => {
 
             await token.approve(service.address, amount).then((tx) => tx.wait());
 
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = getRandomBytes32();
 
             await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload).then((tx) => tx.wait());
@@ -2820,15 +2509,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount + 10).then((tx) => tx.wait());
             await token.approve(service.address, amount).then((tx) => tx.wait());
 
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = getRandomBytes32();
 
             await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload).then((tx) => tx.wait());
@@ -2856,15 +2538,8 @@ describe('Interchain Token Service', () => {
             await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
             await token.approve(service.address, amount).then((tx) => tx.wait());
 
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destAddress,
-                amount,
-                '0x',
-            );
+            const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), destAddress, amount, '0x');
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = getRandomBytes32();
 
             await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload).then((tx) => tx.wait());
@@ -2906,17 +2581,10 @@ describe('Interchain Token Service', () => {
 
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
-
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = getRandomBytes32();
+
             await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload).then((tx) => tx.wait());
             await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload, getRandomBytes32(), 0, commandId);
 
@@ -2938,17 +2606,10 @@ describe('Interchain Token Service', () => {
 
             const msg = 'mint/burn';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
-
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = getRandomBytes32();
+
             await (await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload)).wait();
             await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload, getRandomBytes32(), 0, commandId);
 
@@ -2967,17 +2628,10 @@ describe('Interchain Token Service', () => {
 
             const msg = 'mint/burn';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload, payloadHash } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
-
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload, payloadHash } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = getRandomBytes32();
+
             await service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload).then((tx) => tx.wait());
             await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload, getRandomBytes32(), 0, commandId);
 
@@ -3003,15 +2657,8 @@ describe('Interchain Token Service', () => {
 
             const msg = 'lock/unlock';
             const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                sourceAddressForService,
-                destAddress,
-                amount,
-                data,
-            );
+            const message = encodeInterchainTransferMessage(tokenId, sourceAddressForService, destAddress, amount, data);
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const commandId = await approveContractCall(gateway, sourceChain, sourceAddress, service.address, payload);
 
             await expect(service.expressExecute(commandId, sourceChain, sourceAddress, payload)).to.be.reverted;
@@ -3057,15 +2704,8 @@ describe('Interchain Token Service', () => {
             expect(flowOut).to.eq(sendAmount);
 
             async function receiveToken(amount) {
-                const { payload } = encodeInterchainTransfer(
-                    MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                    sourceChain,
-                    tokenId,
-                    hexlify(wallet.address),
-                    wallet.address,
-                    amount,
-                    '0x',
-                );
+                const message = encodeInterchainTransferMessage(tokenId, hexlify(wallet.address), wallet.address, amount, '0x');
+                const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
                 return service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload);
@@ -3272,7 +2912,7 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [message, tokenId, '0x', '0x', amount, '0x'],
             );
-            const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_SEND_TO_HUB, sourceChain, payload);
+            const wrappedPayload = encodeHubMessage(MESSAGE_TYPE_SEND_TO_HUB, sourceChain, payload);
 
             await expectRevert(
                 (gasOptions) => service.contractCallValue(ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload.payload, gasOptions),
@@ -3289,7 +2929,7 @@ describe('Interchain Token Service', () => {
                 ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
                 [message, tokenId, '0x', '0x', amount, '0x'],
             );
-            const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload);
+            const wrappedPayload = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload);
 
             await expectRevert(
                 (gasOptions) => service.contractCallValue(ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload.payload, gasOptions),
@@ -3302,7 +2942,8 @@ describe('Interchain Token Service', () => {
         it('Should return correct token address and amount', async () => {
             const mintAmount = 1234;
             const [token, , tokenId] = await deployFunctions.lockUnlock(service, 'Test Token Lock Unlock', 'TT', 12, mintAmount);
-            const { payload } = encodeInterchainTransfer(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, tokenId, '0x', '0x', amount, '0x');
+            const message = encodeInterchainTransferMessage(tokenId, '0x', '0x', amount, '0x');
+            const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
             const [tokenAddress, returnedAmount] = await service.contractCallValue(ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload);
 
             expect(tokenAddress).to.eq(token.address);
