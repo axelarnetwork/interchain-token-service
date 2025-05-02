@@ -270,6 +270,7 @@ describe('Interchain Token Service', () => {
             .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
             .and.to.emit(service, 'TokenManagerDeployed')
             .withArgs(tokenId, tokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
+
         const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
         expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
         expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
