@@ -1491,7 +1491,6 @@ describe('Interchain Token Service', () => {
                 [INVALID_MESSAGE_TYPE, tokenId, destAddress, amount],
             );
             const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload);
-
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload.payload);
 
             await expectRevert(
@@ -1516,7 +1515,6 @@ describe('Interchain Token Service', () => {
                 .encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, hexlify(wallet.address)])
                 .slice(0, 32);
             const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, invalidPayload);
-
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload.payload);
 
             await expectRevert(
@@ -1539,7 +1537,6 @@ describe('Interchain Token Service', () => {
                 amount,
                 '0x',
             );
-
             const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
             await expect(
@@ -1705,7 +1702,6 @@ describe('Interchain Token Service', () => {
                     sendAmount,
                     '0x',
                 );
-
                 const transferToAddress = tokenManager.address;
 
                 await token.approve(service.address, amount).then((tx) => tx.wait());
@@ -3267,6 +3263,23 @@ describe('Interchain Token Service', () => {
             );
 
             await service.setPauseStatus(false).then((tx) => tx.wait());
+        });
+
+        it('Should revert on invalid message type', async () => {
+            const message = MESSAGE_TYPE_SEND_TO_HUB;
+            const tokenId = HashZero;
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [message, tokenId, '0x', '0x', amount, '0x'],
+            );
+            const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_SEND_TO_HUB, sourceChain, payload);
+
+            await expectRevert(
+                (gasOptions) => service.contractCallValue(ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload.payload, gasOptions),
+                service,
+                'InvalidMessageType',
+                [message],
+            );
         });
 
         it('Should revert on invalid express message type', async () => {
