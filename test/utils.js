@@ -11,7 +11,6 @@ const {
     MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
     MESSAGE_TYPE_LINK_TOKEN,
     MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
-    INVALID_MESSAGE_TYPE,
 } = require('./constants');
 
 function getRandomBytes32() {
@@ -195,36 +194,50 @@ function getContractJSON(contractName, artifactPath) {
     }
 }
 
-function resolveMessageType(messageType, values) {
-    switch (messageType) {
-        case MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN:
-            if (values.length === 7) {
-                return ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes'];
-            }
-
-            return ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'];
-
-        case MESSAGE_TYPE_LINK_TOKEN:
-            return ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'];
-
-        case MESSAGE_TYPE_INTERCHAIN_TRANSFER:
-            return ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'];
-
-        case MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER:
-            return ['uint256', 'bytes32', 'bytes', 'uint256'];
-
-        case MESSAGE_TYPE_REGISTER_TOKEN_METADATA:
-            return ['uint256', 'bytes', 'uint8'];
-
-        case INVALID_MESSAGE_TYPE:
-            return ['uint256', 'bytes32', 'bytes', 'uint256'];
-
-        default:
-            throw new Error(`Unknown ITS message type: ${messageType}`);
-    }
+function encodeDeployInterchainToken(wrapperType, chain, tokenId, name, symbol, decimals, minter, operator = null) {
+    const values = operator
+        ? [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter, operator]
+        : [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter];
+    const types = operator
+        ? ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes', 'bytes']
+        : ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'];
+    const payload = defaultAbiCoder.encode(types, values);
+    return encodeITSWrappedPayload(wrapperType, chain, payload);
 }
 
-function wrapPayload(wrapperType, chain, payload) {
+function encodeLinkToken(wrapperType, chain, tokenId, type, remoteAddress, localAddress, minter) {
+    const payload = defaultAbiCoder.encode(
+        ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+        [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, remoteAddress, localAddress, minter],
+    );
+    return encodeITSWrappedPayload(wrapperType, chain, payload);
+}
+
+function encodeInterchainTransfer(wrapperType, chain, tokenId, from, to, amount, data) {
+    const payload = defaultAbiCoder.encode(
+        ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+        [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, from, to, amount, data],
+    );
+    return encodeITSWrappedPayload(wrapperType, chain, payload);
+}
+
+function encodeDeployTokenManager(wrapperType, chain, tokenId, address, salt) {
+    const payload = defaultAbiCoder.encode(
+        ['uint256', 'bytes32', 'bytes', 'uint256'],
+        [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, address, salt],
+    );
+    return encodeITSWrappedPayload(wrapperType, chain, payload);
+}
+
+function encodeRegisterTokenMetadata(tokenAddress, decimals) {
+    const payload = defaultAbiCoder.encode(['uint256', 'bytes', 'uint8'], [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, tokenAddress, decimals]);
+    return {
+        payload,
+        payloadHash: keccak256(payload),
+    };
+}
+
+function encodeAndHashPayload(wrapperType, chain, payload) {
     const wrappedPayload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, payload]);
     return {
         payload: wrappedPayload,
@@ -232,24 +245,12 @@ function wrapPayload(wrapperType, chain, payload) {
     };
 }
 
-/**
- * Encodes an Interchain Token Service (ITS) message with wrapping.
- * Supports single chain (returns object) or array of chains (returns array of objects).
- *
- * @param {number} wrapperType - Wrapper message type (e.g. RECEIVE_FROM_HUB, SEND_TO_HUB)
- * @param {string|string[]} chain - Single chain name or array of chains
- * @param {Array<any>} values - Values for the ITS payload (first item must be messageType)
- * @returns {{ payload: string, hash: string } | { payload: string, hash: string }[]} - Wrapped payload(s) and hash(es)
- */
-function encodeITSPayload(wrapperType, chain, values) {
-    const messageType = resolveMessageType(values[0], values);
-    const payload = defaultAbiCoder.encode(messageType, values);
-
+function encodeITSWrappedPayload(wrapperType, chain, payload) {
     if (Array.isArray(chain)) {
-        return chain.map((chain) => wrapPayload(wrapperType, chain, payload));
+        return chain.map((c) => encodeAndHashPayload(wrapperType, c, payload));
     }
 
-    return wrapPayload(wrapperType, chain, payload);
+    return encodeAndHashPayload(wrapperType, chain, payload);
 }
 
 module.exports = {
@@ -265,5 +266,10 @@ module.exports = {
     gasReporter,
     getEVMVersion,
     getContractJSON,
-    encodeITSPayload,
+    encodeDeployInterchainToken,
+    encodeLinkToken,
+    encodeInterchainTransfer,
+    encodeDeployTokenManager,
+    encodeRegisterTokenMetadata,
+    encodeITSWrappedPayload,
 };
