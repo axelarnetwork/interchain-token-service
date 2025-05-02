@@ -2639,14 +2639,9 @@ describe('Interchain Token Service', () => {
         });
 
         it('Should revert on express execute when service is paused', async () => {
-            const { payload } = encodeInterchainTransfer(
-                MESSAGE_TYPE_RECEIVE_FROM_HUB,
-                sourceChain,
-                tokenId,
-                hexlify(wallet.address),
-                destinationAddress,
-                amount,
-                '0x',
+            const payload = defaultAbiCoder.encode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, hexlify(wallet.address), destinationAddress, amount, '0x'],
             );
 
             await service.setPauseStatus(true).then((tx) => tx.wait());
