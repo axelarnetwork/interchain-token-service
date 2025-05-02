@@ -1514,15 +1514,12 @@ describe('Interchain Token Service', () => {
             const invalidPayload = defaultAbiCoder
                 .encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, hexlify(wallet.address)])
                 .slice(0, 32);
-            const wrappedPayload = defaultAbiCoder.encode(
-                ['uint256', 'string', 'bytes'],
-                [MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, invalidPayload],
-            );
+            const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, invalidPayload);
 
-            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload.payload);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload.payload, gasOptions),
                 service,
                 'InvalidPayload',
             );
@@ -2223,14 +2220,11 @@ describe('Interchain Token Service', () => {
         it('Should revert with UntrustedChain when receiving a direct message from the ITS Hub. Not supported yet', async () => {
             const data = '0x';
             const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, data]);
-            const wrappedPayload = defaultAbiCoder.encode(
-                ['uint256', 'string', 'bytes'],
-                [MESSAGE_TYPE_RECEIVE_FROM_HUB, ITS_HUB_CHAIN, payload],
-            );
-            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload);
+            const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, ITS_HUB_CHAIN, payload);
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, wrappedPayload.payload);
 
             await expectRevert(
-                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload.payload, gasOptions),
                 service,
                 'UntrustedChain',
             );
@@ -3289,7 +3283,7 @@ describe('Interchain Token Service', () => {
             const wrappedPayload = encodeITSWrappedPayload(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, payload);
 
             await expectRevert(
-                (gasOptions) => service.contractCallValue(ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload, gasOptions),
+                (gasOptions) => service.contractCallValue(ITS_HUB_CHAIN, ITS_HUB_ADDRESS, wrappedPayload.payload, gasOptions),
                 service,
                 'InvalidExpressMessageType',
                 [message],
