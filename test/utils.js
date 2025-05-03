@@ -9,6 +9,8 @@ const {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
     MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
+    MESSAGE_TYPE_SEND_TO_HUB,
+    MESSAGE_TYPE_RECEIVE_FROM_HUB,
     MESSAGE_TYPE_LINK_TOKEN,
     MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
 } = require('./constants');
@@ -212,8 +214,16 @@ function encodeDeployTokenManagerMessage(tokenId, address, salt) {
     return defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'uint256'], [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, address, salt]);
 }
 
-function encodeHubMessage(wrapperType, chain, message) {
-    const payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [wrapperType, chain, message]);
+function encodeSendHubMessage(chain, message) {
+    const payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [MESSAGE_TYPE_SEND_TO_HUB, chain, message]);
+    return {
+        payload,
+        payloadHash: keccak256(payload),
+    };
+}
+
+function encodeReceiveHubMessage(chain, message) {
+    const payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [MESSAGE_TYPE_RECEIVE_FROM_HUB, chain, message]);
     return {
         payload,
         payloadHash: keccak256(payload),
@@ -251,7 +261,8 @@ module.exports = {
     encodeInterchainTransferMessage,
     encodeDeployInterchainTokenMessage,
     encodeDeployTokenManagerMessage,
-    encodeHubMessage,
+    encodeSendHubMessage,
+    encodeReceiveHubMessage,
     encodeLinkTokenMessage,
     encodeRegisterTokenMetadataMessage,
 };

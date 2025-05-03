@@ -15,11 +15,11 @@ const {
     isHardhat,
     getContractJSON,
     encodeDeployInterchainTokenMessage,
-    encodeHubMessage,
+    encodeReceiveHubMessage,
 } = require('./utils');
 const { create3DeployContract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const Token = getContractJSON('TestInterchainTokenStandard');
-const { NATIVE_INTERCHAIN_TOKEN, MESSAGE_TYPE_RECEIVE_FROM_HUB, ITS_HUB_ADDRESS, ITS_HUB_CHAIN } = require('./constants');
+const { NATIVE_INTERCHAIN_TOKEN, ITS_HUB_ADDRESS, ITS_HUB_CHAIN } = require('./constants');
 
 if (isHardhat) {
     describe('Token Address Derivation [ @skip-on-coverage ]', () => {
@@ -64,8 +64,10 @@ if (isHardhat) {
                 const expectedTokenManagerAddress = '0x3B058fE7Ed045f56F0152AED1e8c5fbaE7e23C70';
 
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, expectedTokenAddress]);
-                const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter);
-                const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
+                const { payload } = encodeReceiveHubMessage(
+                    sourceChain,
+                    encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter),
+                );
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
                 await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -85,8 +87,10 @@ if (isHardhat) {
                 const expectedTokenManagerAddress = '0x89AF99D9373722De5F29ABbF706efeD020ae3E1F';
 
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, expectedTokenAddress]);
-                const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter);
-                const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
+                const { payload } = encodeReceiveHubMessage(
+                    sourceChain,
+                    encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter),
+                );
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
                 await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -126,8 +130,10 @@ if (isHardhat) {
                 const expectedTokenManagerAddress = '0x1695DD538BeDd759BE212Ed24f809eA51dbc08D0';
 
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, expectedTokenAddress]);
-                const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter);
-                const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
+                const { payload } = encodeReceiveHubMessage(
+                    sourceChain,
+                    encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter),
+                );
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
                 await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -147,8 +153,10 @@ if (isHardhat) {
                 const expectedTokenManagerAddress = '0x123908f4742664f68db857c6a10c846fb557AF08';
 
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, expectedTokenAddress]);
-                const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, '0x');
-                const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
+                const { payload } = encodeReceiveHubMessage(
+                    sourceChain,
+                    encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, '0x'),
+                );
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
                 await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
@@ -167,8 +175,10 @@ if (isHardhat) {
                 const expectedTokenManagerAddress = '0x43eb02B89a4478128Df888260254efFd75b6D2eA';
 
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, expectedTokenAddress]);
-                const message = encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter);
-                const { payload } = encodeHubMessage(MESSAGE_TYPE_RECEIVE_FROM_HUB, sourceChain, message);
+                const { payload } = encodeReceiveHubMessage(
+                    sourceChain,
+                    encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter),
+                );
                 const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
 
                 await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
