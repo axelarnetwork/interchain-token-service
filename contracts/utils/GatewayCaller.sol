@@ -29,30 +29,24 @@ contract GatewayCaller is IGatewayCaller {
      * @param destinationChain The target chain where the contract will be called
      * @param destinationAddress The address of the contract to be called on the destination chain
      * @param payload The data payload for the transaction
-     * @param metadataVersion The version of metadata to be used
      * @param gasValue The amount of gas to be paid for the cross-chain message. If this is 0, then gas payment is skipped. `msg.value` must be at least gasValue.
      */
     function callContract(
         string calldata destinationChain,
         string calldata destinationAddress,
         bytes calldata payload,
-        MetadataVersion metadataVersion,
         uint256 gasValue
     ) external payable override {
         if (gasValue > 0) {
-            if (metadataVersion == MetadataVersion.CONTRACT_CALL) {
-                // slither-disable-next-line arbitrary-send-eth
-                gasService.payNativeGasForContractCall{ value: gasValue }(
-                    address(this),
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                    // solhint-disable-next-line avoid-tx-origin
-                    tx.origin
-                );
-            } else {
-                revert InvalidMetadataVersion(uint32(metadataVersion));
-            }
+            // slither-disable-next-line arbitrary-send-eth
+            gasService.payNativeGasForContractCall{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                // solhint-disable-next-line avoid-tx-origin
+                tx.origin
+            );
         }
 
         gateway.callContract(destinationChain, destinationAddress, payload);

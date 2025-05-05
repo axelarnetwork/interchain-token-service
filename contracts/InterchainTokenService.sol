@@ -291,7 +291,7 @@ contract InterchainTokenService is
 
         emit TokenMetadataRegistered(tokenAddress, decimals);
 
-        _sendToHub(payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        _sendToHub(payload, gasValue);
     }
 
     /**
@@ -375,7 +375,7 @@ contract InterchainTokenService is
             linkParams
         );
 
-        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        _routeMessage(destinationChain, payload, gasValue);
     }
 
     /**
@@ -526,15 +526,7 @@ contract InterchainTokenService is
         bytes calldata destinationAddress,
         uint256 amount
     ) external payable whenNotPaused {
-        _interchainTransfer(
-            tokenId,
-            destinationChain,
-            destinationAddress,
-            amount,
-            IGatewayCaller.MetadataVersion.CONTRACT_CALL,
-            '',
-            msg.value
-        );
+        _interchainTransfer(tokenId, destinationChain, destinationAddress, amount, '', msg.value);
     }
 
     /**
@@ -554,15 +546,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         if (data.length == 0) revert EmptyData();
 
-        _interchainTransfer(
-            tokenId,
-            destinationChain,
-            destinationAddress,
-            amount,
-            IGatewayCaller.MetadataVersion.CONTRACT_CALL,
-            data,
-            msg.value
-        );
+        _interchainTransfer(tokenId, destinationChain, destinationAddress, amount, data, msg.value);
     }
 
     /**
@@ -592,9 +576,9 @@ contract InterchainTokenService is
         bytes calldata metadata,
         uint256 gasValue
     ) external payable whenNotPaused {
-        (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+        (, bytes memory data) = _decodeMetadata(metadata);
 
-        _interchainTransfer(tokenId, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
+        _interchainTransfer(tokenId, destinationChain, destinationAddress, amount, data, gasValue);
     }
 
     /******************\
@@ -621,9 +605,9 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         amount = _takeToken(tokenId, sourceAddress, amount, true);
 
-        (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
+        (, bytes memory data) = _decodeMetadata(metadata);
 
-        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data, msg.value);
+        _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, data, msg.value);
     }
 
     /*************\
@@ -802,31 +786,25 @@ contract InterchainTokenService is
      * @param payload The data payload for the transaction.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _routeMessage(
-        string memory destinationChain,
-        bytes memory payload,
-        IGatewayCaller.MetadataVersion metadataVersion,
-        uint256 gasValue
-    ) internal {
+    function _routeMessage(string memory destinationChain, bytes memory payload, uint256 gasValue) internal {
         if (!isTrustedChain(destinationChain)) revert UntrustedChain();
 
         payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
         destinationChain = ITS_HUB_CHAIN_NAME;
 
-        _sendToHub(payload, metadataVersion, gasValue);
+        _sendToHub(payload, gasValue);
     }
 
     /**
      * @notice Calls a contract on a destination chain via the gateway caller.
      * @param payload The data payload for the transaction.
-     * @param metadataVersion The version of the metadata.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
-    function _sendToHub(bytes memory payload, IGatewayCaller.MetadataVersion metadataVersion, uint256 gasValue) internal {
+    function _sendToHub(bytes memory payload, uint256 gasValue) internal {
         string memory hubAddress = itsHubAddress();
 
         (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
-            abi.encodeWithSelector(IGatewayCaller.callContract.selector, ITS_HUB_CHAIN_NAME, hubAddress, payload, metadataVersion, gasValue)
+            abi.encodeWithSelector(IGatewayCaller.callContract.selector, ITS_HUB_CHAIN_NAME, hubAddress, payload, gasValue)
         );
 
         if (!success) revert GatewayCallFailed(returnData);
@@ -967,7 +945,7 @@ contract InterchainTokenService is
 
         bytes memory payload = abi.encode(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter);
 
-        _routeMessage(destinationChain, payload, IGatewayCaller.MetadataVersion.CONTRACT_CALL, gasValue);
+        _routeMessage(destinationChain, payload, gasValue);
     }
 
     /**
@@ -1054,14 +1032,13 @@ contract InterchainTokenService is
      * @return version The version number extracted from the metadata.
      * @return data The data bytes extracted from the metadata.
      */
-    function _decodeMetadata(bytes calldata metadata) internal pure returns (IGatewayCaller.MetadataVersion version, bytes memory data) {
-        if (metadata.length < 4) return (IGatewayCaller.MetadataVersion.CONTRACT_CALL, data);
+    function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes memory data) {
+        if (metadata.length < 4) return (0, data);
 
         uint32 versionUint = uint32(bytes4(metadata[:4]));
         if (versionUint > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(versionUint);
 
-        version = IGatewayCaller.MetadataVersion(versionUint);
-
+        version = versionUint;
         if (metadata.length == 4) return (version, data);
 
         data = metadata[4:];
@@ -1073,7 +1050,6 @@ contract InterchainTokenService is
      * @param destinationChain The destination chain to send the tokens to.
      * @param destinationAddress The contract address on the destination chain to send the tokens to and execute.
      * @param amount The amount of tokens to be transferred.
-     * @param metadataVersion The version of the metadata.
      * @param data Additional data to be provided to the destination contract when executed along with the token transfer.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
@@ -1082,13 +1058,12 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes calldata destinationAddress,
         uint256 amount,
-        IGatewayCaller.MetadataVersion metadataVersion,
         bytes memory data,
         uint256 gasValue
     ) internal {
         amount = _takeToken(tokenId, msg.sender, amount, false);
 
-        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, metadataVersion, data, gasValue);
+        _transmitInterchainTransfer(tokenId, msg.sender, destinationChain, destinationAddress, amount, data, gasValue);
     }
 
     /**
@@ -1098,7 +1073,6 @@ contract InterchainTokenService is
      * @param destinationChain The name of the chain to send tokens to.
      * @param destinationAddress The destinationAddress for the interchainTransfer.
      * @param amount The amount of tokens to send.
-     * @param metadataVersion The version of the metadata.
      * @param data The data to be passed with the token transfer.
      * @param gasValue The amount of gas to be paid for the transaction.
      */
@@ -1108,7 +1082,6 @@ contract InterchainTokenService is
         string calldata destinationChain,
         bytes memory destinationAddress,
         uint256 amount,
-        IGatewayCaller.MetadataVersion metadataVersion,
         bytes memory data,
         uint256 gasValue
     ) internal {
@@ -1134,7 +1107,7 @@ contract InterchainTokenService is
             data
         );
 
-        _routeMessage(destinationChain, payload, metadataVersion, gasValue);
+        _routeMessage(destinationChain, payload, gasValue);
     }
 
     /**
