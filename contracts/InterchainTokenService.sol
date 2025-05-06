@@ -100,7 +100,7 @@ contract InterchainTokenService is
     /**
      * @dev Latest version of metadata that's supported.
      */
-    uint32 internal constant LATEST_METADATA_VERSION = 0;
+    uint32 internal constant METADATA_CONTRACT_CALL = 0;
 
     /**
      * @dev Chain name where ITS Hub exists. This is used for routing ITS calls via ITS hub.
@@ -576,7 +576,7 @@ contract InterchainTokenService is
         bytes calldata metadata,
         uint256 gasValue
     ) external payable whenNotPaused {
-        (, bytes memory data) = _decodeMetadata(metadata);
+        bytes memory data = _decodeMetadata(metadata);
 
         _interchainTransfer(tokenId, destinationChain, destinationAddress, amount, data, gasValue);
     }
@@ -605,7 +605,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         amount = _takeToken(tokenId, sourceAddress, amount, true);
 
-        (, bytes memory data) = _decodeMetadata(metadata);
+        bytes memory data = _decodeMetadata(metadata);
 
         _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, data, msg.value);
     }
@@ -1029,18 +1029,17 @@ contract InterchainTokenService is
      * @notice Decodes the metadata into a version number and data bytes.
      * @dev The function expects the metadata to have the version in the first 4 bytes, followed by the actual data.
      * @param metadata The bytes containing the metadata to decode.
-     * @return version The version number extracted from the metadata.
      * @return data The data bytes extracted from the metadata.
      */
-    function _decodeMetadata(bytes calldata metadata) internal pure returns (uint32 version, bytes memory data) {
-        if (metadata.length < 4) return (0, data);
+    function _decodeMetadata(bytes calldata metadata) internal pure returns (bytes memory data) {
+        if (metadata.length < 4) return data;
 
         uint32 versionUint = uint32(bytes4(metadata[:4]));
-        if (versionUint > LATEST_METADATA_VERSION) revert InvalidMetadataVersion(versionUint);
+        // This check is maintained for backward compatibility with existing integrations
+        // that expect a specific metadata format with METADATA_CONTRACT_CALL version
+        if (versionUint != METADATA_CONTRACT_CALL) revert InvalidMetadataVersion(versionUint);
 
-        version = versionUint;
-        if (metadata.length == 4) return (version, data);
-
+        if (metadata.length == 4) return data;
         data = metadata[4:];
     }
 
