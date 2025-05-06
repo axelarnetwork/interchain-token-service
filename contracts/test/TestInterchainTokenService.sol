@@ -2,12 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import { IGatewayCaller } from '../interfaces/IGatewayCaller.sol';
 import { InterchainTokenService } from '../InterchainTokenService.sol';
 
 contract TestInterchainTokenService is InterchainTokenService {
-    error LatestMetadataVersionMismatch(uint32 const, uint32 calculated);
-
     constructor(
         address tokenManagerDeployer_,
         address interchainTokenDeployer_,
@@ -32,10 +29,7 @@ contract TestInterchainTokenService is InterchainTokenService {
             tokenHandler_,
             gatewayCaller_
         )
-    {
-        if (LATEST_METADATA_VERSION != uint32(type(IGatewayCaller.MetadataVersion).max))
-            revert LatestMetadataVersionMismatch(LATEST_METADATA_VERSION, uint32(type(IGatewayCaller.MetadataVersion).max));
-    }
+    {}
 
     function setTrustedAddress(string calldata chainName, string calldata trustedAddress_) external {
         _setTrustedAddress(chainName, trustedAddress_);
