@@ -42,6 +42,8 @@ contract GatewayCaller is IGatewayCaller {
             bool estimateOnChain = false;
             // No need to set the gas limit since it's not being estimated on-chain
             uint256 executionGasLimit = 0;
+            // solhint-disable-next-line avoid-tx-origin
+            address refundAddress = tx.origin;
             bytes memory params = '';
 
             // slither-disable-next-line arbitrary-send-eth
@@ -52,8 +54,7 @@ contract GatewayCaller is IGatewayCaller {
                 payload,
                 executionGasLimit,
                 estimateOnChain,
-                // solhint-disable-next-line avoid-tx-origin
-                tx.origin,
+                refundAddress,
                 params
             );
         }
