@@ -38,17 +38,21 @@ contract GatewayCaller is IGatewayCaller {
         uint256 gasValue
     ) external payable override {
         if (gasValue > 0) {
+            uint256 executionGasLimit = 0;
+            bool estimateOnChain = false;
+            bytes memory params = '';
+
             // slither-disable-next-line arbitrary-send-eth
             gasService.payGas{ value: gasValue }(
                 address(this),
                 destinationChain,
                 destinationAddress,
                 payload,
-                0,
-                false,
+                executionGasLimit,
+                estimateOnChain,
                 // solhint-disable-next-line avoid-tx-origin
                 tx.origin,
-                ''
+                params
             );
         }
 
