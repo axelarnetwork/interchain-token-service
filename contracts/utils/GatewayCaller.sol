@@ -39,13 +39,16 @@ contract GatewayCaller is IGatewayCaller {
     ) external payable override {
         if (gasValue > 0) {
             // slither-disable-next-line arbitrary-send-eth
-            gasService.payNativeGasForContractCall{ value: gasValue }(
+            gasService.payGas{ value: gasValue }(
                 address(this),
                 destinationChain,
                 destinationAddress,
                 payload,
+                0,
+                false,
                 // solhint-disable-next-line avoid-tx-origin
-                tx.origin
+                tx.origin,
+                ''
             );
         }
 
