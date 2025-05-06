@@ -38,8 +38,10 @@ contract GatewayCaller is IGatewayCaller {
         uint256 gasValue
     ) external payable override {
         if (gasValue > 0) {
-            uint256 executionGasLimit = 0;
+            // Gas for the ITS msg must be estimated off-chain
             bool estimateOnChain = false;
+            // No need to set the gas limit since it's not being estimated on-chain
+            uint256 executionGasLimit = 0;
             bytes memory params = '';
 
             // slither-disable-next-line arbitrary-send-eth
