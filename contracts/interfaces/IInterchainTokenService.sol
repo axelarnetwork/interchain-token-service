@@ -52,7 +52,6 @@ interface IInterchainTokenService is
     error CannotDeploy(TokenManagerType);
     error CannotDeployRemotelyToSelf();
     error InvalidPayload();
-    error GatewayCallFailed(bytes data);
     error EmptyTokenName();
     error EmptyTokenSymbol();
     error EmptyParams();
