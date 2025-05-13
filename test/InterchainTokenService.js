@@ -9,7 +9,6 @@ const {
     utils: { defaultAbiCoder, solidityPack, keccak256, toUtf8Bytes, hexlify, id, randomBytes },
     getContractAt,
 } = ethers;
-const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { approveContractCall } = require('../scripts/utils');
 const {
@@ -58,7 +57,6 @@ describe('Interchain Token Service', () => {
     let interchainTokenDeployer;
     let tokenManager;
     let tokenHandler;
-    let gatewayCaller;
 
     const chainName = 'Test';
     const deploymentKey = 'InterchainTokenService';
@@ -288,7 +286,6 @@ describe('Interchain Token Service', () => {
             interchainTokenDeployer,
             tokenManager,
             tokenHandler,
-            gatewayCaller,
         } = await deployAll(wallet, 'Test', ITS_HUB_ADDRESS, [sourceChain, destinationChain]));
 
         testToken = await deployContract(wallet, 'TestInterchainTokenStandard', [
@@ -316,7 +313,6 @@ describe('Interchain Token Service', () => {
                 ITS_HUB_ADDRESS,
                 tokenManager.address,
                 tokenHandler.address,
-                gatewayCaller.address,
             ]);
         });
 
@@ -373,7 +369,6 @@ describe('Interchain Token Service', () => {
                         AddressZero,
                         tokenManager.address,
                         tokenHandler.address,
-                        gatewayCaller.address,
                         chainName,
                         ITS_HUB_ADDRESS,
                         [],
@@ -398,7 +393,6 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
-                        gatewayCaller.address,
                         chainName,
                         ITS_HUB_ADDRESS,
                         [],
@@ -423,7 +417,6 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
-                        gatewayCaller.address,
                         '',
                         ITS_HUB_ADDRESS,
                         [],
@@ -447,7 +440,6 @@ describe('Interchain Token Service', () => {
                     interchainTokenFactoryAddress,
                     tokenManager.address,
                     tokenHandler.address,
-                    gatewayCaller.address,
                     chainName,
                     ITS_HUB_ADDRESS,
                     [],
@@ -470,7 +462,6 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
-                        gatewayCaller.address,
                         chainName,
                         ITS_HUB_ADDRESS,
                         [],
@@ -495,7 +486,6 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         tokenHandler.address,
-                        gatewayCaller.address,
                         chainName,
                         ITS_HUB_ADDRESS,
                         [],
@@ -520,7 +510,6 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         AddressZero,
                         tokenHandler.address,
-                        gatewayCaller.address,
                         chainName,
                         ITS_HUB_ADDRESS,
                         [],
@@ -545,32 +534,6 @@ describe('Interchain Token Service', () => {
                         interchainTokenFactoryAddress,
                         tokenManager.address,
                         AddressZero,
-                        gatewayCaller.address,
-                        chainName,
-                        ITS_HUB_ADDRESS,
-                        [],
-                        deploymentKey,
-                        gasOptions,
-                    ),
-                service,
-                'ZeroAddress',
-            );
-        });
-
-        it('Should revert on invalid gateway caller', async () => {
-            await expectRevert(
-                (gasOptions) =>
-                    deployInterchainTokenService(
-                        wallet,
-                        create3Deployer.address,
-                        tokenManagerDeployer.address,
-                        interchainTokenDeployer.address,
-                        gateway.address,
-                        gasService.address,
-                        interchainTokenFactoryAddress,
-                        tokenManager.address,
-                        tokenHandler.address,
-                        AddressZero,
                         chainName,
                         ITS_HUB_ADDRESS,
                         [],
@@ -594,7 +557,6 @@ describe('Interchain Token Service', () => {
                     interchainTokenFactoryAddress,
                     tokenManager.address,
                     tokenHandler.address,
-                    gatewayCaller.address,
                     chainName,
                     '',
                     [],
@@ -1312,72 +1274,6 @@ describe('Interchain Token Service', () => {
                 service,
                 'TakeTokenFailed',
                 [selector + errorData.substring(2)],
-            );
-        });
-    });
-
-    describe('Gateway call', () => {
-        const amount = 1234;
-        const destAddress = '0x5678';
-        const data = '0x1234';
-        let tokenId;
-        let serviceTestGatewayCaller;
-
-        before(async () => {
-            const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
-                .deploy()
-                .then((d) => d.deployed());
-
-            const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, 'InterchainTokenService');
-            const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
-            const gatewayCaller = await deployContract(wallet, 'TestGatewayCaller');
-            const interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, 'InterchainTokenServiceFactory');
-
-            serviceTestGatewayCaller = await deployInterchainTokenService(
-                wallet,
-                create3Deployer.address,
-                tokenManagerDeployer.address,
-                interchainTokenDeployer.address,
-                gateway.address,
-                gasService.address,
-                interchainTokenFactoryAddress,
-                tokenManager.address,
-                tokenHandler.address,
-                gatewayCaller.address,
-                'Test',
-                ITS_HUB_ADDRESS,
-                [sourceChain, destinationChain],
-                'InterchainTokenService',
-            );
-        });
-
-        it('Should revert on initiating an interchain token transfer when gateway call failed', async () => {
-            const [, , tokenId] = await deployFunctions.mintBurn(serviceTestGatewayCaller, 'Test Token', 'TG1', 12, amount);
-            await expectRevert(
-                (gasOptions) =>
-                    serviceTestGatewayCaller[INTERCHAIN_TRANSFER](tokenId, destinationChain, destAddress, amount, {
-                        value: gasValue,
-                        ...gasOptions,
-                    }),
-                serviceTestGatewayCaller,
-                'GatewayCallFailed',
-            );
-        });
-
-        it('Should revert on callContractWithInterchainToken when gateway call failed', async () => {
-            [, , tokenId] = await deployFunctions.lockUnlock(serviceTestGatewayCaller, 'Test Token lockUnlock', 'TG2', 12, amount);
-            await expectRevert(
-                (gasOptions) =>
-                    serviceTestGatewayCaller.callContractWithInterchainToken(
-                        tokenId,
-                        destinationChain,
-                        destAddress,
-                        amount,
-                        data,
-                        gasOptions,
-                    ),
-                serviceTestGatewayCaller,
-                'GatewayCallFailed',
             );
         });
     });

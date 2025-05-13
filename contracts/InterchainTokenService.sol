@@ -20,7 +20,6 @@ import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecuta
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
-import { IGatewayCaller } from './interfaces/IGatewayCaller.sol';
 import { IMinter } from './interfaces/IMinter.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { Operator } from './utils/Operator.sol';
@@ -70,7 +69,6 @@ contract InterchainTokenService is
      */
     address public immutable tokenManager;
     address public immutable tokenHandler;
-    address public immutable gatewayCaller;
 
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_ID = keccak256('its-interchain-token-id');
     bytes32 internal constant PREFIX_INTERCHAIN_TOKEN_SALT = keccak256('its-interchain-token-salt');
@@ -121,7 +119,6 @@ contract InterchainTokenService is
      * @param itsHubAddress_ The address of the ITS Hub.
      * @param tokenManagerImplementation_ The tokenManager implementation.
      * @param tokenHandler_ The tokenHandler implementation.
-     * @param gatewayCaller_ The gatewayCaller implementation.
      */
     constructor(
         address tokenManagerDeployer_,
@@ -132,8 +129,7 @@ contract InterchainTokenService is
         string memory chainName_,
         string memory itsHubAddress_,
         address tokenManagerImplementation_,
-        address tokenHandler_,
-        address gatewayCaller_
+        address tokenHandler_
     ) ItsHubAddressTracker(itsHubAddress_) {
         if (
             gasService_ == address(0) ||
@@ -142,8 +138,7 @@ contract InterchainTokenService is
             gateway_ == address(0) ||
             interchainTokenFactory_ == address(0) ||
             tokenManagerImplementation_ == address(0) ||
-            tokenHandler_ == address(0) ||
-            gatewayCaller_ == address(0)
+            tokenHandler_ == address(0)
         ) revert ZeroAddress();
 
         gateway = IAxelarGateway(gateway_);
@@ -157,7 +152,6 @@ contract InterchainTokenService is
 
         tokenManager = tokenManagerImplementation_;
         tokenHandler = tokenHandler_;
-        gatewayCaller = gatewayCaller_;
     }
 
     /*******\
@@ -803,11 +797,39 @@ contract InterchainTokenService is
     function _sendToHub(bytes memory payload, uint256 gasValue) internal {
         string memory hubAddress = itsHubAddress();
 
-        (bool success, bytes memory returnData) = gatewayCaller.delegatecall(
-            abi.encodeWithSelector(IGatewayCaller.callContract.selector, ITS_HUB_CHAIN_NAME, hubAddress, payload, gasValue)
-        );
+        if (gasValue > 0) {
+            _payGas(hubAddress, payload, gasValue);
+        }
 
-        if (!success) revert GatewayCallFailed(returnData);
+        gateway.callContract(ITS_HUB_CHAIN_NAME, hubAddress, payload);
+    }
+
+    /**
+     * @dev Internal helper to handle gas payment
+     * @param hubAddress The destination hub address (as string)
+     * @param payload The data payload for the transaction.
+     * @param gasValue Amount of native token to pay for gas
+     */
+    function _payGas(string memory hubAddress, bytes memory payload, uint256 gasValue) internal {
+        // Gas for the ITS msg must be estimated off-chain
+        bool estimateOnChain = false;
+        // No need to set the gas limit since it's not being estimated on-chain
+        uint256 executionGasLimit = 0;
+        // solhint-disable-next-line avoid-tx-origin
+        address refundAddress = tx.origin;
+        bytes memory params = '';
+
+        // slither-disable-next-line arbitrary-send-eth
+        gasService.payGas{ value: gasValue }(
+            address(this),
+            ITS_HUB_CHAIN_NAME,
+            hubAddress,
+            payload,
+            executionGasLimit,
+            estimateOnChain,
+            refundAddress,
+            params
+        );
     }
 
     function _execute(
