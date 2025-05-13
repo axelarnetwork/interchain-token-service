@@ -798,28 +798,38 @@ contract InterchainTokenService is
         string memory hubAddress = itsHubAddress();
 
         if (gasValue > 0) {
-            // Gas for the ITS msg must be estimated off-chain
-            bool estimateOnChain = false;
-            // No need to set the gas limit since it's not being estimated on-chain
-            uint256 executionGasLimit = 0;
-            // solhint-disable-next-line avoid-tx-origin
-            address refundAddress = tx.origin;
-            bytes memory params = '';
-
-            // slither-disable-next-line arbitrary-send-eth
-            gasService.payGas{ value: gasValue }(
-                address(this),
-                ITS_HUB_CHAIN_NAME,
-                hubAddress,
-                payload,
-                executionGasLimit,
-                estimateOnChain,
-                refundAddress,
-                params
-            );
+            _payGas(hubAddress, payload, gasValue);
         }
 
         gateway.callContract(ITS_HUB_CHAIN_NAME, hubAddress, payload);
+    }
+
+    /**
+     * @dev Internal helper to handle gas payment
+     * * @param hubAddress The destination hub address (as string)
+     * @param payload The data payload for the transaction.
+     * @param gasValue Amount of native token to pay for gas
+     */
+    function _payGas(string memory hubAddress, bytes memory payload, uint256 gasValue) internal {
+        // Gas for the ITS msg must be estimated off-chain
+        bool estimateOnChain = false;
+        // No need to set the gas limit since it's not being estimated on-chain
+        uint256 executionGasLimit = 0;
+        // solhint-disable-next-line avoid-tx-origin
+        address refundAddress = tx.origin;
+        bytes memory params = '';
+
+        // slither-disable-next-line arbitrary-send-eth
+        gasService.payGas{ value: gasValue }(
+            address(this),
+            ITS_HUB_CHAIN_NAME,
+            hubAddress,
+            payload,
+            executionGasLimit,
+            estimateOnChain,
+            refundAddress,
+            params
+        );
     }
 
     function _execute(
