@@ -806,7 +806,7 @@ contract InterchainTokenService is
 
     /**
      * @dev Internal helper to handle gas payment
-     * * @param hubAddress The destination hub address (as string)
+     * @param hubAddress The destination hub address (as string)
      * @param payload The data payload for the transaction.
      * @param gasValue Amount of native token to pay for gas
      */
