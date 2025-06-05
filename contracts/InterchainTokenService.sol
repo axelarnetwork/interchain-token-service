@@ -415,6 +415,107 @@ contract InterchainTokenService is
         }
     }
 
+
+
+    /**
+     * @notice Used to deploy an interchain token alongside a TokenManager in another chain with deployer tracking.
+     * @dev NEW FUNCTION: This version stores the deployer address in slot 0 for Hyperliquid compatibility.
+     * At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
+     * part of a multicall involving multiple functions that could make remote contract calls.
+     * If minter is empty bytes, no additional minter is set on the token, only ITS is allowed to mint.
+     * If the token is being deployed on the current chain, minter should correspond to an EVM address (as bytes).
+     * Otherwise, an encoding appropriate to the destination chain should be used.
+     * @param salt The salt to be used during deployment.
+     * @param destinationChain The name of the destination chain to deploy to.
+     * @param name The name of the token to be deployed.
+     * @param symbol The symbol of the token to be deployed.
+     * @param decimals The decimals of the token to be deployed.
+     * @param minter The address that will be able to mint and burn the deployed token.
+     * @param gasValue The amount of native tokens to be used to pay for gas for the remote deployment.
+     * @param deployer The address of the deployer (stored in slot 0).
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployInterchainTokenWithDeployer(
+        bytes32 salt,
+        string calldata destinationChain,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        bytes memory minter,
+        uint256 gasValue,
+        address deployer
+    ) external payable whenNotPaused onlyTokenFactory returns (bytes32 tokenId) {
+        address deployer_ = TOKEN_FACTORY_DEPLOYER;
+
+        tokenId = interchainTokenId(deployer_, salt);
+
+        emit InterchainTokenIdClaimed(tokenId, deployer_, salt);
+
+        if (bytes(destinationChain).length == 0) {
+            // Local deployment with deployer tracking
+            address tokenAddress = _deployInterchainTokenWithDeployer(tokenId, minter, name, symbol, decimals, deployer);
+
+            _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, tokenAddress, minter);
+        } else {
+            if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
+
+            // Remote deployment - use standard method (remote tokens don't need slot 0 deployer)
+            _deployRemoteInterchainToken(tokenId, name, symbol, decimals, minter, destinationChain, gasValue);
+        }
+    }
+
+
+    /**
+     * @notice Deploys an interchain token with deployer tracking.
+     * @dev NEW FUNCTION: This version stores the deployer address in slot 0 for Hyperliquid compatibility.
+     * @param tokenId The ID of the token.
+     * @param minterBytes The minter address for the token.
+     * @param name The name of the token.
+     * @param symbol The symbol of the token.
+     * @param decimals The number of decimals of the token.
+     * @param deployer The address of the deployer (stored in slot 0).
+     */
+    function _deployInterchainTokenWithDeployer(
+        bytes32 tokenId,
+        bytes memory minterBytes,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        address deployer
+    ) internal returns (address tokenAddress) {
+        if (bytes(name).length == 0) revert EmptyTokenName();
+        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
+
+        bytes32 salt = _getInterchainTokenSalt(tokenId);
+
+        address minter;
+        if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
+
+        // Use the new deployInterchainTokenWithDeployer function
+        (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
+            abi.encodeWithSelector(
+                IInterchainTokenDeployer.deployInterchainTokenWithDeployer.selector, 
+                salt, 
+                tokenId, 
+                minter, 
+                name, 
+                symbol, 
+                decimals, 
+                deployer  // ← This gets stored in slot 0
+            )
+        );
+        if (!success) {
+            revert InterchainTokenDeploymentFailed(returnData);
+        }
+
+        assembly {
+            tokenAddress := mload(add(returnData, 0x20))
+        }
+
+        // slither-disable-next-line reentrancy-events
+        emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
+    }
+
     /**
      * @notice Returns the amount of token that this call is worth.
      * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.

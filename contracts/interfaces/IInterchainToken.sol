@@ -10,6 +10,7 @@ import { IERC20Named } from './IERC20Named.sol';
 /**
  * @title IInterchainToken interface
  * @dev Extends IInterchainTokenStandard and IMinter.
+ * MODIFIED: Added deployer tracking support for Hyperliquid firstStorageSlot compatibility.
  */
 interface IInterchainToken is IInterchainTokenStandard, IMinter, IERC20MintableBurnable, IERC20Named {
     error InterchainTokenServiceAddressZero();
@@ -41,4 +42,29 @@ interface IInterchainToken is IInterchainTokenStandard, IMinter, IERC20MintableB
      * @param tokenDecimals The decimals of the token.
      */
     function init(bytes32 tokenId_, address minter, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals) external;
+
+    /**
+     * @notice Setup function to initialize contract parameters with deployer tracking.
+     * @dev NEW FUNCTION: This version stores the deployer address in slot 0 for Hyperliquid compatibility.
+     * @param tokenId_ The tokenId of the token.
+     * @param minter The address of the token minter.
+     * @param tokenName The name of the token.
+     * @param tokenSymbol The symbol of the token.
+     * @param tokenDecimals The decimals of the token.
+     * @param deployer The address of the deployer (stored in slot 0).
+     */
+    function initWithDeployer(
+        bytes32 tokenId_, 
+        address minter, 
+        string calldata tokenName, 
+        string calldata tokenSymbol, 
+        uint8 tokenDecimals,
+        address deployer
+    ) external;
+
+    /**
+     * @notice Gets the deployer address stored in slot 0
+     * @return The address of the deployer
+     */
+    function getDeployer() external view returns (address);
 }

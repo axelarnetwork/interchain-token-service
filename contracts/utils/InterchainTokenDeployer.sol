@@ -10,6 +10,7 @@ import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 /**
  * @title InterchainTokenDeployer
  * @notice This contract is used to deploy new instances of the InterchainTokenProxy contract.
+ * MODIFIED: Added support for storing deployer address in slot 0 for Hyperliquid firstStorageSlot compatibility.
  */
 contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3Fixed {
     address public immutable implementationAddress;
@@ -42,6 +43,53 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3Fixed {
         string calldata symbol,
         uint8 decimals
     ) external returns (address tokenAddress) {
+        tokenAddress = _deployToken(salt, tokenId, minter, name, symbol, decimals, address(0));
+    }
+
+    /**
+     * @notice Deploys a new instance of the InterchainTokenProxy contract with deployer tracking.
+     * @dev NEW FUNCTION: This version stores the deployer address in slot 0 for Hyperliquid compatibility.
+     * @param salt The salt used by Create3Deployer.
+     * @param tokenId TokenId for the token.
+     * @param minter Address of the minter.
+     * @param name Name of the token.
+     * @param symbol Symbol of the token.
+     * @param decimals Decimals of the token.
+     * @param deployer Address of the deployer (stored in slot 0).
+     * @return tokenAddress Address of the deployed token.
+     */
+    function deployInterchainTokenWithDeployer(
+        bytes32 salt,
+        bytes32 tokenId,
+        address minter,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        address deployer
+    ) external returns (address tokenAddress) {
+        tokenAddress = _deployToken(salt, tokenId, minter, name, symbol, decimals, deployer);
+    }
+
+    /**
+     * @notice Internal function to deploy interchain token with optional deployer tracking.
+     * @param salt The salt used by Create3Deployer.
+     * @param tokenId TokenId for the token.
+     * @param minter Address of the minter.
+     * @param name Name of the token.
+     * @param symbol Symbol of the token.
+     * @param decimals Decimals of the token.
+     * @param deployer Address of the deployer (if address(0), uses regular init).
+     * @return tokenAddress Address of the deployed token.
+     */
+    function _deployToken(
+        bytes32 salt,
+        bytes32 tokenId,
+        address minter,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        address deployer
+    ) internal returns (address tokenAddress) {
         // Use a minimal proxy for cheap token deployment and auto-verification on explorers
         // https://eips.ethereum.org/EIPS/eip-1167
         // The minimal proxy bytecode is the same as https://github.com/OpenZeppelin/openzeppelin-contracts/blob/94697be8a3f0dfcd95dfb13ffbd39b5973f5c65d/contracts/proxy/Clones.sol#L28
@@ -63,7 +111,14 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3Fixed {
         tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
 
-        IInterchainToken(tokenAddress).init(tokenId, minter, name, symbol, decimals);
+        // MODIFIED: Choose initialization method based on whether deployer tracking is needed
+        if (deployer != address(0)) {
+            // Use new initWithDeployer function for Hyperliquid compatibility
+            IInterchainToken(tokenAddress).initWithDeployer(tokenId, minter, name, symbol, decimals, deployer);
+        } else {
+            // Use original init function for backward compatibility
+            IInterchainToken(tokenAddress).init(tokenId, minter, name, symbol, decimals);
+        }
     }
 
     /**

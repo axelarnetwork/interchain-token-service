@@ -15,9 +15,15 @@ import { Minter } from '../utils/Minter.sol';
  * @title InterchainToken
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
  * @dev This contract also inherits Minter and Implementation logic.
+ * MODIFIED: Now stores deployer address in storage slot 0 for Hyperliquid firstStorageSlot verification.
+ * Uses assembly to directly write to slot 0, bypassing parent contract storage layout.
  */
 contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter, IInterchainToken {
     using AddressBytes for bytes;
+
+    /// @dev Storage slot for deployer address - FORCED to slot 0 using assembly
+    /// This is specifically slot 0 for Hyperliquid firstStorageSlot compatibility
+    bytes32 private constant DEPLOYER_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
     string public name;
     string public symbol;
@@ -76,11 +82,31 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
     }
 
     /**
+     * @notice Gets the deployer address stored in slot 0
+     * @return deployer The address of the deployer
+     */
+    function getDeployer() external view returns (address deployer) {
+        assembly {
+            deployer := sload(DEPLOYER_SLOT)
+        }
+    }
+
+    /**
+     * @notice Internal function to set the deployer address in slot 0
+     * @param deployer The address of the deployer
+     */
+    function _setDeployer(address deployer) internal {
+        assembly {
+            sstore(DEPLOYER_SLOT, deployer)
+        }
+    }
+
+    /**
      * @notice Setup function to initialize contract parameters.
      * @param tokenId_ The tokenId of the token.
      * @param minter The address of the token minter.
      * @param tokenName The name of the token.
-     * @param tokenSymbol The symbopl of the token.
+     * @param tokenSymbol The symbol of the token.
      * @param tokenDecimals The decimals of the token.
      */
     function init(bytes32 tokenId_, address minter, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals) external {
@@ -91,6 +117,51 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
         if (tokenId_ == bytes32(0)) revert TokenIdZero();
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();
         if (bytes(tokenSymbol).length == 0) revert TokenSymbolEmpty();
+
+        name = tokenName;
+        symbol = tokenSymbol;
+        decimals = tokenDecimals;
+        tokenId = tokenId_;
+
+        /**
+         * @dev Set the token service as a minter to allow it to mint and burn tokens.
+         * Also add the provided address as a minter. If `address(0)` was provided,
+         * add it as a minter to allow anyone to easily check that no custom minter was set.
+         */
+        _addMinter(interchainTokenService_);
+        _addMinter(minter);
+
+        _setNameHash(tokenName);
+    }
+
+    /**
+     * @notice Setup function to initialize contract parameters with deployer.
+     * @dev This is the NEW function that stores the deployer address in slot 0.
+     * @param tokenId_ The tokenId of the token.
+     * @param minter The address of the token minter.
+     * @param tokenName The name of the token.
+     * @param tokenSymbol The symbol of the token.
+     * @param tokenDecimals The decimals of the token.
+     * @param deployer The address of the deployer (stored in slot 0).
+     */
+    function initWithDeployer(
+        bytes32 tokenId_, 
+        address minter, 
+        string calldata tokenName, 
+        string calldata tokenSymbol, 
+        uint8 tokenDecimals,
+        address deployer
+    ) external {
+        if (_isInitialized()) revert AlreadyInitialized();
+
+        _initialize();
+
+        if (tokenId_ == bytes32(0)) revert TokenIdZero();
+        if (bytes(tokenName).length == 0) revert TokenNameEmpty();
+        if (bytes(tokenSymbol).length == 0) revert TokenSymbolEmpty();
+
+        // CRITICAL: Store deployer in slot 0 using assembly
+        _setDeployer(deployer);
 
         name = tokenName;
         symbol = tokenSymbol;

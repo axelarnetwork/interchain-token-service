@@ -17,6 +17,7 @@ import { IAddressTracker } from './IAddressTracker.sol';
 /**
  * @title IInterchainTokenService Interface
  * @notice Interface for the Interchain Token Service
+ * MODIFIED: Added deployer tracking support for Hyperliquid firstStorageSlot compatibility
  */
 interface IInterchainTokenService is
     ITransmitInterchainToken,
@@ -236,6 +237,30 @@ interface IInterchainTokenService is
         uint8 decimals,
         bytes memory minter,
         uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Deploys and registers an interchain token on a remote chain with deployer tracking.
+     * @dev NEW FUNCTION: This version stores the deployer address in slot 0 for Hyperliquid compatibility.
+     * @param salt The salt used for token deployment.
+     * @param destinationChain The name of the destination chain. Use '' for this chain.
+     * @param name The name of the interchain tokens.
+     * @param symbol The symbol of the interchain tokens.
+     * @param decimals The number of decimals for the interchain tokens.
+     * @param minter The minter data for mint/burn operations.
+     * @param gasValue The gas value for deployment.
+     * @param deployer The address of the deployer (stored in slot 0).
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployInterchainTokenWithDeployer(
+        bytes32 salt,
+        string calldata destinationChain,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        bytes memory minter,
+        uint256 gasValue,
+        address deployer
     ) external payable returns (bytes32 tokenId);
 
     /**

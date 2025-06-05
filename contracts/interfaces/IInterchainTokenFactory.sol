@@ -40,6 +40,9 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
         string destinationChain
     );
 
+    /// @notice Emitted when a token deployer is stored
+    event TokenDeployerStored(bytes32 indexed tokenId, address indexed deployer);
+
     /**
      * @notice Returns the address of the interchain token service.
      * @return IInterchainTokenService The address of the interchain token service.
@@ -51,6 +54,13 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
      * @return bytes32 The hash of the chain name.
      */
     function chainNameHash() external view returns (bytes32);
+
+    /**
+     * @notice Gets the deployer address for a given token ID
+     * @param tokenId The ID of the token
+     * @return deployer The address of the deployer
+     */
+    function getTokenDeployer(bytes32 tokenId) external view returns (address deployer);
 
     /**
      * @notice Computes the deploy salt for an interchain token.
