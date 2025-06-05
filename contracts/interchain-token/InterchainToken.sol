@@ -15,7 +15,6 @@ import { Minter } from '../utils/Minter.sol';
  * @title InterchainToken
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
  * @dev This contract also inherits Minter and Implementation logic.
- * MODIFIED: Now stores deployer address in storage slot 0 for Hyperliquid firstStorageSlot verification.
  * Uses assembly to directly write to slot 0, bypassing parent contract storage layout.
  */
 contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter, IInterchainToken {
@@ -160,7 +159,6 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
         if (bytes(tokenName).length == 0) revert TokenNameEmpty();
         if (bytes(tokenSymbol).length == 0) revert TokenSymbolEmpty();
 
-        // CRITICAL: Store deployer in slot 0 using assembly
         _setDeployer(deployer);
 
         name = tokenName;

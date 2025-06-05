@@ -464,58 +464,6 @@ contract InterchainTokenService is
         }
     }
 
-
-    /**
-     * @notice Deploys an interchain token with deployer tracking.
-     * @dev NEW FUNCTION: This version stores the deployer address in slot 0 for Hyperliquid compatibility.
-     * @param tokenId The ID of the token.
-     * @param minterBytes The minter address for the token.
-     * @param name The name of the token.
-     * @param symbol The symbol of the token.
-     * @param decimals The number of decimals of the token.
-     * @param deployer The address of the deployer (stored in slot 0).
-     */
-    function _deployInterchainTokenWithDeployer(
-        bytes32 tokenId,
-        bytes memory minterBytes,
-        string memory name,
-        string memory symbol,
-        uint8 decimals,
-        address deployer
-    ) internal returns (address tokenAddress) {
-        if (bytes(name).length == 0) revert EmptyTokenName();
-        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
-
-        bytes32 salt = _getInterchainTokenSalt(tokenId);
-
-        address minter;
-        if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
-
-        // Use the new deployInterchainTokenWithDeployer function
-        (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
-            abi.encodeWithSelector(
-                IInterchainTokenDeployer.deployInterchainTokenWithDeployer.selector, 
-                salt, 
-                tokenId, 
-                minter, 
-                name, 
-                symbol, 
-                decimals, 
-                deployer  // ← This gets stored in slot 0
-            )
-        );
-        if (!success) {
-            revert InterchainTokenDeploymentFailed(returnData);
-        }
-
-        assembly {
-            tokenAddress := mload(add(returnData, 0x20))
-        }
-
-        // slither-disable-next-line reentrancy-events
-        emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
-    }
-
     /**
      * @notice Returns the amount of token that this call is worth.
      * @dev If `tokenAddress` is `0`, then value is in terms of the native token, otherwise it's in terms of the token address.
@@ -1109,6 +1057,56 @@ contract InterchainTokenService is
 
         (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
             abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, salt, tokenId, minter, name, symbol, decimals)
+        );
+        if (!success) {
+            revert InterchainTokenDeploymentFailed(returnData);
+        }
+
+        assembly {
+            tokenAddress := mload(add(returnData, 0x20))
+        }
+
+        // slither-disable-next-line reentrancy-events
+        emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
+    }
+
+    /**
+     * @notice Deploys an interchain token with deployer tracking.
+     * @dev NEW FUNCTION: This version stores the deployer address in slot 0 for Hyperliquid compatibility.
+     * @param tokenId The ID of the token.
+     * @param minterBytes The minter address for the token.
+     * @param name The name of the token.
+     * @param symbol The symbol of the token.
+     * @param decimals The number of decimals of the token.
+     * @param deployer The address of the deployer (stored in slot 0).
+     */
+    function _deployInterchainTokenWithDeployer(
+        bytes32 tokenId,
+        bytes memory minterBytes,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        address deployer
+    ) internal returns (address tokenAddress) {
+        if (bytes(name).length == 0) revert EmptyTokenName();
+        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
+
+        bytes32 salt = _getInterchainTokenSalt(tokenId);
+
+        address minter;
+        if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
+
+        (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
+            abi.encodeWithSelector(
+                IInterchainTokenDeployer.deployInterchainTokenWithDeployer.selector, 
+                salt, 
+                tokenId, 
+                minter, 
+                name, 
+                symbol, 
+                decimals, 
+                deployer
+            )
         );
         if (!success) {
             revert InterchainTokenDeploymentFailed(returnData);

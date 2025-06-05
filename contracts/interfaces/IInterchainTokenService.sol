@@ -17,7 +17,6 @@ import { IAddressTracker } from './IAddressTracker.sol';
 /**
  * @title IInterchainTokenService Interface
  * @notice Interface for the Interchain Token Service
- * MODIFIED: Added deployer tracking support for Hyperliquid firstStorageSlot compatibility
  */
 interface IInterchainTokenService is
     ITransmitInterchainToken,

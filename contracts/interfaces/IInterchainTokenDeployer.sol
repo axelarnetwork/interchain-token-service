@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 /**
  * @title IInterchainTokenDeployer
  * @notice This interface is used to deploy new instances of the InterchainTokenProxy contract.
- * MODIFIED: Added deployer parameter for firstStorageSlot compatibility
  */
 interface IInterchainTokenDeployer {
     error AddressZero();

@@ -10,7 +10,6 @@ import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 /**
  * @title InterchainTokenDeployer
  * @notice This contract is used to deploy new instances of the InterchainTokenProxy contract.
- * MODIFIED: Added support for storing deployer address in slot 0 for Hyperliquid firstStorageSlot compatibility.
  */
 contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3Fixed {
     address public immutable implementationAddress;
@@ -111,7 +110,6 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer, Create3Fixed {
         tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
 
-        // MODIFIED: Choose initialization method based on whether deployer tracking is needed
         if (deployer != address(0)) {
             // Use new initWithDeployer function for Hyperliquid compatibility
             IInterchainToken(tokenAddress).initWithDeployer(tokenId, minter, name, symbol, decimals, deployer);

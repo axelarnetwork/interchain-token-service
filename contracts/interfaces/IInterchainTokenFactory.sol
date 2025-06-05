@@ -98,6 +98,27 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
     ) external payable returns (bytes32 tokenId);
 
     /**
+     * @notice Deploys a new interchain token with specified parameters and custom deployer.
+     * @param salt The unique salt for deploying the token.
+     * @param name The name of the token.
+     * @param symbol The symbol of the token.
+     * @param decimals The number of decimals for the token.
+     * @param initialSupply The amount of tokens to mint initially (can be zero), allocated to the msg.sender.
+     * @param minter The address to receive the initially minted tokens.
+     * @param deployer The address of the deployer to be stored in the token contract.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployInterchainTokenWithDeployer(
+        bytes32 salt,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        uint256 initialSupply,
+        address minter,
+        address deployer
+    ) external payable returns (bytes32 tokenId);
+
+    /**
      * @notice Allow the minter to approve the deployer for a remote interchain token deployment that uses a custom destinationMinter address.
      * This ensures that a token deployer can't choose the destinationMinter itself, and requires the approval of the minter to reduce trust assumptions on the deployer.
      * @param deployer The address of the deployer.
@@ -155,6 +176,25 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
     ) external payable returns (bytes32 tokenId);
 
     /**
+     * @notice Deploys a remote interchain token on a specified destination chain with custom deployer.
+     * @param salt The unique salt for deploying the token.
+     * @param minter The address to distribute the token on the destination chain.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationMinter The minter address to set on the deployed token on the destination chain.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @param deployer The address of the deployer to be stored in the token contract.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainTokenWithMinterAndDeployer(
+        bytes32 salt,
+        address minter,
+        string calldata destinationChain,
+        bytes memory destinationMinter,
+        uint256 gasValue,
+        address deployer
+    ) external payable returns (bytes32 tokenId);
+
+    /**
      * @notice Deprecated: Use `deployRemoteInterchainToken` or `deployRemoteInterchainTokenWithMinter` instead.
      * Deploys a remote interchain token on a specified destination chain.
      * @dev originalChainName is only allowed to be '', i.e the current chain.
@@ -172,6 +212,22 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
         address minter,
         string calldata destinationChain,
         uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+/**
+     * @notice Deploys a remote interchain token on a specified destination chain. No additional minter is set on the deployed token.
+     * Use the `deployRemoteInterchainTokenWithMinter` method to do so.
+     * @param salt The unique salt for deploying the token.
+     * @param destinationChain The name of the destination chain.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @param deployer The address of the deployer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainTokenWithDeployer(
+        bytes32 salt,
+        string calldata destinationChain,
+        uint256 gasValue,
+        address deployer
     ) external payable returns (bytes32 tokenId);
 
     /**
@@ -209,6 +265,21 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
     ) external payable returns (bytes32 tokenId);
 
     /**
+     * @notice Deploys a canonical interchain token on a remote chain with custom deployer.
+     * @param originalTokenAddress The address of the original token on the original chain.
+     * @param destinationChain The name of the chain where the token will be deployed.
+     * @param gasValue The gas amount to be sent for deployment.
+     * @param deployer The address of the deployer to be stored in the token contract.
+     * @return tokenId The tokenId corresponding to the deployed canonical InterchainToken.
+     */
+    function deployRemoteCanonicalInterchainTokenWithDeployer(
+        address originalTokenAddress,
+        string calldata destinationChain,
+        uint256 gasValue,
+        address deployer
+    ) external payable returns (bytes32 tokenId);
+
+    /**
      * @notice Deploys a canonical interchain token on a remote chain.
      * This method is deprecated and will be removed in the future. Please use the above method instead.
      * @dev originalChain is only allowed to be '', i.e the current chain.
@@ -224,6 +295,24 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
         address originalTokenAddress,
         string calldata destinationChain,
         uint256 gasValue
+    ) external payable returns (bytes32 tokenId);
+
+    /**
+     * @notice Deploys a canonical interchain token on a remote chain with custom deployer.
+     * This method is deprecated and will be removed in the future.
+     * @param originalChain The name of the chain where the token originally exists.
+     * @param originalTokenAddress The address of the original token on the original chain.
+     * @param destinationChain The name of the chain where the token will be deployed.
+     * @param gasValue The gas amount to be sent for deployment.
+     * @param deployer The address of the deployer to be stored in the token contract.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteCanonicalInterchainTokenWithDeployer(
+        string calldata originalChain,
+        address originalTokenAddress,
+        string calldata destinationChain,
+        uint256 gasValue,
+        address deployer
     ) external payable returns (bytes32 tokenId);
 
     /**

@@ -10,7 +10,6 @@ import { IERC20Named } from './IERC20Named.sol';
 /**
  * @title IInterchainToken interface
  * @dev Extends IInterchainTokenStandard and IMinter.
- * MODIFIED: Added deployer tracking support for Hyperliquid firstStorageSlot compatibility.
  */
 interface IInterchainToken is IInterchainTokenStandard, IMinter, IERC20MintableBurnable, IERC20Named {
     error InterchainTokenServiceAddressZero();
