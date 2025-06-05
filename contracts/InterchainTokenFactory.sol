@@ -40,9 +40,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
 
     /// @dev Storage for this contract
     /// @param approvedDestinationMinters Mapping of approved destination minters
+    /// @param tokenDeployers Mapping of tokenId to deployer address
     struct InterchainTokenFactoryStorage {
         mapping(bytes32 => bytes32) approvedDestinationMinters;
+        mapping(bytes32 => address) tokenDeployers;
     }
+
+
 
     /**
      * @notice Constructs the InterchainTokenFactory contract.
@@ -64,6 +68,25 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
      */
     function contractId() external pure returns (bytes32) {
         return CONTRACT_ID;
+    }
+
+    /**
+     * @notice Gets the deployer address for a given token ID
+     * @param tokenId The ID of the token
+     * @return deployer The address of the deployer
+     */
+    function getTokenDeployer(bytes32 tokenId) external view returns (address deployer) {
+        deployer = _interchainTokenFactoryStorage().tokenDeployers[tokenId];
+    }
+
+    /**
+     * @notice Stores the deployer address for a given token ID
+     * @param tokenId The ID of the token
+     * @param deployer The address of the deployer
+     */
+    function _storeTokenDeployer(bytes32 tokenId, address deployer) internal {
+        _interchainTokenFactoryStorage().tokenDeployers[tokenId] = deployer;
+        emit TokenDeployerStored(tokenId, deployer);
     }
 
     /**
@@ -140,36 +163,92 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
     ) external payable returns (bytes32 tokenId) {
         address sender = msg.sender;
         bytes32 deploySalt = interchainTokenDeploySalt(sender, salt);
-        bytes memory minterBytes = new bytes(0);
+        bytes memory minterBytes = _getMinterBytes(initialSupply, minter);
         string memory currentChain = '';
         uint256 gasValue = 0;
 
+        tokenId = _deployInterchainToken(deploySalt, currentChain, name, symbol, decimals, minterBytes, gasValue);
+
+        // Store the deployer address for this token
+        _storeTokenDeployer(tokenId, sender);
+
         if (initialSupply > 0) {
-            minterBytes = address(this).toBytes();
+            _setupInitialSupply(tokenId, sender, initialSupply, minter);
+        }
+    }
+
+    /**
+     * @notice Deploys a new interchain token with specified parameters.
+     * @dev Creates a new token and optionally mints an initial amount to a specified minter.
+     * This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
+     * Cannot deploy tokens with empty supply and no minter.
+     * @param salt The unique salt for deploying the token.
+     * @param name The name of the token.
+     * @param symbol The symbol of the token.
+     * @param decimals The number of decimals for the token.
+     * @param initialSupply The amount of tokens to mint initially (can be zero), allocated to the msg.sender.
+     * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If it is set to `address(0)`,
+     * the additional minter isn't set, and can't be added later. This allows creating tokens that are managed only by ITS, reducing trust assumptions.
+     * Reverts if the minter is the ITS address since it's already added as a minter.
+     * @param deployer The address of the deployer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployInterchainTokenWithDeployer(
+        bytes32 salt,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        uint256 initialSupply,
+        address minter,
+        address deployer
+    ) external payable returns (bytes32 tokenId) {
+        bytes32 deploySalt = interchainTokenDeploySalt(msg.sender, salt);
+        bytes memory minterBytes = _getMinterBytes(initialSupply, minter);
+        string memory currentChain = '';
+        uint256 gasValue = 0;
+        
+        tokenId = _deployInterchainTokenWithDeployer(deploySalt, currentChain, name, symbol, decimals, minterBytes, gasValue, deployer);
+        
+        _storeTokenDeployer(tokenId, deployer);
+        
+        if (initialSupply > 0) {
+            _setupInitialSupply(tokenId, msg.sender, initialSupply, minter);
+        }
+    }
+
+    /**
+     * @notice Gets the minter bytes for the interchain token.
+     * @param initialSupply The initial supply of the token.
+     * @param minter The minter of the token.
+     * @return minterBytes The minter bytes for the interchain token.
+     */
+    function _getMinterBytes(uint256 initialSupply, address minter) internal view returns (bytes memory) {
+        if (initialSupply > 0) {
+            return address(this).toBytes();
         } else if (minter != address(0)) {
             if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
-
-            minterBytes = minter.toBytes();
+            return minter.toBytes();
         } else {
             revert ZeroSupplyToken();
         }
+    }
 
-        tokenId = _deployInterchainToken(deploySalt, currentChain, name, symbol, decimals, minterBytes, gasValue);
-
-        if (initialSupply > 0) {
-            IInterchainToken token = IInterchainToken(interchainTokenService.registeredTokenAddress(tokenId));
-            ITokenManager tokenManager = ITokenManager(interchainTokenService.deployedTokenManager(tokenId));
-
-            token.mint(sender, initialSupply);
-
-            token.transferMintership(minter);
-            tokenManager.removeFlowLimiter(address(this));
-
-            // If minter == address(0), we still set it as a flow limiter for consistency with the remote token manager.
-            tokenManager.addFlowLimiter(minter);
-
-            tokenManager.transferOperatorship(minter);
-        }
+    /**
+     * @notice Sets up the initial supply for the interchain token.
+     * @param tokenId The tokenId of the interchain token.
+     * @param sender The address of the sender.
+     * @param initialSupply The initial supply of the token.
+     * @param minter The minter of the token.
+     */
+    function _setupInitialSupply(bytes32 tokenId, address sender, uint256 initialSupply, address minter) internal {
+        IInterchainToken token = IInterchainToken(interchainTokenService.registeredTokenAddress(tokenId));
+        ITokenManager tokenManager = ITokenManager(interchainTokenService.deployedTokenManager(tokenId));
+        
+        token.mint(sender, initialSupply);
+        token.transferMintership(minter);
+        tokenManager.removeFlowLimiter(address(this));
+        tokenManager.addFlowLimiter(minter);
+        tokenManager.transferOperatorship(minter);
     }
 
     /**
@@ -255,6 +334,31 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
     }
 
     /**
+     * @notice Deploys a remote interchain token on a specified destination chain. No additional minter is set on the deployed token.
+     * Use the `deployRemoteInterchainTokenWithMinter` method to do so.
+     * @param salt The unique salt for deploying the token.
+     * @param destinationChain The name of the destination chain.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @param deployer The address of the deployer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainTokenWithDeployer(
+        bytes32 salt,
+        string calldata destinationChain,
+        uint256 gasValue,
+        address deployer
+    ) external payable returns (bytes32 tokenId) {
+        return deployRemoteInterchainTokenWithMinterAndDeployer(
+            salt,
+            address(0),
+            destinationChain,
+            new bytes(0),
+            gasValue,
+            deployer
+        );
+    }
+
+    /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param salt The unique salt for deploying the token.
      * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
@@ -295,6 +399,57 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         }
 
         tokenId = _deployRemoteInterchainToken(deploySalt, destinationChain, destinationMinter, gasValue);
+        
+        // Store the deployer address for remote deployments as well
+        _storeTokenDeployer(tokenId, msg.sender);
+    }
+
+    /**
+     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @param salt The unique salt for deploying the token.
+     * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If the address is `address(0)`,
+     * no additional minter is set on the token. Reverts if the minter does not have mint permission for the token.
+     * @param destinationChain The name of the destination chain.
+     * @param destinationMinter The minter address to set on the deployed token on the destination chain. This can be arbitrary bytes
+     * since the encoding of the account is dependent on the destination chain. If this is empty, then the `minter` of the token on the current chain
+     * is used as the destination minter, which makes it convenient when deploying to other EVM chains.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @param deployer The address of the deployer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteInterchainTokenWithMinterAndDeployer(
+        bytes32 salt,
+        address minter,
+        string calldata destinationChain,
+        bytes memory destinationMinter,
+        uint256 gasValue,
+        address deployer
+    ) public payable returns (bytes32 tokenId) {
+        bytes32 deploySalt = interchainTokenDeploySalt(msg.sender, salt);
+
+        if (minter != address(0)) {
+            bytes32 deployedTokenId = _interchainTokenId(deploySalt);
+            _checkTokenMinter(deployedTokenId, minter);
+
+            if (destinationMinter.length > 0) {
+                DeployApproval memory approval = DeployApproval({
+                    minter: minter,
+                    tokenId: deployedTokenId,
+                    destinationChain: destinationChain
+                });
+                _useDeployApproval(approval, destinationMinter);
+            } else {
+                destinationMinter = minter.toBytes();
+            }
+        } else if (destinationMinter.length > 0) {
+            // If a destinationMinter is provided, then minter must not be address(0)
+            revert InvalidMinter(minter);
+        }
+
+        tokenId = _deployRemoteInterchainTokenWithDeployer(deploySalt, destinationChain, destinationMinter, gasValue, deployer);
+        
+        // Store the deployer address for remote deployments as well
+        _storeTokenDeployer(tokenId, deployer);
     }
 
     /**
@@ -356,16 +511,49 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         bytes memory minter,
         uint256 gasValue
     ) internal returns (bytes32 tokenId) {
-        // slither-disable-next-line arbitrary-send-eth
         tokenId = interchainTokenService.deployInterchainToken{ value: gasValue }(
-            salt,
-            destinationChain,
-            tokenName,
-            tokenSymbol,
-            tokenDecimals,
-            minter,
-            gasValue
-        );
+                salt,
+                destinationChain,
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                minter,
+                gasValue
+            );
+    }
+
+    /**
+     * @notice Deploys a new interchain token with specified parameters.
+     * @param salt The unique salt for deploying the token.
+     * @param destinationChain The name of the destination chain.
+     * @param tokenName The name of the token.
+     * @param tokenSymbol The symbol of the token.
+     * @param tokenDecimals The number of decimals for the token.
+     * @param minter The address to receive the initially minted tokens.
+     * @param gasValue The amount of gas to send for the transfer.
+     * @param deployer The address of the deployer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function _deployInterchainTokenWithDeployer(
+        bytes32 salt,
+        string memory destinationChain,
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 tokenDecimals,
+        bytes memory minter,
+        uint256 gasValue,
+        address deployer
+    ) internal returns (bytes32 tokenId) {
+        tokenId = interchainTokenService.deployInterchainTokenWithDeployer{ value: gasValue }(
+                salt,
+                destinationChain,
+                tokenName,
+                tokenSymbol,
+                tokenDecimals,
+                minter,
+                gasValue,
+                deployer
+            );
     }
 
     /**
@@ -394,6 +582,33 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
     }
 
     /**
+     * @notice Deploys a remote interchain token on a specified destination chain.
+     * @param deploySalt The salt used for the deployment.
+     * @param destinationChain The name of the destination chain.
+     * @param minter The address to receive the minter and operator role of the token, in addition to ITS.
+     * @param gasValue The amount of gas to send for the deployment.
+     * @param deployer The address of the deployer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function _deployRemoteInterchainTokenWithDeployer(
+        bytes32 deploySalt,
+        string calldata destinationChain,
+        bytes memory minter,
+        uint256 gasValue,
+        address deployer
+    ) internal returns (bytes32 tokenId) {
+        // Ensure that a token is registered locally for the tokenId before allowing a remote deployment
+        bytes32 expectedTokenId = _interchainTokenId(deploySalt);
+        address tokenAddress = interchainTokenService.registeredTokenAddress(expectedTokenId);
+
+        // The local token must expose the name, symbol, and decimals metadata
+        (string memory name, string memory symbol, uint8 decimals) = _getTokenMetadata(tokenAddress);
+
+        tokenId = _deployInterchainTokenWithDeployer(deploySalt, destinationChain, name, symbol, decimals, minter, gasValue, deployer);
+        if (tokenId != expectedTokenId) revert InvalidTokenId(tokenId, expectedTokenId);
+    }
+
+    /**
      * @notice Registers a canonical token as an interchain token and deploys its token manager.
      * @dev This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
      * @param tokenAddress The address of the canonical token.
@@ -409,6 +624,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         _getTokenMetadata(tokenAddress);
 
         tokenId = interchainTokenService.registerCustomToken(deploySalt, tokenAddress, TokenManagerType.LOCK_UNLOCK, linkParams);
+        
+        // Store the deployer address for canonical token registration
+        _storeTokenDeployer(tokenId, msg.sender);
     }
 
     /**
@@ -457,6 +675,33 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         bytes32 deploySalt = canonicalInterchainTokenDeploySalt(originalTokenAddress);
 
         tokenId = _deployRemoteInterchainToken(deploySalt, destinationChain, minter, gasValue);
+        
+        // Store the deployer address for remote canonical token deployment
+        _storeTokenDeployer(tokenId, msg.sender);
+    }
+
+        /**
+     * @notice Deploys a canonical interchain token on a remote chain.
+     * @param originalTokenAddress The address of the original token on the original chain.
+     * @param destinationChain The name of the chain where the token will be deployed.
+     * @param gasValue The gas amount to be sent for deployment.
+     * @param deployer The address of the deployer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteCanonicalInterchainTokenWithDeployer(
+        address originalTokenAddress,
+        string calldata destinationChain,
+        uint256 gasValue,
+        address deployer
+    ) public payable returns (bytes32 tokenId) {
+        // No additional minter is set on a canonical token deployment
+        bytes memory minter = '';
+        bytes32 deploySalt = canonicalInterchainTokenDeploySalt(originalTokenAddress);
+
+        tokenId = _deployRemoteInterchainTokenWithDeployer(deploySalt, destinationChain, minter, gasValue, deployer);
+        
+        // Store the deployer address for remote canonical token deployment
+        _storeTokenDeployer(tokenId, deployer);
     }
 
     /**
@@ -479,6 +724,32 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         if (bytes(originalChain).length != 0) revert NotSupported();
 
         tokenId = deployRemoteCanonicalInterchainToken(originalTokenAddress, destinationChain, gasValue);
+        _storeTokenDeployer(tokenId, msg.sender);
+    }
+
+        /**
+     * @notice Deploys a canonical interchain token on a remote chain.
+     * This method is deprecated and will be removed in the future. Please use the above method instead.
+     * @dev originalChain is only allowed to be '', i.e the current chain.
+     * Other source chains are not supported anymore to simplify ITS token deployment behaviour.
+     * @param originalChain The name of the chain where the token originally exists.
+     * @param originalTokenAddress The address of the original token on the original chain.
+     * @param destinationChain The name of the chain where the token will be deployed.
+     * @param gasValue The gas amount to be sent for deployment.
+     * @param deployer The address of the deployer.
+     * @return tokenId The tokenId corresponding to the deployed InterchainToken.
+     */
+    function deployRemoteCanonicalInterchainTokenWithDeployer(
+        string calldata originalChain,
+        address originalTokenAddress,
+        string calldata destinationChain,
+        uint256 gasValue,
+        address deployer
+    ) external payable returns (bytes32 tokenId) {
+        if (bytes(originalChain).length != 0) revert NotSupported();
+
+        tokenId = deployRemoteCanonicalInterchainTokenWithDeployer(originalTokenAddress, destinationChain, gasValue, deployer);
+        _storeTokenDeployer(tokenId, deployer);
     }
 
     /**
@@ -525,6 +796,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         }
 
         tokenId = interchainTokenService.registerCustomToken(deploySalt, tokenAddress, tokenManagerType, linkParams);
+        
+        // Store the deployer address for custom token registration
+        _storeTokenDeployer(tokenId, msg.sender);
     }
 
     /**
@@ -555,6 +829,9 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
             linkParams,
             gasValue
         );
+        
+        // Store the deployer address for token linking
+        _storeTokenDeployer(tokenId, msg.sender);
     }
 
     /********************\
