@@ -55,7 +55,7 @@ contract Minter is IMinter, RolesBase, RolesConstants {
      * @param addr the address to query for
      * @return bool Boolean value representing whether or not the address is a minter.
      */
-    function isMinter(address addr) external view returns (bool) {
+    function isMinter(address addr) public view returns (bool) {
         return hasRole(addr, uint8(Roles.MINTER));
     }
 }

@@ -15,11 +15,14 @@ import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol
 import { Operator } from '../utils/Operator.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
 
+import { HTS } from '../hedera/HTS.sol';
+import { Minter } from '../utils/Minter.sol';
+
 /**
  * @title TokenManager
  * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
  */
-contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Multicall {
+contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementation, Multicall {
     using AddressBytes for bytes;
     using SafeTokenCall for IERC20;
 
@@ -44,6 +47,14 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      */
     modifier onlyService() {
         if (msg.sender != interchainTokenService) revert NotService(msg.sender);
+        _;
+    }
+
+    /**
+     * @notice A modifier that allows only the interchain token service to execute the function.
+     */
+    modifier onlyServiceOrMinter() {
+        if (msg.sender != interchainTokenService && !isMinter(msg.sender)) revert MissingRole(msg.sender, uint8(Roles.MINTER));
         _;
     }
 
@@ -83,12 +94,47 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
     }
 
     /**
+     * @notice Reverts if the token manager type is not supported, or if the token is not supported.
+     * If the token is a supported HTS token, the Token Manager will associate itself with the token.
+     * @param tokenAddress_ The address of the token to check.
+     * @param implementationType_ The implementation type to check.
+     * @dev It's cheaper to check both the token and the implementation type in one function.
+     */
+    function ensureSupported(address tokenAddress_, uint256 implementationType_) external {
+        bool isHtsToken = HTS.isToken(tokenAddress_);
+        if (isHtsToken) {
+            // Currently MINT_BURN and MINT_BURN_FROM are not supported for HTS tokens
+            // See contracts/hedera/README.md for more information
+            if (
+                implementationType_ == uint256(TokenManagerType.MINT_BURN) ||
+                implementationType_ == uint256(TokenManagerType.MINT_BURN_FROM)
+            ) {
+                revert ManagerTypeNotSupported();
+            }
+
+            // Check if token is supported
+            if (!HTS.isTokenSupportedByITS(tokenAddress_)) {
+                revert HTS.TokenUnsupported();
+            }
+        }
+    }
+
+    /**
      * @notice A function that should return the token address from the setup params.
      * @param params_ The setup parameters.
      * @return tokenAddress_ The token address.
      */
     function getTokenAddressFromParams(bytes calldata params_) external pure returns (address tokenAddress_) {
         (, tokenAddress_) = abi.decode(params_, (bytes, address));
+    }
+
+    /**
+     * @notice A function that should return the native interchain token deployment params.
+     */
+    function getTokenDeployInfoFromParams(
+        bytes calldata params_
+    ) external pure returns (bytes memory operator, string memory name, string memory symbol, uint8 decimals) {
+        (operator, name, symbol, decimals) = abi.decode(params_, (bytes, string, string, uint8));
     }
 
     /**
@@ -99,7 +145,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      * @param params_ The parameters to be used to initialize the TokenManager.
      */
     function setup(bytes calldata params_) external override(Implementation, IImplementation) onlyProxy {
-        bytes memory operatorBytes = abi.decode(params_, (bytes));
+        (bytes memory operatorBytes, address tokenAddress_) = abi.decode(params_, (bytes, address));
 
         address operator = address(0);
 
@@ -107,11 +153,25 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
             operator = operatorBytes.toAddress();
         }
 
+        /**
+         * @dev Set the token service as a minter to allow it to mint and burn tokens.
+         * Also add the provided address as a minter. If `address(0)` was provided,
+         * add it as a minter to allow anyone to easily check that no custom minter was set.
+         */
+        // TODO(hedera) should we add the service as a minter?
+        _addMinter(interchainTokenService);
+        _addMinter(operator);
+
         // If an operator is not provided, set `address(0)` as the operator.
         // This allows anyone to easily check if a custom operator was set on the token manager.
         _addAccountRoles(operator, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
         // Add operator and flow limiter role to the service. The operator can remove the flow limiter role if they so chose and the service has no way to use the operator role for now.
         _addAccountRoles(interchainTokenService, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
+
+        // Associate the token manager with the token
+        // TODO(hedera) this should be done only if token manager type is LOCK_UNLOCK?
+        // is it more expensive to check or associate either way?
+        HTS.associateToken(address(this), tokenAddress_);
     }
 
     function addFlowIn(uint256 amount) external onlyService {
@@ -199,8 +259,13 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      * @param to The recipient.
      * @param amount The amount to mint.
      */
-    function mintToken(address tokenAddress_, address to, uint256 amount) external onlyService {
-        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
+    function mintToken(address tokenAddress_, address to, uint256 amount) external onlyServiceOrMinter {
+        if (HTS.isToken(tokenAddress_)) {
+            HTS.mintToken(tokenAddress_, amount);
+            HTS.transferToken(tokenAddress_, address(this), to, amount);
+        } else {
+            IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
+        }
     }
 
     /**
@@ -210,7 +275,12 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      * @param from The address to burn the token from.
      * @param amount The amount to burn.
      */
-    function burnToken(address tokenAddress_, address from, uint256 amount) external onlyService {
-        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
+    function burnToken(address tokenAddress_, address from, uint256 amount) external onlyServiceOrMinter {
+        if (HTS.isToken(tokenAddress_)) {
+            HTS.transferFrom(tokenAddress_, from, address(this), amount);
+            HTS.burnToken(tokenAddress_, amount);
+        } else {
+            IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
+        }
     }
 }

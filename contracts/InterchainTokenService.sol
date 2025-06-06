@@ -404,9 +404,7 @@ contract InterchainTokenService is
         emit InterchainTokenIdClaimed(tokenId, deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
-            address tokenAddress = _deployInterchainToken(tokenId, minter, name, symbol, decimals);
-
-            _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, tokenAddress, minter);
+            _deployTokenManagerWithInterchainToken(tokenId, name, symbol, decimals, minter);
         } else {
             if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
 
@@ -767,11 +765,8 @@ contract InterchainTokenService is
             payload,
             (uint256, bytes32, string, string, uint8, bytes)
         );
-        address tokenAddress;
 
-        tokenAddress = _deployInterchainToken(tokenId, minterBytes, name, symbol, decimals);
-
-        _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, tokenAddress, minterBytes);
+        _deployTokenManagerWithInterchainToken(tokenId, name, symbol, decimals, minterBytes);
     }
 
     /**
@@ -973,6 +968,50 @@ contract InterchainTokenService is
     /**
      * @notice Deploys a token manager.
      * @param tokenId The ID of the token.
+     * @param operator The operator of the token manager.
+     */
+    function _deployTokenManagerWithInterchainToken(
+        bytes32 tokenId,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        bytes memory operator
+    ) internal {
+        // TokenManagerProxy deploy params
+        bytes memory params = abi.encode(operator, name, symbol, decimals);
+
+        TokenManagerType tokenManagerType = TokenManagerType.NATIVE_INTERCHAIN_TOKEN;
+
+        (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
+            abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
+        );
+        if (!success) revert TokenManagerDeploymentFailed(returnData);
+
+        address tokenManager_;
+        assembly {
+            tokenManager_ := mload(add(returnData, 0x20))
+        }
+
+        (success, returnData) = tokenHandler.delegatecall(
+            abi.encodeWithSelector(ITokenHandler.postTokenManagerDeploy.selector, tokenManagerType, tokenManager_)
+        );
+        if (!success) revert PostDeployFailed(returnData);
+
+        // Get the token address from the deployed token manager
+        address tokenAddress = ITokenManager(tokenManager_).tokenAddress();
+
+        address minter;
+        if (bytes(operator).length != 0) minter = operator.toAddress();
+
+        // slither-disable-next-line reentrancy-events
+        emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
+        // slither-disable-next-line reentrancy-events
+        emit TokenManagerDeployed(tokenId, tokenManager_, tokenManagerType, params);
+    }
+
+    /**
+     * @notice Deploys a token manager.
+     * @param tokenId The ID of the token.
      * @param tokenManagerType The type of the token manager to be deployed.
      * @param tokenAddress The address of the token to be managed.
      * @param operator The operator of the token manager.
@@ -1007,44 +1046,6 @@ contract InterchainTokenService is
      */
     function _getInterchainTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
-    }
-
-    /**
-     * @notice Deploys an interchain token.
-     * @param tokenId The ID of the token.
-     * @param minterBytes The minter address for the token.
-     * @param name The name of the token.
-     * @param symbol The symbol of the token.
-     * @param decimals The number of decimals of the token.
-     */
-    function _deployInterchainToken(
-        bytes32 tokenId,
-        bytes memory minterBytes,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
-    ) internal returns (address tokenAddress) {
-        if (bytes(name).length == 0) revert EmptyTokenName();
-        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
-
-        bytes32 salt = _getInterchainTokenSalt(tokenId);
-
-        address minter;
-        if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
-
-        (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
-            abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, salt, tokenId, minter, name, symbol, decimals)
-        );
-        if (!success) {
-            revert InterchainTokenDeploymentFailed(returnData);
-        }
-
-        assembly {
-            tokenAddress := mload(add(returnData, 0x20))
-        }
-
-        // slither-disable-next-line reentrancy-events
-        emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
     }
 
     /**

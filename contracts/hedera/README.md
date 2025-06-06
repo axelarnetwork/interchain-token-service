@@ -14,14 +14,13 @@ ITS contracts in this repo are modified to support Hedera Token Service. All new
 - Currently new tokens created via HTS EVM system contract can have **only one** Supply Key (Minter).
 - Currently new tokens created via HTS EVM system contract must have the Treasury be the creator of the token.
 - `createFungibleToken` in `HTS.sol` uses `msg.value` to pay for token creation, alongside regular gas fee.
+- `WHBAR` contracts used can be found [here](https://docs.hedera.com/hedera/core-concepts/smart-contracts/wrapped-hbar-whbar#contract-deployments).
 
 ### ITS-related Notes
 
-- `InterchainTokenService.sol` `execute` is payable, since it needs to pay for the HTS token creation fee. It is assumed that the fee is sent as value. `IAxelarValuedExpressExecutable`, `IAxelarExpressExecutable` and  `IAxelarExecutable` are copied from `@axelar-network/axelar-gmp-sdk-solidity`. All unchanged except for the `execute` method in `IAxelarExecutable` to include the `payable` modifier.
 - `InterchainTokenDeployer.sol` `deployedAddress` is not supported, since HTS tokens don't have deterministic addresses.
 - `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `registeredTokenAddress` should be used instead.
 - `transmitInterchainTransfer` was removed from `InterchainTokenService.sol` since it's meant to be called from an `InterchainToken` contract, which is not used.
-- `flowLimit`, `flowOutAmount` and `flowInAmount` are removed from `InterchainTokenService.sol` to reduce the size of the contract.
 - When creating a new interchain token, `InterchainTokenService` and `TokenManager` are associated with the token.
 - When deploying a new interchain token, a Hedera-specific token-creation fee must be sent as value. For this reason, the `deployInterchainToken` method is payable.
 - `initialSupply` isn't supported when deploying a new interchain token. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation.

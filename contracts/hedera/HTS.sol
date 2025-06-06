@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import { HederaResponseCodes } from './HederaResponseCodes.sol';
 import { IHederaTokenService } from './IHederaTokenService.sol';
+import { IExchangeRate } from './IExchangeRate.sol';
 
 /**
  * @title HTS
@@ -15,6 +16,11 @@ import { IHederaTokenService } from './IHederaTokenService.sol';
  */
 library HTS {
     address private constant PRECOMPILE = address(0x167);
+    address private constant EXCHANGE_RATE_PRECOMPILE = address(0x168);
+
+    // 1 whole is divided into 100_000_000 tiny parts
+    // Applicable for tinybars and tinycents - used for exchange rate calculations
+    uint256 constant TINY_PARTS_PER_WHOLE = 100_000_000;
 
     // See `TokenKey` struct, `keyType`.
     // 0th bit: adminKey
@@ -235,6 +241,20 @@ library HTS {
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert HTSCallFailed(responseCode);
         }
+    }
+
+    //
+    // Exchange rate functionality
+    //
+
+    function centsToTinybars(uint256 cents) internal returns (uint256 tinybars) {
+        uint256 tinycents = cents * TINY_PARTS_PER_WHOLE;
+
+        (bool success, bytes memory result) = PRECOMPILE.call(
+            abi.encodeWithSelector(IExchangeRate.tinycentsToTinybars.selector, tinycents)
+        );
+        require(success);
+        tinybars = abi.decode(result, (uint256));
     }
 
     //
