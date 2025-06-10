@@ -27,5 +27,7 @@ interface IBaseTokenManager {
     /**
      * @notice A function that should return the native interchain token deployment params.
      */
-    function getTokenDeployInfoFromParams(bytes calldata params) external pure returns (bytes memory, string memory, string memory, uint8);
+    function getTokenDeployInfoFromParams(
+        bytes calldata params
+    ) external pure returns (bytes memory, string memory, string memory, uint8, uint256);
 }

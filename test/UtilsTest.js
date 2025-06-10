@@ -189,6 +189,41 @@ describe('ChainTracker', async () => {
     });
 });
 
+describe('TokenCreationPricing', async () => {
+    let test;
+    let whbarContract;
+    const tokenPrice = 100; // 100 tinycents
+
+    before(async () => {
+        test = await deployContract(ownerWallet, 'TestTokenCreationPricing');
+        whbarContract = await deployContract(ownerWallet, 'WHBAR');
+    });
+
+    it('Should calculate hardcoded constants correctly', async () => {
+        await expect(deployContract(ownerWallet, `TestTokenCreationPricing`, [])).to.not.be.reverted;
+    });
+
+    it('Should set and query token creation price properly', async () => {
+        expect(await test.tokenCreationPrice()).to.equal(0);
+
+        await expect(test.setTokenCreationPriceTest(tokenPrice)).to.emit(test, 'TokenCreationPriceSet').withArgs(tokenPrice);
+
+        expect(await test.tokenCreationPrice()).to.equal(tokenPrice);
+    });
+
+    it('Should set and query WHBAR address properly', async () => {
+        expect(await test.whbarAddress()).to.equal(AddressZero);
+
+        await expect(test.setWhbarAddressTest(whbarContract.address)).to.emit(test, 'WhbarAddressSet').withArgs(whbarContract.address);
+
+        expect(await test.whbarAddress()).to.equal(whbarContract.address);
+    });
+
+    it('Should revert when setting invalid WHBAR address', async () => {
+        await expectRevert((gasOptions) => test.setWhbarAddressTest(AddressZero, gasOptions), test, 'InvalidWhbarAddress');
+    });
+});
+
 describe('InterchainTokenDeployer', () => {
     let interchainToken, interchainTokenDeployer;
     const service = new Wallet(getRandomBytes32()).address;

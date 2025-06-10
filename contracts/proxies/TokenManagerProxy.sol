@@ -12,6 +12,9 @@ import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { ITokenManagerImplementation } from '../interfaces/ITokenManagerImplementation.sol';
 import { ITokenManagerType } from '../interfaces/ITokenManagerType.sol';
+import { ITokenCreationPricing } from '../interfaces/ITokenCreationPricing.sol';
+
+import { IWHBAR } from '../hedera/IWHBAR.sol';
 
 /**
  * @title TokenManagerProxy
@@ -46,11 +49,18 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerType, ITokenManagerProxy {
         // If the implementation type is NATIVE_INTERCHAIN_TOKEN, deploy the token
         if (implementationType_ == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             // Parse the parameters to get the token deploy info
-            (bytes memory operator, string memory name, string memory symbol, uint8 decimals) = IBaseTokenManager(implementation_)
-                .getTokenDeployInfoFromParams(params);
+            (bytes memory operator, string memory name, string memory symbol, uint8 decimals, uint256 price) = IBaseTokenManager(
+                implementation_
+            ).getTokenDeployInfoFromParams(params);
 
             // Get the deployer address from the interchain token service
             address interchainTokenDeployer = IInterchainTokenService(interchainTokenService).interchainTokenDeployer();
+            address whbarAddress = ITokenCreationPricing(interchainTokenService).whbarAddress();
+
+            // Transfer from ITS to itself
+            IWHBAR(whbarAddress).transferFrom(interchainTokenService, address(this), price);
+            // Redeem HBAR to pay for token creation
+            IWHBAR(whbarAddress).withdraw(price);
 
             // Call the interchain token deployer to deploy the token
             (bool deploySuccess, bytes memory returnData) = interchainTokenDeployer.delegatecall(

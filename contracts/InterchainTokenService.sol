@@ -24,7 +24,10 @@ import { IMinter } from './interfaces/IMinter.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { Operator } from './utils/Operator.sol';
 import { ChainTracker } from './utils/ChainTracker.sol';
+import { TokenCreationPricing } from './utils/TokenCreationPricing.sol';
 import { ItsHubAddressTracker } from './utils/ItsHubAddressTracker.sol';
+
+import { IWHBAR } from './hedera/IWHBAR.sol';
 
 /**
  * @title The Interchain Token Service
@@ -42,6 +45,7 @@ contract InterchainTokenService is
     ExpressExecutorTracker,
     InterchainAddressTracker,
     ChainTracker,
+    TokenCreationPricing,
     ItsHubAddressTracker,
     IInterchainTokenService
 {
@@ -638,6 +642,22 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Used to set the token creation price in tinycents.
+     * @param price The new token creation price in tinycents.
+     */
+    function setTokenCreationPrice(uint256 price) external onlyOperatorOrOwner {
+        _setTokenCreationPrice(price);
+    }
+
+    /**
+     * @notice Used to set the WHBAR contract address.
+     * @param whbarAddress_ The new WHBAR contract address.
+     */
+    function setWhbarAddress(address whbarAddress_) external onlyOperatorOrOwner {
+        _setWhbarAddress(whbarAddress_);
+    }
+
+    /**
      * @notice Allows the owner to pause/unpause the token service.
      * @param paused Boolean value representing whether to pause or unpause.
      */
@@ -977,17 +997,24 @@ contract InterchainTokenService is
         uint8 decimals,
         bytes memory operator
     ) internal {
+        // Price in tinybars
+        uint256 tokenCreatePrice = tokenCreationPriceTinybars();
+
         // TokenManagerProxy deploy params
-        bytes memory params = abi.encode(operator, name, symbol, decimals);
+        bytes memory params = abi.encode(operator, name, symbol, decimals, tokenCreatePrice);
 
         TokenManagerType tokenManagerType = TokenManagerType.NATIVE_INTERCHAIN_TOKEN;
+
+        address tokenManager_ = tokenManagerAddress(tokenId);
+
+        // Approve the token manager deployer to spend the token creation price
+        IWHBAR(whbarAddress()).approve(tokenManager_, tokenCreatePrice);
 
         (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
             abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
         );
         if (!success) revert TokenManagerDeploymentFailed(returnData);
 
-        address tokenManager_;
         assembly {
             tokenManager_ := mload(add(returnData, 0x20))
         }

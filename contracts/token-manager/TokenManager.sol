@@ -133,8 +133,8 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
      */
     function getTokenDeployInfoFromParams(
         bytes calldata params_
-    ) external pure returns (bytes memory operator, string memory name, string memory symbol, uint8 decimals) {
-        (operator, name, symbol, decimals) = abi.decode(params_, (bytes, string, string, uint8));
+    ) external pure returns (bytes memory operator, string memory name, string memory symbol, uint8 decimals, uint256 price) {
+        (operator, name, symbol, decimals, price) = abi.decode(params_, (bytes, string, string, uint8, uint256));
     }
 
     /**

@@ -247,10 +247,18 @@ library HTS {
     // Exchange rate functionality
     //
 
-    function centsToTinybars(uint256 cents) internal returns (uint256 tinybars) {
+    function centsToTinybars(uint256 cents) public returns (uint256 tinybars) {
         uint256 tinycents = cents * TINY_PARTS_PER_WHOLE;
 
-        (bool success, bytes memory result) = PRECOMPILE.call(
+        (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE.call(
+            abi.encodeWithSelector(IExchangeRate.tinycentsToTinybars.selector, tinycents)
+        );
+        require(success);
+        tinybars = abi.decode(result, (uint256));
+    }
+
+    function tinycentsToTinybars(uint256 tinycents) public returns (uint256 tinybars) {
+        (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE.call(
             abi.encodeWithSelector(IExchangeRate.tinycentsToTinybars.selector, tinycents)
         );
         require(success);
