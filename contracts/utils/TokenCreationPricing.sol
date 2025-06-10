@@ -36,14 +36,15 @@ contract TokenCreationPricing is ITokenCreationPricing {
      * @notice Returns the token creation price in tinybars.
      * @return price The token creation price in tinybars.
      */
-    function tokenCreationPriceTinybars() public returns (uint256 price) {
+    function _tokenCreationPriceTinybars() internal returns (uint256 price) {
         uint256 priceTinycents = _tokenCreationPricingStorage().tokenCreationPrice;
 
         if (priceTinycents == 0) {
             return 0;
         }
 
-        price = HTS.tinycentsToTinybars(priceTinycents);
+        // TODO(hedera) explain why + 1 (for rounding)
+        price = HTS.tinycentsToTinybars(priceTinycents) + 1;
     }
 
     function whbarAddress() public view returns (address whbarAddress_) {

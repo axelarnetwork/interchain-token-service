@@ -64,7 +64,7 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerType, ITokenManagerProxy {
 
             // Call the interchain token deployer to deploy the token
             (bool deploySuccess, bytes memory returnData) = interchainTokenDeployer.delegatecall(
-                abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, tokenId, name, symbol, decimals)
+                abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, tokenId, name, symbol, decimals, price)
             );
             if (!deploySuccess) {
                 revert InterchainTokenDeploymentFailed(returnData);

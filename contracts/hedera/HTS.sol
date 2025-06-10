@@ -95,17 +95,19 @@ library HTS {
     /// @param initialTotalSupply Specifies the initial supply of tokens to be put in circulation. The
     /// initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible.
     /// @param decimals the number of decimal places a token is divisible by
+    /// @param price the amount of HBAR (in tinybars) to pay for token creation
     /// @return tokenAddress the created token's address
     function createFungibleToken(
         IHederaTokenService.HederaToken memory token,
         int64 initialTotalSupply,
-        int32 decimals
+        int32 decimals,
+        uint256 price
     ) public returns (address tokenAddress) {
         if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
             token.expiry.autoRenewPeriod = DEFAULT_AUTO_RENEW;
         }
 
-        (bool success, bytes memory result) = PRECOMPILE.call{ value: msg.value }(
+        (bool success, bytes memory result) = PRECOMPILE.call{ value: price }(
             abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector, token, initialTotalSupply, decimals)
         );
 

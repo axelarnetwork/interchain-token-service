@@ -36,12 +36,6 @@ interface ITokenCreationPricing {
     function tokenCreationPrice() external view returns (uint256 price);
 
     /**
-     * @notice Returns the token creation price in tinybars.
-     * @return price The token creation price in tinybars.
-     */
-    function tokenCreationPriceTinybars() external returns (uint256 price);
-
-    /**
      * @notice Returns the WHBAR contract address
      * @return whbarAddress The WHBAR contract address
      */

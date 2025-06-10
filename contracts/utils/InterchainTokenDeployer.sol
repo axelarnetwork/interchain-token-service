@@ -23,8 +23,9 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
         bytes32 tokenId,
         string calldata name,
         string calldata symbol,
-        uint8 decimals
-    ) external payable returns (address tokenAddress) {
+        uint8 decimals,
+        uint256 price
+    ) external returns (address tokenAddress) {
         // Since the caller uses delegatecall `this` refers to the calling contract
         address self = address(this);
 
@@ -55,7 +56,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(0, self, 0);
         token.expiry = expiry;
 
-        address createdTokenAddress = HTS.createFungibleToken(token, 0, int32(uint32(decimals)));
+        address createdTokenAddress = HTS.createFungibleToken(token, 0, int32(uint32(decimals)), price);
 
         tokenAddress = createdTokenAddress;
     }

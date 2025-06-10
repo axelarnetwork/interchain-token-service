@@ -998,7 +998,7 @@ contract InterchainTokenService is
         bytes memory operator
     ) internal {
         // Price in tinybars
-        uint256 tokenCreatePrice = tokenCreationPriceTinybars();
+        uint256 tokenCreatePrice = _tokenCreationPriceTinybars();
 
         // TokenManagerProxy deploy params
         bytes memory params = abi.encode(operator, name, symbol, decimals, tokenCreatePrice);

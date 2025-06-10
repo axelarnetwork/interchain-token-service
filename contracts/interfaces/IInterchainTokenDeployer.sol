@@ -19,12 +19,14 @@ interface IInterchainTokenDeployer {
      * @param name Name of the token.
      * @param symbol Symbol of the token.
      * @param decimals Decimals of the token.
+     * @param price Price in HBAR (tinybars) to pay for token creation.
      * @return tokenAddress Address of the deployed token.
      */
     function deployInterchainToken(
         bytes32 tokenId,
         string calldata name,
         string calldata symbol,
-        uint8 decimals
-    ) external payable returns (address tokenAddress);
+        uint8 decimals,
+        uint256 price
+    ) external returns (address tokenAddress);
 }
