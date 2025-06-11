@@ -11,6 +11,8 @@ import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
 
+import { HTS, IHederaTokenService } from './hedera/HTS.sol';
+
 /**
  * @title InterchainTokenFactory
  * @notice This contract is responsible for deploying new interchain tokens and managing their token managers.
@@ -144,9 +146,14 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         string memory currentChain = '';
         uint256 gasValue = 0;
 
-        if (initialSupply > 0) {
-            minterBytes = address(this).toBytes();
-        } else if (minter != address(0)) {
+        // HTS tokens must previously be associated with an account
+        // to be able to send tokens to it. Since a new token will be created
+        // it's not possible to send it right away.
+        if (initialSupply != 0) {
+            revert HTS.InitialSupplyUnsupported();
+        }
+
+        if (minter != address(0)) {
             if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
 
             minterBytes = minter.toBytes();
