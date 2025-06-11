@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { AddressBytes } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol';
 
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
+import { IOperator } from '../interfaces/IOperator.sol';
 
 import { InterchainTokenStandard } from './InterchainTokenStandard.sol';
 import { ERC20 } from './ERC20.sol';
@@ -15,9 +16,14 @@ import { Minter } from '../utils/Minter.sol';
  * @title InterchainToken
  * @notice This contract implements an interchain token which extends InterchainToken functionality.
  * @dev This contract also inherits Minter and Implementation logic.
+ * Uses assembly to directly write to slot 0, bypassing parent contract storage layout.
  */
 contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter, IInterchainToken {
     using AddressBytes for bytes;
+
+    /// @dev Storage slot for deployer address - FORCED to slot 0 using assembly
+    /// This is specifically slot 0 for Hyperliquid firstStorageSlot compatibility
+    bytes32 private constant DEPLOYER_SLOT = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
     string public name;
     string public symbol;
@@ -27,6 +33,41 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
 
     // bytes32(uint256(keccak256('interchain-token-initialized')) - 1);
     bytes32 internal constant INITIALIZED_SLOT = 0xc778385ecb3e8cecb82223fa1f343ec6865b2d64c65b0c15c7e8aef225d9e214;
+
+    error NotAuthorized();
+
+    /**
+     * @notice Gets the deployer address stored in slot 0
+     * @return deployer The address of the deployer
+     */
+    function getDeployer() external view returns (address deployer) {
+        assembly {
+            deployer := sload(DEPLOYER_SLOT)
+        }
+    }
+
+    /**
+     * @notice Internal function to set the deployer address in slot 0
+     * @param deployer The address of the deployer
+     */
+    function _setDeployer(address deployer) internal {
+        assembly {
+            sstore(DEPLOYER_SLOT, deployer)
+        }
+    }
+
+    /**
+     * @notice Allows the ITS contract or its operator to update the deployer address
+     * @param newDeployer The new deployer address to set
+     */
+    function updateDeployer(address newDeployer) external {
+        address its = interchainTokenService();
+        if (msg.sender != its) {
+            // Check if caller is ITS operator
+            if (!IOperator(its).isOperator(msg.sender)) revert NotAuthorized();
+        }
+        _setDeployer(newDeployer);
+    }
 
     /**
      * @notice Constructs the InterchainToken contract.
