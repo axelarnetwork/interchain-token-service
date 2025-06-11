@@ -24,19 +24,19 @@ library HTS {
 
     // See `TokenKey` struct, `keyType`.
     // 0th bit: adminKey
-    uint256 internal constant ADMIN_KEY_BIT = 1 << 0;
+    uint256 private constant ADMIN_KEY_BIT = 1 << 0;
     // 1st bit: kycKey
-    uint256 internal constant KYC_KEY_BIT = 1 << 1;
+    uint256 private constant KYC_KEY_BIT = 1 << 1;
     // 2nd bit: freezeKey
-    uint256 internal constant FREEZE_KEY_BIT = 1 << 2;
+    uint256 private constant FREEZE_KEY_BIT = 1 << 2;
     // 3rd bit: wipeKey
-    uint256 internal constant WIPE_KEY_BIT = 1 << 3;
+    uint256 private constant WIPE_KEY_BIT = 1 << 3;
     // 4th bit: supplyKey
     uint256 internal constant SUPPLY_KEY_BIT = 1 << 4;
     // 5th bit: feeScheduleKey
-    uint256 internal constant FEE_SCHEDULE_KEY_BIT = 1 << 5;
+    uint256 private constant FEE_SCHEDULE_KEY_BIT = 1 << 5;
     // 6th bit: pauseKey
-    uint256 internal constant PAUSE_KEY_BIT = 1 << 6;
+    uint256 private constant PAUSE_KEY_BIT = 1 << 6;
 
     // 90 days in seconds
     int32 private constant DEFAULT_AUTO_RENEW = 7776000;
@@ -260,6 +260,10 @@ library HTS {
     }
 
     function tinycentsToTinybars(uint256 tinycents) public returns (uint256 tinybars) {
+        if (tinycents == 0) {
+            return 0;
+        }
+
         (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE.call(
             abi.encodeWithSelector(IExchangeRate.tinycentsToTinybars.selector, tinycents)
         );

@@ -33,6 +33,10 @@ const getGasOptions = () => {
     return network.config.blockGasLimit ? { gasLimit: network.config.blockGasLimit.toString() } : { gasLimit: 5e6 }; // defaults to 5M gas for revert tests to work correctly
 };
 
+const expectNonZeroAddress = (v) => {
+    return expect(v).to.be.a('string') && v !== ethers.constants.AddressZero && v !== '';
+};
+
 const expectRevert = async (txFunc, contract, error, args) => {
     if (network.config.skipRevertTests || contract === undefined) {
         await expect(txFunc(getGasOptions())).to.be.reverted;

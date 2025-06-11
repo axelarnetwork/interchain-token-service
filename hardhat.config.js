@@ -49,9 +49,11 @@ const itsCompilerSettings = {
     version: '0.8.27',
     settings: {
         evmVersion: process.env.EVM_VERSION || 'london',
+        // TODO(hedera) check about using viaIR
+        viaIR: true,
         optimizer: {
             ...optimizerSettings,
-            runs: 100,
+            runs: 1,
         },
     },
 };
@@ -73,8 +75,18 @@ module.exports = {
                   'contracts/InterchainTokenService.sol': itsCompilerSettings,
               },
     },
-    defaultNetwork: 'hardhat',
-    networks,
+    defaultNetwork: 'local',
+    networks: {
+        ...networks,
+        local: {
+            url: 'http://localhost:7546',
+            accounts: [
+                '0x105d050185ccb907fba04dd92d8de9e32c18305e097ab41dadda21489a211524',
+                '0x2e1d968b041d84dd120a5860cee60cd83f9374ef527ca86996317ada3d0d03e7',
+            ],
+            chainId: 298,
+        },
+    },
     etherscan,
     mocha: {
         timeout: 1000000,

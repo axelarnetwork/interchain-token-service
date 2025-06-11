@@ -54,6 +54,8 @@ async function deployContract(wallet, contractName, args = [], additionalLibrari
     });
     const contract = await factory.deploy(...args).then((d) => d.deployed());
 
+    console.log(`Deployed ${contractName} to ${contract.address}`);
+
     return contract;
 }
 

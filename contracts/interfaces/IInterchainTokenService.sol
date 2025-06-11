@@ -164,13 +164,6 @@ interface IInterchainTokenService is
     function registeredTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
     /**
-     * @notice Returns the address of the interchain token associated with the given tokenId.
-     * @param tokenId The tokenId of the interchain token.
-     * @return tokenAddress The address of the interchain token.
-     */
-    function interchainTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
-
-    /**
      * @notice Returns the custom tokenId associated with the given operator and salt.
      * @param operator_ The operator address.
      * @param salt The salt used for token id calculation.

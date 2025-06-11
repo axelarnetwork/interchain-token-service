@@ -16,16 +16,12 @@ contract TokenCreationPricing is ITokenCreationPricing {
 
     function _setTokenCreationPrice(uint256 price) internal {
         _tokenCreationPricingStorage().tokenCreationPrice = price;
-
-        emit TokenCreationPriceSet(price);
     }
 
     function _setWhbarAddress(address whbarAddress_) internal {
         if (whbarAddress_ == address(0)) revert InvalidWhbarAddress();
 
         _tokenCreationPricingStorage().whbarAddress = whbarAddress_;
-
-        emit WhbarAddressSet(whbarAddress_);
     }
 
     function tokenCreationPrice() public view returns (uint256 price) {
@@ -38,10 +34,6 @@ contract TokenCreationPricing is ITokenCreationPricing {
      */
     function _tokenCreationPriceTinybars() internal returns (uint256 price) {
         uint256 priceTinycents = _tokenCreationPricingStorage().tokenCreationPrice;
-
-        if (priceTinycents == 0) {
-            return 0;
-        }
 
         // TODO(hedera) explain why + 1 (for rounding)
         price = HTS.tinycentsToTinybars(priceTinycents) + 1;

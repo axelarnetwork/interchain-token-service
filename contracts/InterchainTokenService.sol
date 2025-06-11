@@ -241,17 +241,6 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Returns the address of the interchain token associated with the given tokenId.
-     * @dev The token does not need to exist.
-     * @param tokenId The tokenId of the interchain token.
-     * @return tokenAddress The address of the interchain token.
-     */
-    function interchainTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
-        tokenId = _getInterchainTokenSalt(tokenId);
-        tokenAddress = _create3Address(tokenId);
-    }
-
-    /**
      * @notice Calculates the tokenId that would correspond to a link for a given deployer with a specified salt.
      * @param sender The address of the TokenManager deployer.
      * @param salt The salt that the deployer uses for the deployment.

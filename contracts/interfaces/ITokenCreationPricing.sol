@@ -8,18 +8,6 @@ pragma solidity ^0.8.0;
  */
 interface ITokenCreationPricing {
     /**
-     * @notice Emitted when the token creation price is updated
-     * @param newPrice The new token creation price in tinycents
-     */
-    event TokenCreationPriceSet(uint256 newPrice);
-
-    /**
-     * @notice Emitted when the WHBAR address is updated
-     * @param newWhbarAddress The new WHBAR contract address
-     */
-    event WhbarAddressSet(address newWhbarAddress);
-
-    /**
      * @notice Error thrown when an invalid price is provided
      */
     error InvalidTokenCreationPrice();
