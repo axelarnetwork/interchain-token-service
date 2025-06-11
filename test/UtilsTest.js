@@ -230,6 +230,7 @@ describe('InterchainTokenDeployer', () => {
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const decimals = 18;
+    const price = 1000; // 1000 tinybars
     const MINTER_ROLE = 0;
 
     before(async () => {
@@ -252,7 +253,7 @@ describe('InterchainTokenDeployer', () => {
 
         const token = await getContractAt('InterchainToken', tokenAddress, ownerWallet);
 
-        await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals))
+        await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals, price))
             .to.emit(token, 'RolesAdded')
             .withArgs(service, 1 << MINTER_ROLE)
             .and.to.emit(token, 'RolesAdded')
@@ -268,7 +269,7 @@ describe('InterchainTokenDeployer', () => {
 
         await expectRevert(
             (gasOptions) =>
-                interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals, gasOptions),
+                interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals, price, gasOptions),
             interchainTokenDeployer,
             'AlreadyDeployed',
         );

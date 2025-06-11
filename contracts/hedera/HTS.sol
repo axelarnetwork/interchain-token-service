@@ -95,7 +95,7 @@ library HTS {
     /// @param initialTotalSupply Specifies the initial supply of tokens to be put in circulation. The
     /// initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible.
     /// @param decimals the number of decimal places a token is divisible by
-    /// @param price the amount of HBAR (in tinybars) to pay for token creation
+    /// @param price the amount to pay for token creation
     /// @return tokenAddress the created token's address
     function createFungibleToken(
         IHederaTokenService.HederaToken memory token,

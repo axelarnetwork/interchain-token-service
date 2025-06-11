@@ -7,9 +7,51 @@ const Proxy = require('../artifacts/contracts/proxies/InterchainProxy.sol/Interc
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { ITS_HUB_ADDRESS } = require('../test/constants');
+const { deployHTS } = require('./deploy-hts');
 
-async function deployContract(wallet, contractName, args = []) {
-    const factory = await ethers.getContractFactory(contractName, wallet);
+const HTS_LIBRARY_NAME = 'contracts/hedera/HTS.sol:HTS';
+
+// List of contracts that depend on HTS library
+const HTS_DEPENDENT_CONTRACTS = [
+    'InterchainTokenService',
+    'InterchainTokenDeployer',
+    'TokenManager',
+    // Test
+    'TestInterchainTokenService',
+    'TestInterchainTokenDeployer',
+    'TestTokenManager',
+];
+
+// Context object to hold deployment state
+const deploymentContext = {
+    htsAddress: null,
+};
+
+function getCurrentHTSAddress() {
+    return deploymentContext.htsAddress;
+}
+
+async function deployContract(wallet, contractName, args = [], additionalLibraries = {}, htsAddress = null) {
+    const libraries = { ...additionalLibraries };
+
+    // Automatically add HTS library for dependent contracts
+    if (HTS_DEPENDENT_CONTRACTS.includes(contractName)) {
+        let currentHtsAddress = htsAddress || deploymentContext.htsAddress;
+
+        if (!currentHtsAddress) {
+            console.log('Deploying HTS library for', contractName);
+            currentHtsAddress = await deployHTS(wallet);
+            console.log('HTS library deployed at:', currentHtsAddress);
+            deploymentContext.htsAddress = currentHtsAddress;
+        }
+
+        libraries[HTS_LIBRARY_NAME] = currentHtsAddress;
+    }
+
+    const factory = await ethers.getContractFactory(contractName, {
+        signer: wallet,
+        libraries,
+    });
     const contract = await factory.deploy(...args).then((d) => d.deployed());
 
     return contract;
@@ -80,7 +122,11 @@ async function deployAll(
     evmChains = [],
     deploymentKey = 'InterchainTokenService',
     factoryDeploymentKey = deploymentKey + 'Factory',
+    htsAddress = null,
 ) {
+    // Reset deployment context
+    deploymentContext.htsAddress = htsAddress;
+
     const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
         .deploy()
         .then((d) => d.deployed());
@@ -90,7 +136,7 @@ async function deployAll(
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
     const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
-    const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
+    const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer');
     const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
     const tokenHandler = await deployContract(wallet, 'TokenHandler', []);
 
@@ -130,6 +176,7 @@ async function deployAll(
         interchainTokenDeployer,
         tokenManager,
         tokenHandler,
+        htsAddress: deploymentContext.htsAddress,
     };
 }
 
@@ -140,4 +187,5 @@ module.exports = {
     deployInterchainTokenService,
     deployInterchainTokenFactory,
     deployAll,
+    getCurrentHTSAddress,
 };
