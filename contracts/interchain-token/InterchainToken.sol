@@ -48,11 +48,11 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
 
     /**
      * @notice Internal function to set the deployer address in slot 0
-     * @param deployer The address of the deployer
+     * @param newDeployer The address of the deployer
      */
-    function _setDeployer(address deployer) internal {
+    function _setDeployer(address newDeployer) internal {
         assembly {
-            sstore(DEPLOYER_SLOT, deployer)
+            sstore(DEPLOYER_SLOT, newDeployer)
         }
     }
 
@@ -79,6 +79,7 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
         if (interchainTokenServiceAddress == address(0)) revert InterchainTokenServiceAddressZero();
 
         interchainTokenService_ = interchainTokenServiceAddress;
+        _setDeployer(msg.sender); // Set initial deployer to msg.sender
     }
 
     /**
