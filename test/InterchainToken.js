@@ -142,7 +142,7 @@ describe('InterchainToken', () => {
             expect(finalAllowance).to.eq(initialAllowance);
         });
 
-        it('should get the correct deployer address as 0x when no deployer is set', async () => {
+        it('should have a zero deployer address after initialization', async () => {
             const deployer = await token.getDeployer();
             expect(deployer).to.equal(AddressZero);
         });
@@ -167,7 +167,7 @@ describe('InterchainToken', () => {
             const contractBytecodeHash = keccak256(contractBytecode);
 
             const expected = {
-                london: '0xaed0b35ad6bea174eb976222060ce7cf0867869e1c9b9c4d12b2d5cf0749d5e2',
+                london: '0x9d07f4d8bd134cc5e2d3ba6232bfc3b8a0bba5f3b13907a6b8855a204fced573',
             }[getEVMVersion()];
 
             expect(contractBytecodeHash).to.be.equal(expected);
