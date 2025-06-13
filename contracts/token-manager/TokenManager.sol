@@ -98,10 +98,11 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
      * If the token is a supported HTS token, the Token Manager will associate itself with the token.
      * @param tokenAddress_ The address of the token to check.
      * @param implementationType_ The implementation type to check.
+     * @return isHtsToken True if the token is an HTS token, false otherwise.
      * @dev It's cheaper to check both the token and the implementation type in one function.
      */
-    function ensureSupported(address tokenAddress_, uint256 implementationType_) external {
-        bool isHtsToken = HTS.isToken(tokenAddress_);
+    function ensureSupported(address tokenAddress_, uint256 implementationType_) external returns (bool isHtsToken) {
+        isHtsToken = HTS.isToken(tokenAddress_);
         if (isHtsToken) {
             // Currently MINT_BURN and MINT_BURN_FROM are not supported for HTS tokens
             // See contracts/hedera/README.md for more information

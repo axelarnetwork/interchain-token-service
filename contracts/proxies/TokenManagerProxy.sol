@@ -28,6 +28,7 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerType, ITokenManagerProxy {
     uint256 public immutable implementationType;
     bytes32 public immutable interchainTokenId;
     address public immutable tokenAddress;
+    bool public immutable isHtsToken;
 
     /**
      * @notice Constructs the TokenManagerProxy contract.
@@ -77,6 +78,9 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerType, ITokenManagerProxy {
             }
             tokenAddress = tokenAddress_;
 
+            // Native interchain tokens are always HTS tokens on Hedera
+            isHtsToken = true;
+
             // Setup the token manager
             // The setup will add operator as the minter
             bytes memory setupParams = abi.encode(operator, tokenAddress_);
@@ -85,7 +89,10 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerType, ITokenManagerProxy {
             if (!success) revert SetupFailed();
         } else {
             // For other token manager types
-            // Check token manager type is supported
+            // Get the token address from the params first
+            tokenAddress = IBaseTokenManager(implementation_).getTokenAddressFromParams(params);
+
+            // Check token manager type is supported and get HTS status
             bool success;
             bytes memory returnData;
             (success, returnData) = implementation_.delegatecall(
@@ -93,8 +100,12 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerType, ITokenManagerProxy {
             );
             if (!success) revert NotSupported(returnData);
 
-            // Get the token address from the params
-            tokenAddress = IBaseTokenManager(implementation_).getTokenAddressFromParams(params);
+            // Decode the return value to get isHtsToken
+            bool isHtsToken_;
+            assembly {
+                isHtsToken_ := mload(add(returnData, 0x20))
+            }
+            isHtsToken = isHtsToken_;
 
             // Setup the token manager
             (success, ) = implementation_.delegatecall(abi.encodeWithSelector(IProxy.setup.selector, params));

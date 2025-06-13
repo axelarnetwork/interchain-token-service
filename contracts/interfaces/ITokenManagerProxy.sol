@@ -37,4 +37,10 @@ interface ITokenManagerProxy is IProxy {
      * @return address The token address.
      */
     function getImplementationTypeAndTokenAddress() external view returns (uint256, address);
+
+    /**
+     * @notice Returns whether the token is an HTS token.
+     * @return bool True if the token is an HTS token, false otherwise.
+     */
+    function isHtsToken() external view returns (bool);
 }

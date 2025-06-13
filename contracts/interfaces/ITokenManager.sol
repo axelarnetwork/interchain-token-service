@@ -35,8 +35,9 @@ interface ITokenManager is IBaseTokenManager, ITokenManagerType, IOperator, IFlo
      * @notice Reverts if the token manager type is not supported for a given token address.
      * @param tokenAddress_ The address of the token.
      * @param implementationType_ The implementation type to check.
+     * @return isHtsToken True if the token is an HTS token, false otherwise.
      */
-    function ensureSupported(address tokenAddress_, uint256 implementationType_) external;
+    function ensureSupported(address tokenAddress_, uint256 implementationType_) external returns (bool isHtsToken);
 
     function addFlowIn(uint256 amount) external;
 
