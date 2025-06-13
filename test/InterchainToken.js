@@ -8,10 +8,11 @@ const {
 } = ethers;
 const { expect } = require('chai');
 const { getRandomBytes32, expectRevert, getEVMVersion } = require('./utils');
-const { deployContract } = require('../scripts/deploy');
+const { deployContract, deployAll } = require('../scripts/deploy');
 
 describe('InterchainToken', () => {
     let interchainToken, interchainTokenDeployer;
+    let service, gateway, gasService;
 
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -22,13 +23,17 @@ describe('InterchainToken', () => {
     let tokenTest;
     let owner;
     let user;
+    let deployer;
 
     before(async () => {
         const wallets = await ethers.getSigners();
         owner = wallets[0];
         user = wallets[1];
+        deployer = wallets[1];
 
-        interchainToken = await deployContract(owner, 'InterchainToken', [owner.address]);
+        ({ service, gateway, gasService } = await deployAll(owner, 'Test'));
+
+        interchainToken = await deployContract(owner, 'InterchainToken', [service.address]);
         interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [interchainToken.address]);
 
         const salt = getRandomBytes32();
@@ -138,6 +143,23 @@ describe('InterchainToken', () => {
             const finalAllowance = await tokenTest.allowance(sender, spender);
             expect(finalAllowance).to.eq(initialAllowance);
         });
+
+        it('should get the correct deployer address as 0x when no deployer is set', async () => {
+            const deployer = await token.getDeployer();
+            expect(deployer).to.equal(AddressZero);
+        });
+
+        it('should get the correct deployer address after updateDeployer', async () => {
+            await token.connect(owner).updateDeployer(deployer.address);
+            const newDeployer = await token.getDeployer();
+            expect(newDeployer).to.equal(deployer.address);
+        });
+
+        it('should revert when non-ITS or non-operator tries to update deployer', async () => {
+            await expect(
+                token.connect(user).updateDeployer(user.address)
+            ).to.be.reverted;
+        });
     });
 
     describe('Bytecode checks [ @skip-on-coverage ]', () => {
@@ -147,7 +169,7 @@ describe('InterchainToken', () => {
             const contractBytecodeHash = keccak256(contractBytecode);
 
             const expected = {
-                london: '0xa01cf28b0b6ce6dc3b466e995585d69486400d671fce0ea8d06beba583e6f3bb',
+                london: '0xaed0b35ad6bea174eb976222060ce7cf0867869e1c9b9c4d12b2d5cf0749d5e2',
             }[getEVMVersion()];
 
             expect(contractBytecodeHash).to.be.equal(expected);
