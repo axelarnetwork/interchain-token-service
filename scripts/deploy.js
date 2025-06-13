@@ -8,6 +8,7 @@ const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifac
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { ITS_HUB_ADDRESS } = require('../test/constants');
 const { deployHTS } = require('./deploy-hts');
+const { deployWHBAR, fundWithWHBAR } = require('./deploy-whbar');
 
 const HTS_LIBRARY_NAME = 'contracts/hedera/HTS.sol:HTS';
 
@@ -25,10 +26,15 @@ const HTS_DEPENDENT_CONTRACTS = [
 // Context object to hold deployment state
 const deploymentContext = {
     htsAddress: null,
+    whbarAddress: null,
 };
 
 function getCurrentHTSAddress() {
     return deploymentContext.htsAddress;
+}
+
+function getCurrentWHBARAddress() {
+    return deploymentContext.whbarAddress;
 }
 
 async function deployContract(wallet, contractName, args = [], additionalLibraries = {}, htsAddress = null) {
@@ -41,7 +47,7 @@ async function deployContract(wallet, contractName, args = [], additionalLibrari
         if (!currentHtsAddress) {
             console.log('Deploying HTS library for', contractName);
             currentHtsAddress = await deployHTS(wallet);
-            console.log('HTS library deployed at:', currentHtsAddress);
+            console.log('HTS library deployed to', currentHtsAddress);
             deploymentContext.htsAddress = currentHtsAddress;
         }
 
@@ -125,15 +131,34 @@ async function deployAll(
     deploymentKey = 'InterchainTokenService',
     factoryDeploymentKey = deploymentKey + 'Factory',
     htsAddress = null,
+    whbarAddress = null,
+    fundingAmount = '10', // Default 10 HBAR funding for ITS
 ) {
+    // Print wallet balance
+    const balance = await wallet.getBalance();
+    console.log(`Wallet balance: ${ethers.utils.formatEther(balance)} ETH`);
+
     // Reset deployment context
     deploymentContext.htsAddress = htsAddress;
+    deploymentContext.whbarAddress = whbarAddress;
 
     const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
         .deploy()
         .then((d) => d.deployed());
     const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
+
+    // Deploy WHBAR if not provided
+    let whbar;
+
+    if (!deploymentContext.whbarAddress) {
+        console.log('Deploying WHBAR...');
+        whbar = await deployWHBAR(wallet);
+        deploymentContext.whbarAddress = whbar.address;
+    } else {
+        console.log('Using existing WHBAR at:', deploymentContext.whbarAddress);
+        whbar = await ethers.getContractAt('WHBAR', deploymentContext.whbarAddress, wallet);
+    }
 
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
@@ -160,6 +185,18 @@ async function deployAll(
         deploymentKey,
     );
 
+    // Set WHBAR address on ITS
+    console.log('Setting WHBAR address on ITS...');
+    const setWhbarTx = await service.setWhbarAddress(whbar.address);
+    await setWhbarTx.wait();
+    console.log(`WHBAR address set on ITS: ${whbar.address}`);
+
+    // Fund ITS with WHBAR if funding amount is specified
+    if (fundingAmount && parseFloat(fundingAmount) > 0) {
+        const fundingAmountWei = ethers.utils.parseEther(fundingAmount);
+        await fundWithWHBAR(whbar, service.address, fundingAmountWei, wallet);
+    }
+
     const tokenFactory = await deployInterchainTokenFactory(
         wallet,
         create3Deployer.address,
@@ -179,6 +216,8 @@ async function deployAll(
         tokenManager,
         tokenHandler,
         htsAddress: deploymentContext.htsAddress,
+        whbarAddress: deploymentContext.whbarAddress,
+        whbar,
     };
 }
 
@@ -190,4 +229,5 @@ module.exports = {
     deployInterchainTokenFactory,
     deployAll,
     getCurrentHTSAddress,
+    getCurrentWHBARAddress,
 };

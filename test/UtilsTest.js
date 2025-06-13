@@ -9,7 +9,7 @@ const {
 } = ethers;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert } = require('./utils');
-const { deployContract } = require('../scripts/deploy');
+const { deployContract, deployAll } = require('../scripts/deploy');
 
 let ownerWallet, otherWallet;
 
@@ -269,7 +269,16 @@ describe('InterchainTokenDeployer', () => {
 
         await expectRevert(
             (gasOptions) =>
-                interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals, price, gasOptions),
+                interchainTokenDeployer.deployInterchainToken(
+                    salt,
+                    tokenId,
+                    ownerWallet.address,
+                    name,
+                    symbol,
+                    decimals,
+                    price,
+                    gasOptions,
+                ),
             interchainTokenDeployer,
             'AlreadyDeployed',
         );
@@ -343,5 +352,44 @@ describe('Create3Deployer', () => {
             expect(await ethers.provider.getBalance(address)).to.equal(0);
             expect(await ethers.provider.getBalance(deployer.address)).to.equal(10);
         });
+    });
+});
+
+describe('WHBAR Integration', () => {
+    let deployment;
+    let whbar;
+
+    before(async () => {
+        deployment = await deployAll(
+            ownerWallet,
+            'test-chain',
+            undefined, // itsHubAddress
+            [], // evmChains
+            'TestITS',
+            'TestITSFactory',
+            undefined, // htsAddress
+            undefined, // whbarAddress
+            '50', // Fund ITS with 5 HBAR worth of WHBAR
+        );
+        whbar = deployment.whbar;
+    });
+
+    it('Should deploy ITS with WHBAR integration', async () => {
+        expect(deployment.service.address).to.not.equal(AddressZero);
+        expect(deployment.whbarAddress).to.not.equal(AddressZero);
+    });
+
+    it('Should set WHBAR address on ITS', async () => {
+        const whbarAddressFromITS = await deployment.service.whbarAddress();
+        expect(whbarAddressFromITS).to.equal(deployment.whbarAddress);
+    });
+
+    it('Should fund ITS with WHBAR balance', async () => {
+        const itsWhbarBalance = await whbar.balanceOf(deployment.service.address);
+        expect(itsWhbarBalance).to.be.gt(0);
+
+        // Should have 5 HBAR worth of WHBAR (50 * 10^8 tinybars)
+        const expectedBalance = ethers.utils.parseUnits('50', 8);
+        expect(itsWhbarBalance).to.equal(expectedBalance);
     });
 });
