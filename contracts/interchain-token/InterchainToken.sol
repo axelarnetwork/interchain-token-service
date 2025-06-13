@@ -139,6 +139,8 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
         decimals = tokenDecimals;
         tokenId = tokenId_;
 
+        _setDeployer(msg.sender); // Set deployer to msg.sender during initialization
+
         /**
          * @dev Set the token service as a minter to allow it to mint and burn tokens.
          * Also add the provided address as a minter. If `address(0)` was provided,

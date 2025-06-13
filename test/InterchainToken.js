@@ -12,7 +12,6 @@ const { deployContract, deployAll } = require('../scripts/deploy');
 
 describe('InterchainToken', () => {
     let interchainToken, interchainTokenDeployer;
-    let service;
 
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -142,9 +141,9 @@ describe('InterchainToken', () => {
             expect(finalAllowance).to.eq(initialAllowance);
         });
 
-        it('should have a zero deployer address after initialization', async () => {
+        it('should have the interchainTokenDeployer contract as deployer address after initialization', async () => {
             const deployer = await token.getDeployer();
-            expect(deployer).to.equal(AddressZero);
+            expect(deployer).to.equal(interchainTokenDeployer.address);
         });
 
         it('should get the correct deployer address after updateDeployer', async () => {
@@ -167,7 +166,7 @@ describe('InterchainToken', () => {
             const contractBytecodeHash = keccak256(contractBytecode);
 
             const expected = {
-                london: '0x9d07f4d8bd134cc5e2d3ba6232bfc3b8a0bba5f3b13907a6b8855a204fced573',
+                london: '0x4963dcad3e0a7ebe244cb5e12343a8bf36b339a8f81c1d1cf2f1cf7323459879',
             }[getEVMVersion()];
 
             expect(contractBytecodeHash).to.be.equal(expected);
