@@ -12,7 +12,7 @@ const { deployContract, deployAll } = require('../scripts/deploy');
 
 describe('InterchainToken', () => {
     let interchainToken, interchainTokenDeployer;
-    let service, gateway, gasService;
+    let service;
 
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
@@ -31,9 +31,7 @@ describe('InterchainToken', () => {
         user = wallets[1];
         deployer = wallets[1];
 
-        ({ service, gateway, gasService } = await deployAll(owner, 'Test'));
-
-        interchainToken = await deployContract(owner, 'InterchainToken', [service.address]);
+        interchainToken = await deployContract(owner, 'InterchainToken', [owner.address]);
         interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [interchainToken.address]);
 
         const salt = getRandomBytes32();
@@ -157,7 +155,7 @@ describe('InterchainToken', () => {
 
         it('should revert when non-ITS or non-operator tries to update deployer', async () => {
             await expect(
-                token.connect(user).updateDeployer(user.address)
+                token.connect(user).updateDeployer(user.address),
             ).to.be.reverted;
         });
     });
