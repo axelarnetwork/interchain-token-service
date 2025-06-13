@@ -37,6 +37,37 @@ const expectNonZeroAddress = (v) => {
     return expect(v).to.be.a('string') && v !== ethers.constants.AddressZero && v !== '';
 };
 
+const validateTokenManagerParams = (
+    tokenManagerType,
+    expectedOperator,
+    expectedName,
+    expectedSymbol,
+    expectedDecimals,
+    expectedTokenAddress,
+) => {
+    return (params) => {
+        if (tokenManagerType === 'NATIVE_INTERCHAIN_TOKEN') {
+            // For native interchain tokens: abi.encode(operator, name, symbol, decimals, tokenCreatePrice)
+            const [operator, name, symbol, decimals, price] = defaultAbiCoder.decode(
+                ['bytes', 'string', 'string', 'uint8', 'uint256'],
+                params,
+            );
+            expect(operator).to.equal(expectedOperator);
+            expect(name).to.equal(expectedName);
+            expect(symbol).to.equal(expectedSymbol);
+            expect(decimals).to.equal(expectedDecimals);
+            expect(price).to.be.a('number');
+        } else {
+            // For other token manager types: abi.encode(operator, tokenAddress)
+            const [operator, tokenAddress] = defaultAbiCoder.decode(['bytes', 'address'], params);
+            expect(operator).to.equal(expectedOperator);
+            expect(tokenAddress).to.equal(expectedTokenAddress);
+        }
+
+        return true;
+    };
+};
+
 const expectRevert = async (txFunc, contract, error, args) => {
     if (network.config.skipRevertTests || contract === undefined) {
         await expect(txFunc(getGasOptions())).to.be.reverted;
@@ -257,6 +288,8 @@ module.exports = {
     getChainId,
     getGasOptions,
     expectRevert,
+    expectNonZeroAddress,
+    validateTokenManagerParams,
     getPayloadAndProposalHash,
     waitFor,
     gasReporter,

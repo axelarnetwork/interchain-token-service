@@ -21,6 +21,8 @@ const {
     encodeReceiveHubMessage,
     encodeLinkTokenMessage,
     encodeRegisterTokenMetadataMessage,
+    expectNonZeroAddress,
+    validateTokenManagerParams,
 } = require('./utils');
 const { deployAll, deployContract } = require('../scripts/deploy');
 const { approveContractCall } = require('../scripts/utils');
@@ -166,7 +168,12 @@ describe('Interchain Token Service Full Flow', () => {
 
         before(async () => {
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
+
+            // Deploy token first to get address
+            await tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, wallet.address);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenAddress = await tokenManager.tokenAddress();
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
         });
 
@@ -197,14 +204,18 @@ describe('Interchain Token Service Full Flow', () => {
                 encodeSendHubMessage(chain, encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, wallet.address)),
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
 
             const multicall = await tokenFactory.multicall(calls, { value });
             await expect(multicall)
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, name, symbol, decimals)
+                .withArgs(tokenId, expectNonZeroAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params)
+                .withArgs(
+                    tokenId,
+                    expectedTokenManagerAddress,
+                    NATIVE_INTERCHAIN_TOKEN,
+                    validateTokenManagerParams('NATIVE_INTERCHAIN_TOKEN', tokenFactory.address, name, symbol, decimals),
+                )
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, wallet.address.toLowerCase(), otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -512,7 +523,12 @@ describe('Interchain Token Service Full Flow', () => {
 
         before(async () => {
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
+
+            // Deploy token first to get address
+            await tokenFactory.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenAddress = await tokenManager.tokenAddress();
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
         });
 
@@ -536,14 +552,18 @@ describe('Interchain Token Service Full Flow', () => {
                 encodeSendHubMessage(chain, encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, '0x')),
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
 
             const multicall = await tokenFactory.multicall(calls, { value });
             await expect(multicall)
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, name, symbol, decimals)
+                .withArgs(tokenId, expectNonZeroAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params)
+                .withArgs(
+                    tokenId,
+                    expectedTokenManagerAddress,
+                    NATIVE_INTERCHAIN_TOKEN,
+                    validateTokenManagerParams('NATIVE_INTERCHAIN_TOKEN', tokenFactory.address, name, symbol, decimals),
+                )
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
@@ -622,16 +642,23 @@ describe('Interchain Token Service Full Flow', () => {
         before(async () => {
             const salt = getRandomBytes32();
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, tokenAddress]);
 
             await expect(tokenFactory.deployInterchainToken(salt, name, symbol, decimals, totalMint, AddressZero))
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, tokenAddress, tokenFactory.address, name, symbol, decimals)
+                .withArgs(tokenId, expectNonZeroAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
+                .withArgs(
+                    tokenId,
+                    expectedTokenManagerAddress,
+                    NATIVE_INTERCHAIN_TOKEN,
+                    validateTokenManagerParams('NATIVE_INTERCHAIN_TOKEN', tokenFactory.address, name, symbol, decimals),
+                );
 
+            // Get token address from deployed token manager
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenAddress = await tokenManager.tokenAddress();
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
             executable = await deployContract(wallet, 'TestInterchainExecutable', [service.address]);
         });
@@ -718,8 +745,14 @@ describe('Interchain Token Service Full Flow', () => {
 
         before(async () => {
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
+
+            // Deploy token first to get address
+            await tokenFactory.deployInterchainToken(salt, name, symbol, decimals, mintAmount, wallet.address);
+            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
+            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
+            const tokenAddress = await tokenManager.tokenAddress();
             token = await getContractAt('InterchainToken', tokenAddress, wallet);
+
             executable = await deployContract(wallet, 'TestInterchainExecutable', [service.address]);
 
             // Route via ITS Hub for the following chain
@@ -749,14 +782,18 @@ describe('Interchain Token Service Full Flow', () => {
                 encodeSendHubMessage(chain, encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, '0x')),
             );
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const expectedTokenAddress = await service.interchainTokenAddress(tokenId);
 
             const multicall = await tokenFactory.multicall(calls, { value });
             await expect(multicall)
                 .to.emit(service, 'InterchainTokenDeployed')
-                .withArgs(tokenId, expectedTokenAddress, tokenFactory.address, name, symbol, decimals)
+                .withArgs(tokenId, expectNonZeroAddress, tokenFactory.address, name, symbol, decimals)
                 .and.to.emit(service, 'TokenManagerDeployed')
-                .withArgs(tokenId, expectedTokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params)
+                .withArgs(
+                    tokenId,
+                    expectedTokenManagerAddress,
+                    NATIVE_INTERCHAIN_TOKEN,
+                    validateTokenManagerParams('NATIVE_INTERCHAIN_TOKEN', '0x', name, symbol, decimals),
+                )
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
                 .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')

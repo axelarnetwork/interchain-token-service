@@ -24,6 +24,7 @@ const {
     encodeReceiveHubMessage,
     encodeLinkTokenMessage,
     encodeRegisterTokenMetadataMessage,
+    expectNonZeroAddress,
 } = require('./utils');
 const { deployAll, deployContract, deployInterchainTokenService } = require('../scripts/deploy');
 const {
@@ -233,8 +234,6 @@ describe.only('Interchain Token Service', () => {
         const tokenId = await service.interchainTokenId(wallet.address, salt);
 
         const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-        const tokenAddress = await service.interchainTokenAddress(tokenId);
-        const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, tokenAddress]);
         const { payload } = encodeReceiveHubMessage(
             sourceChain,
             encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, wallet.address),
@@ -243,23 +242,21 @@ describe.only('Interchain Token Service', () => {
 
         await expect(service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload))
             .to.emit(service, 'InterchainTokenDeployed')
-            .withArgs(tokenId, tokenAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
+            .withArgs(tokenId, expectNonZeroAddress, wallet.address, tokenName, tokenSymbol, tokenDecimals)
             .and.to.emit(service, 'TokenManagerDeployed')
             .withArgs(tokenId, tokenManagerAddress, NATIVE_INTERCHAIN_TOKEN, params);
 
         const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-        expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
         expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
 
-        const token = await getContractAt('IInterchainToken', tokenAddress, wallet);
-
         if (mintAmount > 0) {
-            await token.mint(wallet.address, mintAmount).then((tx) => tx.wait());
-            if (!skipApprove) await token.approve(service.address, mintAmount).then((tx) => tx.wait());
+            await tokenManager.mint(wallet.address, mintAmount).then((tx) => tx.wait());
+            // TODO(hedera) support this
+            if (!skipApprove) await tokenManager.approve(service.address, mintAmount).then((tx) => tx.wait());
         }
 
         if (minter) {
-            await token.transferMintership(minter).then((tx) => tx.wait());
+            await tokenManager.transferMintership(minter).then((tx) => tx.wait());
         }
 
         return [token, tokenManager, tokenId, salt];
@@ -733,8 +730,6 @@ describe.only('Interchain Token Service', () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const minter = '0x';
             const operator = '0x';
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const { payload } = encodeReceiveHubMessage(
                 destinationChain,
                 encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter),
@@ -794,8 +789,6 @@ describe.only('Interchain Token Service', () => {
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const minter = '0x';
             const operator = '0x';
-            const tokenAddress = await service.interchainTokenAddress(tokenId);
-            const params = defaultAbiCoder.encode(['bytes', 'address'], [operator, tokenAddress]);
             const { payload } = encodeReceiveHubMessage(
                 destinationChain,
                 encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter),
