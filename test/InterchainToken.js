@@ -8,7 +8,7 @@ const {
 } = ethers;
 const { expect } = require('chai');
 const { getRandomBytes32, expectRevert, getEVMVersion } = require('./utils');
-const { deployContract, deployAll } = require('../scripts/deploy');
+const { deployContract } = require('../scripts/deploy');
 
 describe('InterchainToken', () => {
     let interchainToken, interchainTokenDeployer;
