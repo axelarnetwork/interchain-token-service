@@ -153,9 +153,7 @@ describe('InterchainToken', () => {
         });
 
         it('should revert when non-ITS or non-operator tries to update deployer', async () => {
-            await expect(
-                token.connect(user).updateDeployer(user.address),
-            ).to.be.reverted;
+            await expect(token.connect(user).updateDeployer(user.address)).to.be.reverted;
         });
     });
 
