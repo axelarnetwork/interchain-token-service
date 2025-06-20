@@ -22,13 +22,11 @@ describe('InterchainToken', () => {
     let tokenTest;
     let owner;
     let user;
-    let deployer;
 
     before(async () => {
         const wallets = await ethers.getSigners();
         owner = wallets[0];
         user = wallets[1];
-        deployer = wallets[1];
 
         interchainToken = await deployContract(owner, 'InterchainToken', [owner.address]);
         interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [interchainToken.address]);

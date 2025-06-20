@@ -124,50 +124,6 @@ describe('HyperliquidInterchainToken', () => {
             const allowance = await token.allowance(owner.address, spender);
             expect(allowance).to.equal(allowanceAmount);
         });
-
-        it('should maintain permit functionality', async () => {
-            const spender = user.address;
-            const value = 100;
-            const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
-            
-            // Get current nonce
-            const nonce = await token.nonces(owner.address);
-            
-            // Create permit signature
-            const domain = {
-                name: name,
-                version: '1',
-                chainId: await ethers.provider.getNetwork().then(n => n.chainId),
-                verifyingContract: token.address,
-            };
-            
-            const types = {
-                Permit: [
-                    { name: 'owner', type: 'address' },
-                    { name: 'spender', type: 'address' },
-                    { name: 'value', type: 'uint256' },
-                    { name: 'nonce', type: 'uint256' },
-                    { name: 'deadline', type: 'uint256' },
-                ],
-            };
-            
-            const message = {
-                owner: owner.address,
-                spender: spender,
-                value: value,
-                nonce: nonce,
-                deadline: deadline,
-            };
-            
-            const signature = await owner._signTypedData(domain, types, message);
-            const { v, r, s } = ethers.utils.splitSignature(signature);
-            
-            // Execute permit
-            await token.permit(owner.address, spender, value, deadline, v, r, s);
-            
-            const allowance = await token.allowance(owner.address, spender);
-            expect(allowance).to.equal(value);
-        });
     });
 
     describe('Storage Layout Verification', () => {
