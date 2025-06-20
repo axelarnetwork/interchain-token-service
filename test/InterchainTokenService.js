@@ -641,36 +641,67 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Owner functions', () => {
-        const chain = 'Test';
-
         it('Should revert on set pause status when not called by the owner', async () => {
-            await expectRevert((gasOptions) => service.connect(otherWallet).setPauseStatus(true, gasOptions), service, 'NotOwner');
+            await expect(service.connect(otherWallet).setPauseStatus(true)).to.be.revertedWithCustomError(service, 'NotOwner');
         });
 
         it('Should revert on set trusted address when not called by the owner', async () => {
-            const trustedAddress = otherWallet.address.toString();
-
-            await expectRevert(
-                (gasOptions) => service.connect(otherWallet).setTrustedAddress(chain, trustedAddress, gasOptions),
+            await expect(service.connect(otherWallet).setTrustedAddress('ethereum', otherWallet.address)).to.be.revertedWithCustomError(
                 service,
                 'NotOwner',
             );
         });
 
         it('Should set trusted address', async () => {
-            const trustedAddress = otherWallet.address.toString();
-
-            await expect(service.setTrustedAddress(chain, trustedAddress))
-                .to.emit(service, 'TrustedAddressSet')
-                .withArgs(chain, trustedAddress);
+            await service.setTrustedAddress('ethereum', otherWallet.address);
+            expect(await service.trustedAddress('ethereum')).to.equal(otherWallet.address);
         });
 
         it('Should revert on remove trusted address when not called by the owner', async () => {
-            await expectRevert((gasOptions) => service.connect(otherWallet).removeTrustedAddress(chain, gasOptions), service, 'NotOwner');
+            await expect(service.connect(otherWallet).removeTrustedAddress('ethereum')).to.be.revertedWithCustomError(service, 'NotOwner');
         });
 
         it('Should remove trusted address', async () => {
-            await expect(service.removeTrustedAddress(chain)).to.emit(service, 'TrustedAddressRemoved').withArgs(chain);
+            await service.setTrustedAddress('ethereum', otherWallet.address);
+            await service.removeTrustedAddress('ethereum');
+            expect(await service.trustedAddress('ethereum')).to.equal('');
+        });
+
+        it('Should update Hyperliquid token deployer successfully', async () => {
+            // Deploy a HyperliquidInterchainToken
+            const HyperliquidInterchainToken = await ethers.getContractFactory('HyperliquidInterchainToken', wallet);
+            const hyperliquidToken = await HyperliquidInterchainToken.deploy(service.address);
+
+            // Update the deployer
+            const newDeployer = otherWallet.address;
+            await service.updateHyperliquidTokenDeployer(hyperliquidToken.address, newDeployer);
+
+            // Verify the deployer was updated
+            expect(await hyperliquidToken.getDeployer()).to.equal(newDeployer);
+        });
+
+        it('Should revert when updating deployer for non-Hyperliquid token', async () => {
+            // Deploy a regular ERC20 token (not HyperliquidInterchainToken)
+            const TestERC20 = await ethers.getContractFactory('TestERC20', wallet);
+            const regularToken = await TestERC20.deploy();
+
+            // Try to update deployer - should revert with NotSupported
+            await expect(service.updateHyperliquidTokenDeployer(regularToken.address, otherWallet.address)).to.be.revertedWithCustomError(
+                service,
+                'NotSupported',
+            );
+        });
+
+        it('Should revert when updating deployer with zero address', async () => {
+            // Deploy a HyperliquidInterchainToken
+            const HyperliquidInterchainToken = await ethers.getContractFactory('HyperliquidInterchainToken', wallet);
+            const hyperliquidToken = await HyperliquidInterchainToken.deploy(service.address);
+
+            // Try to update deployer with zero address - should revert
+            await expect(service.updateHyperliquidTokenDeployer(hyperliquidToken.address, AddressZero)).to.be.revertedWithCustomError(
+                service,
+                'ZeroAddress',
+            );
         });
     });
 

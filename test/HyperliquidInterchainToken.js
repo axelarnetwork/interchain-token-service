@@ -260,10 +260,10 @@ describe('HyperliquidInterchainToken', () => {
             // Test the _setDeployer function indirectly through updateDeployer
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
-            
+
             // Verify the deployer was set correctly
             expect(await token.getDeployer()).to.equal(newDeployer);
-            
+
             // Verify it was stored in slot 0
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(token.address, 0);
@@ -274,18 +274,12 @@ describe('HyperliquidInterchainToken', () => {
         it('should test HyperLiquidDeployer _setDeployer assembly code with multiple updates', async () => {
             // Test _setDeployer with multiple different addresses to ensure assembly code coverage
             const wallets = await ethers.getSigners();
-            const addresses = [
-                owner.address,
-                user.address,
-                ethers.constants.AddressZero,
-                wallets[2].address,
-                wallets[3].address
-            ];
-            
+            const addresses = [owner.address, user.address, ethers.constants.AddressZero, wallets[2].address, wallets[3].address];
+
             for (const addr of addresses) {
                 await token.connect(owner).updateDeployer(addr);
                 expect(await token.getDeployer()).to.equal(addr);
-                
+
                 // Verify storage slot 0 contains the correct value
                 const provider = ethers.provider;
                 const slot0 = await provider.getStorageAt(token.address, 0);
@@ -298,10 +292,10 @@ describe('HyperliquidInterchainToken', () => {
             // Test getDeployer with different deployer addresses
             const deployer1 = owner.address;
             const deployer2 = user.address;
-            
+
             await token.connect(owner).updateDeployer(deployer1);
             expect(await token.getDeployer()).to.equal(deployer1);
-            
+
             await token.connect(owner).updateDeployer(deployer2);
             expect(await token.getDeployer()).to.equal(deployer2);
         });
@@ -310,30 +304,97 @@ describe('HyperliquidInterchainToken', () => {
             // Test that getDeployer returns the same value as reading slot 0 directly
             const provider = ethers.provider;
             const tokenAddress = token.address;
-            
+
             // Set a new deployer
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
-            
+
             // Read slot 0 directly using provider
             const slot0 = await provider.getStorageAt(tokenAddress, 0);
             const deployerFromSlot0 = '0x' + slot0.slice(-40); // Extract last 20 bytes as address
-            
+
             // Get deployer via contract function (uses assembly)
             const deployerFromContract = await token.getDeployer();
-            
+
             // Both should match exactly
             expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
             expect(deployerFromContract).to.equal(newDeployer);
-            
+
             // Test with zero address
             await token.connect(owner).updateDeployer(ethers.constants.AddressZero);
             const slot0Zero = await provider.getStorageAt(tokenAddress, 0);
             const deployerFromSlot0Zero = '0x' + slot0Zero.slice(-40);
             const deployerFromContractZero = await token.getDeployer();
-            
+
             expect(deployerFromSlot0Zero.toLowerCase()).to.equal(deployerFromContractZero.toLowerCase());
             expect(deployerFromContractZero).to.equal(ethers.constants.AddressZero);
+        });
+
+        it('should test HyperLiquidDeployer assembly code with edge cases', async () => {
+            // Test getDeployer with various edge cases to ensure assembly code coverage
+            const provider = ethers.provider;
+            const tokenAddress = token.address;
+
+            // Test with a very large address (all F's)
+            const largeAddress = '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
+            await token.connect(owner).updateDeployer(largeAddress);
+            const returnedLargeAddress = await token.getDeployer();
+            expect(returnedLargeAddress.toLowerCase()).to.equal(largeAddress.toLowerCase());
+
+            // Verify storage slot
+            const slot0Large = await provider.getStorageAt(tokenAddress, 0);
+            const deployerFromSlot0Large = '0x' + slot0Large.slice(-40);
+            expect(deployerFromSlot0Large.toLowerCase()).to.equal(returnedLargeAddress.toLowerCase());
+
+            // Test with a very small address (all 0's except last byte)
+            const smallAddress = '0x0000000000000000000000000000000000000001';
+            await token.connect(owner).updateDeployer(smallAddress);
+            const returnedSmallAddress = await token.getDeployer();
+            expect(returnedSmallAddress.toLowerCase()).to.equal(smallAddress.toLowerCase());
+
+            // Verify storage slot
+            const slot0Small = await provider.getStorageAt(tokenAddress, 0);
+            const deployerFromSlot0Small = '0x' + slot0Small.slice(-40);
+            expect(deployerFromSlot0Small.toLowerCase()).to.equal(returnedSmallAddress.toLowerCase());
+
+            // Test with alternating bytes
+            const alternatingAddress = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+            await token.connect(owner).updateDeployer(alternatingAddress);
+            const returnedAlternatingAddress = await token.getDeployer();
+            expect(returnedAlternatingAddress.toLowerCase()).to.equal(alternatingAddress.toLowerCase());
+
+            // Verify storage slot
+            const slot0Alt = await provider.getStorageAt(tokenAddress, 0);
+            const deployerFromSlot0Alt = '0x' + slot0Alt.slice(-40);
+            expect(deployerFromSlot0Alt.toLowerCase()).to.equal(returnedAlternatingAddress.toLowerCase());
+        });
+
+        it('should test HyperLiquidDeployer _setDeployer assembly code with multiple rapid updates', async () => {
+            // Test rapid updates to ensure _setDeployer assembly code is thoroughly covered
+            const addresses = [
+                owner.address,
+                user.address,
+                ethers.constants.AddressZero,
+                '0x1111111111111111111111111111111111111111',
+                '0x2222222222222222222222222222222222222222',
+                '0x3333333333333333333333333333333333333333',
+            ];
+
+            for (let i = 0; i < addresses.length; i++) {
+                const addr = addresses[i];
+
+                // Update deployer (calls _setDeployer internally)
+                await token.connect(owner).updateDeployer(addr);
+
+                // Verify getDeployer returns correct value (calls assembly sload)
+                expect(await token.getDeployer()).to.equal(addr);
+
+                // Verify storage slot directly
+                const provider = ethers.provider;
+                const slot0 = await provider.getStorageAt(token.address, 0);
+                const deployerFromSlot0 = '0x' + slot0.slice(-40);
+                expect(deployerFromSlot0.toLowerCase()).to.equal(addr.toLowerCase());
+            }
         });
     });
 });
