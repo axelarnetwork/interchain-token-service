@@ -177,7 +177,7 @@ describe('HyperliquidInterchainToken', () => {
 
         it('should test HyperLiquidDeployer updateDeployer failure case', async () => {
             await expect(
-                token.connect(user).updateDeployer(user.address)
+                token.connect(user).updateDeployer(user.address),
             ).to.be.reverted;
         });
 
