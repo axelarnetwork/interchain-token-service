@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import { InterchainToken } from './InterchainToken.sol';
 import { HyperLiquidDeployer } from './HyperLiquidDeployer.sol';
-import { InterchainTokenStandard } from './InterchainTokenStandard.sol';
 import { IHyperliquidInterchainToken } from '../interfaces/IHyperliquidInterchainToken.sol';
 import { IOperator } from '../interfaces/IOperator.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';

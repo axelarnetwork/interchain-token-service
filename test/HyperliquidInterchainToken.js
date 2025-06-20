@@ -208,14 +208,14 @@ describe('HyperliquidInterchainToken', () => {
             // Create a mock ITS contract that implements IOperator
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
-            
+
             // Create a concrete implementation of HyperLiquidDeployer for testing
             const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
             const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
-            
+
             // Transfer operatorship to user
             await mockITS.transferOperatorship(user.address);
-            
+
             // Test that an operator can update the deployer
             await testDeployer.connect(user).updateDeployer(user.address);
             expect(await testDeployer.getDeployer()).to.equal(user.address);
@@ -225,16 +225,17 @@ describe('HyperliquidInterchainToken', () => {
             // Create a mock ITS contract that implements IOperator
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
-            
+
             // Create a concrete implementation of HyperLiquidDeployer for testing
             const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
             const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
-            
+
             // Don't add user as operator, so isOperator should return false
-            
+
             // Test that a non-operator cannot update the deployer
             await expect(testDeployer.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(
-                testDeployer, 'NotAuthorized'
+                testDeployer,
+                'NotAuthorized',
             );
         });
 
@@ -242,10 +243,10 @@ describe('HyperliquidInterchainToken', () => {
             // Test the _setDeployer function indirectly through updateDeployer
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
-            
+
             // Verify the deployer was set correctly
             expect(await token.getDeployer()).to.equal(newDeployer);
-            
+
             // Verify it was stored in slot 0
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(token.address, 0);
@@ -257,10 +258,10 @@ describe('HyperliquidInterchainToken', () => {
             // Test getDeployer with different deployer addresses
             const deployer1 = owner.address;
             const deployer2 = user.address;
-            
+
             await token.connect(owner).updateDeployer(deployer1);
             expect(await token.getDeployer()).to.equal(deployer1);
-            
+
             await token.connect(owner).updateDeployer(deployer2);
             expect(await token.getDeployer()).to.equal(deployer2);
         });
