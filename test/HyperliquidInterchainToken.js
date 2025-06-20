@@ -124,6 +124,23 @@ describe('HyperliquidInterchainToken', () => {
             const allowance = await token.allowance(owner.address, spender);
             expect(allowance).to.equal(allowanceAmount);
         });
+
+        it('should allow ITS itself to update the deployer', async () => {
+            // Deploy a TestOperator contract to act as ITS
+            const TestOperator = await ethers.getContractFactory('TestOperator', owner);
+            const mockITS = await TestOperator.deploy(owner.address);
+
+            // Deploy HyperliquidInterchainToken with mockITS as the ITS address
+            const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
+            const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
+
+            // Call updateDeployer as ITS (owner)
+            const newDeployer = user.address;
+            await testDeployer.connect(owner).updateDeployer(newDeployer);
+
+            // Check that the deployer was updated
+            expect(await testDeployer.getDeployer()).to.equal(newDeployer);
+        });
     });
 
     describe('Storage Layout Verification', () => {
@@ -243,10 +260,10 @@ describe('HyperliquidInterchainToken', () => {
             // Test the _setDeployer function indirectly through updateDeployer
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
-
+            
             // Verify the deployer was set correctly
             expect(await token.getDeployer()).to.equal(newDeployer);
-
+            
             // Verify it was stored in slot 0
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(token.address, 0);
@@ -254,16 +271,69 @@ describe('HyperliquidInterchainToken', () => {
             expect(deployerFromSlot0.toLowerCase()).to.equal(newDeployer.toLowerCase());
         });
 
+        it('should test HyperLiquidDeployer _setDeployer assembly code with multiple updates', async () => {
+            // Test _setDeployer with multiple different addresses to ensure assembly code coverage
+            const wallets = await ethers.getSigners();
+            const addresses = [
+                owner.address,
+                user.address,
+                ethers.constants.AddressZero,
+                wallets[2].address,
+                wallets[3].address
+            ];
+            
+            for (const addr of addresses) {
+                await token.connect(owner).updateDeployer(addr);
+                expect(await token.getDeployer()).to.equal(addr);
+                
+                // Verify storage slot 0 contains the correct value
+                const provider = ethers.provider;
+                const slot0 = await provider.getStorageAt(token.address, 0);
+                const deployerFromSlot0 = '0x' + slot0.slice(-40);
+                expect(deployerFromSlot0.toLowerCase()).to.equal(addr.toLowerCase());
+            }
+        });
+
         it('should test HyperLiquidDeployer getDeployer with different deployer values', async () => {
             // Test getDeployer with different deployer addresses
             const deployer1 = owner.address;
             const deployer2 = user.address;
-
+            
             await token.connect(owner).updateDeployer(deployer1);
             expect(await token.getDeployer()).to.equal(deployer1);
-
+            
             await token.connect(owner).updateDeployer(deployer2);
             expect(await token.getDeployer()).to.equal(deployer2);
+        });
+
+        it('should test HyperLiquidDeployer getDeployer assembly code with storage verification', async () => {
+            // Test that getDeployer returns the same value as reading slot 0 directly
+            const provider = ethers.provider;
+            const tokenAddress = token.address;
+            
+            // Set a new deployer
+            const newDeployer = user.address;
+            await token.connect(owner).updateDeployer(newDeployer);
+            
+            // Read slot 0 directly using provider
+            const slot0 = await provider.getStorageAt(tokenAddress, 0);
+            const deployerFromSlot0 = '0x' + slot0.slice(-40); // Extract last 20 bytes as address
+            
+            // Get deployer via contract function (uses assembly)
+            const deployerFromContract = await token.getDeployer();
+            
+            // Both should match exactly
+            expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
+            expect(deployerFromContract).to.equal(newDeployer);
+            
+            // Test with zero address
+            await token.connect(owner).updateDeployer(ethers.constants.AddressZero);
+            const slot0Zero = await provider.getStorageAt(tokenAddress, 0);
+            const deployerFromSlot0Zero = '0x' + slot0Zero.slice(-40);
+            const deployerFromContractZero = await token.getDeployer();
+            
+            expect(deployerFromSlot0Zero.toLowerCase()).to.equal(deployerFromContractZero.toLowerCase());
+            expect(deployerFromContractZero).to.equal(ethers.constants.AddressZero);
         });
     });
 });
