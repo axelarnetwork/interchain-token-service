@@ -4,6 +4,10 @@ pragma solidity ^0.8.0;
 
 import { InterchainToken } from './InterchainToken.sol';
 import { HyperLiquidDeployer } from './HyperLiquidDeployer.sol';
+import { InterchainTokenStandard } from './InterchainTokenStandard.sol';
+import { IHyperliquidInterchainToken } from '../interfaces/IHyperliquidInterchainToken.sol';
+import { IOperator } from '../interfaces/IOperator.sol';
+import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 /**
  * @title HyperliquidInterchainToken
@@ -12,7 +16,7 @@ import { HyperLiquidDeployer } from './HyperLiquidDeployer.sol';
  * then from InterchainToken for standard functionality.
  * This maintains the standard InterchainToken while providing Hyperliquid compatibility.
  */
-contract HyperliquidInterchainToken is HyperLiquidDeployer, InterchainToken {
+contract HyperliquidInterchainToken is HyperLiquidDeployer, InterchainToken, IHyperliquidInterchainToken {
     /**
      * @notice Constructs the HyperliquidInterchainToken contract.
      * @param interchainTokenServiceAddress The address of the interchain token service.
@@ -35,7 +39,7 @@ contract HyperliquidInterchainToken is HyperLiquidDeployer, InterchainToken {
         string calldata tokenName,
         string calldata tokenSymbol,
         uint8 tokenDecimals
-    ) external override {
+    ) external override(IInterchainToken, InterchainToken) {
         // Copy the parent's init logic to avoid recursion
         if (_isInitialized()) revert AlreadyInitialized();
 
@@ -69,5 +73,35 @@ contract HyperliquidInterchainToken is HyperLiquidDeployer, InterchainToken {
      */
     function _getInterchainTokenService() internal view override returns (address) {
         return interchainTokenService();
+    }
+
+    /**
+     * @notice Override interchainTokenId function from InterchainToken
+     * @return bytes32 The tokenId of the token
+     */
+    function interchainTokenId() public view override(InterchainToken, IInterchainToken) returns (bytes32) {
+        return super.interchainTokenId();
+    }
+
+    /**
+     * @notice Override interchainTokenService function from InterchainToken
+     * @return address The interchain token service contract address
+     */
+    function interchainTokenService() public view override(InterchainToken, IInterchainToken) returns (address) {
+        return super.interchainTokenService();
+    }
+
+    function getDeployer() external view override(HyperLiquidDeployer, IHyperliquidInterchainToken) returns (address deployer) {
+        assembly {
+            deployer := sload(0)
+        }
+    }
+
+    function updateDeployer(address newDeployer) external override(HyperLiquidDeployer, IHyperliquidInterchainToken) {
+        address its = _getInterchainTokenService();
+        if (msg.sender != its) {
+            if (!IOperator(its).isOperator(msg.sender)) revert NotAuthorized();
+        }
+        _setDeployer(newDeployer);
     }
 }

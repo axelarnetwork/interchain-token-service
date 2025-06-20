@@ -21,7 +21,7 @@ abstract contract HyperLiquidDeployer {
      * @notice Gets the deployer address stored in slot 0
      * @return deployer The address of the deployer
      */
-    function getDeployer() external view returns (address deployer) {
+    function getDeployer() external view virtual returns (address deployer) {
         assembly {
             // Read directly from slot 0
             deployer := sload(0)
@@ -43,7 +43,7 @@ abstract contract HyperLiquidDeployer {
      * @notice Allows the ITS contract or its operator to update the deployer address
      * @param newDeployer The new deployer address to set
      */
-    function updateDeployer(address newDeployer) external {
+    function updateDeployer(address newDeployer) external virtual {
         address its = _getInterchainTokenService();
         if (msg.sender != its) {
             // Check if caller is ITS operator

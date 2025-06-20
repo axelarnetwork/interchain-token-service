@@ -63,7 +63,7 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
      * @notice Returns the interchain token service
      * @return address The interchain token service contract
      */
-    function interchainTokenService() public view override(InterchainTokenStandard, IInterchainToken) returns (address) {
+    function interchainTokenService() public view virtual override(InterchainTokenStandard, IInterchainToken) returns (address) {
         return interchainTokenService_;
     }
 
@@ -71,7 +71,7 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
      * @notice Returns the tokenId for this token.
      * @return bytes32 The token manager contract.
      */
-    function interchainTokenId() public view override(InterchainTokenStandard, IInterchainToken) returns (bytes32) {
+    function interchainTokenId() public view virtual override(InterchainTokenStandard, IInterchainToken) returns (bytes32) {
         return tokenId;
     }
 
