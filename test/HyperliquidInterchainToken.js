@@ -402,7 +402,7 @@ describe('HyperliquidInterchainToken', () => {
             // This test specifically targets line 25 (assembly sload)
             const deployer = await token.getDeployer();
             expect(deployer).to.not.equal(ethers.constants.AddressZero);
-            
+
             // Verify the assembly code works by reading storage directly
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(token.address, 0);
@@ -431,13 +431,13 @@ describe('HyperliquidInterchainToken', () => {
         it('should test HyperLiquidDeployer _setDeployer call in updateDeployer', async () => {
             // This test targets line 50 (_setDeployer call)
             const newDeployer = user.address;
-            
+
             // Call updateDeployer which internally calls _setDeployer
             await token.connect(owner).updateDeployer(newDeployer);
-            
+
             // Verify _setDeployer was called by checking the result
             expect(await token.getDeployer()).to.equal(newDeployer);
-            
+
             // Verify storage slot was updated
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(token.address, 0);
@@ -450,7 +450,7 @@ describe('HyperliquidInterchainToken', () => {
             // The _getInterchainTokenService function is implemented in HyperliquidInterchainToken
             // We can test it indirectly by checking that the ITS address is correctly stored
             // and that the authorization logic works correctly
-            
+
             // Create a mock ITS contract
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
@@ -484,8 +484,10 @@ describe('HyperliquidInterchainToken', () => {
             // Test 3: Non-operator cannot update deployer
             const wallets = await ethers.getSigners();
             const nonOperator = wallets[2];
-            await expect(testDeployer.connect(nonOperator).updateDeployer(nonOperator.address))
-                .to.be.revertedWithCustomError(testDeployer, 'NotAuthorized');
+            await expect(testDeployer.connect(nonOperator).updateDeployer(nonOperator.address)).to.be.revertedWithCustomError(
+                testDeployer,
+                'NotAuthorized',
+            );
         });
     });
 });
