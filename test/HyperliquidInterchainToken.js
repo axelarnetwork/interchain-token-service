@@ -162,4 +162,48 @@ describe('HyperliquidInterchainToken', () => {
             expect(contractBytecode).to.not.be.empty;
         });
     });
+
+    describe('Coverage Improvement Tests', () => {
+        it('should test HyperLiquidDeployer getDeployer assembly code', async () => {
+            const deployer = await token.getDeployer();
+            expect(deployer).to.not.equal(ethers.constants.AddressZero);
+        });
+
+        it('should test HyperLiquidDeployer updateDeployer authorization', async () => {
+            const newDeployer = user.address;
+            await token.connect(owner).updateDeployer(newDeployer);
+            expect(await token.getDeployer()).to.equal(newDeployer);
+        });
+
+        it('should test HyperLiquidDeployer updateDeployer failure case', async () => {
+            await expect(
+                token.connect(user).updateDeployer(user.address)
+            ).to.be.reverted;
+        });
+
+        it('should test multiple contract instances for better coverage', async () => {
+            const token1 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
+            const token2 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
+            
+            expect(await token1.getDeployer()).to.equal(owner.address);
+            expect(await token2.getDeployer()).to.equal(owner.address);
+            
+            await token1.connect(owner).updateDeployer(user.address);
+            await token2.connect(owner).updateDeployer(user.address);
+            
+            expect(await token1.getDeployer()).to.equal(user.address);
+            expect(await token2.getDeployer()).to.equal(user.address);
+        });
+
+        it('should test storage slot 0 manipulation for coverage', async () => {
+            const provider = ethers.provider;
+            const tokenAddress = token.address;
+            
+            const slot0 = await provider.getStorageAt(tokenAddress, 0);
+            const deployerFromSlot0 = '0x' + slot0.slice(-40);
+            const deployerFromContract = await token.getDeployer();
+            
+            expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
+        });
+    });
 });
