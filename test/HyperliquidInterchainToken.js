@@ -1,6 +1,6 @@
 'use strict';
 
-const { ethers, network } = require('hardhat');
+const { ethers } = require('hardhat');
 const { getContractAt } = ethers;
 const { expect } = require('chai');
 const { getRandomBytes32 } = require('./utils');
