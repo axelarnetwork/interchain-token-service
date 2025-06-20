@@ -83,7 +83,13 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
      * @param tokenSymbol The symbopl of the token.
      * @param tokenDecimals The decimals of the token.
      */
-    function init(bytes32 tokenId_, address minter, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals) external virtual {
+    function init(
+        bytes32 tokenId_,
+        address minter,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 tokenDecimals
+    ) external virtual {
         if (_isInitialized()) revert AlreadyInitialized();
 
         _initialize();

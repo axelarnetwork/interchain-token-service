@@ -91,19 +91,21 @@ async function deployAll(
 
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-    
+
     // Deploy both token implementations
     const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
     const hyperliquidInterchainToken = await deployContract(wallet, 'HyperliquidInterchainToken', [interchainTokenServiceAddress]);
-    
+
     // Deploy both token deployers
     const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
-    const hyperliquidInterchainTokenDeployer = await deployContract(wallet, 'HyperliquidInterchainTokenDeployer', [hyperliquidInterchainToken.address]);
-    
+    const hyperliquidInterchainTokenDeployer = await deployContract(wallet, 'HyperliquidInterchainTokenDeployer', [
+        hyperliquidInterchainToken.address,
+    ]);
+
     // Choose the appropriate deployer based on chain
     const isHyperliquidChain = chainName.toLowerCase() === 'hyperliquid' || chainName.toLowerCase() === 'hyperliquid-testnet';
     const activeTokenDeployer = isHyperliquidChain ? hyperliquidInterchainTokenDeployer : interchainTokenDeployer;
-    
+
     const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
     const tokenHandler = await deployContract(wallet, 'TokenHandler', []);
     const gatewayCaller = await deployContract(wallet, 'GatewayCaller', [gateway.address, gasService.address]);

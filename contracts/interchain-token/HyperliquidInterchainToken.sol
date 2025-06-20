@@ -29,7 +29,13 @@ contract HyperliquidInterchainToken is HyperLiquidDeployer, InterchainToken {
      * @param tokenSymbol The symbol of the token.
      * @param tokenDecimals The decimals of the token.
      */
-    function init(bytes32 tokenId_, address minter, string calldata tokenName, string calldata tokenSymbol, uint8 tokenDecimals) external override {
+    function init(
+        bytes32 tokenId_,
+        address minter,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 tokenDecimals
+    ) external override {
         // Copy the parent's init logic to avoid recursion
         if (_isInitialized()) revert AlreadyInitialized();
 
@@ -53,7 +59,7 @@ contract HyperliquidInterchainToken is HyperLiquidDeployer, InterchainToken {
         _addMinter(minter);
 
         _setNameHash(tokenName);
-        
+
         _setDeployer(msg.sender); // Set deployer to msg.sender during initialization
     }
 

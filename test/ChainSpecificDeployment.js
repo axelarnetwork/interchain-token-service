@@ -13,7 +13,7 @@ describe('Chain-Specific Token Deployment', () => {
 
     it('should deploy HyperliquidInterchainToken for Hyperliquid chain', async () => {
         console.log('\n=== Testing Hyperliquid Chain Deployment ===');
-        
+
         const deployment = await deployAll(
             wallet,
             'hyperliquid',
@@ -32,7 +32,7 @@ describe('Chain-Specific Token Deployment', () => {
 
         // Verify that the active deployer is the Hyperliquid one
         expect(deployment.activeTokenDeployer.address).to.equal(deployment.hyperliquidInterchainTokenDeployer.address);
-        
+
         // Verify that the Hyperliquid deployer points to HyperliquidInterchainToken
         const hyperliquidImplementation = await deployment.hyperliquidInterchainTokenDeployer.implementationAddress();
         expect(hyperliquidImplementation).to.equal(deployment.hyperliquidInterchainToken.address);
@@ -41,15 +41,8 @@ describe('Chain-Specific Token Deployment', () => {
         const salt = ethers.utils.randomBytes(32);
         const tokenId = ethers.utils.randomBytes(32);
         const tokenAddress = await deployment.activeTokenDeployer.deployedAddress(salt);
-        
-        await deployment.activeTokenDeployer.deployInterchainToken(
-            salt,
-            tokenId,
-            wallet.address,
-            'TestToken',
-            'TEST',
-            18,
-        );
+
+        await deployment.activeTokenDeployer.deployInterchainToken(salt, tokenId, wallet.address, 'TestToken', 'TEST', 18);
 
         // Verify the deployed token has Hyperliquid functionality
         const token = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress, wallet);
@@ -63,7 +56,7 @@ describe('Chain-Specific Token Deployment', () => {
 
     it('should deploy standard InterchainToken for other chains', async () => {
         console.log('\n=== Testing Standard Chain Deployment ===');
-        
+
         const deployment = await deployAll(
             wallet,
             'avalanche', // Standard chain
@@ -82,7 +75,7 @@ describe('Chain-Specific Token Deployment', () => {
 
         // Verify that the active deployer is the standard one
         expect(deployment.activeTokenDeployer.address).to.equal(deployment.interchainTokenDeployer.address);
-        
+
         // Verify that the standard deployer points to InterchainToken
         const standardImplementation = await deployment.interchainTokenDeployer.implementationAddress();
         expect(standardImplementation).to.equal(deployment.interchainToken.address);
@@ -91,19 +84,12 @@ describe('Chain-Specific Token Deployment', () => {
         const salt = ethers.utils.randomBytes(32);
         const tokenId = ethers.utils.randomBytes(32);
         const tokenAddress = await deployment.activeTokenDeployer.deployedAddress(salt);
-        
-        await deployment.activeTokenDeployer.deployInterchainToken(
-            salt,
-            tokenId,
-            wallet.address,
-            'TestToken',
-            'TEST',
-            18,
-        );
+
+        await deployment.activeTokenDeployer.deployInterchainToken(salt, tokenId, wallet.address, 'TestToken', 'TEST', 18);
 
         // Verify the deployed token is a standard InterchainToken (no getDeployer function)
         const token = await ethers.getContractAt('InterchainToken', tokenAddress, wallet);
-        
+
         // Standard InterchainToken should not have getDeployer function
         expect(token.getDeployer).to.be.undefined;
 
@@ -114,7 +100,7 @@ describe('Chain-Specific Token Deployment', () => {
 
     it('should verify storage layout differences', async () => {
         console.log('\n=== Testing Storage Layout Differences ===');
-        
+
         // Deploy both types
         const hyperliquidDeployment = await deployAll(wallet, 'hyperliquid', [], 'HyperliquidTest', 'HyperliquidTestFactory');
         const standardDeployment = await deployAll(wallet, 'avalanche', [], 'StandardTest', 'StandardTestFactory');
@@ -124,12 +110,8 @@ describe('Chain-Specific Token Deployment', () => {
         const salt2 = ethers.utils.randomBytes(32);
         const tokenId = ethers.utils.randomBytes(32);
 
-        await hyperliquidDeployment.activeTokenDeployer.deployInterchainToken(
-            salt1, tokenId, wallet.address, 'TestToken', 'TEST', 18,
-        );
-        await standardDeployment.activeTokenDeployer.deployInterchainToken(
-            salt2, tokenId, wallet.address, 'TestToken', 'TEST', 18,
-        );
+        await hyperliquidDeployment.activeTokenDeployer.deployInterchainToken(salt1, tokenId, wallet.address, 'TestToken', 'TEST', 18);
+        await standardDeployment.activeTokenDeployer.deployInterchainToken(salt2, tokenId, wallet.address, 'TestToken', 'TEST', 18);
 
         const hyperliquidTokenAddress = await hyperliquidDeployment.activeTokenDeployer.deployedAddress(salt1);
         const standardTokenAddress = await standardDeployment.activeTokenDeployer.deployedAddress(salt2);
