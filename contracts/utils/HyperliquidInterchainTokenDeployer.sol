@@ -75,4 +75,4 @@ contract HyperliquidInterchainTokenDeployer is IInterchainTokenDeployer, Create3
     function deployedAddress(bytes32 salt) external view returns (address tokenAddress) {
         tokenAddress = _create3Address(salt);
     }
-} 
+}

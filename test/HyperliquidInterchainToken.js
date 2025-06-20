@@ -162,4 +162,4 @@ describe('HyperliquidInterchainToken', () => {
             expect(contractBytecode).to.not.be.empty;
         });
     });
-}); 
+});

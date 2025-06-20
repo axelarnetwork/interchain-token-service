@@ -57,4 +57,4 @@ abstract contract HyperLiquidDeployer {
      * @return address The interchain token service contract address
      */
     function _getInterchainTokenService() internal view virtual returns (address);
-} 
+}

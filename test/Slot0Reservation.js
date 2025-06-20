@@ -141,4 +141,4 @@ describe('Slot 0 Reservation', () => {
         console.log(`Token name: ${tokenName}`);
         console.log(`Slot 0 unchanged: ${slot0AfterName === slot0}`);
     });
-}); 
+});

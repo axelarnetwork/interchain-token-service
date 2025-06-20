@@ -337,4 +337,4 @@ describe('Storage Layout Demo', () => {
         console.log(`  Standard Token Slot 0: ${standardSlot0} (no deployer)`);
         console.log(`  Hyperliquid Token Slot 0: ${hyperliquidSlot0} (contains deployer)`);
     });
-}); 
+});

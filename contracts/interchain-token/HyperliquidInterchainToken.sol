@@ -64,4 +64,4 @@ contract HyperliquidInterchainToken is HyperLiquidDeployer, InterchainToken {
     function _getInterchainTokenService() internal view override returns (address) {
         return interchainTokenService();
     }
-} 
+}
