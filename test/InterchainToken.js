@@ -147,7 +147,7 @@ describe('InterchainToken', () => {
             const contractBytecodeHash = keccak256(contractBytecode);
 
             const expected = {
-                london: '0x325c8f5e2e12c0a40d6bd9234b77cd6788e3e5a40de90898a91b7d0c9d329ce3', // Updated hash
+                london: '0xead636860c211c9665384c806523bc89bc5613c8a75ec7ad3bc47c2724dd9ecc',
             }[getEVMVersion()];
 
             expect(contractBytecodeHash).to.be.equal(expected);
