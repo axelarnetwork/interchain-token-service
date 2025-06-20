@@ -32,6 +32,7 @@ describe('Storage Layout Demo', () => {
             const asNumber = parseInt(slot, 16);
             
             let description = '';
+            
             if (i === 0) {
                 description = ' ← SLOT 0: deployerSlot0 (HyperLiquidDeployer)';
             } else if (i === 1) {
@@ -56,8 +57,10 @@ describe('Storage Layout Demo', () => {
                 if (slot.length >= 66) {
                     const stringData = slot.slice(2, 66); // Remove 0x and get first 32 bytes
                     const stringLength = parseInt(stringData.slice(0, 2), 16);
+                    
                     if (stringLength > 0 && stringLength <= 31) {
                         const stringBytes = stringData.slice(2, 2 + stringLength * 2);
+                        
                         try {
                             const decodedString = ethers.utils.toUtf8String('0x' + stringBytes);
                             console.log(`  As string: "${decodedString}"`);
@@ -109,11 +112,13 @@ describe('Storage Layout Demo', () => {
         // Read all relevant slots after initialization
         const provider = ethers.provider;
         const slots = [];
+        
         for (let i = 0; i < 10; i++) {
             slots[i] = await provider.getStorageAt(newTokenAddress, i);
         }
         
         console.log(`\nStorage slots after initialization:`);
+        
         for (let i = 0; i < 10; i++) {
             const slot = slots[i];
             const isEmpty = slot === '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -180,13 +185,17 @@ describe('Storage Layout Demo', () => {
         
         // Slot 6 should contain name string data
         const nameDataSlot = slots[6];
+        
         console.log(`  Slot 6 (name data): ${nameDataSlot}`);
+        
         if (nameDataSlot !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
             // Try to decode the string from storage
             const stringData = nameDataSlot.slice(2, 66);
             const stringLength = parseInt(stringData.slice(0, 2), 16);
+            
             if (stringLength > 0 && stringLength <= 31) {
                 const stringBytes = stringData.slice(2, 2 + stringLength * 2);
+                
                 try {
                     const decodedName = ethers.utils.toUtf8String('0x' + stringBytes);
                     console.log(`    Decoded name from slot 6: "${decodedName}"`);
@@ -200,11 +209,14 @@ describe('Storage Layout Demo', () => {
         // Slot 7 should contain symbol string data
         const symbolDataSlot = slots[7];
         console.log(`  Slot 7 (symbol data): ${symbolDataSlot}`);
+        
         if (symbolDataSlot !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
             const stringData = symbolDataSlot.slice(2, 66);
             const stringLength = parseInt(stringData.slice(0, 2), 16);
+            
             if (stringLength > 0 && stringLength <= 31) {
                 const stringBytes = stringData.slice(2, 2 + stringLength * 2);
+                
                 try {
                     const decodedSymbol = ethers.utils.toUtf8String('0x' + stringBytes);
                     console.log(`    Decoded symbol from slot 7: "${decodedSymbol}"`);
@@ -302,6 +314,7 @@ describe('Storage Layout Demo', () => {
         const standardToken = await deployContract(owner, 'InterchainToken', [owner.address]);
         
         console.log(`\nStandard InterchainToken (${standardToken.address}):`);
+        
         for (let i = 0; i < 5; i++) {
             const slot = await ethers.provider.getStorageAt(standardToken.address, i);
             const isEmpty = slot === '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -309,6 +322,7 @@ describe('Storage Layout Demo', () => {
         }
         
         console.log(`\nHyperliquidInterchainToken (${hyperliquidToken.address}):`);
+        
         for (let i = 0; i < 5; i++) {
             const slot = await ethers.provider.getStorageAt(hyperliquidToken.address, i);
             const isEmpty = slot === '0x0000000000000000000000000000000000000000000000000000000000000000';

@@ -59,7 +59,6 @@ describe('Slot 0 Reservation', () => {
         
         // Read initial slot 0
         const initialSlot0 = await provider.getStorageAt(tokenAddress, 0);
-        const initialDeployer = await hyperliquidToken.getDeployer();
         
         // Update deployer (only owner can do this as they are the ITS)
         await hyperliquidToken.connect(owner).updateDeployer(user.address);
@@ -82,12 +81,14 @@ describe('Slot 0 Reservation', () => {
         const tokenAddress = hyperliquidToken.address;
         
         console.log('\nStorage Layout for HyperliquidInterchainToken:');
+        
         for (let i = 0; i < 5; i++) {
             const slot = await provider.getStorageAt(tokenAddress, i);
             const isEmpty = slot === '0x0000000000000000000000000000000000000000000000000000000000000000';
             const asAddress = '0x' + slot.slice(-40);
             
             console.log(`Slot ${i}: ${slot} ${isEmpty ? '(empty)' : ''}`);
+            
             if (!isEmpty) {
                 console.log(`  As address: ${asAddress}`);
                 console.log(`  As number: ${parseInt(slot, 16)}`);
@@ -104,7 +105,6 @@ describe('Slot 0 Reservation', () => {
 
     it('should verify slot 0 is reserved and not overwritten by other variables', async () => {
         const provider = ethers.provider;
-        const tokenAddress = hyperliquidToken.address;
         
         // Deploy a new token instance to test initialization
         const hyperliquidTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [hyperliquidToken.address]);

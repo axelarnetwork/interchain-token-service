@@ -2,12 +2,10 @@
 
 const { ethers } = require('hardhat');
 const {
-    constants: { AddressZero, HashZero, MaxUint256 },
     getContractAt,
-    utils: { keccak256 },
 } = ethers;
 const { expect } = require('chai');
-const { getRandomBytes32, expectRevert, getEVMVersion } = require('./utils');
+const { getRandomBytes32 } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 describe('HyperliquidInterchainToken', () => {
@@ -19,7 +17,6 @@ describe('HyperliquidInterchainToken', () => {
     const mintAmount = 123;
 
     let token;
-    let tokenTest;
     let owner;
     let user;
     let deployer;
@@ -141,7 +138,7 @@ describe('HyperliquidInterchainToken', () => {
                 name: name,
                 version: '1',
                 chainId: await ethers.provider.getNetwork().then(n => n.chainId),
-                verifyingContract: token.address
+                verifyingContract: token.address,
             };
             
             const types = {
@@ -150,8 +147,8 @@ describe('HyperliquidInterchainToken', () => {
                     { name: 'spender', type: 'address' },
                     { name: 'value', type: 'uint256' },
                     { name: 'nonce', type: 'uint256' },
-                    { name: 'deadline', type: 'uint256' }
-                ]
+                    { name: 'deadline', type: 'uint256' },
+                ],
             };
             
             const message = {
@@ -159,7 +156,7 @@ describe('HyperliquidInterchainToken', () => {
                 spender: spender,
                 value: value,
                 nonce: nonce,
-                deadline: deadline
+                deadline: deadline,
             };
             
             const signature = await owner._signTypedData(domain, types, message);
@@ -180,6 +177,7 @@ describe('HyperliquidInterchainToken', () => {
             
             // Read first 10 storage slots
             const slots = [];
+            
             for (let i = 0; i < 10; i++) {
                 const slot = await provider.getStorageAt(tokenAddress, i);
                 slots.push(slot);
@@ -203,12 +201,6 @@ describe('HyperliquidInterchainToken', () => {
         it('Should preserve the same bytecode', async () => {
             const contract = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
             const contractBytecode = contract.bytecode;
-            const contractBytecodeHash = keccak256(contractBytecode);
-
-            // Note: This expected hash will need to be updated after the contract is finalized
-            const expected = {
-                london: '0x0000000000000000000000000000000000000000000000000000000000000000', // Placeholder
-            }[getEVMVersion()];
 
             // For now, just verify the bytecode is not empty
             expect(contractBytecode).to.not.be.empty;

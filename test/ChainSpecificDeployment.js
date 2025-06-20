@@ -19,7 +19,7 @@ describe('Chain-Specific Token Deployment', () => {
             'hyperliquid',
             [],
             'HyperliquidInterchainTokenService',
-            'HyperliquidInterchainTokenServiceFactory'
+            'HyperliquidInterchainTokenServiceFactory',
         );
 
         console.log('Deployed contracts:');
@@ -48,7 +48,7 @@ describe('Chain-Specific Token Deployment', () => {
             wallet.address,
             'TestToken',
             'TEST',
-            18
+            18,
         );
 
         // Verify the deployed token has Hyperliquid functionality
@@ -69,7 +69,7 @@ describe('Chain-Specific Token Deployment', () => {
             'avalanche', // Standard chain
             [],
             'StandardInterchainTokenService',
-            'StandardInterchainTokenServiceFactory'
+            'StandardInterchainTokenServiceFactory',
         );
 
         console.log('Deployed contracts:');
@@ -98,7 +98,7 @@ describe('Chain-Specific Token Deployment', () => {
             wallet.address,
             'TestToken',
             'TEST',
-            18
+            18,
         );
 
         // Verify the deployed token is a standard InterchainToken (no getDeployer function)
@@ -125,10 +125,10 @@ describe('Chain-Specific Token Deployment', () => {
         const tokenId = ethers.utils.randomBytes(32);
 
         await hyperliquidDeployment.activeTokenDeployer.deployInterchainToken(
-            salt1, tokenId, wallet.address, 'TestToken', 'TEST', 18
+            salt1, tokenId, wallet.address, 'TestToken', 'TEST', 18,
         );
         await standardDeployment.activeTokenDeployer.deployInterchainToken(
-            salt2, tokenId, wallet.address, 'TestToken', 'TEST', 18
+            salt2, tokenId, wallet.address, 'TestToken', 'TEST', 18,
         );
 
         const hyperliquidTokenAddress = await hyperliquidDeployment.activeTokenDeployer.deployedAddress(salt1);
