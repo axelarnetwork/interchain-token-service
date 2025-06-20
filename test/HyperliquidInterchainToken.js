@@ -1,6 +1,6 @@
 'use strict';
 
-const { ethers } = require('hardhat');
+const { ethers, network } = require('hardhat');
 const { getContractAt } = ethers;
 const { expect } = require('chai');
 const { getRandomBytes32 } = require('./utils');
@@ -395,6 +395,97 @@ describe('HyperliquidInterchainToken', () => {
                 const deployerFromSlot0 = '0x' + slot0.slice(-40);
                 expect(deployerFromSlot0.toLowerCase()).to.equal(addr.toLowerCase());
             }
+        });
+
+        // Additional tests to cover specific uncovered lines in HyperLiquidDeployer.sol
+        it('should test HyperLiquidDeployer getDeployer assembly code directly', async () => {
+            // This test specifically targets line 25 (assembly sload)
+            const deployer = await token.getDeployer();
+            expect(deployer).to.not.equal(ethers.constants.AddressZero);
+            
+            // Verify the assembly code works by reading storage directly
+            const provider = ethers.provider;
+            const slot0 = await provider.getStorageAt(token.address, 0);
+            const deployerFromSlot0 = '0x' + slot0.slice(-40);
+            expect(deployerFromSlot0.toLowerCase()).to.equal(deployer.toLowerCase());
+        });
+
+        it('should test HyperLiquidDeployer updateDeployer authorization branch (ITS operator)', async () => {
+            // This test targets lines 47-48 (authorization check for ITS operator)
+            // Create a mock ITS contract
+            const TestOperator = await ethers.getContractFactory('TestOperator', owner);
+            const mockITS = await TestOperator.deploy(owner.address);
+
+            // Create a concrete implementation of HyperLiquidDeployer for testing
+            const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
+            const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
+
+            // Transfer operatorship to user (this makes user an operator)
+            await mockITS.transferOperatorship(user.address);
+
+            // Test that an operator can update the deployer (line 48: IOperator(its).isOperator check)
+            await testDeployer.connect(user).updateDeployer(user.address);
+            expect(await testDeployer.getDeployer()).to.equal(user.address);
+        });
+
+        it('should test HyperLiquidDeployer _setDeployer call in updateDeployer', async () => {
+            // This test targets line 50 (_setDeployer call)
+            const newDeployer = user.address;
+            
+            // Call updateDeployer which internally calls _setDeployer
+            await token.connect(owner).updateDeployer(newDeployer);
+            
+            // Verify _setDeployer was called by checking the result
+            expect(await token.getDeployer()).to.equal(newDeployer);
+            
+            // Verify storage slot was updated
+            const provider = ethers.provider;
+            const slot0 = await provider.getStorageAt(token.address, 0);
+            const deployerFromSlot0 = '0x' + slot0.slice(-40);
+            expect(deployerFromSlot0.toLowerCase()).to.equal(newDeployer.toLowerCase());
+        });
+
+        it('should test HyperLiquidDeployer _getInterchainTokenService function indirectly', async () => {
+            // This test targets line 52 (abstract function implementation)
+            // The _getInterchainTokenService function is implemented in HyperliquidInterchainToken
+            // We can test it indirectly by checking that the ITS address is correctly stored
+            // and that the authorization logic works correctly
+            
+            // Create a mock ITS contract
+            const TestOperator = await ethers.getContractFactory('TestOperator', owner);
+            const mockITS = await TestOperator.deploy(owner.address);
+
+            // Create a concrete implementation of HyperLiquidDeployer for testing
+            const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
+            const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
+
+            // Test that the _getInterchainTokenService function returns the correct address
+            // by testing the authorization logic that uses it
+            await testDeployer.connect(owner).updateDeployer(user.address);
+            expect(await testDeployer.getDeployer()).to.equal(user.address);
+        });
+
+        it('should test HyperLiquidDeployer with multiple authorization scenarios', async () => {
+            // Comprehensive test covering all authorization branches
+            const TestOperator = await ethers.getContractFactory('TestOperator', owner);
+            const mockITS = await TestOperator.deploy(owner.address);
+            const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
+            const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
+
+            // Test 1: Owner can update deployer (as operator)
+            await testDeployer.connect(owner).updateDeployer(user.address);
+            expect(await testDeployer.getDeployer()).to.equal(user.address);
+
+            // Test 2: Transfer operatorship and test operator access
+            await mockITS.transferOperatorship(user.address);
+            await testDeployer.connect(user).updateDeployer(owner.address);
+            expect(await testDeployer.getDeployer()).to.equal(owner.address);
+
+            // Test 3: Non-operator cannot update deployer
+            const wallets = await ethers.getSigners();
+            const nonOperator = wallets[2];
+            await expect(testDeployer.connect(nonOperator).updateDeployer(nonOperator.address))
+                .to.be.revertedWithCustomError(testDeployer, 'NotAuthorized');
         });
     });
 });
