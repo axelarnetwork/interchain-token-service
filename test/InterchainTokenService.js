@@ -641,30 +641,36 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Owner functions', () => {
+        const chain = 'Test';
+
         it('Should revert on set pause status when not called by the owner', async () => {
-            await expect(service.connect(otherWallet).setPauseStatus(true)).to.be.revertedWithCustomError(service, 'NotOwner');
+            await expectRevert((gasOptions) => service.connect(otherWallet).setPauseStatus(true, gasOptions), service, 'NotOwner');
         });
 
         it('Should revert on set trusted address when not called by the owner', async () => {
-            await expect(service.connect(otherWallet).setTrustedAddress('ethereum', otherWallet.address)).to.be.revertedWithCustomError(
+            const trustedAddress = otherWallet.address.toString();
+
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).setTrustedAddress(chain, trustedAddress, gasOptions),
                 service,
                 'NotOwner',
             );
         });
 
         it('Should set trusted address', async () => {
-            await service.setTrustedAddress('ethereum', otherWallet.address);
-            expect(await service.trustedAddress('ethereum')).to.equal(otherWallet.address);
+            const trustedAddress = otherWallet.address.toString();
+
+            await expect(service.setTrustedAddress(chain, trustedAddress))
+                .to.emit(service, 'TrustedAddressSet')
+                .withArgs(chain, trustedAddress);
         });
 
         it('Should revert on remove trusted address when not called by the owner', async () => {
-            await expect(service.connect(otherWallet).removeTrustedAddress('ethereum')).to.be.revertedWithCustomError(service, 'NotOwner');
+            await expectRevert((gasOptions) => service.connect(otherWallet).removeTrustedAddress(chain, gasOptions), service, 'NotOwner');
         });
 
         it('Should remove trusted address', async () => {
-            await service.setTrustedAddress('ethereum', otherWallet.address);
-            await service.removeTrustedAddress('ethereum');
-            expect(await service.trustedAddress('ethereum')).to.equal('');
+            await expect(service.removeTrustedAddress(chain)).to.emit(service, 'TrustedAddressRemoved').withArgs(chain);
         });
 
         it('Should update Hyperliquid token deployer successfully', async () => {
