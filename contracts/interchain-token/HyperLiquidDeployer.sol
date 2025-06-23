@@ -10,7 +10,7 @@ import { IOperator } from '../interfaces/IOperator.sol';
  * @dev This is specifically for Hyperliquid firstStorageSlot compatibility.
  * Must be inherited first to ensure slot 0 is properly reserved.
  */
-abstract contract HyperLiquidDeployer {
+abstract contract HyperliquidDeployer {
     /// @dev Explicitly reserves slot 0 for deployer address
     /// This state variable declaration ensures Solidity places it in slot 0
     address private deployerSlot0;
