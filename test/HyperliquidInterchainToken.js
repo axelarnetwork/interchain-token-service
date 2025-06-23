@@ -181,7 +181,7 @@ describe('HyperliquidInterchainToken', () => {
     });
 
     describe('Coverage Improvement Tests', () => {
-        it('should test HyperLiquidDeployer getDeployer assembly code', async () => {
+        it('should get the deployer', async () => {
             const deployer = await token.getDeployer();
             expect(deployer).to.not.equal(ethers.constants.AddressZero);
         });
