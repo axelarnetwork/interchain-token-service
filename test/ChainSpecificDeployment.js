@@ -3,6 +3,7 @@
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const { deployAll } = require('../scripts/deploy');
+const { ITS_HUB_ADDRESS } = require('./constants');
 
 describe('Chain-Specific Token Deployment', () => {
     let wallet;
@@ -17,6 +18,7 @@ describe('Chain-Specific Token Deployment', () => {
         const deployment = await deployAll(
             wallet,
             'hyperliquid',
+            ITS_HUB_ADDRESS,
             [],
             'HyperliquidInterchainTokenService',
             'HyperliquidInterchainTokenServiceFactory',
@@ -60,6 +62,7 @@ describe('Chain-Specific Token Deployment', () => {
         const deployment = await deployAll(
             wallet,
             'avalanche', // Standard chain
+            ITS_HUB_ADDRESS,
             [],
             'StandardInterchainTokenService',
             'StandardInterchainTokenServiceFactory',
@@ -102,8 +105,8 @@ describe('Chain-Specific Token Deployment', () => {
         console.log('\n=== Testing Storage Layout Differences ===');
 
         // Deploy both types
-        const hyperliquidDeployment = await deployAll(wallet, 'hyperliquid', [], 'HyperliquidTest', 'HyperliquidTestFactory');
-        const standardDeployment = await deployAll(wallet, 'avalanche', [], 'StandardTest', 'StandardTestFactory');
+        const hyperliquidDeployment = await deployAll(wallet, 'hyperliquid', ITS_HUB_ADDRESS, [], 'HyperliquidTest', 'HyperliquidTestFactory');
+        const standardDeployment = await deployAll(wallet, 'avalanche', ITS_HUB_ADDRESS, [], 'StandardTest', 'StandardTestFactory');
 
         // Deploy tokens using each deployer
         const salt1 = ethers.utils.randomBytes(32);

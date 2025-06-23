@@ -19,7 +19,7 @@ describe('HyperLiquidDeployer', () => {
         mockITS = await MockITS.deploy(owner.address);
 
         // Deploy test implementation
-        TestHyperLiquidDeployer = await ethers.getContractFactory('TestHyperLiquidDeployer');
+        TestHyperLiquidDeployer = await ethers.getContractFactory('TestHyperliquidDeployer');
         testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address, owner.address);
     });
 
@@ -103,8 +103,8 @@ describe('HyperLiquidDeployer', () => {
 
     describe('updateDeployer() - Lines 46-47 Authorization Coverage', () => {
         beforeEach(async () => {
-            // Add operator to mock ITS using the addOperator function
-            await mockITS.addOperator(operator.address);
+            // Set operator as the current deployer so they can call updateDeployer
+            await testDeployer.testSetDeployer(operator.address);
         });
 
         it('Should allow ITS to update deployer', async () => {
@@ -119,9 +119,16 @@ describe('HyperLiquidDeployer', () => {
             expect(await testDeployer.getDeployer()).to.equal(newDeployer);
         });
 
-        it('Should allow ITS operator to update deployer', async () => {
+        it('Should allow current deployer (operator) to update deployer', async () => {
             const newDeployer = user.address;
             await testDeployer.connect(operator).updateDeployer(newDeployer);
+
+            expect(await testDeployer.getDeployer()).to.equal(newDeployer);
+        });
+
+        it('Should allow initial deployer to update deployer', async () => {
+            const newDeployer = user.address;
+            await testDeployer.connect(owner).updateDeployer(newDeployer);
 
             expect(await testDeployer.getDeployer()).to.equal(newDeployer);
         });
@@ -135,11 +142,11 @@ describe('HyperLiquidDeployer', () => {
             );
         });
 
-        it('Should revert when non-operator tries to update', async () => {
-            // Remove operator status by transferring operatorship
-            await mockITS.connect(operator).transferOperatorship(owner.address);
+        it('Should revert when non-authorized tries to update', async () => {
+            // Set a different deployer so operator is no longer authorized
+            await testDeployer.testSetDeployer(user.address);
 
-            const newDeployer = user.address;
+            const newDeployer = operator.address;
             await expect(testDeployer.connect(operator).updateDeployer(newDeployer)).to.be.revertedWithCustomError(
                 testDeployer,
                 'NotAuthorized',
@@ -152,8 +159,8 @@ describe('HyperLiquidDeployer', () => {
             // This test indirectly covers line 52 by calling updateDeployer
             // which internally calls _getInterchainTokenService()
 
-            // Add operator to mock ITS
-            await mockITS.addOperator(operator.address);
+            // Set operator as current deployer
+            await testDeployer.testSetDeployer(operator.address);
 
             const newDeployer = user.address;
             await testDeployer.connect(operator).updateDeployer(newDeployer);
@@ -165,12 +172,14 @@ describe('HyperLiquidDeployer', () => {
         it('Should work with different ITS addresses', async () => {
             // Create a new mock ITS for this test
             const newMockITS = await MockITS.deploy(owner.address);
-            await newMockITS.addOperator(operator.address);
 
             // Update the test deployer to use the new ITS
             await testDeployer.setITSAddress(newMockITS.address);
 
-            const newDeployer = operator.address;
+            // Set operator as current deployer
+            await testDeployer.testSetDeployer(operator.address);
+
+            const newDeployer = user.address;
             await testDeployer.connect(operator).updateDeployer(newDeployer);
 
             expect(await testDeployer.getDeployer()).to.equal(newDeployer);
@@ -179,27 +188,30 @@ describe('HyperLiquidDeployer', () => {
 
     describe('Edge Cases and Error Handling', () => {
         it('Should handle zero address as new deployer', async () => {
-            await mockITS.addOperator(operator.address);
+            await testDeployer.testSetDeployer(operator.address);
 
             await testDeployer.connect(operator).updateDeployer(ethers.constants.AddressZero);
             expect(await testDeployer.getDeployer()).to.equal(ethers.constants.AddressZero);
         });
 
         it('Should handle contract addresses as deployer', async () => {
-            await mockITS.addOperator(operator.address);
+            await testDeployer.testSetDeployer(operator.address);
 
             await testDeployer.connect(operator).updateDeployer(mockITS.address);
             expect(await testDeployer.getDeployer()).to.equal(mockITS.address);
         });
 
         it('Should maintain deployer across multiple updates', async () => {
-            await mockITS.addOperator(operator.address);
+            await testDeployer.testSetDeployer(operator.address);
 
-            const addresses = [user.address, operator.address, mockITS.address];
+            const addresses = [user.address, owner.address, mockITS.address];
 
             for (const addr of addresses) {
                 await testDeployer.connect(operator).updateDeployer(addr);
                 expect(await testDeployer.getDeployer()).to.equal(addr);
+                
+                // Set operator back as deployer for the next iteration
+                await testDeployer.testSetDeployer(operator.address);
             }
         });
     });
