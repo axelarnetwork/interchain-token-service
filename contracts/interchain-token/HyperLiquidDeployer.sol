@@ -21,7 +21,7 @@ abstract contract HyperliquidDeployer {
      * @notice Gets the deployer address stored in slot 0
      * @return deployer The address of the deployer
      */
-    function getDeployer() external view virtual returns (address deployer) {
+    function _deployer() internal view virtual returns (address deployer) {
         assembly {
             // Read directly from slot 0
             deployer := sload(0)
