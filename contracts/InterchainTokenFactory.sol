@@ -10,6 +10,7 @@ import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.so
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
+import { IMinter } from './interfaces/IMinter.sol';
 
 import { HTS, IHederaTokenService } from './hedera/HTS.sol';
 
@@ -162,21 +163,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         }
 
         tokenId = _deployInterchainToken(deploySalt, currentChain, name, symbol, decimals, minterBytes, gasValue);
-
-        if (initialSupply > 0) {
-            IInterchainToken token = IInterchainToken(interchainTokenService.registeredTokenAddress(tokenId));
-            ITokenManager tokenManager = ITokenManager(interchainTokenService.deployedTokenManager(tokenId));
-
-            token.mint(sender, initialSupply);
-
-            token.transferMintership(minter);
-            tokenManager.removeFlowLimiter(address(this));
-
-            // If minter == address(0), we still set it as a flow limiter for consistency with the remote token manager.
-            tokenManager.addFlowLimiter(minter);
-
-            tokenManager.transferOperatorship(minter);
-        }
     }
 
     /**
@@ -336,8 +322,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
      */
     function _checkTokenMinter(bytes32 tokenId, address minter) internal view {
         // Ensure that the minter is registered for the token on the current chain
-        IInterchainToken token = IInterchainToken(interchainTokenService.registeredTokenAddress(tokenId));
-        if (!token.isMinter(minter)) revert NotMinter(minter);
+        ITokenManager tokenManager = ITokenManager(interchainTokenService.deployedTokenManager(tokenId));
+        if (!tokenManager.isMinter(minter)) revert NotMinter(minter);
 
         // Sanity check to prevent accidental use of the current ITS address as the token minter
         if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
@@ -419,31 +405,45 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
     }
 
     /**
-     * @notice Retrieves the metadata of an ERC20 token. Reverts with `NotToken` error if metadata is not available.
+     * @notice Retrieves the metadata of an ERC20 or HTS token. Reverts with `NotToken` error if metadata is not available.
+     * @notice Returns HTS.InvalidtokenDecimals() if the decimals are not supported.
      * @param tokenAddress The address of the token.
      * @return name The name of the token.
      * @return symbol The symbol of the token.
      * @return decimals The number of decimals for the token.
      */
-    function _getTokenMetadata(address tokenAddress) internal view returns (string memory name, string memory symbol, uint8 decimals) {
-        IERC20Named token = IERC20Named(tokenAddress);
+    function _getTokenMetadata(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
+        bool isHTSToken = HTS.isToken(tokenAddress);
 
-        try token.name() returns (string memory name_) {
-            name = name_;
-        } catch {
-            revert NotToken(tokenAddress);
-        }
+        if (isHTSToken) {
+            IHederaTokenService.FungibleTokenInfo memory fTokenInfo = HTS.getFungibleTokenInfo(tokenAddress);
+            name = fTokenInfo.tokenInfo.token.name;
+            symbol = fTokenInfo.tokenInfo.token.symbol;
+            int32 htsDecimals = fTokenInfo.decimals;
+            if (decimals < 0 || htsDecimals > int32(uint32(type(uint8).max))) {
+                revert HTS.InvalidTokenDecimals();
+            }
+            decimals = uint8(uint32(htsDecimals));
+        } else {
+            IERC20Named token = IERC20Named(tokenAddress);
 
-        try token.symbol() returns (string memory symbol_) {
-            symbol = symbol_;
-        } catch {
-            revert NotToken(tokenAddress);
-        }
+            try token.name() returns (string memory name_) {
+                name = name_;
+            } catch {
+                revert NotToken(tokenAddress);
+            }
 
-        try token.decimals() returns (uint8 decimals_) {
-            decimals = decimals_;
-        } catch {
-            revert NotToken(tokenAddress);
+            try token.symbol() returns (string memory symbol_) {
+                symbol = symbol_;
+            } catch {
+                revert NotToken(tokenAddress);
+            }
+
+            try token.decimals() returns (uint8 decimals_) {
+                decimals = decimals_;
+            } catch {
+                revert NotToken(tokenAddress);
+            }
         }
     }
 

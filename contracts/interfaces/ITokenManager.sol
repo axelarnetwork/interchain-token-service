@@ -8,12 +8,13 @@ import { IBaseTokenManager } from './IBaseTokenManager.sol';
 import { IOperator } from './IOperator.sol';
 import { IFlowLimit } from './IFlowLimit.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
+import { IMinter } from '../interfaces/IMinter.sol';
 
 /**
  * @title ITokenManager Interface
  * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
  */
-interface ITokenManager is IBaseTokenManager, ITokenManagerType, IOperator, IFlowLimit, IImplementation {
+interface ITokenManager is IBaseTokenManager, IMinter, ITokenManagerType, IOperator, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
     error NotService(address caller);
     error TakeTokenFailed();
