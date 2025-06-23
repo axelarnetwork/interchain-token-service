@@ -68,7 +68,7 @@ describe('Slot 0 Reservation', () => {
         const updatedDeployer = await hyperliquidToken.getDeployer();
 
         // Verify changes
-        expect(updatedDeployer.toLowerCase()).to.equal(user.address.toLowerCase());
+        expect(updatedDeployer).to.equal(user.address);
         expect(updatedSlot0).to.not.equal(initialSlot0);
 
         // Verify slot 0 contains the new deployer

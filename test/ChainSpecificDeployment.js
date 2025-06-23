@@ -13,8 +13,6 @@ describe('Chain-Specific Token Deployment', () => {
     });
 
     it('should deploy HyperliquidInterchainToken for Hyperliquid chain', async () => {
-        console.log('\n=== Testing Hyperliquid Chain Deployment ===');
-
         const deployment = await deployAll(
             wallet,
             'hyperliquid',
@@ -23,14 +21,6 @@ describe('Chain-Specific Token Deployment', () => {
             'HyperliquidInterchainTokenService',
             'HyperliquidInterchainTokenServiceFactory',
         );
-
-        console.log('Deployed contracts:');
-        console.log('- InterchainTokenService:', deployment.service.address);
-        console.log('- Standard InterchainToken:', deployment.interchainToken.address);
-        console.log('- HyperliquidInterchainToken:', deployment.hyperliquidInterchainToken.address);
-        console.log('- Standard InterchainTokenDeployer:', deployment.interchainTokenDeployer.address);
-        console.log('- HyperliquidInterchainTokenDeployer:', deployment.hyperliquidInterchainTokenDeployer.address);
-        console.log('- Active Token Deployer:', deployment.activeTokenDeployer.address);
 
         // Verify that the active deployer is the Hyperliquid one
         expect(deployment.activeTokenDeployer.address).to.equal(deployment.hyperliquidInterchainTokenDeployer.address);
@@ -50,15 +40,9 @@ describe('Chain-Specific Token Deployment', () => {
         const token = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress, wallet);
         const deployer = await token.getDeployer();
         expect(deployer).to.equal(deployment.activeTokenDeployer.address);
-
-        console.log('✅ Hyperliquid deployment successful!');
-        console.log('- Deployed token address:', tokenAddress);
-        console.log('- Token deployer:', deployer);
     });
 
     it('should deploy standard InterchainToken for other chains', async () => {
-        console.log('\n=== Testing Standard Chain Deployment ===');
-
         const deployment = await deployAll(
             wallet,
             'avalanche', // Standard chain
@@ -67,14 +51,6 @@ describe('Chain-Specific Token Deployment', () => {
             'StandardInterchainTokenService',
             'StandardInterchainTokenServiceFactory',
         );
-
-        console.log('Deployed contracts:');
-        console.log('- InterchainTokenService:', deployment.service.address);
-        console.log('- Standard InterchainToken:', deployment.interchainToken.address);
-        console.log('- HyperliquidInterchainToken:', deployment.hyperliquidInterchainToken.address);
-        console.log('- Standard InterchainTokenDeployer:', deployment.interchainTokenDeployer.address);
-        console.log('- HyperliquidInterchainTokenDeployer:', deployment.hyperliquidInterchainTokenDeployer.address);
-        console.log('- Active Token Deployer:', deployment.activeTokenDeployer.address);
 
         // Verify that the active deployer is the standard one
         expect(deployment.activeTokenDeployer.address).to.equal(deployment.interchainTokenDeployer.address);
@@ -96,14 +72,9 @@ describe('Chain-Specific Token Deployment', () => {
         // Standard InterchainToken should not have getDeployer function
         expect(token.getDeployer).to.be.undefined;
 
-        console.log('✅ Standard deployment successful!');
-        console.log('- Deployed token address:', tokenAddress);
-        console.log('- Token type: Standard InterchainToken (no deployer function)');
     });
 
     it('should verify storage layout differences', async () => {
-        console.log('\n=== Testing Storage Layout Differences ===');
-
         // Deploy both types
         const hyperliquidDeployment = await deployAll(wallet, 'hyperliquid', ITS_HUB_ADDRESS, [], 'HyperliquidTest', 'HyperliquidTestFactory');
         const standardDeployment = await deployAll(wallet, 'avalanche', ITS_HUB_ADDRESS, [], 'StandardTest', 'StandardTestFactory');
@@ -124,16 +95,8 @@ describe('Chain-Specific Token Deployment', () => {
         const hyperliquidSlot0 = await provider.getStorageAt(hyperliquidTokenAddress, 0);
         const standardSlot0 = await provider.getStorageAt(standardTokenAddress, 0);
 
-        console.log('Storage slot 0 comparison:');
-        console.log('- Hyperliquid token slot 0:', hyperliquidSlot0);
-        console.log('- Standard token slot 0:', standardSlot0);
-
         // Hyperliquid should have deployer in slot 0, standard should be empty
         expect(hyperliquidSlot0).to.not.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
         expect(standardSlot0).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
-
-        console.log('✅ Storage layout verification successful!');
-        console.log('- Hyperliquid: Slot 0 contains deployer (reserved)');
-        console.log('- Standard: Slot 0 is empty (available for ERC20 balances)');
     });
 });

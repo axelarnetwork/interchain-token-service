@@ -180,23 +180,23 @@ describe('HyperliquidInterchainToken', () => {
         });
     });
 
-    describe('Coverage Improvement Tests', () => {
-        it('should test HyperLiquidDeployer getDeployer assembly code', async () => {
+    describe('Hyperliquid Deployer Tests', () => {
+        it('should get the deployer', async () => {
             const deployer = await token.getDeployer();
             expect(deployer).to.not.equal(ethers.constants.AddressZero);
         });
 
-        it('should test HyperLiquidDeployer updateDeployer authorization', async () => {
+        it('should update the deployer', async () => {
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
             expect(await token.getDeployer()).to.equal(newDeployer);
         });
 
-        it('should test HyperLiquidDeployer updateDeployer failure case', async () => {
+        it('should revert on updating deployer from non-operator address', async () => {
             await expect(token.connect(user).updateDeployer(user.address)).to.be.reverted;
         });
 
-        it('should test multiple contract instances for better coverage', async () => {
+        it('should update the deployer for multiple contract instances', async () => {
             const token1 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
             const token2 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
 
@@ -210,7 +210,7 @@ describe('HyperliquidInterchainToken', () => {
             expect(await token2.getDeployer()).to.equal(user.address);
         });
 
-        it('should test storage slot 0 manipulation for coverage', async () => {
+        it('should store the deployer in slot 0', async () => {
             const provider = ethers.provider;
             const tokenAddress = token.address;
 
@@ -221,7 +221,7 @@ describe('HyperliquidInterchainToken', () => {
             expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
         });
 
-        it('should test HyperLiquidDeployer updateDeployer with ITS operator', async () => {
+        it('should update the deployer with ITS operator', async () => {
             // Create a mock ITS contract that implements IOperator
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
@@ -238,7 +238,7 @@ describe('HyperliquidInterchainToken', () => {
             expect(await testDeployer.getDeployer()).to.equal(user.address);
         });
 
-        it('should test HyperLiquidDeployer updateDeployer with non-ITS and non-operator', async () => {
+        it('should revert on updating deployer from non-ITS and non-operator', async () => {
             // Create a mock ITS contract that implements IOperator
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
@@ -256,7 +256,7 @@ describe('HyperliquidInterchainToken', () => {
             );
         });
 
-        it('should test HyperLiquidDeployer _setDeployer internal function', async () => {
+        it('should update the deployer with _setDeployer internal function', async () => {
             // Test the _setDeployer function indirectly through updateDeployer
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
@@ -271,7 +271,7 @@ describe('HyperliquidInterchainToken', () => {
             expect(deployerFromSlot0.toLowerCase()).to.equal(newDeployer.toLowerCase());
         });
 
-        it('should test HyperLiquidDeployer _setDeployer assembly code with multiple updates', async () => {
+        it('should update the deployer with multiple different addresses', async () => {
             // Test _setDeployer with multiple different addresses to ensure assembly code coverage
             const wallets = await ethers.getSigners();
             const addresses = [owner.address, user.address, ethers.constants.AddressZero, wallets[2].address, wallets[3].address];
@@ -288,7 +288,7 @@ describe('HyperliquidInterchainToken', () => {
             }
         });
 
-        it('should test HyperLiquidDeployer getDeployer with different deployer values', async () => {
+        it('should get the deployer with different deployer values', async () => {
             // Test getDeployer with different deployer addresses
             const deployer1 = owner.address;
             const deployer2 = user.address;
@@ -300,7 +300,7 @@ describe('HyperliquidInterchainToken', () => {
             expect(await token.getDeployer()).to.equal(deployer2);
         });
 
-        it('should test HyperLiquidDeployer getDeployer assembly code with storage verification', async () => {
+        it('should get the deployer with storage verification', async () => {
             // Test that getDeployer returns the same value as reading slot 0 directly
             const provider = ethers.provider;
             const tokenAddress = token.address;
