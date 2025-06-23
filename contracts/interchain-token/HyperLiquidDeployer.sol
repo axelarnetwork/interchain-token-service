@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IOperator } from '../interfaces/IOperator.sol';
+import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 
 /**
  * @title HyperLiquidDeployer
@@ -10,7 +11,7 @@ import { IOperator } from '../interfaces/IOperator.sol';
  * @dev This is specifically for Hyperliquid firstStorageSlot compatibility.
  * Must be inherited first to ensure slot 0 is properly reserved.
  */
-abstract contract HyperLiquidDeployer {
+abstract contract HyperliquidDeployer is IHyperliquidDeployer {
     /// @dev Explicitly reserves slot 0 for deployer address
     /// This state variable declaration ensures Solidity places it in slot 0
     address private deployerSlot0;
@@ -21,7 +22,7 @@ abstract contract HyperLiquidDeployer {
      * @notice Gets the deployer address stored in slot 0
      * @return deployer The address of the deployer
      */
-    function getDeployer() external view virtual returns (address deployer) {
+    function _deployer() internal view virtual returns (address deployer) {
         assembly {
             // Read directly from slot 0
             deployer := sload(0)
@@ -40,21 +41,18 @@ abstract contract HyperLiquidDeployer {
     }
 
     /**
-     * @notice Allows the ITS contract or its operator to update the deployer address
-     * @param newDeployer The new deployer address to set
+     * @notice Gets the deployer address stored in slot 0
+     * @return deployer The address of the deployer
      */
-    function updateDeployer(address newDeployer) external virtual {
-        address its = _getInterchainTokenService();
-        if (msg.sender != its) {
-            // Check if caller is ITS operator
-            if (!IOperator(its).isOperator(msg.sender)) revert NotAuthorized();
-        }
-        _setDeployer(newDeployer);
+    function getDeployer() external view virtual override returns (address deployer) {
+        return _deployer();
     }
 
     /**
-     * @notice Abstract function to get the interchain token service address
-     * @return address The interchain token service contract address
+     * @notice Allows updating the deployer address - authorization logic should be implemented by inheriting contracts
+     * @param newDeployer The new deployer address to set
      */
-    function _getInterchainTokenService() internal view virtual returns (address);
+    function updateDeployer(address newDeployer) external virtual override {
+        _setDeployer(newDeployer);
+    }
 }
