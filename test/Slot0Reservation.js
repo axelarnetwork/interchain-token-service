@@ -76,33 +76,6 @@ describe('Slot 0 Reservation', () => {
         expect(deployerFromSlot0.toLowerCase()).to.equal(user.address.toLowerCase());
     });
 
-    it('should show storage layout for first 5 slots', async () => {
-        const provider = ethers.provider;
-        const tokenAddress = hyperliquidToken.address;
-
-        console.log('\nStorage Layout for HyperliquidInterchainToken:');
-
-        for (let i = 0; i < 5; i++) {
-            const slot = await provider.getStorageAt(tokenAddress, i);
-            const isEmpty = slot === '0x0000000000000000000000000000000000000000000000000000000000000000';
-            const asAddress = '0x' + slot.slice(-40);
-
-            console.log(`Slot ${i}: ${slot} ${isEmpty ? '(empty)' : ''}`);
-
-            if (!isEmpty) {
-                console.log(`  As address: ${asAddress}`);
-                console.log(`  As number: ${parseInt(slot, 16)}`);
-            }
-        }
-
-        // Slot 0 should contain deployer address
-        const slot0 = await provider.getStorageAt(tokenAddress, 0);
-        const deployerFromSlot0 = '0x' + slot0.slice(-40);
-        const deployerFromContract = await hyperliquidToken.getDeployer();
-
-        expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
-    });
-
     it('should verify slot 0 is reserved and not overwritten by other variables', async () => {
         const provider = ethers.provider;
 
@@ -133,12 +106,5 @@ describe('Slot 0 Reservation', () => {
         // Verify slot 0 still contains deployer, not the name
         const slot0AfterName = await provider.getStorageAt(newTokenAddress, 0);
         expect(slot0AfterName).to.equal(slot0); // Should not have changed
-
-        console.log('\nVerification:');
-        console.log(`Slot 0: ${slot0}`);
-        console.log(`Deployer from slot 0: ${deployerFromSlot0}`);
-        console.log(`Deployer from contract: ${deployerFromContract}`);
-        console.log(`Token name: ${tokenName}`);
-        console.log(`Slot 0 unchanged: ${slot0AfterName === slot0}`);
     });
 });
