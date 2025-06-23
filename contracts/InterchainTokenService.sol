@@ -672,7 +672,7 @@ contract InterchainTokenService is
         // Try to call updateDeployer on the token
         // This will work if the token is a HyperliquidInterchainToken
         // and will revert if it's not (which is the desired behavior)
-        try IHyperliquidInterchainToken(tokenAddress).updateDeployer(newDeployer) {
+        try IHyperliquidInterchainDeployer(tokenAddress).updateDeployer(newDeployer) {
             // Success - the token was a HyperliquidInterchainToken
         } catch {
             // Revert if the token doesn't support updateDeployer
