@@ -186,7 +186,7 @@ describe('HyperliquidInterchainToken', () => {
             expect(deployer).to.not.equal(ethers.constants.AddressZero);
         });
 
-        it('should test HyperLiquidDeployer updateDeployer authorization', async () => {
+        it('should update the deployer', async () => {
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
             expect(await token.getDeployer()).to.equal(newDeployer);
