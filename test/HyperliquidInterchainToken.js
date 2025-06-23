@@ -192,7 +192,7 @@ describe('HyperliquidInterchainToken', () => {
             expect(await token.getDeployer()).to.equal(newDeployer);
         });
 
-        it('should test HyperLiquidDeployer updateDeployer failure case', async () => {
+        it('should revert on updating deployer from non-operator address', async () => {
             await expect(token.connect(user).updateDeployer(user.address)).to.be.reverted;
         });
 
