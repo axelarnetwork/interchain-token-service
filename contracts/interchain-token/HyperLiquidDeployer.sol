@@ -13,7 +13,7 @@ import { IOperator } from '../interfaces/IOperator.sol';
 abstract contract HyperliquidDeployer {
     /// @dev Explicitly reserves slot 0 for deployer address
     /// This state variable declaration ensures Solidity places it in slot 0
-    address private deployerSlot0;
+    address private deployer;
 
     error NotAuthorized();
 
