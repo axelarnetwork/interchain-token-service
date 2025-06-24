@@ -147,7 +147,10 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
      * @param params_ The parameters to be used to initialize the TokenManager.
      */
     function setup(bytes calldata params_) external override(Implementation, IImplementation) onlyProxy {
-        (bytes memory operatorBytes, address tokenAddress_) = abi.decode(params_, (bytes, address));
+        (bytes memory operatorBytes, address tokenAddress_, bool isHtsToken, uint256 implementationType_) = abi.decode(
+            params_,
+            (bytes, address, bool, uint256)
+        );
 
         address operator = address(0);
 
@@ -171,9 +174,9 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
         _addAccountRoles(interchainTokenService, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
 
         // Associate the token manager with the token
-        // TODO(hedera) this should be done only if token manager type is LOCK_UNLOCK?
-        // is it more expensive to check or associate either way?
-        HTS.associateToken(address(this), tokenAddress_);
+        if (isHtsToken && implementationType_ != uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
+            HTS.associateToken(address(this), tokenAddress_);
+        }
     }
 
     function addFlowIn(uint256 amount) external onlyService {
