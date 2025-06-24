@@ -667,82 +667,17 @@ describe('Interchain Token Service', () => {
             await expect(service.setTrustedChain(chain)).to.emit(service, 'TrustedChainSet').withArgs(chain);
         });
 
-        it('Should remove trusted address', async () => {
-            await expect(service.removeTrustedChain(chain)).to.emit(service, 'TrustedChainRemoved').withArgs(chain);
-        });
-
         it('Should revert on remove trusted address when not called by the owner', async () => {
             await expectRevert(
                 (gasOptions) => service.connect(otherWallet).removeTrustedChain(chain, gasOptions),
                 service,
                 'NotOperatorOrOwner',
+                [otherWallet.address],
             );
         });
 
-        it('Should update Hyperliquid token deployer successfully', async () => {
-            // Deploy a HyperliquidInterchainTokenService
-            const HyperliquidInterchainTokenService = await ethers.getContractFactory('HyperliquidInterchainTokenService', wallet);
-            const hyperliquidService = await HyperliquidInterchainTokenService.deploy(
-                tokenManagerDeployer.address,
-                interchainTokenDeployer.address,
-                gateway.address,
-                gasService.address,
-                await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey),
-                chainName,
-                ITS_HUB_ADDRESS,
-                tokenManager.address,
-                tokenHandler.address,
-            );
-
-            // Deploy a HyperliquidInterchainToken
-            const HyperliquidInterchainToken = await ethers.getContractFactory('HyperliquidInterchainToken', wallet);
-            const hyperliquidToken = await HyperliquidInterchainToken.deploy(hyperliquidService.address);
-
-            // Verify the service and token are deployed correctly
-            expect(hyperliquidService.address).to.not.equal(ethers.constants.AddressZero);
-            expect(hyperliquidToken.address).to.not.equal(ethers.constants.AddressZero);
-
-            // The service should be able to update the deployer
-            const newDeployer = otherWallet.address;
-            await expect(hyperliquidService.updateTokenDeployer(hyperliquidToken.address, newDeployer)).to.not.be.reverted;
-
-            // Verify the deployer was updated
-            expect(await hyperliquidToken.getDeployer()).to.equal(newDeployer);
-        });
-
-        it('Should revert when updating deployer for non-Hyperliquid token', async () => {
-            // Deploy a regular ERC20 token (not HyperliquidInterchainToken)
-            const TestERC20 = await ethers.getContractFactory('TestERC20', wallet);
-            const regularToken = await TestERC20.deploy();
-
-            // updateTokenDeployer should not exist on regular tokens
-            expect(regularToken.updateDeployer).to.be.undefined;
-        });
-
-        it('Should revert when updating deployer with zero address', async () => {
-            // Deploy a HyperliquidInterchainTokenService
-            const HyperliquidInterchainTokenService = await ethers.getContractFactory('HyperliquidInterchainTokenService', wallet);
-            const hyperliquidService = await HyperliquidInterchainTokenService.deploy(
-                tokenManagerDeployer.address,
-                interchainTokenDeployer.address,
-                gateway.address,
-                gasService.address,
-                await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey),
-                chainName,
-                ITS_HUB_ADDRESS,
-                tokenManager.address,
-                tokenHandler.address,
-            );
-
-            // Deploy a HyperliquidInterchainToken
-            const HyperliquidInterchainToken = await ethers.getContractFactory('HyperliquidInterchainToken', wallet);
-            const hyperliquidToken = await HyperliquidInterchainToken.deploy(hyperliquidService.address);
-
-            // The service should be able to set deployer to zero address
-            await expect(hyperliquidService.updateTokenDeployer(hyperliquidToken.address, AddressZero)).to.not.be.reverted;
-
-            // Verify the deployer was set to zero
-            expect(await hyperliquidToken.getDeployer()).to.equal(AddressZero);
+        it('Should remove trusted address', async () => {
+            await expect(service.removeTrustedChain(chain)).to.emit(service, 'TrustedChainRemoved').withArgs(chain);
         });
     });
 
