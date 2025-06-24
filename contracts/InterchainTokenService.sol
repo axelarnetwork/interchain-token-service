@@ -23,7 +23,6 @@ import { IERC20Named } from './interfaces/IERC20Named.sol';
 import { IMinter } from './interfaces/IMinter.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { Operator } from './utils/Operator.sol';
-import { IHyperliquidInterchainToken } from './interfaces/IHyperliquidInterchainToken.sol';
 import { ChainTracker } from './utils/ChainTracker.sol';
 import { ItsHubAddressTracker } from './utils/ItsHubAddressTracker.sol';
 
@@ -660,27 +659,6 @@ contract InterchainTokenService is
         ITokenManager tokenManager_ = deployedTokenManager(tokenId);
         address tokenAddress = tokenManager_.tokenAddress();
         IMinter(tokenAddress).transferMintership(address(tokenManager_));
-    }
-
-    /**
-     * @notice Updates the deployer of a HyperliquidInterchainToken instance.
-     * @dev This function can only be called by the ITS operator and only works for HyperliquidInterchainToken instances.
-     * @param tokenAddress The address of the HyperliquidInterchainToken to update.
-     * @param newDeployer The new deployer address to set.
-     */
-    function updateHyperliquidTokenDeployer(address tokenAddress, address newDeployer) external onlyRole(uint8(Roles.OPERATOR)) {
-        if (tokenAddress == address(0)) revert ZeroAddress();
-        if (newDeployer == address(0)) revert ZeroAddress();
-
-        // Try to call updateDeployer on the token
-        // This will work if the token is a HyperliquidInterchainToken
-        // and will revert if it's not (which is the desired behavior)
-        try IHyperliquidInterchainToken(tokenAddress).updateDeployer(newDeployer) {
-            // Success - the token was a HyperliquidInterchainToken
-        } catch {
-            // Revert if the token doesn't support updateDeployer
-            revert NotSupported();
-        }
     }
 
     /****************\
