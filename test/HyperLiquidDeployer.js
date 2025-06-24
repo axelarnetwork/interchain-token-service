@@ -209,7 +209,7 @@ describe('HyperLiquidDeployer', () => {
             for (const addr of addresses) {
                 await testDeployer.connect(operator).updateDeployer(addr);
                 expect(await testDeployer.getDeployer()).to.equal(addr);
-                
+
                 // Set operator back as deployer for the next iteration
                 await testDeployer.testSetDeployer(operator.address);
             }

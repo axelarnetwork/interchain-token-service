@@ -148,6 +148,7 @@ async function deployAll(
 
     // Choose the appropriate service based on chain
     let service;
+
     if (isHyperliquidChain) {
         service = await deployHyperliquidInterchainTokenService(
             wallet,

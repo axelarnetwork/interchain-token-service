@@ -12,6 +12,8 @@ import { IHyperliquidInterchainToken } from '../interfaces/IHyperliquidInterchai
  * This keeps ITS logic separate from token logic, reducing coupling
  */
 contract HyperliquidInterchainTokenService is InterchainTokenService {
+    error InvalidTokenAddress();
+
     constructor(
         address tokenManagerDeployer,
         address interchainTokenDeployer,
@@ -34,7 +36,10 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
             tokenManagerImplementation,
             tokenHandler
         )
-    {}
+    {
+        // Add the deployer as an operator to ensure they can manage the service
+        _addOperator(msg.sender);
+    }
 
     /**
      * @notice Updates the deployer for a specific Hyperliquid token
@@ -45,13 +50,13 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
     function updateTokenDeployer(IHyperliquidInterchainToken token, address newDeployer) external onlyOperatorOrOwner {
         // Additional validation: ensure the token is a valid Hyperliquid token
         // This could be enhanced with a registry check if needed
-        require(address(token) != address(0), "Invalid token address");
-        
+        if (address(token) == address(0)) revert InvalidTokenAddress();
+
         token.updateDeployer(newDeployer);
-        
+
         emit TokenDeployerUpdated(address(token), newDeployer, msg.sender);
     }
-    
+
     /**
      * @notice Event emitted when a token deployer is updated
      * @param token The address of the token contract
@@ -59,4 +64,4 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      * @param operator The operator who performed the update
      */
     event TokenDeployerUpdated(address indexed token, address indexed newDeployer, address indexed operator);
-} 
+}

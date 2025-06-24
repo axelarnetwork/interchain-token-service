@@ -19,9 +19,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
      * @notice Constructs the HyperliquidInterchainToken contract.
      * @param interchainTokenServiceAddress The address of the interchain token service.
      */
-    constructor(address interchainTokenServiceAddress) 
-        InterchainToken(interchainTokenServiceAddress) 
-    {
+    constructor(address interchainTokenServiceAddress) InterchainToken(interchainTokenServiceAddress) {
         // Don't set service here as it will be set in init() for each proxy
     }
 
@@ -84,7 +82,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
         if (msg.sender != interchainTokenService_) {
             revert NotService();
         }
-        
+
         _setDeployer(newDeployer);
     }
 }

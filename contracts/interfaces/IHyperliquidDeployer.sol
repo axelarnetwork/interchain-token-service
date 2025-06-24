@@ -19,4 +19,4 @@ interface IHyperliquidDeployer {
      * @param newDeployer The new deployer address to set
      */
     function updateDeployer(address newDeployer) external;
-} 
+}

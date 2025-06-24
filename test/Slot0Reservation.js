@@ -62,7 +62,7 @@ describe('Slot 0 Reservation', () => {
         // Check current deployer and service state
         const currentDeployer = await hyperliquidToken.getDeployer();
         const serviceAddress = await hyperliquidToken.interchainTokenService();
-        
+
         console.log('Slot0Reservation - Current deployer:', currentDeployer);
         console.log('Slot0Reservation - Service address:', serviceAddress);
 
@@ -78,7 +78,7 @@ describe('Slot 0 Reservation', () => {
         } else {
             // If neither is set, test that unauthorized calls revert
             await expect(hyperliquidToken.connect(user).updateDeployer(user.address)).to.be.revertedWith('NotAuthorized');
-            
+
             // Verify the deployer is still zero
             expect(await hyperliquidToken.getDeployer()).to.equal(ethers.constants.AddressZero);
             return; // Exit early since we can't update

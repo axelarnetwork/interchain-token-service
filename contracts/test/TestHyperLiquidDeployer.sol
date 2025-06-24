@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import { HyperliquidDeployer } from '../interchain-token/HyperliquidDeployer.sol';
-import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 
 /**
  * @title TestHyperliquidDeployer
@@ -11,7 +10,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  */
 contract TestHyperliquidDeployer is HyperliquidDeployer {
     error NotAuthorized();
-    
+
     address public itsAddress;
     address public initialDeployer;
 

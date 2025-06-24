@@ -71,12 +71,18 @@ describe('Chain-Specific Token Deployment', () => {
 
         // Standard InterchainToken should not have getDeployer function
         expect(token.getDeployer).to.be.undefined;
-
     });
 
     it('should verify storage layout differences', async () => {
         // Deploy both types
-        const hyperliquidDeployment = await deployAll(wallet, 'hyperliquid', ITS_HUB_ADDRESS, [], 'HyperliquidTest', 'HyperliquidTestFactory');
+        const hyperliquidDeployment = await deployAll(
+            wallet,
+            'hyperliquid',
+            ITS_HUB_ADDRESS,
+            [],
+            'HyperliquidTest',
+            'HyperliquidTestFactory',
+        );
         const standardDeployment = await deployAll(wallet, 'avalanche', ITS_HUB_ADDRESS, [], 'StandardTest', 'StandardTestFactory');
 
         // Deploy tokens using each deployer

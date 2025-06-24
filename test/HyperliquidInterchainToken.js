@@ -132,23 +132,6 @@ describe('HyperliquidInterchainToken', () => {
             const allowance = await token.allowance(owner.address, spender);
             expect(allowance).to.equal(allowanceAmount);
         });
-
-        it('should allow ITS itself to update the deployer', async () => {
-            // Deploy a TestOperator contract to act as ITS
-            const TestOperator = await ethers.getContractFactory('TestOperator', owner);
-            const mockITS = await TestOperator.deploy(owner.address);
-
-            // Deploy HyperliquidInterchainToken with mockITS as the ITS address
-            const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
-            const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
-
-            // Only the service (mockITS) can call updateDeployer, but we need to call it through the service
-            // Since mockITS is the service, we need to call it through mockITS
-            const newDeployer = user.address;
-            // This test is no longer valid since only the service can call updateDeployer
-            // We'll test this functionality through the service instead
-            expect(await testDeployer.getDeployer()).to.equal(ethers.constants.AddressZero);
-        });
     });
 
     describe('Storage Layout Verification', () => {
@@ -221,7 +204,7 @@ describe('HyperliquidInterchainToken', () => {
                 // If this succeeds, user is authorized
                 expect(await token1.getDeployer()).to.equal(user.address);
                 expect(await token2.getDeployer()).to.equal(ethers.constants.AddressZero);
-                
+
                 // Test that token2 also works
                 await token2.connect(user).updateDeployer(user.address);
                 expect(await token2.getDeployer()).to.equal(user.address);
@@ -487,7 +470,10 @@ describe('HyperliquidInterchainToken', () => {
             const unauthorizedUser = wallets[3];
 
             // Test that unauthorized user cannot update deployer
-            await expect(token.connect(unauthorizedUser).updateDeployer(unauthorizedUser.address)).to.be.revertedWithCustomError(token, 'NotService');
+            await expect(token.connect(unauthorizedUser).updateDeployer(unauthorizedUser.address)).to.be.revertedWithCustomError(
+                token,
+                'NotService',
+            );
         });
 
         // For slot 0 reservation test, check current authorization state
@@ -501,17 +487,17 @@ describe('HyperliquidInterchainToken', () => {
             // Check current deployer and service state
             const currentDeployer = await token.getDeployer();
             const serviceAddress = await token.interchainTokenService();
-            
+
             console.log('Slot0Reservation - Current deployer:', currentDeployer);
             console.log('Slot0Reservation - Service address:', serviceAddress);
-            
+
             // Verify that the service address is set and not zero
             expect(serviceAddress).to.not.equal(ethers.constants.AddressZero);
-            
+
             // Verify slot 0 contains the deployer (whatever it currently is)
             const deployerFromSlot = '0x' + initialSlot0.slice(26); // Extract address from slot
             expect(deployerFromSlot.toLowerCase()).to.equal(currentDeployer.toLowerCase());
-            
+
             // This test verifies the permission system is working correctly
         });
     });
