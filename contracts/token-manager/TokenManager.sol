@@ -27,6 +27,7 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
     using SafeTokenCall for IERC20;
 
     uint256 internal constant UINT256_MAX = type(uint256).max;
+    uint256 internal constant INT64_MAX = uint256(uint64(type(int64).max));
 
     address public immutable interchainTokenService;
 
@@ -234,12 +235,17 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
      * @notice A function to renew approval to the service if we need to.
      */
     function approveService() external onlyService {
+        address tokenAddress_ = this.tokenAddress();
+        bool isHTSToken = HTS.isToken(tokenAddress_);
+        uint256 amount = isHTSToken ? INT64_MAX : UINT256_MAX;
         /**
          * @dev Some tokens may not obey the infinite approval.
          * Even so, it is unexpected to run out of allowance in practice.
          * If needed, we can upgrade to allow replenishing the allowance in the future.
+         *
+         * @notice HTS tokens have a maximum supply of 2^63-1 (int64.max).
          */
-        IERC20(this.tokenAddress()).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, UINT256_MAX));
+        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, amount));
     }
 
     /**
