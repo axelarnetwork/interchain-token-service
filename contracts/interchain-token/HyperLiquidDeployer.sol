@@ -18,15 +18,12 @@ abstract contract HyperliquidDeployer is IHyperliquidDeployer {
     /// This state variable declaration ensures Solidity places it in slot 0
     address private deployer;
 
-    error NotAuthorized();
-
     /**
      * @notice Gets the deployer address stored in slot 0
      * @return deployerAddress The address of the deployer
      */
     function _deployer() internal view virtual returns (address deployerAddress) {
         assembly {
-            // Read directly from slot 0
             deployerAddress := sload(0)
         }
     }
@@ -37,7 +34,6 @@ abstract contract HyperliquidDeployer is IHyperliquidDeployer {
      */
     function _setDeployer(address newDeployer) internal {
         assembly {
-            // Write directly to slot 0
             sstore(0, newDeployer)
         }
     }
@@ -48,13 +44,5 @@ abstract contract HyperliquidDeployer is IHyperliquidDeployer {
      */
     function getDeployer() external view virtual override returns (address deployerAddress) {
         return _deployer();
-    }
-
-    /**
-     * @notice Allows updating the deployer address - authorization logic should be implemented by inheriting contracts
-     * @param newDeployer The new deployer address to set
-     */
-    function updateDeployer(address newDeployer) external virtual override {
-        _setDeployer(newDeployer);
     }
 }

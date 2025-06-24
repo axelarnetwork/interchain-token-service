@@ -39,7 +39,7 @@ describe('Chain-Specific Token Deployment', () => {
         // Verify the deployed token has Hyperliquid functionality
         const token = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress, wallet);
         const deployer = await token.getDeployer();
-        expect(deployer).to.equal(deployment.activeTokenDeployer.address);
+        expect(deployer).to.equal(ethers.constants.AddressZero);
     });
 
     it('should deploy standard InterchainToken for other chains', async () => {
@@ -95,8 +95,8 @@ describe('Chain-Specific Token Deployment', () => {
         const hyperliquidSlot0 = await provider.getStorageAt(hyperliquidTokenAddress, 0);
         const standardSlot0 = await provider.getStorageAt(standardTokenAddress, 0);
 
-        // Hyperliquid should have deployer in slot 0, standard should be empty
-        expect(hyperliquidSlot0).to.not.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
+        // Both should have empty slot 0 initially since we don't set deployer during initialization
+        expect(hyperliquidSlot0).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
         expect(standardSlot0).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
     });
 });

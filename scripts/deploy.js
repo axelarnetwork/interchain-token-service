@@ -62,6 +62,43 @@ async function deployInterchainTokenService(
     return service;
 }
 
+async function deployHyperliquidInterchainTokenService(
+    wallet,
+    create3DeployerAddress,
+    tokenManagerDeployerAddress,
+    interchainTokenDeployerAddress,
+    gatewayAddress,
+    gasServiceAddress,
+    interchainTokenFactoryAddress,
+    tokenManagerAddress,
+    tokenHandlerAddress,
+    chainName,
+    itsHubAddress,
+    evmChains = [],
+    deploymentKey,
+    ownerAddress = wallet.address,
+    operatorAddress = wallet.address,
+) {
+    const implementation = await deployContract(wallet, 'HyperliquidInterchainTokenService', [
+        tokenManagerDeployerAddress,
+        interchainTokenDeployerAddress,
+        gatewayAddress,
+        gasServiceAddress,
+        interchainTokenFactoryAddress,
+        chainName,
+        itsHubAddress,
+        tokenManagerAddress,
+        tokenHandlerAddress,
+    ]);
+    const proxy = await create3DeployContract(create3DeployerAddress, wallet, Proxy, deploymentKey, [
+        implementation.address,
+        ownerAddress,
+        defaultAbiCoder.encode(['address', 'string', 'string[]'], [operatorAddress, chainName, evmChains]),
+    ]);
+    const service = new Contract(proxy.address, implementation.interface, wallet);
+    return service;
+}
+
 async function deployInterchainTokenFactory(wallet, create3DeployerAddress, interchainTokenServiceAddress, deploymentKey) {
     const implementation = await deployContract(wallet, 'InterchainTokenFactory', [interchainTokenServiceAddress]);
     const proxy = await create3DeployContract(create3DeployerAddress, wallet, Proxy, deploymentKey, [
@@ -109,21 +146,41 @@ async function deployAll(
 
     const interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, factoryDeploymentKey);
 
-    const service = await deployInterchainTokenService(
-        wallet,
-        create3Deployer.address,
-        tokenManagerDeployer.address,
-        activeTokenDeployer.address, // Use the appropriate deployer
-        gateway.address,
-        gasService.address,
-        interchainTokenFactoryAddress,
-        tokenManager.address,
-        tokenHandler.address,
-        chainName,
-        itsHubAddress,
-        evmChains,
-        deploymentKey,
-    );
+    // Choose the appropriate service based on chain
+    let service;
+    if (isHyperliquidChain) {
+        service = await deployHyperliquidInterchainTokenService(
+            wallet,
+            create3Deployer.address,
+            tokenManagerDeployer.address,
+            activeTokenDeployer.address, // Use the appropriate deployer
+            gateway.address,
+            gasService.address,
+            interchainTokenFactoryAddress,
+            tokenManager.address,
+            tokenHandler.address,
+            chainName,
+            itsHubAddress,
+            evmChains,
+            deploymentKey,
+        );
+    } else {
+        service = await deployInterchainTokenService(
+            wallet,
+            create3Deployer.address,
+            tokenManagerDeployer.address,
+            activeTokenDeployer.address, // Use the appropriate deployer
+            gateway.address,
+            gasService.address,
+            interchainTokenFactoryAddress,
+            tokenManager.address,
+            tokenHandler.address,
+            chainName,
+            itsHubAddress,
+            evmChains,
+            deploymentKey,
+        );
+    }
 
     const tokenFactory = await deployInterchainTokenFactory(
         wallet,
@@ -154,6 +211,7 @@ module.exports = {
     deployMockGateway,
     deployGasService,
     deployInterchainTokenService,
+    deployHyperliquidInterchainTokenService,
     deployInterchainTokenFactory,
     deployAll,
 };

@@ -16,7 +16,8 @@ interface IHyperliquidInterchainToken is IInterchainToken {
     function getDeployer() external view returns (address deployer);
 
     /**
-     * @notice Allows the ITS contract or its operator to update the deployer address
+     * @notice Allows updating the deployer address
+     * @dev No authorization logic - this should be handled by the calling contract
      * @param newDeployer The new deployer address to set
      */
     function updateDeployer(address newDeployer) external;

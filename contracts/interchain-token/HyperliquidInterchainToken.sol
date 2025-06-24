@@ -4,25 +4,25 @@ pragma solidity ^0.8.0;
 
 import { InterchainToken } from './InterchainToken.sol';
 import { HyperliquidDeployer } from './HyperliquidDeployer.sol';
-import { IHyperliquidInterchainToken } from '../interfaces/IHyperliquidInterchainToken.sol';
-import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
-import { IOperator } from '../interfaces/IOperator.sol';
-import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 /**
  * @title HyperliquidInterchainToken
  * @notice This contract implements an interchain token with Hyperliquid-specific modifications.
- * @dev Inherits from HyperliquidDeployer first to ensure slot 0 is properly reserved,
+ * @dev Inherits from HyperLiquidDeployer first to ensure slot 0 is properly reserved,
  * then from InterchainToken for standard functionality.
  * This maintains the standard InterchainToken while providing Hyperliquid compatibility.
  */
-contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHyperliquidInterchainToken {
+contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
+    error NotService();
+
     /**
      * @notice Constructs the HyperliquidInterchainToken contract.
      * @param interchainTokenServiceAddress The address of the interchain token service.
      */
-    constructor(address interchainTokenServiceAddress) InterchainToken(interchainTokenServiceAddress) {
-        _setDeployer(msg.sender); // Set initial deployer to msg.sender
+    constructor(address interchainTokenServiceAddress) 
+        InterchainToken(interchainTokenServiceAddress) 
+    {
+        // Don't set service here as it will be set in init() for each proxy
     }
 
     /**
@@ -39,8 +39,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
         string calldata tokenName,
         string calldata tokenSymbol,
         uint8 tokenDecimals
-    ) external override(IInterchainToken, InterchainToken) {
-        // Copy the parent's init logic to avoid recursion
+    ) external override {
         if (_isInitialized()) revert AlreadyInitialized();
 
         _initialize();
@@ -54,52 +53,38 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
         decimals = tokenDecimals;
         tokenId = tokenId_;
 
+        // Set the deployer in slot 0 for Hyperliquid compatibility
+        _setDeployer(address(0));
+
         /**
          * @dev Set the token service as a minter to allow it to mint and burn tokens.
          * Also add the provided address as a minter. If `address(0)` was provided,
          * add it as a minter to allow anyone to easily check that no custom minter was set.
          */
-        _addMinter(interchainTokenService());
+        _addMinter(interchainTokenService_);
         _addMinter(minter);
 
         _setNameHash(tokenName);
-
-        _setDeployer(msg.sender); // Set deployer to msg.sender during initialization
-    }
-
-    /**
-     * @notice Override interchainTokenId function from InterchainToken
-     * @return bytes32 The tokenId of the token
-     */
-    function interchainTokenId() public view override(InterchainToken, IInterchainToken) returns (bytes32) {
-        return super.interchainTokenId();
-    }
-
-    /**
-     * @notice Override interchainTokenService function from InterchainToken
-     * @return address The interchain token service contract address
-     */
-    function interchainTokenService() public view override(InterchainToken, IInterchainToken) returns (address) {
-        return super.interchainTokenService();
     }
 
     /**
      * @notice Gets the deployer address stored in slot 0
      * @return deployer The address of the deployer
      */
-    function getDeployer() external view override(HyperliquidDeployer, IHyperliquidInterchainToken) returns (address deployer) {
+    function getDeployer() external view override returns (address deployer) {
         return _deployer();
     }
 
     /**
-     * @notice Allows the ITS contract or its operator to update the deployer address
+     * @notice Allows updating the deployer address
+     * @dev Only the interchain token service can call this function
      * @param newDeployer The new deployer address to set
      */
-    function updateDeployer(address newDeployer) external override(HyperliquidDeployer, IHyperliquidInterchainToken) {
-        address its = interchainTokenService();
-        if (msg.sender != its) {
-            if (!IOperator(its).isOperator(msg.sender)) revert NotAuthorized();
+    function updateDeployer(address newDeployer) external {
+        if (msg.sender != interchainTokenService_) {
+            revert NotService();
         }
+        
         _setDeployer(newDeployer);
     }
 }

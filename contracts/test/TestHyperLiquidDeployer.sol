@@ -3,12 +3,15 @@
 pragma solidity ^0.8.0;
 
 import { HyperliquidDeployer } from '../interchain-token/HyperliquidDeployer.sol';
+import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 
 /**
  * @title TestHyperliquidDeployer
  * @notice Concrete implementation of HyperliquidDeployer for testing
  */
 contract TestHyperliquidDeployer is HyperliquidDeployer {
+    error NotAuthorized();
+    
     address public itsAddress;
     address public initialDeployer;
 
@@ -20,7 +23,6 @@ contract TestHyperliquidDeployer is HyperliquidDeployer {
 
     /**
      * @notice Override updateDeployer with test-specific authorization logic
-     * @param newDeployer The new deployer address to set
      */
     function updateDeployer(address newDeployer) external override {
         // Test authorization: allow ITS address, current deployer, or initial deployer

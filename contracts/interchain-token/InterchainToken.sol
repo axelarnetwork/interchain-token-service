@@ -80,7 +80,7 @@ contract InterchainToken is InterchainTokenStandard, ERC20, ERC20Permit, Minter,
      * @param tokenId_ The tokenId of the token.
      * @param minter The address of the token minter.
      * @param tokenName The name of the token.
-     * @param tokenSymbol The symbopl of the token.
+     * @param tokenSymbol The symbol of the token.
      * @param tokenDecimals The decimals of the token.
      */
     function init(

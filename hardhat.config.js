@@ -12,7 +12,7 @@ const { networks, etherscan } = importNetworks(chains, keys);
 
 const optimizerSettings = {
     enabled: true,
-    runs: 1000,
+    runs: 800,
     details: {
         peephole: process.env.COVERAGE === undefined,
         inliner: process.env.COVERAGE === undefined,
