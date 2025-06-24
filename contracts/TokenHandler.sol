@@ -128,14 +128,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
      */
     // slither-disable-next-line locked-ether
     function postTokenManagerDeploy(uint256 tokenManagerType, ITokenManager tokenManager) external payable {
-        // For native interchain tokens, we transfer mintership to the token manager.
-        // This is done here because the InterchainToken bytecode is preferred to be fixed to avoid having multiple versions of the Token code used in production.
-        if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
-            IMinter(tokenManager.tokenAddress()).transferMintership(address(tokenManager));
-            // For lock/unlock token managers, the ITS contract needs an approval from the token manager to transfer tokens on its behalf.
-        } else if (
-            tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)
-        ) {
+        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
             tokenManager.approveService();
         }
     }
