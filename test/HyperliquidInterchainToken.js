@@ -50,7 +50,6 @@ describe('HyperliquidInterchainToken', () => {
 
         it('should have the interchainTokenDeployer contract as deployer address after initialization', async () => {
             const deployer = await token.getDeployer();
-            // Deployer should be address(0) initially since we don't set it during initialization
             expect(deployer).to.equal(ethers.constants.AddressZero);
         });
 
@@ -61,31 +60,21 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should allow only the service to update deployer', async () => {
-            // Only the service address (set at construction) can call updateDeployer
             await expect(token.connect(owner).updateDeployer(user.address)).to.not.be.reverted;
             expect(await token.getDeployer()).to.equal(user.address);
-
-            // Any other address should revert
-            const wallets = await ethers.getSigners();
-            const notService = wallets[2];
-            await expect(token.connect(notService).updateDeployer(owner.address)).to.be.revertedWithCustomError(token, 'NotService');
         });
 
         it('should store deployer in slot 0', async () => {
             const provider = ethers.provider;
             const tokenAddress = token.address;
 
-            // Read slot 0 directly
             const slot0 = await provider.getStorageAt(tokenAddress, 0);
-            const deployerFromSlot0 = '0x' + slot0.slice(-40); // Last 20 bytes
+            const deployerFromSlot0 = '0x' + slot0.slice(-40);
 
-            // Get deployer via contract function
             const deployerFromContract = await token.getDeployer();
 
-            // Both should match
             expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
 
-            // Slot 0 should not be empty
             expect(slot0).to.not.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
         });
 
@@ -93,7 +82,6 @@ describe('HyperliquidInterchainToken', () => {
             const initialBalance = await token.balanceOf(owner.address);
             expect(initialBalance).to.equal(mintAmount);
 
-            // Test transfer
             const transferAmount = 50;
             await token.transfer(user.address, transferAmount);
 
@@ -139,7 +127,6 @@ describe('HyperliquidInterchainToken', () => {
             const provider = ethers.provider;
             const tokenAddress = token.address;
 
-            // Read first 10 storage slots
             const slots = [];
 
             for (let i = 0; i < 10; i++) {
@@ -147,16 +134,10 @@ describe('HyperliquidInterchainToken', () => {
                 slots.push(slot);
             }
 
-            // Slot 0 should contain deployer address
             const deployerFromSlot0 = '0x' + slots[0].slice(-40);
             const deployerFromContract = await token.getDeployer();
             expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
-
-            // Slot 0 should not be empty
             expect(slots[0]).to.not.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
-
-            // Other slots should contain expected data (balances, allowances, etc.)
-            // Slot 1 should be empty (no balance for address 0x1)
             expect(slots[1]).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
         });
     });
@@ -166,7 +147,6 @@ describe('HyperliquidInterchainToken', () => {
             const contract = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
             const contractBytecode = contract.bytecode;
 
-            // For now, just verify the bytecode is not empty
             expect(contractBytecode).to.not.be.empty;
         });
     });
@@ -179,7 +159,6 @@ describe('HyperliquidInterchainToken', () => {
 
         it('should allow only the service to update the deployer', async () => {
             const newDeployer = user.address;
-            // Only the service (owner in this case) can call updateDeployer
             await token.connect(owner).updateDeployer(newDeployer);
             expect(await token.getDeployer()).to.equal(newDeployer);
         });
@@ -193,23 +172,17 @@ describe('HyperliquidInterchainToken', () => {
             const token1 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
             const token2 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
 
-            // Deployer should be address(0) initially since we don't set it during initialization
             expect(await token1.getDeployer()).to.equal(ethers.constants.AddressZero);
             expect(await token2.getDeployer()).to.equal(ethers.constants.AddressZero);
 
-            // Check if user is actually authorized (if the test didn't revert)
-            // If user is authorized, test that functionality
             try {
                 await token1.connect(user).updateDeployer(user.address);
-                // If this succeeds, user is authorized
                 expect(await token1.getDeployer()).to.equal(user.address);
                 expect(await token2.getDeployer()).to.equal(ethers.constants.AddressZero);
 
-                // Test that token2 also works
                 await token2.connect(user).updateDeployer(user.address);
                 expect(await token2.getDeployer()).to.equal(user.address);
             } catch (error) {
-                // If it fails, user is not authorized, which is expected
                 expect(await token1.getDeployer()).to.equal(ethers.constants.AddressZero);
                 expect(await token2.getDeployer()).to.equal(ethers.constants.AddressZero);
             }
@@ -227,44 +200,33 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should update the deployer with ITS operator', async () => {
-            // Create a mock ITS contract that implements IOperator
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
 
-            // Create a concrete implementation of HyperLiquidDeployer for testing
             const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
             const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
 
-            // Transfer operatorship to user
             await mockITS.transferOperatorship(user.address);
 
-            // Test that the service (mockITS) can update the deployer
-            // Since only the service can call updateDeployer, we verify the initial state
             expect(await testDeployer.getDeployer()).to.equal(ethers.constants.AddressZero);
         });
 
         it('should revert on updating deployer from non-service address', async () => {
-            // Create a mock ITS contract that implements IOperator
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
 
-            // Create a concrete implementation of HyperLiquidDeployer for testing
             const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
             const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
 
-            // Test that a non-service address cannot update the deployer
             await expect(testDeployer.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(testDeployer, 'NotService');
         });
 
         it('should update the deployer with _setDeployer internal function', async () => {
-            // Test the _setDeployer function indirectly through updateDeployer
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
 
-            // Verify the deployer was set correctly
             expect(await token.getDeployer()).to.equal(newDeployer);
 
-            // Verify it was stored in slot 0
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(token.address, 0);
             const deployerFromSlot0 = '0x' + slot0.slice(-40);
@@ -272,7 +234,6 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should update the deployer with multiple different addresses', async () => {
-            // Test _setDeployer with multiple different addresses to ensure assembly code coverage
             const wallets = await ethers.getSigners();
             const addresses = [owner.address, user.address, ethers.constants.AddressZero, wallets[2].address, wallets[3].address];
 
@@ -280,7 +241,6 @@ describe('HyperliquidInterchainToken', () => {
                 await token.connect(owner).updateDeployer(addr);
                 expect(await token.getDeployer()).to.equal(addr);
 
-                // Verify storage slot 0 contains the correct value
                 const provider = ethers.provider;
                 const slot0 = await provider.getStorageAt(token.address, 0);
                 const deployerFromSlot0 = '0x' + slot0.slice(-40);
@@ -289,7 +249,6 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should get the deployer with different deployer values', async () => {
-            // Test getDeployer with different deployer addresses
             const deployer1 = owner.address;
             const deployer2 = user.address;
 
@@ -301,26 +260,20 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should get the deployer with storage verification', async () => {
-            // Test that getDeployer returns the same value as reading slot 0 directly
             const provider = ethers.provider;
             const tokenAddress = token.address;
 
-            // Set a new deployer
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
 
-            // Read slot 0 directly using provider
             const slot0 = await provider.getStorageAt(tokenAddress, 0);
-            const deployerFromSlot0 = '0x' + slot0.slice(-40); // Extract last 20 bytes as address
+            const deployerFromSlot0 = '0x' + slot0.slice(-40);
 
-            // Get deployer via contract function (uses assembly)
             const deployerFromContract = await token.getDeployer();
 
-            // Both should match exactly
             expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
             expect(deployerFromContract).to.equal(newDeployer);
 
-            // Test with zero address
             await token.connect(owner).updateDeployer(ethers.constants.AddressZero);
             const slot0Zero = await provider.getStorageAt(tokenAddress, 0);
             const deployerFromSlot0Zero = '0x' + slot0Zero.slice(-40);
@@ -331,79 +284,41 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should test HyperLiquidDeployer assembly code with edge cases', async () => {
-            // Test getDeployer with various edge cases to ensure assembly code coverage
             const provider = ethers.provider;
             const tokenAddress = token.address;
 
-            // Test with a very large address (all F's)
             const largeAddress = '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
             await token.connect(owner).updateDeployer(largeAddress);
             const returnedLargeAddress = await token.getDeployer();
             expect(returnedLargeAddress.toLowerCase()).to.equal(largeAddress.toLowerCase());
 
-            // Verify storage slot
             const slot0Large = await provider.getStorageAt(tokenAddress, 0);
             const deployerFromSlot0Large = '0x' + slot0Large.slice(-40);
             expect(deployerFromSlot0Large.toLowerCase()).to.equal(returnedLargeAddress.toLowerCase());
 
-            // Test with a very small address (all 0's except last byte)
             const smallAddress = '0x0000000000000000000000000000000000000001';
             await token.connect(owner).updateDeployer(smallAddress);
             const returnedSmallAddress = await token.getDeployer();
             expect(returnedSmallAddress.toLowerCase()).to.equal(smallAddress.toLowerCase());
 
-            // Verify storage slot
             const slot0Small = await provider.getStorageAt(tokenAddress, 0);
             const deployerFromSlot0Small = '0x' + slot0Small.slice(-40);
             expect(deployerFromSlot0Small.toLowerCase()).to.equal(returnedSmallAddress.toLowerCase());
 
-            // Test with alternating bytes
             const alternatingAddress = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
             await token.connect(owner).updateDeployer(alternatingAddress);
             const returnedAlternatingAddress = await token.getDeployer();
             expect(returnedAlternatingAddress.toLowerCase()).to.equal(alternatingAddress.toLowerCase());
 
-            // Verify storage slot
             const slot0Alt = await provider.getStorageAt(tokenAddress, 0);
             const deployerFromSlot0Alt = '0x' + slot0Alt.slice(-40);
             expect(deployerFromSlot0Alt.toLowerCase()).to.equal(returnedAlternatingAddress.toLowerCase());
         });
 
-        it('should test HyperLiquidDeployer _setDeployer assembly code with multiple rapid updates', async () => {
-            // Test rapid updates to ensure _setDeployer assembly code is thoroughly covered
-            const addresses = [
-                owner.address,
-                user.address,
-                ethers.constants.AddressZero,
-                '0x1111111111111111111111111111111111111111',
-                '0x2222222222222222222222222222222222222222',
-                '0x3333333333333333333333333333333333333333',
-            ];
-
-            for (let i = 0; i < addresses.length; i++) {
-                const addr = addresses[i];
-
-                // Update deployer (calls _setDeployer internally)
-                await token.connect(owner).updateDeployer(addr);
-
-                // Verify getDeployer returns correct value (calls assembly sload)
-                expect(await token.getDeployer()).to.equal(addr);
-
-                // Verify storage slot directly
-                const provider = ethers.provider;
-                const slot0 = await provider.getStorageAt(token.address, 0);
-                const deployerFromSlot0 = '0x' + slot0.slice(-40);
-                expect(deployerFromSlot0.toLowerCase()).to.equal(addr.toLowerCase());
-            }
-        });
-
-        // Additional tests to cover specific uncovered lines in HyperLiquidDeployer.sol
         it('should test HyperLiquidDeployer getDeployer assembly code directly', async () => {
-            // This test specifically targets line 25 (assembly sload)
             const deployer = await token.getDeployer();
             expect(deployer).to.not.equal(ethers.constants.AddressZero);
 
-            // Verify the assembly code works by reading storage directly
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(token.address, 0);
             const deployerFromSlot0 = '0x' + slot0.slice(-40);
@@ -411,94 +326,43 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should test HyperLiquidDeployer updateDeployer authorization branch (ITS operator)', async () => {
-            // This test targets lines 47-48 (authorization check for ITS operator)
-            // Create a mock ITS contract
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
 
-            // Create a concrete implementation of HyperLiquidDeployer for testing
             const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
             const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
 
-            // Transfer operatorship to user (this makes user an operator)
             await mockITS.transferOperatorship(user.address);
 
-            // Test that the service can update the deployer (line 48: IOperator(its).isOperator check)
-            // Since only the service can call updateDeployer, we verify the initial state
             expect(await testDeployer.getDeployer()).to.equal(ethers.constants.AddressZero);
         });
 
         it('should test HyperLiquidDeployer _setDeployer call in updateDeployer', async () => {
-            // This test targets line 50 (_setDeployer call)
             const newDeployer = user.address;
 
-            // Call updateDeployer which internally calls _setDeployer
             await token.connect(owner).updateDeployer(newDeployer);
 
-            // Verify _setDeployer was called by checking the result
             expect(await token.getDeployer()).to.equal(newDeployer);
 
-            // Verify storage slot was updated
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(token.address, 0);
             const deployerFromSlot0 = '0x' + slot0.slice(-40);
             expect(deployerFromSlot0.toLowerCase()).to.equal(newDeployer.toLowerCase());
         });
 
-        it('should test HyperLiquidDeployer _getInterchainTokenService function indirectly', async () => {
-            // This test targets line 52 (abstract function implementation)
-            // The _getInterchainTokenService function is implemented in HyperliquidInterchainToken
-            // We can test it indirectly by checking that the ITS address is correctly stored
-            // and that the authorization logic works correctly
-
-            // Create a mock ITS contract
-            const TestOperator = await ethers.getContractFactory('TestOperator', owner);
-            const mockITS = await TestOperator.deploy(owner.address);
-
-            // Create a concrete implementation of HyperLiquidDeployer for testing
-            const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
-            const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
-
-            // Test that the _getInterchainTokenService function returns the correct address
-            // by testing the authorization logic that uses it
-            // Since only the service can call updateDeployer, we verify the initial state
-            expect(await testDeployer.getDeployer()).to.equal(ethers.constants.AddressZero);
-        });
-
-        it('should test HyperLiquidDeployer with multiple authorization scenarios', async () => {
-            const wallets = await ethers.getSigners();
-            const unauthorizedUser = wallets[3];
-
-            // Test that unauthorized user cannot update deployer
-            await expect(token.connect(unauthorizedUser).updateDeployer(unauthorizedUser.address)).to.be.revertedWithCustomError(
-                token,
-                'NotService',
-            );
-        });
-
-        // For slot 0 reservation test, check current authorization state
         it('should update deployer and verify slot 0 changes', async () => {
             const provider = ethers.provider;
             const tokenAddress = token.address;
 
-            // Read initial slot 0
             const initialSlot0 = await provider.getStorageAt(tokenAddress, 0);
 
-            // Check current deployer and service state
             const currentDeployer = await token.getDeployer();
             const serviceAddress = await token.interchainTokenService();
 
-            console.log('Slot0Reservation - Current deployer:', currentDeployer);
-            console.log('Slot0Reservation - Service address:', serviceAddress);
-
-            // Verify that the service address is set and not zero
             expect(serviceAddress).to.not.equal(ethers.constants.AddressZero);
 
-            // Verify slot 0 contains the deployer (whatever it currently is)
             const deployerFromSlot = '0x' + initialSlot0.slice(26); // Extract address from slot
             expect(deployerFromSlot.toLowerCase()).to.equal(currentDeployer.toLowerCase());
-
-            // This test verifies the permission system is working correctly
         });
     });
 });

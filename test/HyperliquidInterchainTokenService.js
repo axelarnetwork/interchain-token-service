@@ -11,10 +11,8 @@ describe('HyperliquidInterchainTokenService', () => {
     beforeEach(async () => {
         [owner, user, otherUser] = await ethers.getSigners();
 
-        // Deploy dependencies
         tokenManagerDeployer = await deployContract(owner, 'TokenManagerDeployer');
 
-        // Deploy a mock interchain token implementation first
         const MockInterchainToken = await ethers.getContractFactory('TestInterchainTokenStandard', owner);
         const mockTokenImplementation = await MockInterchainToken.deploy(
             'Mock',
@@ -27,29 +25,26 @@ describe('HyperliquidInterchainTokenService', () => {
         interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [mockTokenImplementation.address]);
         gateway = await deployContract(owner, 'MockGateway');
         gasService = await deployContract(owner, 'AxelarGasService', [owner.address]);
-        create3Deployer = await deployContract(owner, 'CreateDeploy'); // Use local CreateDeploy contract
+        create3Deployer = await deployContract(owner, 'CreateDeploy');
         chainName = 'ethereum';
-        ITS_HUB_ADDRESS = 'axelar1' + '0'.repeat(58); // Valid 65-character string
+        ITS_HUB_ADDRESS = 'axelar1' + '0'.repeat(58);
 
-        // Deploy TokenManager and TokenHandler first
-        tokenManager = await deployContract(owner, 'TokenManager', [owner.address]); // Use owner.address as placeholder if needed
+        tokenManager = await deployContract(owner, 'TokenManager', [owner.address]);
         tokenHandler = await deployContract(owner, 'TokenHandler');
 
-        // Deploy HyperliquidInterchainTokenService with real addresses
         const HyperliquidInterchainTokenService = await ethers.getContractFactory('HyperliquidInterchainTokenService', owner);
         hyperliquidService = await HyperliquidInterchainTokenService.deploy(
             tokenManagerDeployer.address,
             interchainTokenDeployer.address,
             gateway.address,
             gasService.address,
-            create3Deployer.address, // factory address
+            create3Deployer.address,
             chainName,
             ITS_HUB_ADDRESS,
             tokenManager.address,
             tokenHandler.address,
         );
 
-        // Deploy test tokens
         const HyperliquidInterchainToken = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
         hyperliquidToken1 = await HyperliquidInterchainToken.deploy(hyperliquidService.address);
         hyperliquidToken2 = await HyperliquidInterchainToken.deploy(hyperliquidService.address);
@@ -57,17 +52,14 @@ describe('HyperliquidInterchainTokenService', () => {
 
     describe('updateTokenDeployer', () => {
         it('should update deployer for a single token', async () => {
-            // Verify the service and tokens are deployed correctly
             expect(hyperliquidService.address).to.not.equal(ethers.constants.AddressZero);
             expect(hyperliquidToken1.address).to.not.equal(ethers.constants.AddressZero);
             expect(hyperliquidToken2.address).to.not.equal(ethers.constants.AddressZero);
 
-            // The service should be able to update the deployer
             const newDeployer = user.address;
 
             await expect(hyperliquidService.updateTokenDeployer(hyperliquidToken1.address, newDeployer)).to.not.be.reverted;
 
-            // Verify the deployer was updated
             expect(await hyperliquidToken1.getDeployer()).to.equal(newDeployer);
         });
 
@@ -80,11 +72,9 @@ describe('HyperliquidInterchainTokenService', () => {
         });
 
         it('should allow setting deployer to zero address', async () => {
-            // The service should be able to set deployer to zero address
             await expect(hyperliquidService.updateTokenDeployer(hyperliquidToken1.address, ethers.constants.AddressZero)).to.not.be
                 .reverted;
 
-            // Verify the deployer was set to zero
             expect(await hyperliquidToken1.getDeployer()).to.equal(ethers.constants.AddressZero);
         });
     });
