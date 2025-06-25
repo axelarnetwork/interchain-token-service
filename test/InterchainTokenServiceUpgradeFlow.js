@@ -21,12 +21,12 @@ const {
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
-const { MINT_BURN, ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS } = require('./constants');
+const { MINT_BURN, ITS_HUB_ADDRESS } = require('./constants');
 
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, operator;
     let service, gateway, gasService, tokenFactory;
-    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler, gatewayCaller;
+    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler;
     let interchainTokenFactoryAddress;
 
     let axelarServiceGovernanceFactory;
@@ -80,7 +80,6 @@ describe('Interchain Token Service Upgrade Flow', () => {
         interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
         tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
         tokenHandler = await deployContract(wallet, 'TokenHandler', []);
-        gatewayCaller = await deployContract(wallet, 'GatewayCaller', [gateway.address, gasService.address]);
         interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey + 'Factory');
 
         axelarServiceGovernanceFactory = await ethers.getContractFactory(
@@ -103,8 +102,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             interchainTokenFactoryAddress,
             tokenManager.address,
             tokenHandler.address,
-            gatewayCaller.address,
             chainName,
+            ITS_HUB_ADDRESS,
             [],
             deploymentKey,
             wallet.address,
@@ -112,9 +111,7 @@ describe('Interchain Token Service Upgrade Flow', () => {
 
         tokenFactory = await deployInterchainTokenFactory(wallet, create3Deployer.address, service.address, deploymentKey + 'Factory');
 
-        await service.setTrustedAddress(ITS_HUB_CHAIN_NAME, ITS_HUB_ADDRESS).then((tx) => tx.wait);
-
-        await service.transferOwnership(axelarServiceGovernance.address).then((tx) => tx.wait);
+        await service.transferOwnership(axelarServiceGovernance.address).then((tx) => tx.wait());
     });
 
     it('should upgrade Interchain Token Service through AxelarServiceGovernance timeLock proposal', async () => {
@@ -131,9 +128,9 @@ describe('Interchain Token Service Upgrade Flow', () => {
             gasService.address,
             interchainTokenFactoryAddress,
             chainName,
+            ITS_HUB_ADDRESS,
             tokenManager.address,
             tokenHandler.address,
-            gatewayCaller.address,
         ]);
         const newServiceImplementationCodeHash = await getBytecodeHash(newServiceImplementation);
         const setupParams = '0x';
@@ -198,9 +195,9 @@ describe('Interchain Token Service Upgrade Flow', () => {
             gasService.address,
             interchainTokenFactoryAddress,
             chainName,
+            ITS_HUB_ADDRESS,
             tokenManager.address,
             tokenHandler.address,
-            gatewayCaller.address,
         ]);
         const newServiceImplementationCodeHash = await getBytecodeHash(newServiceImplementation);
         const setupParams = '0x';

@@ -192,7 +192,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
 
         _checkTokenMinter(tokenId, minter);
 
-        if (bytes(interchainTokenService.trustedAddress(destinationChain)).length == 0) revert InvalidChainName();
+        if (!interchainTokenService.isTrustedChain(destinationChain)) revert InvalidChainName();
 
         bytes32 approvalKey = _deployApprovalKey(DeployApproval({ minter: minter, tokenId: tokenId, destinationChain: destinationChain }));
 

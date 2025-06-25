@@ -7,9 +7,8 @@ const {
     getContractAt,
     constants: { AddressZero },
 } = ethers;
-const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = chai;
-const { getRandomBytes32, expectRevert, isHardhat, waitFor } = require('./utils');
+const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 let ownerWallet, otherWallet;
@@ -30,7 +29,7 @@ describe('Operator', () => {
     });
 
     it('Should be able to run the onlyOperatorable function as the operator', async () => {
-        await test.testOperatorable().then((tx) => tx.wait);
+        await test.testOperatorable().then((tx) => tx.wait());
 
         expect(await test.nonce()).to.equal(1);
     });
@@ -104,7 +103,7 @@ describe('Minter', () => {
     });
 
     it('Should be able to run the onlyMinter function as the minter', async () => {
-        await test.testMinter().then((tx) => tx.wait);
+        await test.testMinter().then((tx) => tx.wait());
 
         expect(await test.nonce()).to.equal(1);
     });
@@ -165,94 +164,28 @@ describe('Minter', () => {
     });
 });
 
-describe('FlowLimit', async () => {
+describe('ChainTracker', async () => {
     let test;
-    let tokenId;
-    const flowLimit = isHardhat ? 5 : 2;
+    const chainName = 'Chain Name';
 
     before(async () => {
-        test = isHardhat
-            ? await deployContract(ownerWallet, 'TestFlowLimit')
-            : await deployContract(ownerWallet, 'TestFlowLimitLiveNetwork');
-        tokenId = await test.TOKEN_ID();
+        test = await deployContract(ownerWallet, 'TestChainTracker');
     });
-
-    async function nextEpoch() {
-        const epoch = isHardhat ? 6 * 3600 : 60;
-
-        if (isHardhat) {
-            const latest = Number(await time.latest());
-            const next = (Math.floor(latest / epoch) + 1) * epoch;
-
-            await time.increaseTo(next);
-        } else {
-            await waitFor(epoch);
-        }
-    }
 
     it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(ownerWallet, `TestFlowLimit`, [])).to.not.be.reverted;
+        await expect(deployContract(ownerWallet, `TestChainTracker`, [])).to.not.be.reverted;
     });
 
-    it('Should be able to set the flow limit', async () => {
-        await expect(test.setFlowLimit(flowLimit)).to.emit(test, 'FlowLimitSet').withArgs(tokenId, ownerWallet.address, flowLimit);
+    it('Should set remove and query a chain properly', async () => {
+        expect(await test.isTrustedChain(chainName)).to.equal(false);
 
-        expect(await test.flowLimit()).to.equal(flowLimit);
-    });
+        await expect(test.setTrustedChain(chainName)).to.emit(test, 'TrustedChainSet').withArgs(chainName);
 
-    it('Should test flow in', async () => {
-        await nextEpoch();
+        expect(await test.isTrustedChain(chainName)).to.equal(true);
 
-        for (let i = 0; i < flowLimit; i++) {
-            await test.addFlowIn(1).then((tx) => tx.wait);
-            expect(await test.flowInAmount()).to.equal(i + 1);
-        }
+        await expect(test.removeTrustedChain(chainName)).to.emit(test, 'TrustedChainRemoved').withArgs(chainName);
 
-        await expectRevert((gasOptions) => test.addFlowIn(1, gasOptions), test, 'FlowLimitExceeded', [
-            flowLimit,
-            flowLimit + 1,
-            test.address,
-        ]);
-
-        await nextEpoch();
-
-        expect(await test.flowInAmount()).to.equal(0);
-
-        await test.addFlowIn(flowLimit).then((tx) => tx.wait);
-    });
-
-    it('Should test flow out', async () => {
-        await nextEpoch();
-
-        for (let i = 0; i < flowLimit; i++) {
-            await test.addFlowOut(1).then((tx) => tx.wait);
-            expect(await test.flowOutAmount()).to.equal(i + 1);
-        }
-
-        await expectRevert((gasOptions) => test.addFlowOut(1, gasOptions), test, 'FlowLimitExceeded', [
-            flowLimit,
-            flowLimit + 1,
-            test.address,
-        ]);
-
-        await nextEpoch();
-
-        expect(await test.flowOutAmount()).to.equal(0);
-
-        await test.addFlowOut(flowLimit).then((tx) => tx.wait);
-    });
-
-    it('Should revert if single flow amount exceeds the flow limit', async () => {
-        const excessiveFlowAmount = flowLimit + 1;
-        await test.setFlowLimit(flowLimit).then((tx) => tx.wait);
-
-        await test.addFlowIn(flowLimit - 1).then((tx) => tx.wait);
-
-        await expectRevert((gasOptions) => test.addFlowIn(excessiveFlowAmount, gasOptions), test, 'FlowLimitExceeded', [
-            flowLimit,
-            excessiveFlowAmount,
-            test.address,
-        ]);
+        expect(await test.isTrustedChain(chainName)).to.equal(false);
     });
 });
 

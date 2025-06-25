@@ -5,6 +5,15 @@ const path = require('path');
 const { ethers, network, config } = require('hardhat');
 const { expect } = require('chai');
 const { defaultAbiCoder, keccak256 } = ethers.utils;
+const {
+    MESSAGE_TYPE_INTERCHAIN_TRANSFER,
+    MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
+    MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER,
+    MESSAGE_TYPE_SEND_TO_HUB,
+    MESSAGE_TYPE_RECEIVE_FROM_HUB,
+    MESSAGE_TYPE_LINK_TOKEN,
+    MESSAGE_TYPE_REGISTER_TOKEN_METADATA,
+} = require('./constants');
 
 function getRandomBytes32() {
     return keccak256(defaultAbiCoder.encode(['uint256'], [Math.floor(new Date().getTime() * Math.random())]));
@@ -187,6 +196,55 @@ function getContractJSON(contractName, artifactPath) {
     }
 }
 
+function encodeInterchainTransferMessage(tokenId, from, to, amount, data) {
+    return defaultAbiCoder.encode(
+        ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+        [MESSAGE_TYPE_INTERCHAIN_TRANSFER, tokenId, from, to, amount, data],
+    );
+}
+
+function encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, minter) {
+    return defaultAbiCoder.encode(
+        ['uint256', 'bytes32', 'string', 'string', 'uint8', 'bytes'],
+        [MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, tokenId, name, symbol, decimals, minter],
+    );
+}
+
+function encodeDeployTokenManagerMessage(tokenId, address, salt) {
+    return defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'uint256'], [MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER, tokenId, address, salt]);
+}
+
+function encodeSendHubMessage(chain, message) {
+    const payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [MESSAGE_TYPE_SEND_TO_HUB, chain, message]);
+    return {
+        payload,
+        payloadHash: keccak256(payload),
+    };
+}
+
+function encodeReceiveHubMessage(chain, message) {
+    const payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [MESSAGE_TYPE_RECEIVE_FROM_HUB, chain, message]);
+    return {
+        payload,
+        payloadHash: keccak256(payload),
+    };
+}
+
+function encodeLinkTokenMessage(tokenId, type, remoteAddress, localAddress, minter) {
+    return defaultAbiCoder.encode(
+        ['uint256', 'bytes32', 'uint256', 'bytes', 'bytes', 'bytes'],
+        [MESSAGE_TYPE_LINK_TOKEN, tokenId, type, remoteAddress, localAddress, minter],
+    );
+}
+
+function encodeRegisterTokenMetadataMessage(tokenAddress, decimals) {
+    const payload = defaultAbiCoder.encode(['uint256', 'bytes', 'uint8'], [MESSAGE_TYPE_REGISTER_TOKEN_METADATA, tokenAddress, decimals]);
+    return {
+        payload,
+        payloadHash: keccak256(payload),
+    };
+}
+
 module.exports = {
     getRandomBytes32,
     getSaltFromKey,
@@ -200,4 +258,11 @@ module.exports = {
     gasReporter,
     getEVMVersion,
     getContractJSON,
+    encodeInterchainTransferMessage,
+    encodeDeployInterchainTokenMessage,
+    encodeDeployTokenManagerMessage,
+    encodeSendHubMessage,
+    encodeReceiveHubMessage,
+    encodeLinkTokenMessage,
+    encodeRegisterTokenMetadataMessage,
 };
