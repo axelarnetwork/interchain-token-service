@@ -15,26 +15,26 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
     error InvalidTokenAddress();
 
     constructor(
-        address tokenManagerDeployer,
-        address interchainTokenDeployer,
-        address gateway,
-        address gasService,
-        address interchainTokenFactory,
-        string memory chainName,
-        string memory itsHubAddress,
-        address tokenManagerImplementation,
-        address tokenHandler
+        address tokenManagerDeployer_,
+        address interchainTokenDeployer_,
+        address gateway_,
+        address gasService_,
+        address interchainTokenFactory_,
+        string memory chainName_,
+        string memory itsHubAddress_,
+        address tokenManagerImplementation_,
+        address tokenHandler_
     )
         InterchainTokenService(
-            tokenManagerDeployer,
-            interchainTokenDeployer,
-            gateway,
-            gasService,
-            interchainTokenFactory,
-            chainName,
-            itsHubAddress,
-            tokenManagerImplementation,
-            tokenHandler
+            tokenManagerDeployer_,
+            interchainTokenDeployer_,
+            gateway_,
+            gasService_,
+            interchainTokenFactory_,
+            chainName_,
+            itsHubAddress_,
+            tokenManagerImplementation_,
+            tokenHandler_
         )
     {}
 
@@ -49,9 +49,8 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
         // This could be enhanced with a registry check if needed
         if (address(token) == address(0)) revert InvalidTokenAddress();
 
-        token.updateDeployer(newDeployer);
-
         emit TokenDeployerUpdated(address(token), newDeployer, msg.sender);
+        token.updateDeployer(newDeployer);
     }
 
     /**
