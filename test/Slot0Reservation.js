@@ -30,7 +30,7 @@ describe('Slot 0 Reservation', () => {
         provider = ethers.provider;
 
         hyperliquidToken = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
-        
+
         tokenAddress = hyperliquidToken.address;
         slot0 = await provider.getStorageAt(tokenAddress, 0);
         deployerFromSlot0 = bytes32ToAddress(slot0);

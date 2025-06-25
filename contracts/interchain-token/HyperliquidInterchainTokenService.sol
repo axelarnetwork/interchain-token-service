@@ -36,8 +36,7 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
             tokenManagerImplementation,
             tokenHandler
         )
-    {
-    }
+    {}
 
     /**
      * @notice Updates the deployer for a specific Hyperliquid token

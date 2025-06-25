@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import { Create3Fixed } from './Create3Fixed.sol';
 
 import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
-import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 import { IHyperliquidInterchainToken } from '../interfaces/IHyperliquidInterchainToken.sol';
 
 /**

@@ -281,7 +281,6 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should update deployer and verify slot 0 changes', async () => {
-            const currentDeployer = await token.getDeployer();
             const serviceAddress = await token.interchainTokenService();
 
             expect(serviceAddress).to.not.equal(ethers.constants.AddressZero);
@@ -289,7 +288,7 @@ describe('HyperliquidInterchainToken', () => {
             // Initially the deployer is AddressZero, so we need to set it first
             await token.connect(owner).updateDeployer(user.address);
             const updatedDeployer = await token.getDeployer();
-            
+
             const updatedSlot0 = await provider.getStorageAt(tokenAddress, 0);
             const deployerFromSlot = '0x' + updatedSlot0.slice(26); // Extract address from slot
             expect(deployerFromSlot.toLowerCase()).to.equal(updatedDeployer.toLowerCase());

@@ -50,14 +50,10 @@ describe('HyperliquidInterchainTokenService', () => {
         const InterchainProxy = await ethers.getContractFactory('InterchainProxy', owner);
         const setupParams = ethers.utils.defaultAbiCoder.encode(
             ['address', 'string', 'string[]', 'string[]'],
-            [owner.address, chainName, [], []]
+            [owner.address, chainName, [], []],
         );
-        
-        const proxy = await InterchainProxy.deploy(
-            implementation.address,
-            owner.address,
-            setupParams
-        );
+
+        const proxy = await InterchainProxy.deploy(implementation.address, owner.address, setupParams);
 
         // Get service interface on proxy
         hyperliquidService = HyperliquidInterchainTokenService.attach(proxy.address);
