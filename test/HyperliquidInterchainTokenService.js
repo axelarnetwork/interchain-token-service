@@ -32,8 +32,9 @@ describe('HyperliquidInterchainTokenService', () => {
         tokenManager = await deployContract(owner, 'TokenManager', [owner.address]);
         tokenHandler = await deployContract(owner, 'TokenHandler');
 
+        // ✅ SECURITY FIX: Deploy implementation and proxy manually
         const HyperliquidInterchainTokenService = await ethers.getContractFactory('HyperliquidInterchainTokenService', owner);
-        hyperliquidService = await HyperliquidInterchainTokenService.deploy(
+        const implementation = await HyperliquidInterchainTokenService.deploy(
             tokenManagerDeployer.address,
             interchainTokenDeployer.address,
             gateway.address,
@@ -44,6 +45,22 @@ describe('HyperliquidInterchainTokenService', () => {
             tokenManager.address,
             tokenHandler.address,
         );
+
+        // Deploy proxy
+        const InterchainProxy = await ethers.getContractFactory('InterchainProxy', owner);
+        const setupParams = ethers.utils.defaultAbiCoder.encode(
+            ['address', 'string', 'string[]', 'string[]'],
+            [owner.address, chainName, [], []]
+        );
+        
+        const proxy = await InterchainProxy.deploy(
+            implementation.address,
+            owner.address,
+            setupParams
+        );
+
+        // Get service interface on proxy
+        hyperliquidService = HyperliquidInterchainTokenService.attach(proxy.address);
 
         const HyperliquidInterchainToken = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
         hyperliquidToken1 = await HyperliquidInterchainToken.deploy(hyperliquidService.address);

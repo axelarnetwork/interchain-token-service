@@ -37,8 +37,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
             tokenHandler
         )
     {
-        // Add the deployer as an operator to ensure they can manage the service
-        _addOperator(msg.sender);
     }
 
     /**

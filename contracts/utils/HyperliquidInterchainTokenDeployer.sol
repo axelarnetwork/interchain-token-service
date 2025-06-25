@@ -6,6 +6,7 @@ import { Create3Fixed } from './Create3Fixed.sol';
 
 import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
+import { IHyperliquidInterchainToken } from '../interfaces/IHyperliquidInterchainToken.sol';
 
 /**
  * @title HyperliquidInterchainTokenDeployer
@@ -64,7 +65,7 @@ contract HyperliquidInterchainTokenDeployer is IInterchainTokenDeployer, Create3
         tokenAddress = _create3(bytecode, salt);
         if (tokenAddress.code.length == 0) revert TokenDeploymentFailed();
 
-        IInterchainToken(tokenAddress).init(tokenId, minter, name, symbol, decimals);
+        IHyperliquidInterchainToken(tokenAddress).initHyperliquid(tokenId, minter, name, symbol, decimals);
     }
 
     /**

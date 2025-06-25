@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 
 import { InterchainToken } from './InterchainToken.sol';
 import { HyperliquidDeployer } from './HyperliquidDeployer.sol';
+import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
+import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 /**
  * @title HyperliquidInterchainToken
@@ -31,13 +33,13 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
      * @param tokenSymbol The symbol of the token.
      * @param tokenDecimals The decimals of the token.
      */
-    function init(
+    function initHyperliquid(
         bytes32 tokenId_,
         address minter,
         string calldata tokenName,
         string calldata tokenSymbol,
         uint8 tokenDecimals
-    ) external override {
+    ) external {
         if (_isInitialized()) revert AlreadyInitialized();
 
         _initialize();
@@ -69,7 +71,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
      * @notice Gets the deployer address stored in slot 0
      * @return deployer The address of the deployer
      */
-    function getDeployer() external view override returns (address deployer) {
+    function getDeployer() external view override(HyperliquidDeployer) returns (address deployer) {
         return _deployer();
     }
 
@@ -78,7 +80,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
      * @dev Only the interchain token service can call this function
      * @param newDeployer The new deployer address to set
      */
-    function updateDeployer(address newDeployer) external {
+    function updateDeployer(address newDeployer) external override(IHyperliquidDeployer) {
         if (msg.sender != interchainTokenService_) {
             revert NotService();
         }

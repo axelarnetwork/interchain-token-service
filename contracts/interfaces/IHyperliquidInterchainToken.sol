@@ -6,9 +6,25 @@ import { IInterchainToken } from './IInterchainToken.sol';
 
 /**
  * @title IHyperliquidInterchainToken interface
- * @notice Interface for HyperliquidInterchainToken with deployer management functionality
+ * @dev Extends IInterchainToken with Hyperliquid-specific functionality.
  */
 interface IHyperliquidInterchainToken is IInterchainToken {
+    /**
+     * @notice Setup function to initialize contract parameters for Hyperliquid tokens.
+     * @param tokenId_ The tokenId of the token.
+     * @param minter The address of the token minter.
+     * @param tokenName The name of the token.
+     * @param tokenSymbol The symbol of the token.
+     * @param tokenDecimals The decimals of the token.
+     */
+    function initHyperliquid(
+        bytes32 tokenId_,
+        address minter,
+        string calldata tokenName,
+        string calldata tokenSymbol,
+        uint8 tokenDecimals
+    ) external;
+
     /**
      * @notice Gets the deployer address stored in slot 0
      * @return deployer The address of the deployer
@@ -17,7 +33,7 @@ interface IHyperliquidInterchainToken is IInterchainToken {
 
     /**
      * @notice Allows updating the deployer address
-     * @dev No authorization logic - this should be handled by the calling contract
+     * @dev Only the interchain token service can call this function
      * @param newDeployer The new deployer address to set
      */
     function updateDeployer(address newDeployer) external;
