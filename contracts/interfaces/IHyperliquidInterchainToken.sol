@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import { IInterchainToken } from './IInterchainToken.sol';
-
 /**
  * @title IHyperliquidInterchainToken interface
- * @dev Extends IInterchainToken with Hyperliquid-specific functionality.
+ * @dev Interface for Hyperliquid-specific functionality only.
+ * Note: This interface does not extend IInterchainToken to avoid override conflicts
+ * since InterchainToken functions are not virtual.
  */
-interface IHyperliquidInterchainToken is IInterchainToken {
+interface IHyperliquidInterchainToken {
     /**
      * @notice Setup function to initialize contract parameters for Hyperliquid tokens.
      * @param tokenId_ The tokenId of the token.
