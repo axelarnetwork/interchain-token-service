@@ -10,9 +10,9 @@ pragma solidity ^0.8.0;
 interface IHyperliquidDeployer {
     /**
      * @notice Gets the deployer address stored in slot 0
-     * @return deployer The address of the deployer
+     * @return deployerAddr The address of the deployer
      */
-    function deployer() external view returns (address deployer);
+    function deployer() external view returns (address deployerAddr);
 
     /**
      * @notice Allows updating the deployer address
