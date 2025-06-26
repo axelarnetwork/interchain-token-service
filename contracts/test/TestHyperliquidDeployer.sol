@@ -21,6 +21,14 @@ contract TestHyperliquidDeployer is HyperliquidDeployer {
     }
 
     /**
+     * @notice Gets the deployer address stored in slot 0
+     * @return The address of the deployer
+     */
+    function deployer() external view returns (address) {
+        return _deployer();
+    }
+
+    /**
      * @notice Override updateDeployer with test-specific authorization logic
      */
     function updateDeployer(address newDeployer) external {

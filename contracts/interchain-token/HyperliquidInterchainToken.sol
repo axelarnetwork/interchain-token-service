@@ -13,7 +13,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * then from InterchainToken for standard functionality.
  * This maintains the standard InterchainToken while providing Hyperliquid compatibility.
  */
-contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
+contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHyperliquidDeployer {
     error NotService();
 
     /**
@@ -29,7 +29,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
      * @notice Gets the deployer address stored in slot 0
      * @return deployerAddress The address of the deployer
      */
-    function deployer() external view override(HyperliquidDeployer) returns (address deployerAddress) {
+    function deployer() external view override returns (address deployerAddress) {
         return _deployer();
     }
 
@@ -38,7 +38,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken {
      * @dev Only the interchain token service can call this function
      * @param newDeployer The new deployer address to set
      */
-    function updateDeployer(address newDeployer) external override(IHyperliquidDeployer) {
+    function updateDeployer(address newDeployer) external override {
         if (msg.sender != interchainTokenService_) {
             revert NotService();
         }

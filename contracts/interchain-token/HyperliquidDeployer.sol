@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
-
 /**
  * @title HyperliquidDeployer
  * @notice This contract allows setting setting a deployer address associated to an Interchain token.
@@ -13,7 +11,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * of the ERC20 token deployed in Hyperliquid EVM via create2 mechanism.
  * ```
  */
-abstract contract HyperliquidDeployer is IHyperliquidDeployer {
+abstract contract HyperliquidDeployer {
     /// @dev Constant for slot 0 to avoid magic numbers
     uint256 private constant DEPLOYER_SLOT = 0;
     
@@ -34,13 +32,5 @@ abstract contract HyperliquidDeployer is IHyperliquidDeployer {
      */
     function _setDeployer(address newDeployer) internal {
         deployerAddress = newDeployer;
-    }
-
-    /**
-     * @notice Gets the deployer address stored in slot 0
-     * @return The address of the deployer
-     */
-    function deployer() external view virtual override returns (address) {
-        return _deployer();
     }
 }
