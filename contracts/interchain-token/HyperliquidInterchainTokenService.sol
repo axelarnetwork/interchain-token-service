@@ -11,8 +11,16 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * @dev Inherits from InterchainTokenService and adds functionality to manage token deployers
  * This keeps ITS logic separate from token logic, reducing coupling
  */
-contract HyperliquidInterchainTokenService is InterchainTokenService {
+contract HyperLiquidInterchainTokenService is InterchainTokenService {
     error InvalidTokenAddress();
+
+    /**
+     * @notice Event emitted when a token deployer is updated
+     * @param token The address of the token contract
+     * @param newDeployer The new deployer address
+     * @param operator The operator who performed the update
+     */
+    event TokenDeployerUpdated(address indexed token, address indexed newDeployer, address indexed operator);
 
     constructor(
         address tokenManagerDeployer_,
@@ -52,12 +60,4 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
         emit TokenDeployerUpdated(address(token), newDeployer, msg.sender);
         token.updateDeployer(newDeployer);
     }
-
-    /**
-     * @notice Event emitted when a token deployer is updated
-     * @param token The address of the token contract
-     * @param newDeployer The new deployer address
-     * @param operator The operator who performed the update
-     */
-    event TokenDeployerUpdated(address indexed token, address indexed newDeployer, address indexed operator);
 }

@@ -14,7 +14,7 @@ pragma solidity ^0.8.0;
 abstract contract HyperliquidDeployer {
     /// @dev Constant for slot 0 to avoid magic numbers
     uint256 private constant DEPLOYER_SLOT = 0;
-    
+
     /// @dev Explicitly reserves slot 0 for deployer address
     address private deployerAddress;
 
