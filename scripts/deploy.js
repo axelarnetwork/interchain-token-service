@@ -15,6 +15,7 @@ const HTS_LIBRARY_NAME = 'contracts/hedera/HTS.sol:HTS';
 // List of contracts that depend on HTS library
 const HTS_DEPENDENT_CONTRACTS = [
     'InterchainTokenService',
+    'InterchainTokenFactory',
     'InterchainTokenDeployer',
     'TokenManager',
     // Test
@@ -27,6 +28,7 @@ const HTS_DEPENDENT_CONTRACTS = [
 const deploymentContext = {
     htsAddress: null,
     whbarAddress: null,
+    contracts: {},
 };
 
 function getCurrentHTSAddress() {
@@ -38,6 +40,13 @@ function getCurrentWHBARAddress() {
 }
 
 async function deployContract(wallet, contractName, args = [], additionalLibraries = {}, htsAddress = null) {
+    // Check if contract already exists in deployment context
+    if (deploymentContext.contracts[contractName]) {
+        console.log(`Using existing ${contractName} at ${deploymentContext.contracts[contractName]}`);
+        const contract = await ethers.getContractAt(contractName, deploymentContext.contracts[contractName], wallet);
+        return contract;
+    }
+
     const libraries = { ...additionalLibraries };
 
     // Automatically add HTS library for dependent contracts
@@ -45,9 +54,8 @@ async function deployContract(wallet, contractName, args = [], additionalLibrari
         let currentHtsAddress = htsAddress || deploymentContext.htsAddress;
 
         if (!currentHtsAddress) {
-            console.log('Deploying HTS library for', contractName);
             currentHtsAddress = await deployHTS(wallet);
-            console.log('HTS library deployed to', currentHtsAddress);
+            console.log('Deployed HTS library to', currentHtsAddress);
             deploymentContext.htsAddress = currentHtsAddress;
         }
 
@@ -61,6 +69,9 @@ async function deployContract(wallet, contractName, args = [], additionalLibrari
     const contract = await factory.deploy(...args).then((d) => d.deployed());
 
     console.log(`Deployed ${contractName} to ${contract.address}`);
+
+    // Store the new address in deployment context
+    deploymentContext.contracts[contractName] = contract.address;
 
     return contract;
 }
@@ -108,6 +119,7 @@ async function deployInterchainTokenService(
         ownerAddress,
         defaultAbiCoder.encode(['address', 'string', 'string[]'], [operatorAddress, chainName, evmChains]),
     ]);
+    console.log(`Deployed InterchainTokenServiceProxy to ${proxy.address}`);
     const service = new Contract(proxy.address, implementation.interface, wallet);
     return service;
 }
@@ -119,6 +131,7 @@ async function deployInterchainTokenFactory(wallet, create3DeployerAddress, inte
         wallet.address,
         '0x',
     ]);
+    console.log(`Deployed InterchainTokenFactoryProxy to ${proxy.address}`);
     const factory = new Contract(proxy.address, implementation.interface, wallet);
     return factory;
 }
@@ -132,7 +145,7 @@ async function deployAll(
     factoryDeploymentKey = deploymentKey + 'Factory',
     htsAddress = null,
     whbarAddress = null,
-    fundingAmount = '10', // Default 10 HBAR funding for ITS
+    fundingAmount = '20', // Default 20 HBAR funding for ITS
 ) {
     // Print wallet balance
     const balance = await wallet.getBalance();
@@ -152,7 +165,6 @@ async function deployAll(
     let whbar;
 
     if (!deploymentContext.whbarAddress) {
-        console.log('Deploying WHBAR...');
         whbar = await deployWHBAR(wallet);
         deploymentContext.whbarAddress = whbar.address;
     } else {
@@ -162,7 +174,7 @@ async function deployAll(
 
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-    const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
+    // const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
     const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer');
     const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
     const tokenHandler = await deployContract(wallet, 'TokenHandler', []);
@@ -191,6 +203,14 @@ async function deployAll(
     await setWhbarTx.wait();
     console.log(`WHBAR address set on ITS: ${whbar.address}`);
 
+    // Set WHBAR address on ITS
+    console.log('Setting token creation price on ITS...');
+    // $1 = 100 cents = 100 * 10^8 tinycents
+    const price = 100 * 10 ** 8;
+    const setTokenCreationPrice = await service.setTokenCreationPrice(price);
+    await setTokenCreationPrice.wait();
+    console.log(`Token creation price set on ITS: ${price} tinycents`);
+
     // Fund ITS with WHBAR if funding amount is specified
     if (fundingAmount && parseFloat(fundingAmount) > 0) {
         const fundingAmountWei = ethers.utils.parseEther(fundingAmount);
@@ -211,7 +231,7 @@ async function deployAll(
         tokenFactory,
         create3Deployer,
         tokenManagerDeployer,
-        interchainToken,
+        // interchainToken,
         interchainTokenDeployer,
         tokenManager,
         tokenHandler,

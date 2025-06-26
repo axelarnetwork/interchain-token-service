@@ -4,7 +4,7 @@ async function deployWHBAR(wallet) {
     const factory = await ethers.getContractFactory('WHBAR', wallet);
     const whbar = await factory.deploy().then((d) => d.deployed());
 
-    console.log(`WHBAR deployed to: ${whbar.address}`);
+    console.log(`Deployed WHBAR to ${whbar.address}`);
     return whbar;
 }
 
