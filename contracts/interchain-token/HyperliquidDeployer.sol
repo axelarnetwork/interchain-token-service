@@ -13,18 +13,18 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * Must be inherited first to ensure slot 0 is properly reserved.
  */
 abstract contract HyperliquidDeployer is IHyperliquidDeployer {
+    /// @dev Constant for slot 0 to avoid magic numbers
+    uint256 private constant DEPLOYER_SLOT = 0;
+    
     /// @dev Explicitly reserves slot 0 for deployer address
-    /// This state variable declaration ensures Solidity places it in slot 0
     address private deployerAddress;
 
     /**
      * @notice Gets the deployer address stored in slot 0
-     * @return deployerAddress The address of the deployer
+     * @return The address of the deployer
      */
-    function _deployer() internal view virtual returns (address deployerAddress) {
-        assembly {
-            deployerAddress := sload(0)
-        }
+    function _deployer() internal view virtual returns (address) {
+        return deployerAddress;
     }
 
     /**
@@ -32,16 +32,14 @@ abstract contract HyperliquidDeployer is IHyperliquidDeployer {
      * @param newDeployer The address of the deployer
      */
     function _setDeployer(address newDeployer) internal {
-        assembly {
-            sstore(0, newDeployer)
-        }
+        deployerAddress = newDeployer;
     }
 
     /**
      * @notice Gets the deployer address stored in slot 0
-     * @return deployerAddress The address of the deployer
+     * @return The address of the deployer
      */
-    function deployer() external view virtual override returns (address deployerAddress) {
+    function deployer() external view virtual override returns (address) {
         return _deployer();
     }
 }
