@@ -21,9 +21,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
      * @notice Constructs the HyperliquidInterchainToken contract.
      * @param interchainTokenServiceAddress The address of the interchain token service.
      */
-    constructor(address interchainTokenServiceAddress) InterchainToken(interchainTokenServiceAddress) {
-        // Don't set service here as it will be set in init() for each proxy
-    }
+    constructor(address interchainTokenServiceAddress) InterchainToken(interchainTokenServiceAddress) {}
 
     /**
      * @notice Setup function to initialize contract parameters.
