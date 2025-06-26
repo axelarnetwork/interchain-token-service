@@ -73,7 +73,7 @@ describe('HyperliquidInterchainTokenService', () => {
 
             await expect(hyperliquidService.updateTokenDeployer(hyperliquidToken1.address, newDeployer)).to.not.be.reverted;
 
-            expect(await hyperliquidToken1.getDeployer()).to.equal(newDeployer);
+            expect(await hyperliquidToken1.deployer()).to.equal(newDeployer);
         });
 
         it('should revert when called by non-operator', async () => {
@@ -88,7 +88,7 @@ describe('HyperliquidInterchainTokenService', () => {
             await expect(hyperliquidService.updateTokenDeployer(hyperliquidToken1.address, ethers.constants.AddressZero)).to.not.be
                 .reverted;
 
-            expect(await hyperliquidToken1.getDeployer()).to.equal(ethers.constants.AddressZero);
+            expect(await hyperliquidToken1.deployer()).to.equal(ethers.constants.AddressZero);
         });
     });
 });

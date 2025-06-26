@@ -23,7 +23,7 @@ describe('HyperLiquidDeployer', () => {
 
     describe('Constructor and Initial State', () => {
         it('Should set initial deployer correctly', async () => {
-            expect(await testDeployer.getDeployer()).to.equal(owner.address);
+            expect(await testDeployer.deployer()).to.equal(owner.address);
             expect(await testDeployer.initialDeployer()).to.equal(owner.address);
         });
 
@@ -32,9 +32,9 @@ describe('HyperLiquidDeployer', () => {
         });
     });
 
-    describe('getDeployer() - Line 25 Assembly Coverage', () => {
+    describe('Deployer functions for reading and writing to slot 0', () => {
         it('Should read deployer from slot 0 using assembly', async () => {
-            const deployer = await testDeployer.getDeployer();
+            const deployer = await testDeployer.deployer();
             expect(deployer).to.equal(owner.address);
 
             const provider = ethers.provider;
@@ -46,7 +46,7 @@ describe('HyperLiquidDeployer', () => {
         it('Should handle zero address in slot 0', async () => {
             await testDeployer.testSetDeployer(ethers.constants.AddressZero);
 
-            const deployer = await testDeployer.getDeployer();
+            const deployer = await testDeployer.deployer();
             expect(deployer).to.equal(ethers.constants.AddressZero);
         });
 
@@ -60,7 +60,7 @@ describe('HyperLiquidDeployer', () => {
 
             for (const addr of testAddresses) {
                 await testDeployer.testSetDeployer(addr);
-                const deployer = await testDeployer.getDeployer();
+                const deployer = await testDeployer.deployer();
                 expect(deployer).to.equal(addr);
             }
         });
@@ -71,7 +71,7 @@ describe('HyperLiquidDeployer', () => {
             const newDeployer = user.address;
             await testDeployer.testSetDeployer(newDeployer);
 
-            expect(await testDeployer.getDeployer()).to.equal(newDeployer);
+            expect(await testDeployer.deployer()).to.equal(newDeployer);
 
             const provider = ethers.provider;
             const slot0 = await provider.getStorageAt(testDeployer.address, 0);
@@ -90,7 +90,7 @@ describe('HyperLiquidDeployer', () => {
 
             for (const addr of addresses) {
                 await testDeployer.testSetDeployer(addr);
-                expect(await testDeployer.getDeployer()).to.equal(addr);
+                expect(await testDeployer.deployer()).to.equal(addr);
             }
         });
     });
@@ -108,21 +108,21 @@ describe('HyperLiquidDeployer', () => {
             const newDeployer = user.address;
             await testDeployer.connect(itsSigner).updateDeployer(newDeployer);
 
-            expect(await testDeployer.getDeployer()).to.equal(newDeployer);
+            expect(await testDeployer.deployer()).to.equal(newDeployer);
         });
 
         it('Should allow current deployer (operator) to update deployer', async () => {
             const newDeployer = user.address;
             await testDeployer.connect(operator).updateDeployer(newDeployer);
 
-            expect(await testDeployer.getDeployer()).to.equal(newDeployer);
+            expect(await testDeployer.deployer()).to.equal(newDeployer);
         });
 
         it('Should allow initial deployer to update deployer', async () => {
             const newDeployer = user.address;
             await testDeployer.connect(owner).updateDeployer(newDeployer);
 
-            expect(await testDeployer.getDeployer()).to.equal(newDeployer);
+            expect(await testDeployer.deployer()).to.equal(newDeployer);
         });
 
         it('Should revert when unauthorized caller tries to update', async () => {
@@ -152,7 +152,7 @@ describe('HyperLiquidDeployer', () => {
             const newDeployer = user.address;
             await testDeployer.connect(operator).updateDeployer(newDeployer);
 
-            expect(await testDeployer.getDeployer()).to.equal(newDeployer);
+            expect(await testDeployer.deployer()).to.equal(newDeployer);
         });
 
         it('Should work with different ITS addresses', async () => {
@@ -165,7 +165,7 @@ describe('HyperLiquidDeployer', () => {
             const newDeployer = user.address;
             await testDeployer.connect(operator).updateDeployer(newDeployer);
 
-            expect(await testDeployer.getDeployer()).to.equal(newDeployer);
+            expect(await testDeployer.deployer()).to.equal(newDeployer);
         });
     });
 
@@ -174,14 +174,14 @@ describe('HyperLiquidDeployer', () => {
             await testDeployer.testSetDeployer(operator.address);
 
             await testDeployer.connect(operator).updateDeployer(ethers.constants.AddressZero);
-            expect(await testDeployer.getDeployer()).to.equal(ethers.constants.AddressZero);
+            expect(await testDeployer.deployer()).to.equal(ethers.constants.AddressZero);
         });
 
         it('Should handle contract addresses as deployer', async () => {
             await testDeployer.testSetDeployer(operator.address);
 
             await testDeployer.connect(operator).updateDeployer(mockITS.address);
-            expect(await testDeployer.getDeployer()).to.equal(mockITS.address);
+            expect(await testDeployer.deployer()).to.equal(mockITS.address);
         });
 
         it('Should maintain deployer across multiple updates', async () => {
@@ -191,7 +191,7 @@ describe('HyperLiquidDeployer', () => {
 
             for (const addr of addresses) {
                 await testDeployer.connect(operator).updateDeployer(addr);
-                expect(await testDeployer.getDeployer()).to.equal(addr);
+                expect(await testDeployer.deployer()).to.equal(addr);
 
                 await testDeployer.testSetDeployer(operator.address);
             }

@@ -15,7 +15,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 abstract contract HyperliquidDeployer is IHyperliquidDeployer {
     /// @dev Explicitly reserves slot 0 for deployer address
     /// This state variable declaration ensures Solidity places it in slot 0
-    address private deployer;
+    address private deployerAddress;
 
     /**
      * @notice Gets the deployer address stored in slot 0

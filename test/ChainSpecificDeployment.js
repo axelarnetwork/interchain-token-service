@@ -34,7 +34,7 @@ describe('Chain-Specific Token Deployment', () => {
         await deployment.activeTokenDeployer.deployInterchainToken(salt, tokenId, wallet.address, 'TestToken', 'TEST', 18);
 
         const token = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress, wallet);
-        const deployer = await token.getDeployer();
+        const deployer = await token.deployer();
         expect(deployer).to.equal(ethers.constants.AddressZero);
     });
 
@@ -61,7 +61,7 @@ describe('Chain-Specific Token Deployment', () => {
 
         const token = await ethers.getContractAt('InterchainToken', tokenAddress, wallet);
 
-        expect(token.getDeployer).to.be.undefined;
+        expect(token.deployer).to.be.undefined;
     });
 
     it('should verify storage layout differences', async () => {

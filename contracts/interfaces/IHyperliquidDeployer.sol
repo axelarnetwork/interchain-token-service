@@ -12,7 +12,7 @@ interface IHyperliquidDeployer {
      * @notice Gets the deployer address stored in slot 0
      * @return deployer The address of the deployer
      */
-    function getDeployer() external view returns (address deployer);
+    function deployer() external view returns (address deployer);
 
     /**
      * @notice Allows the ITS contract or its operator to update the deployer address
