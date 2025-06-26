@@ -41,7 +41,7 @@ abstract contract HyperliquidDeployer is IHyperliquidDeployer {
      * @notice Gets the deployer address stored in slot 0
      * @return deployerAddress The address of the deployer
      */
-    function getDeployer() external view virtual override returns (address deployerAddress) {
+    function deployer() external view virtual override returns (address deployerAddress) {
         return _deployer();
     }
 }
