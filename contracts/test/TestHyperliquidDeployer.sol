@@ -23,7 +23,7 @@ contract TestHyperliquidDeployer is HyperliquidDeployer {
     /**
      * @notice Override updateDeployer with test-specific authorization logic
      */
-    function updateDeployer(address newDeployer) external override {
+    function updateDeployer(address newDeployer) external {
         // Test authorization: allow ITS address, current deployer, or initial deployer
         address currentDeployer = _deployer();
         if (msg.sender != itsAddress && msg.sender != currentDeployer && msg.sender != initialDeployer) {

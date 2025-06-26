@@ -15,7 +15,7 @@ interface IHyperliquidDeployer {
     function deployer() external view returns (address deployer);
 
     /**
-     * @notice Allows the ITS contract or its operator to update the deployer address
+     * @notice Allows updating the deployer address
      * @param newDeployer The new deployer address to set
      */
     function updateDeployer(address newDeployer) external;

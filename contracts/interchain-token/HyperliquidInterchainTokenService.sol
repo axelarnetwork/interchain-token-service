@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { InterchainTokenService } from '../InterchainTokenService.sol';
-import { IHyperliquidInterchainToken } from '../interfaces/IHyperliquidInterchainToken.sol';
+import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 
 /**
  * @title HyperliquidInterchainTokenService
@@ -44,7 +44,7 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      * @param token The Hyperliquid token contract
      * @param newDeployer The new deployer address
      */
-    function updateTokenDeployer(IHyperliquidInterchainToken token, address newDeployer) external onlyOperatorOrOwner {
+    function updateTokenDeployer(IHyperliquidDeployer token, address newDeployer) external onlyOperatorOrOwner {
         // Additional validation: ensure the token is a valid Hyperliquid token
         // This could be enhanced with a registry check if needed
         if (address(token) == address(0)) revert InvalidTokenAddress();
