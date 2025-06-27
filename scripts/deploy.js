@@ -79,7 +79,7 @@ async function deployHyperliquidInterchainTokenService(
     ownerAddress = wallet.address,
     operatorAddress = wallet.address,
 ) {
-    const implementation = await deployContract(wallet, 'HyperLiquidInterchainTokenService', [
+    const implementation = await deployContract(wallet, 'HyperliquidInterchainTokenService', [
         tokenManagerDeployerAddress,
         interchainTokenDeployerAddress,
         gatewayAddress,

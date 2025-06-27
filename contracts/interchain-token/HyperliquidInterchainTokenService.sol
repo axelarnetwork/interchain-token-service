@@ -11,7 +11,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * @dev Inherits from InterchainTokenService and adds functionality to manage token deployers
  * This keeps ITS logic separate from token logic, reducing coupling
  */
-contract HyperLiquidInterchainTokenService is InterchainTokenService {
+contract HyperliquidInterchainTokenService is InterchainTokenService {
     /**
      * @notice Event emitted when a token deployer is updated
      * @param token The address of the token contract
