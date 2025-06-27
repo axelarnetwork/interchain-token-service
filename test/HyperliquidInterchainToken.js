@@ -11,7 +11,7 @@ const { deployContract } = require('../scripts/deploy');
  * @param {string} bytes - The bytes32 value
  * @returns {string} The EIP-55 checksummed address
  */
-function bytes32ToAddress(slotValue) {
+function bytes32ToAddress(bytes) {
     // Extract the last 20 bytes (40 hex characters) from the bytes32 value
     const addressHex = '0x' + slotValue.slice(-40);
     // Convert to EIP-55 checksummed address for consistency
