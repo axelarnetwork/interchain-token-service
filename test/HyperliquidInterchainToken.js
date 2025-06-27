@@ -52,7 +52,9 @@ describe('HyperliquidInterchainToken', () => {
 
         token = await getContractAt('HyperliquidInterchainToken', tokenAddress, owner);
 
-        await hyperliquidInterchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait());
+        await hyperliquidInterchainTokenDeployer
+            .deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals)
+            .then((tx) => tx.wait());
 
         await token.mint(owner.address, mintAmount).then((tx) => tx.wait());
         expect(await token.interchainTokenId()).to.equal(tokenId);
@@ -72,7 +74,7 @@ describe('HyperliquidInterchainToken', () => {
             expect(deployerFromSlot0).to.equal(AddressZero);
             expect(deployerFromContract).to.equal(AddressZero);
             expect(slot0).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
-            
+
             const currentDeployer = await token.deployer();
             expect(deployerFromSlot0).to.equal(currentDeployer);
             expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
