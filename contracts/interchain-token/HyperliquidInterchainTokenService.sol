@@ -32,9 +32,7 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      * @return True if the token supports the interface
      */
     function _supportsHyperliquidInterface(address token) internal view returns (bool) {
-        (bool success, ) = token.staticcall(
-            abi.encodeWithSelector(IHyperliquidDeployer.deployer.selector)
-        );
+        (bool success, ) = token.staticcall(abi.encodeWithSelector(IHyperliquidDeployer.deployer.selector));
         return success;
     }
 
@@ -79,8 +77,11 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
             revert TokenDoesNotSupportHyperliquidInterface(tokenAddress);
         }
 
+        // Emit event first (checks-effects-interactions pattern)
+        emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
+
+        // Make external call last
         IHyperliquidDeployer token = IHyperliquidDeployer(tokenAddress);
         token.updateDeployer(newDeployer);
-        emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
     }
 }
