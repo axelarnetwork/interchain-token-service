@@ -59,7 +59,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
         if (tokenAddress == address(0)) revert ZeroAddress();
 
         IHyperliquidDeployer token = IHyperliquidDeployer(tokenAddress);
-        if (address(token) == address(0)) revert ZeroAddress();
 
         emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
         token.updateDeployer(newDeployer);

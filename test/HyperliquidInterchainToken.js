@@ -53,9 +53,9 @@ describe('HyperliquidInterchainToken', () => {
 
         await hyperliquidInterchainTokenDeployer
             .deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals)
-            .then((tx) => tx.wait);
+            .then((tx) => tx.wait());
 
-        await token.mint(owner.address, mintAmount).then((tx) => tx.wait);
+        await token.mint(owner.address, mintAmount).then((tx) => tx.wait());
         expect(await token.interchainTokenId()).to.equal(tokenId);
 
         // Set up common values used across tests
