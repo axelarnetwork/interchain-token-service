@@ -13,12 +13,30 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  */
 contract HyperliquidInterchainTokenService is InterchainTokenService {
     /**
+     * @notice Error thrown when a token does not support the IHyperliquidDeployer interface
+     * @param token The address of the token that doesn't support the interface
+     */
+    error TokenDoesNotSupportHyperliquidInterface(address token);
+
+    /**
      * @notice Event emitted when a token deployer is updated
      * @param token The address of the token contract
      * @param newDeployer The new deployer address
      * @param operator The operator who performed the update
      */
     event TokenDeployerUpdated(address indexed token, address indexed newDeployer, address indexed operator);
+
+    /**
+     * @notice Checks if a token supports the IHyperliquidDeployer interface
+     * @param token The token address to check
+     * @return True if the token supports the interface
+     */
+    function _supportsHyperliquidInterface(address token) internal view returns (bool) {
+        (bool success, ) = token.staticcall(
+            abi.encodeWithSelector(IHyperliquidDeployer.deployer.selector)
+        );
+        return success;
+    }
 
     constructor(
         address tokenManagerDeployer_,
@@ -54,13 +72,15 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
         address tokenManagerAddr = tokenManagerAddress(tokenId);
         if (tokenManagerAddr == address(0)) revert TokenManagerDoesNotExist(tokenId);
 
-        // Get the token address from the token manager
         address tokenAddress = registeredTokenAddress(tokenId);
         if (tokenAddress == address(0)) revert ZeroAddress();
 
-        IHyperliquidDeployer token = IHyperliquidDeployer(tokenAddress);
+        if (!_supportsHyperliquidInterface(tokenAddress)) {
+            revert TokenDoesNotSupportHyperliquidInterface(tokenAddress);
+        }
 
-        emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
+        IHyperliquidDeployer token = IHyperliquidDeployer(tokenAddress);
         token.updateDeployer(newDeployer);
+        emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
     }
 }
