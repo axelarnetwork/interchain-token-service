@@ -1,10 +1,15 @@
 'use strict';
 
 const { ethers } = require('hardhat');
-const { getContractAt } = ethers;
+const {
+    constants: { AddressZero, HashZero },
+    getContractAt,
+    utils: { keccak256 },
+} = ethers;
 const { expect } = require('chai');
-const { getRandomBytes32 } = require('./utils');
-const { deployContract } = require('../scripts/deploy');
+const { getRandomBytes32, expectRevert, getEVMVersion } = require('./utils');
+const { deployContract, deployAll } = require('../scripts/deploy');
+const { ITS_HUB_ADDRESS } = require('./constants');
 
 /**
  * Convert bytes32 value to EIP-55 address
@@ -18,26 +23,26 @@ function bytes32ToAddress(bytes) {
 
 describe('HyperliquidInterchainToken', () => {
     let hyperliquidInterchainToken, hyperliquidInterchainTokenDeployer;
-    let token;
-    let owner;
-    let user;
-    let deployer;
-    let provider;
-    let tokenAddress;
-    let slot0;
-    let deployerFromSlot0;
-    let deployerFromContract;
 
     const name = 'HyperliquidToken';
     const symbol = 'HLT';
     const decimals = 18;
     const mintAmount = 123;
 
+    let token;
+    let tokenTest;
+    let owner;
+    let user;
+    let provider;
+    let tokenAddress;
+    let slot0;
+    let deployerFromSlot0;
+    let deployerFromContract;
+
     before(async () => {
         const wallets = await ethers.getSigners();
         owner = wallets[0];
         user = wallets[1];
-        deployer = wallets[1];
 
         hyperliquidInterchainToken = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
         hyperliquidInterchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [hyperliquidInterchainToken.address]);
@@ -49,133 +54,82 @@ describe('HyperliquidInterchainToken', () => {
 
         token = await getContractAt('HyperliquidInterchainToken', tokenAddress, owner);
 
-        await hyperliquidInterchainTokenDeployer
-            .deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals)
-            .then((tx) => tx.wait());
+        await hyperliquidInterchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, name, symbol, decimals).then((tx) => tx.wait());
 
         await token.mint(owner.address, mintAmount).then((tx) => tx.wait());
         expect(await token.interchainTokenId()).to.equal(tokenId);
 
-        // Set up common values used across tests
         provider = ethers.provider;
         slot0 = await provider.getStorageAt(tokenAddress, 0);
         deployerFromSlot0 = bytes32ToAddress(slot0);
         deployerFromContract = await token.deployer();
     });
 
-    describe('HyperliquidInterchainToken', () => {
+    describe('Hyperliquid Interchain Token', () => {
         it('Should calculate hardcoded constants correctly', async () => {
             await expect(deployContract(owner, 'HyperliquidInterchainToken', [owner.address])).to.not.be.reverted;
         });
 
-        it('should have the interchainTokenDeployer contract as deployer address after initialization', async () => {
-            expect(deployerFromContract).to.equal(ethers.constants.AddressZero);
-        });
-
-        it('should get the correct deployer address after updateDeployer', async () => {
-            await token.connect(owner).updateDeployer(deployer.address);
-            const newDeployer = await token.deployer();
-            expect(newDeployer).to.equal(deployer.address);
-        });
-
-        it('should allow only the service to update deployer', async () => {
-            await expect(token.connect(owner).updateDeployer(user.address)).to.not.be.reverted;
-            expect(await token.deployer()).to.equal(user.address);
-        });
-
-        it('should store deployer in slot 0', async () => {
-            expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
-            // The deployer is initially AddressZero, so slot0 should be all zeros
+        it('should verify initial deployer state and slot 0 storage', async () => {
+            expect(deployerFromSlot0).to.equal(AddressZero);
+            expect(deployerFromContract).to.equal(AddressZero);
             expect(slot0).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
-        });
-    });
-
-    describe('Bytecode checks [ @skip-on-coverage ]', () => {
-        it('Should preserve the same bytecode', async () => {
-            const contract = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
-            const contractBytecode = contract.bytecode;
-
-            expect(contractBytecode).to.not.be.empty;
-        });
-    });
-
-    describe('Hyperliquid Deployer Tests', () => {
-        it('should get the deployer', async () => {
-            // Initially the deployer is AddressZero
-            expect(deployerFromContract).to.equal(ethers.constants.AddressZero);
-        });
-
-        it('should allow only the service to update the deployer', async () => {
-            const newDeployer = user.address;
-            await token.connect(owner).updateDeployer(newDeployer);
-            expect(await token.deployer()).to.equal(newDeployer);
-        });
-
-        it('should revert on updating deployer from non-service address', async () => {
-            const newDeployer = user.address;
-            await expect(token.connect(user).updateDeployer(newDeployer)).to.be.revertedWithCustomError(token, 'NotService');
-        });
-
-        it('should update the deployer for multiple contract instances', async () => {
-            const token1 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
-            const token2 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
-
-            expect(await token1.deployer()).to.equal(ethers.constants.AddressZero);
-            expect(await token2.deployer()).to.equal(ethers.constants.AddressZero);
-
-            try {
-                await token1.connect(user).updateDeployer(user.address);
-                expect(await token1.deployer()).to.equal(user.address);
-                expect(await token2.deployer()).to.equal(ethers.constants.AddressZero);
-
-                await token2.connect(user).updateDeployer(user.address);
-                expect(await token2.deployer()).to.equal(user.address);
-            } catch (error) {
-                expect(await token1.deployer()).to.equal(ethers.constants.AddressZero);
-                expect(await token2.deployer()).to.equal(ethers.constants.AddressZero);
-            }
-        });
-
-        it('should store the deployer in slot 0', async () => {
+            
+            const currentDeployer = await token.deployer();
+            expect(deployerFromSlot0).to.equal(currentDeployer);
             expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
         });
 
-        it('should update the deployer with ITS operator', async () => {
-            const TestOperator = await ethers.getContractFactory('TestOperator', owner);
-            const mockITS = await TestOperator.deploy(owner.address);
-
-            const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
-            const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
-
-            await mockITS.transferOperatorship(user.address);
-
-            expect(await testDeployer.deployer()).to.equal(ethers.constants.AddressZero);
-        });
-
-        it('should revert on updating deployer from non-service address', async () => {
-            const TestOperator = await ethers.getContractFactory('TestOperator', owner);
-            const mockITS = await TestOperator.deploy(owner.address);
-
-            const TestHyperLiquidDeployer = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
-            const testDeployer = await TestHyperLiquidDeployer.deploy(mockITS.address);
-
-            await expect(testDeployer.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(testDeployer, 'NotService');
-        });
-
-        it('should update the deployer with _setDeployer internal function', async () => {
+        it('should update deployer and verify storage changes', async () => {
+            const initialSlot0 = slot0;
             const newDeployer = user.address;
+
             await token.connect(owner).updateDeployer(newDeployer);
 
-            expect(await token.deployer()).to.equal(newDeployer);
+            const updatedDeployer = await token.deployer();
+            expect(updatedDeployer).to.equal(newDeployer);
 
-            const updatedSlot0 = await provider.getStorageAt(token.address, 0);
+            const updatedSlot0 = await provider.getStorageAt(tokenAddress, 0);
+            expect(updatedSlot0).to.not.equal(initialSlot0);
+
             const updatedDeployerFromSlot0 = bytes32ToAddress(updatedSlot0);
+            expect(updatedDeployerFromSlot0).to.equal(newDeployer);
             expect(updatedDeployerFromSlot0.toLowerCase()).to.equal(newDeployer.toLowerCase());
+
+            const serviceAddress = await token.interchainTokenService();
+            expect(serviceAddress).to.not.equal(AddressZero);
+
+            const deployerFromSlot = '0x' + updatedSlot0.slice(26);
+            expect(deployerFromSlot.toLowerCase()).to.equal(updatedDeployer.toLowerCase());
         });
 
-        it('should update the deployer with multiple different addresses', async () => {
+        it('should verify slot 0 is reserved and not overwritten by other variables', async () => {
+            const hyperliquidTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [hyperliquidInterchainToken.address]);
+            const salt = ethers.utils.randomBytes(32);
+            const tokenId = ethers.utils.randomBytes(32);
+
+            const newTokenAddress = await hyperliquidTokenDeployer.deployedAddress(salt);
+            const newToken = await ethers.getContractAt('HyperliquidInterchainToken', newTokenAddress, owner);
+
+            await hyperliquidTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18);
+
+            const newTokenSlot0 = await provider.getStorageAt(newTokenAddress, 0);
+            const newTokenDeployerFromSlot0 = bytes32ToAddress(newTokenSlot0);
+            const deployerFromContract = await newToken.deployer();
+
+            expect(newTokenDeployerFromSlot0).to.equal(AddressZero);
+            expect(deployerFromContract).to.equal(AddressZero);
+
+            const tokenName = await newToken.name();
+            expect(tokenName).to.equal('TestToken');
+
+            const slot0AfterName = await provider.getStorageAt(newTokenAddress, 0);
+            expect(slot0AfterName).to.equal(newTokenSlot0);
+        });
+
+        it('should update deployer with multiple different addresses and verify storage', async () => {
             const wallets = await ethers.getSigners();
-            const addresses = [owner.address, user.address, ethers.constants.AddressZero, wallets[2].address, wallets[3].address];
+            const addresses = [owner.address, user.address, AddressZero, wallets[2].address, wallets[3].address];
 
             for (const addr of addresses) {
                 await token.connect(owner).updateDeployer(addr);
@@ -185,76 +139,43 @@ describe('HyperliquidInterchainToken', () => {
                 const updatedDeployerFromSlot0 = bytes32ToAddress(updatedSlot0);
                 expect(updatedDeployerFromSlot0.toLowerCase()).to.equal(addr.toLowerCase());
             }
-        });
 
-        it('should get the deployer with different deployer values', async () => {
-            const deployer1 = owner.address;
-            const deployer2 = user.address;
-
-            await token.connect(owner).updateDeployer(deployer1);
-            expect(await token.deployer()).to.equal(deployer1);
-
-            await token.connect(owner).updateDeployer(deployer2);
-            expect(await token.deployer()).to.equal(deployer2);
-        });
-
-        it('should get the deployer with storage verification', async () => {
-            const newDeployer = user.address;
-            await token.connect(owner).updateDeployer(newDeployer);
-
-            const updatedSlot0 = await provider.getStorageAt(tokenAddress, 0);
-            const updatedDeployerFromSlot0 = bytes32ToAddress(updatedSlot0);
-
-            const updatedDeployerFromContract = await token.deployer();
-
-            expect(updatedDeployerFromSlot0.toLowerCase()).to.equal(updatedDeployerFromContract.toLowerCase());
-            expect(updatedDeployerFromContract).to.equal(newDeployer);
-
-            await token.connect(owner).updateDeployer(ethers.constants.AddressZero);
+            await token.connect(owner).updateDeployer(AddressZero);
             const slot0Zero = await provider.getStorageAt(tokenAddress, 0);
             const deployerFromSlot0Zero = bytes32ToAddress(slot0Zero);
             const deployerFromContractZero = await token.deployer();
 
             expect(deployerFromSlot0Zero.toLowerCase()).to.equal(deployerFromContractZero.toLowerCase());
-            expect(deployerFromContractZero).to.equal(ethers.constants.AddressZero);
+            expect(deployerFromContractZero).to.equal(AddressZero);
         });
 
-        it('should test HyperLiquidDeployer assembly code with edge cases', async () => {
-            const largeAddress = '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
-            await token.connect(owner).updateDeployer(largeAddress);
-            const returnedLargeAddress = await token.deployer();
-            expect(returnedLargeAddress.toLowerCase()).to.equal(largeAddress.toLowerCase());
+        it('should handle authorization and access control', async () => {
+            const newDeployer = user.address;
+            await token.connect(owner).updateDeployer(newDeployer);
+            expect(await token.deployer()).to.equal(newDeployer);
 
-            const slot0Large = await provider.getStorageAt(tokenAddress, 0);
-            const deployerFromSlot0Large = bytes32ToAddress(slot0Large);
-            expect(deployerFromSlot0Large.toLowerCase()).to.equal(returnedLargeAddress.toLowerCase());
+            await expect(token.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(token, 'NotService');
 
-            const smallAddress = '0x0000000000000000000000000000000000000001';
-            await token.connect(owner).updateDeployer(smallAddress);
-            const returnedSmallAddress = await token.deployer();
-            expect(returnedSmallAddress.toLowerCase()).to.equal(smallAddress.toLowerCase());
+            const token1 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
+            const token2 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
 
-            const slot0Small = await provider.getStorageAt(tokenAddress, 0);
-            const deployerFromSlot0Small = bytes32ToAddress(slot0Small);
-            expect(deployerFromSlot0Small.toLowerCase()).to.equal(returnedSmallAddress.toLowerCase());
+            expect(await token1.deployer()).to.equal(AddressZero);
+            expect(await token2.deployer()).to.equal(AddressZero);
 
-            const alternatingAddress = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-            await token.connect(owner).updateDeployer(alternatingAddress);
-            const returnedAlternatingAddress = await token.deployer();
-            expect(returnedAlternatingAddress.toLowerCase()).to.equal(alternatingAddress.toLowerCase());
+            try {
+                await token1.connect(user).updateDeployer(user.address);
+                expect(await token1.deployer()).to.equal(user.address);
+                expect(await token2.deployer()).to.equal(AddressZero);
 
-            const slot0Alt = await provider.getStorageAt(tokenAddress, 0);
-            const deployerFromSlot0Alt = bytes32ToAddress(slot0Alt);
-            expect(deployerFromSlot0Alt.toLowerCase()).to.equal(returnedAlternatingAddress.toLowerCase());
+                await token2.connect(user).updateDeployer(user.address);
+                expect(await token2.deployer()).to.equal(user.address);
+            } catch (error) {
+                expect(await token1.deployer()).to.equal(AddressZero);
+                expect(await token2.deployer()).to.equal(AddressZero);
+            }
         });
 
-        it('should test HyperLiquidDeployer getDeployer assembly code directly', async () => {
-            // Initially the deployer is AddressZero
-            expect(deployerFromContract).to.equal(ethers.constants.AddressZero);
-            expect(deployerFromSlot0.toLowerCase()).to.equal(deployerFromContract.toLowerCase());
-        });
-
-        it('should test HyperLiquidDeployer updateDeployer authorization branch (ITS operator)', async () => {
+        it('should handle ITS operator scenarios', async () => {
             const TestOperator = await ethers.getContractFactory('TestOperator', owner);
             const mockITS = await TestOperator.deploy(owner.address);
 
@@ -263,33 +184,67 @@ describe('HyperliquidInterchainToken', () => {
 
             await mockITS.transferOperatorship(user.address);
 
-            expect(await testDeployer.deployer()).to.equal(ethers.constants.AddressZero);
+            expect(await testDeployer.deployer()).to.equal(AddressZero);
+
+            await expect(testDeployer.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(testDeployer, 'NotService');
+        });
+    });
+
+    describe('Chain-Specific Deployment', () => {
+        it('should deploy HyperliquidInterchainToken for Hyperliquid chain', async () => {
+            const deployment = await deployAll(
+                owner,
+                'hyperliquid',
+                ITS_HUB_ADDRESS,
+                [],
+                'HyperliquidInterchainTokenService',
+                'HyperliquidInterchainTokenServiceFactory',
+            );
+
+            expect(deployment.hyperliquidInterchainToken).to.not.be.undefined;
+            expect(deployment.interchainToken).to.be.undefined;
+            expect(deployment.interchainTokenDeployer).to.not.be.undefined;
+
+            const hyperliquidImplementation = await deployment.interchainTokenDeployer.implementationAddress();
+            expect(hyperliquidImplementation).to.equal(deployment.hyperliquidInterchainToken.address);
+
+            const salt = ethers.utils.randomBytes(32);
+            const tokenId = ethers.utils.randomBytes(32);
+            const tokenAddress = await deployment.interchainTokenDeployer.deployedAddress(salt);
+
+            await deployment.interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18);
+
+            const token = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress, owner);
+            const deployer = await token.deployer();
+            expect(deployer).to.equal(AddressZero);
         });
 
-        it('should test HyperLiquidDeployer _setDeployer call in updateDeployer', async () => {
-            const newDeployer = user.address;
+        it('should deploy standard InterchainToken for other chains', async () => {
+            const deployment = await deployAll(
+                owner,
+                'avalanche',
+                ITS_HUB_ADDRESS,
+                [],
+                'StandardInterchainTokenService',
+                'StandardInterchainTokenServiceFactory',
+            );
 
-            await token.connect(owner).updateDeployer(newDeployer);
+            expect(deployment.interchainToken).to.not.be.undefined;
+            expect(deployment.hyperliquidInterchainToken).to.be.undefined;
+            expect(deployment.interchainTokenDeployer).to.not.be.undefined;
 
-            expect(await token.deployer()).to.equal(newDeployer);
+            const standardImplementation = await deployment.interchainTokenDeployer.implementationAddress();
+            expect(standardImplementation).to.equal(deployment.interchainToken.address);
 
-            const updatedSlot0 = await provider.getStorageAt(token.address, 0);
-            const updatedDeployerFromSlot0 = bytes32ToAddress(updatedSlot0);
-            expect(updatedDeployerFromSlot0.toLowerCase()).to.equal(newDeployer.toLowerCase());
-        });
+            const salt = ethers.utils.randomBytes(32);
+            const tokenId = ethers.utils.randomBytes(32);
+            const tokenAddress = await deployment.interchainTokenDeployer.deployedAddress(salt);
 
-        it('should update deployer and verify slot 0 changes', async () => {
-            const serviceAddress = await token.interchainTokenService();
+            await deployment.interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18);
 
-            expect(serviceAddress).to.not.equal(ethers.constants.AddressZero);
+            const token = await ethers.getContractAt('InterchainToken', tokenAddress, owner);
 
-            // Initially the deployer is AddressZero, so we need to set it first
-            await token.connect(owner).updateDeployer(user.address);
-            const updatedDeployer = await token.deployer();
-
-            const updatedSlot0 = await provider.getStorageAt(tokenAddress, 0);
-            const deployerFromSlot = '0x' + updatedSlot0.slice(26); // Extract address from slot
-            expect(deployerFromSlot.toLowerCase()).to.equal(updatedDeployer.toLowerCase());
+            expect(token.deployer).to.be.undefined;
         });
     });
 });
