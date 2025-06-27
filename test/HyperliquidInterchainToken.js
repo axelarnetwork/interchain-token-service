@@ -12,7 +12,7 @@ const { deployContract } = require('../scripts/deploy');
  * @returns {string} The EIP-55 checksummed address
  */
 function bytes32ToAddress(bytes) {
-    const addressHex = '0x' + slotValue.slice(-40);
+    const addressHex = '0x' + bytes.slice(-40);
     return ethers.utils.getAddress(addressHex);
 }
 
