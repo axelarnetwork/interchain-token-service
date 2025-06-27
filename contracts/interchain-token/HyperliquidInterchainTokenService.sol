@@ -12,8 +12,6 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * This keeps ITS logic separate from token logic, reducing coupling
  */
 contract HyperLiquidInterchainTokenService is InterchainTokenService {
-    error InvalidTokenAddress();
-
     /**
      * @notice Event emitted when a token deployer is updated
      * @param token The address of the token contract
@@ -49,15 +47,21 @@ contract HyperLiquidInterchainTokenService is InterchainTokenService {
     /**
      * @notice Updates the deployer for a specific Hyperliquid token
      * @dev Only callable by the operator or owner for security. This keeps permissioning logic in the service layer
-     * @param token The Hyperliquid token contract
+     * @param tokenId The tokenId of the Hyperliquid token
      * @param newDeployer The new deployer address
      */
-    function updateTokenDeployer(IHyperliquidDeployer token, address newDeployer) external onlyOperatorOrOwner {
-        // Additional validation: ensure the token is a valid Hyperliquid token
-        // This could be enhanced with a registry check if needed
-        if (address(token) == address(0)) revert InvalidTokenAddress();
+    function updateTokenDeployer(bytes32 tokenId, address newDeployer) external onlyOperatorOrOwner {
+        address tokenManager = tokenManagerAddress(tokenId);
+        if (tokenManager == address(0)) revert TokenManagerDoesNotExist(tokenId);
 
-        emit TokenDeployerUpdated(address(token), newDeployer, msg.sender);
+        // Get the token address from the token manager
+        address tokenAddress = registeredTokenAddress(tokenId);
+        if (tokenAddress == address(0)) revert ZeroAddress();
+
+        IHyperliquidDeployer token = IHyperliquidDeployer(tokenAddress);
+        if (address(token) == address(0)) revert ZeroAddress();
+
+        emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
         token.updateDeployer(newDeployer);
     }
 }

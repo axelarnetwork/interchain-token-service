@@ -1,92 +1,299 @@
-const { expect } = require('chai');
+'use strict';
+
 const { ethers } = require('hardhat');
-const { deployContract } = require('../scripts/deploy');
+const { getContractAt } = ethers;
+const { expect } = require('chai');
+const { getRandomBytes32 } = require('./utils');
+const { deployAll } = require('../scripts/deploy');
+const { ITS_HUB_ADDRESS } = require('./constants');
+
+/**
+ * Helper function to extract an address from a bytes32 storage slot
+ * @param {string} slotValue - The bytes32 value from storage
+ * @returns {string} The EIP-55 checksummed address
+ */
+function bytes32ToAddress(slotValue) {
+    // Extract the last 20 bytes (40 hex characters) from the bytes32 value
+    const addressHex = '0x' + slotValue.slice(-40);
+    // Convert to EIP-55 checksummed address for consistency
+    return ethers.utils.getAddress(addressHex);
+}
 
 describe('HyperliquidInterchainTokenService', () => {
-    let owner, user, otherUser;
-    let hyperliquidService, hyperliquidToken1, hyperliquidToken2;
-    let tokenManagerDeployer, interchainTokenDeployer, gateway, gasService;
-    let create3Deployer, chainName, ITS_HUB_ADDRESS, tokenManager, tokenHandler;
+    let service, gateway, gasService, tokenFactory;
+    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler;
+    let hyperliquidInterchainToken;
+    let wallet, otherWallet, operator, nonOperator;
+    let testToken, tokenId, tokenManagerAddress;
 
-    beforeEach(async () => {
-        [owner, user, otherUser] = await ethers.getSigners();
+    before(async () => {
+        [wallet, otherWallet, operator, nonOperator] = await ethers.getSigners();
 
-        tokenManagerDeployer = await deployContract(owner, 'TokenManagerDeployer');
-
-        const MockInterchainToken = await ethers.getContractFactory('TestInterchainTokenStandard', owner);
-        const mockTokenImplementation = await MockInterchainToken.deploy(
-            'Mock',
-            'MOCK',
-            18,
-            ethers.constants.AddressZero,
-            ethers.constants.HashZero,
-        );
-
-        interchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [mockTokenImplementation.address]);
-        gateway = await deployContract(owner, 'MockGateway');
-        gasService = await deployContract(owner, 'AxelarGasService', [owner.address]);
-        create3Deployer = await deployContract(owner, 'CreateDeploy');
-        chainName = 'ethereum';
-        ITS_HUB_ADDRESS = 'axelar1' + '0'.repeat(58);
-
-        tokenManager = await deployContract(owner, 'TokenManager', [owner.address]);
-        tokenHandler = await deployContract(owner, 'TokenHandler');
-
-        const HyperliquidInterchainTokenService = await ethers.getContractFactory('HyperLiquidInterchainTokenService', owner);
-        const implementation = await HyperliquidInterchainTokenService.deploy(
-            tokenManagerDeployer.address,
-            interchainTokenDeployer.address,
-            gateway.address,
-            gasService.address,
-            create3Deployer.address,
-            chainName,
+        // Deploy the full Hyperliquid setup
+        const deployment = await deployAll(
+            wallet,
+            'hyperliquid',
             ITS_HUB_ADDRESS,
-            tokenManager.address,
-            tokenHandler.address,
+            [],
+            'HyperliquidInterchainTokenService',
+            'HyperliquidInterchainTokenServiceFactory',
         );
 
-        const InterchainProxy = await ethers.getContractFactory('InterchainProxy', owner);
-        const setupParams = ethers.utils.defaultAbiCoder.encode(
-            ['address', 'string', 'string[]', 'string[]'],
-            [owner.address, chainName, [], []],
-        );
+        service = deployment.service;
+        gateway = deployment.gateway;
+        gasService = deployment.gasService;
+        tokenFactory = deployment.tokenFactory;
+        tokenManagerDeployer = deployment.tokenManagerDeployer;
+        interchainTokenDeployer = deployment.interchainTokenDeployer;
+        tokenManager = deployment.tokenManager;
+        tokenHandler = deployment.tokenHandler;
+        hyperliquidInterchainToken = deployment.hyperliquidInterchainToken;
 
-        const proxy = await InterchainProxy.deploy(implementation.address, owner.address, setupParams);
+        // Set up operator role for testing - use the correct role ID
+        await service.transferOperatorship(operator.address);
+    });
 
-        // Get service interface on proxy
-        hyperliquidService = HyperliquidInterchainTokenService.attach(proxy.address);
+    describe('Constructor and Setup', () => {
+        it('should deploy with correct parameters', async () => {
+            expect(await service.tokenManagerDeployer()).to.equal(tokenManagerDeployer.address);
+            expect(await service.interchainTokenDeployer()).to.equal(interchainTokenDeployer.address);
+            expect(await service.gateway()).to.equal(gateway.address);
+            expect(await service.gasService()).to.equal(gasService.address);
+            expect(await service.interchainTokenFactory()).to.equal(tokenFactory.address);
+            expect(await service.tokenManager()).to.equal(tokenManager.address);
+            expect(await service.tokenHandler()).to.equal(tokenHandler.address);
+        });
 
-        const HyperliquidInterchainToken = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
-        hyperliquidToken1 = await HyperliquidInterchainToken.deploy(hyperliquidService.address);
-        hyperliquidToken2 = await HyperliquidInterchainToken.deploy(hyperliquidService.address);
+        it('should have correct operator setup', async () => {
+            // Check if the operator has the correct role
+            expect(await service.isOperator(operator.address)).to.be.true;
+            expect(await service.owner()).to.equal(wallet.address);
+        });
     });
 
     describe('updateTokenDeployer', () => {
-        it('should update deployer for a single token', async () => {
-            expect(hyperliquidService.address).to.not.equal(ethers.constants.AddressZero);
-            expect(hyperliquidToken1.address).to.not.equal(ethers.constants.AddressZero);
-            expect(hyperliquidToken2.address).to.not.equal(ethers.constants.AddressZero);
-
-            const newDeployer = user.address;
-
-            await expect(hyperliquidService.updateTokenDeployer(hyperliquidToken1.address, newDeployer)).to.not.be.reverted;
-
-            expect(await hyperliquidToken1.deployer()).to.equal(newDeployer);
+        beforeEach(async () => {
+            // Deploy a test token and register it with a token manager
+            const salt = getRandomBytes32();
+            tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+            
+            // Deploy a test Hyperliquid token
+            testToken = await ethers.getContractFactory('TestHyperliquidInterchainToken', wallet);
+            testToken = await testToken.deploy('TestToken', 'TEST', 18, service.address, tokenId);
+            
+            // Register the token with a token manager using the factory
+            await tokenFactory.registerCustomToken(salt, testToken.address, 1, wallet.address); // MINT_BURN type
+            
+            // Get the token manager address
+            tokenManagerAddress = await service.tokenManagerAddress(tokenId);
         });
 
-        it('should revert when called by non-operator', async () => {
-            const newDeployer = user.address;
+        it('should allow operator to update token deployer', async () => {
+            const newDeployer = otherWallet.address;
+            
+            // Call updateTokenDeployer as operator
+            await expect(service.connect(operator).updateTokenDeployer(tokenId, newDeployer))
+                .to.emit(service, 'TokenDeployerUpdated')
+                .withArgs(testToken.address, newDeployer, operator.address);
+            
+            // Verify the deployer was updated on the token
+            expect(await testToken.deployer()).to.equal(newDeployer);
+        });
 
+        it('should allow owner to update token deployer', async () => {
+            const newDeployer = otherWallet.address;
+            
+            // Call updateTokenDeployer as owner
+            await expect(service.connect(wallet).updateTokenDeployer(tokenId, newDeployer))
+                .to.emit(service, 'TokenDeployerUpdated')
+                .withArgs(testToken.address, newDeployer, wallet.address);
+            
+            // Verify the deployer was updated on the token
+            expect(await testToken.deployer()).to.equal(newDeployer);
+        });
+
+        it('should revert when called by non-operator and non-owner', async () => {
+            const newDeployer = otherWallet.address;
+            
             await expect(
-                hyperliquidService.connect(otherUser).updateTokenDeployer(hyperliquidToken1.address, newDeployer),
-            ).to.be.revertedWithCustomError(hyperliquidService, 'NotOperatorOrOwner');
+                service.connect(nonOperator).updateTokenDeployer(tokenId, newDeployer)
+            ).to.be.revertedWithCustomError(service, 'NotOperatorOrOwner');
         });
 
-        it('should allow setting deployer to zero address', async () => {
-            await expect(hyperliquidService.updateTokenDeployer(hyperliquidToken1.address, ethers.constants.AddressZero)).to.not.be
-                .reverted;
+        it('should revert when token manager does not exist', async () => {
+            const nonExistentTokenId = getRandomBytes32();
+            const newDeployer = otherWallet.address;
+            
+            await expect(
+                service.connect(operator).updateTokenDeployer(nonExistentTokenId, newDeployer)
+            ).to.be.revertedWithCustomError(service, 'TokenManagerDoesNotExist');
+        });
 
-            expect(await hyperliquidToken1.deployer()).to.equal(ethers.constants.AddressZero);
+        it('should handle zero address for new deployer', async () => {
+            const newDeployer = ethers.constants.AddressZero;
+            
+            // Should work with zero address
+            await expect(service.connect(operator).updateTokenDeployer(tokenId, newDeployer))
+                .to.emit(service, 'TokenDeployerUpdated')
+                .withArgs(testToken.address, newDeployer, operator.address);
+            
+            // Verify the deployer was updated to zero address
+            expect(await testToken.deployer()).to.equal(newDeployer);
+        });
+
+        it('should emit TokenDeployerUpdated event with correct parameters', async () => {
+            const newDeployer = otherWallet.address;
+            
+            const tx = await service.connect(operator).updateTokenDeployer(tokenId, newDeployer);
+            const receipt = await tx.wait();
+            
+            // Find the TokenDeployerUpdated event
+            const event = receipt.events?.find(e => e.event === 'TokenDeployerUpdated');
+            expect(event).to.not.be.undefined;
+            expect(event.args.token).to.equal(testToken.address);
+            expect(event.args.newDeployer).to.equal(newDeployer);
+            expect(event.args.operator).to.equal(operator.address);
+        });
+
+        it('should allow multiple updates to the same token', async () => {
+            const deployer1 = otherWallet.address;
+            const deployer2 = nonOperator.address;
+            
+            // First update
+            await service.connect(operator).updateTokenDeployer(tokenId, deployer1);
+            expect(await testToken.deployer()).to.equal(deployer1);
+            
+            // Second update
+            await service.connect(operator).updateTokenDeployer(tokenId, deployer2);
+            expect(await testToken.deployer()).to.equal(deployer2);
+        });
+
+        it('should work with different token managers', async () => {
+            // Deploy a second token and token manager
+            const salt2 = getRandomBytes32();
+            const tokenId2 = await tokenFactory.linkedTokenId(wallet.address, salt2);
+            
+            const testToken2 = await ethers.getContractFactory('TestHyperliquidInterchainToken', wallet);
+            const deployedToken2 = await testToken2.deploy('TestToken2', 'TEST2', 18, service.address, tokenId2);
+            
+            await tokenFactory.registerCustomToken(salt2, deployedToken2.address, 1, wallet.address);
+            
+            const tokenManagerAddress2 = await service.tokenManagerAddress(tokenId2);
+            const newDeployer = otherWallet.address;
+            
+            // Update both tokens
+            await service.connect(operator).updateTokenDeployer(tokenId, newDeployer);
+            await service.connect(operator).updateTokenDeployer(tokenId2, newDeployer);
+            
+            expect(await testToken.deployer()).to.equal(newDeployer);
+            expect(await deployedToken2.deployer()).to.equal(newDeployer);
+        });
+    });
+
+    describe('Integration Tests', () => {
+        it('should work with deployed Hyperliquid token through factory', async () => {
+            // Deploy a complete setup with Hyperliquid token through the factory
+            const salt = getRandomBytes32();
+            const testTokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+            
+            // Deploy a test Hyperliquid token
+            const testToken = await ethers.getContractFactory('TestHyperliquidInterchainToken', wallet);
+            const deployedToken = await testToken.deploy('TestToken', 'TEST', 18, service.address, testTokenId);
+            
+            // Register with token manager using factory
+            await tokenFactory.registerCustomToken(salt, deployedToken.address, 1, wallet.address);
+            
+            // Test that the service can update the deployer
+            const newDeployer = otherWallet.address;
+            await service.connect(operator).updateTokenDeployer(testTokenId, newDeployer);
+            
+            expect(await deployedToken.deployer()).to.equal(newDeployer);
+        });
+
+        it('should maintain proper state after deployer update', async () => {
+            const salt = getRandomBytes32();
+            const testTokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+            
+            // Deploy and register token
+            const testToken = await ethers.getContractFactory('TestHyperliquidInterchainToken', wallet);
+            const deployedToken = await testToken.deploy('TestToken', 'TEST', 18, service.address, testTokenId);
+            await tokenFactory.registerCustomToken(salt, deployedToken.address, 1, wallet.address);
+            
+            // Verify initial state
+            expect(await deployedToken.deployer()).to.equal(ethers.constants.AddressZero);
+            
+            // Update deployer
+            const newDeployer = otherWallet.address;
+            await service.connect(operator).updateTokenDeployer(testTokenId, newDeployer);
+            
+            // Verify updated state
+            expect(await deployedToken.deployer()).to.equal(newDeployer);
+            
+            // Verify token manager still exists and is accessible
+            const tokenManagerAddress = await service.tokenManagerAddress(testTokenId);
+            expect(tokenManagerAddress).to.not.equal(ethers.constants.AddressZero);
+        });
+    });
+
+    describe('Error Handling', () => {
+        it('should handle invalid tokenId gracefully', async () => {
+            const invalidTokenId = '0x0000000000000000000000000000000000000000000000000000000000000000';
+            const newDeployer = otherWallet.address;
+            
+            await expect(
+                service.connect(operator).updateTokenDeployer(invalidTokenId, newDeployer)
+            ).to.be.revertedWithCustomError(service, 'TokenManagerDoesNotExist');
+        });
+
+        it('should handle edge cases with deployer addresses', async () => {
+            const salt = getRandomBytes32();
+            const testTokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+            
+            const testToken = await ethers.getContractFactory('TestHyperliquidInterchainToken', wallet);
+            const deployedToken = await testToken.deploy('TestToken', 'TEST', 18, service.address, testTokenId);
+            await tokenFactory.registerCustomToken(salt, deployedToken.address, 1, wallet.address);
+            
+            // Test various edge cases for deployer addresses
+            const edgeCases = [
+                ethers.constants.AddressZero,
+                '0x0000000000000000000000000000000000000001',
+                '0xffffffffffffffffffffffffffffffffffffffff'
+            ];
+            
+            for (const edgeCase of edgeCases) {
+                await service.connect(operator).updateTokenDeployer(testTokenId, edgeCase);
+                expect(
+                    ethers.utils.getAddress(await deployedToken.deployer())
+                ).to.equal(ethers.utils.getAddress(edgeCase));
+            }
+        });
+    });
+
+    describe('Permission Tests', () => {
+        it('should respect operator permissions', async () => {
+            const salt = getRandomBytes32();
+            const testTokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+            
+            const testToken = await ethers.getContractFactory('TestHyperliquidInterchainToken', wallet);
+            const deployedToken = await testToken.deploy('TestToken', 'TEST', 18, service.address, testTokenId);
+            await tokenFactory.registerCustomToken(salt, deployedToken.address, 1, wallet.address);
+            
+            const newDeployer = otherWallet.address;
+            
+            // Should work for operator
+            await service.connect(operator).updateTokenDeployer(testTokenId, newDeployer);
+            expect(await deployedToken.deployer()).to.equal(newDeployer);
+            
+            // Should work for owner
+            const newDeployer2 = nonOperator.address;
+            await service.connect(wallet).updateTokenDeployer(testTokenId, newDeployer2);
+            expect(await deployedToken.deployer()).to.equal(newDeployer2);
+            
+            // Should fail for non-operator
+            const newDeployer3 = ethers.Wallet.createRandom().address;
+            await expect(
+                service.connect(nonOperator).updateTokenDeployer(testTokenId, newDeployer3)
+            ).to.be.revertedWithCustomError(service, 'NotOperatorOrOwner');
         });
     });
 });

@@ -17,12 +17,20 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
     error NotService();
 
     /**
+     * @notice Modifier to restrict access to only the interchain token service
+     */
+    modifier onlyInterchainTokenService() {
+        if (msg.sender != interchainTokenService_) {
+            revert NotService();
+        }
+        _;
+    }
+
+    /**
      * @notice Constructs the HyperliquidInterchainToken contract.
      * @param interchainTokenServiceAddress The address of the interchain token service.
      */
     constructor(address interchainTokenServiceAddress) InterchainToken(interchainTokenServiceAddress) {
-        // Set the deployer in slot 0 for Hyperliquid compatibility
-        _setDeployer(address(0));
     }
 
     /**
@@ -38,11 +46,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
      * @dev Only the interchain token service can call this function
      * @param newDeployer The new deployer address to set
      */
-    function updateDeployer(address newDeployer) external override {
-        if (msg.sender != interchainTokenService_) {
-            revert NotService();
-        }
-
+    function updateDeployer(address newDeployer) external override onlyInterchainTokenService {
         _setDeployer(newDeployer);
     }
 }
