@@ -2,12 +2,11 @@
 
 const { ethers } = require('hardhat');
 const {
-    constants: { AddressZero, HashZero },
+    constants: { AddressZero },
     getContractAt,
-    utils: { keccak256 },
 } = ethers;
 const { expect } = require('chai');
-const { getRandomBytes32, expectRevert, getEVMVersion } = require('./utils');
+const { getRandomBytes32 } = require('./utils');
 const { deployContract, deployAll } = require('../scripts/deploy');
 const { ITS_HUB_ADDRESS } = require('./constants');
 
@@ -30,7 +29,6 @@ describe('HyperliquidInterchainToken', () => {
     const mintAmount = 123;
 
     let token;
-    let tokenTest;
     let owner;
     let user;
     let provider;

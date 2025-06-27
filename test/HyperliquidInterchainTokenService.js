@@ -3,17 +3,13 @@
 const chai = require('chai');
 const { expect } = chai;
 const { ethers } = require('hardhat');
-const {
-    constants: { AddressZero },
-} = ethers;
 const { getRandomBytes32 } = require('./utils');
 const { deployAll } = require('../scripts/deploy');
 const { ITS_HUB_ADDRESS } = require('./constants');
 
 describe('Hyperliquid Interchain Token Service', () => {
     let wallet, otherWallet, operator, nonOperator;
-    let service, gateway, gasService, tokenFactory;
-    let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler;
+    let service, tokenFactory;
     let testToken, tokenId;
 
     before(async () => {
@@ -29,13 +25,7 @@ describe('Hyperliquid Interchain Token Service', () => {
         );
 
         service = deployment.service;
-        gateway = deployment.gateway;
-        gasService = deployment.gasService;
         tokenFactory = deployment.tokenFactory;
-        tokenManagerDeployer = deployment.tokenManagerDeployer;
-        interchainTokenDeployer = deployment.interchainTokenDeployer;
-        tokenManager = deployment.tokenManager;
-        tokenHandler = deployment.tokenHandler;
 
         await service.transferOperatorship(operator.address);
     });
