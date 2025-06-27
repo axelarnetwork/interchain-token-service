@@ -3,16 +3,28 @@
 pragma solidity ^0.8.0;
 
 import { HyperliquidDeployer } from '../interchain-token/HyperliquidDeployer.sol';
+import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 
 /**
  * @title TestHyperliquidDeployer
  * @notice Concrete implementation of HyperliquidDeployer for testing
+ * @dev This contract is used to test the HyperLiquid ITS contract's updateTokenDeployer function
  */
-contract TestHyperliquidDeployer is HyperliquidDeployer {
-    error NotAuthorized();
+contract TestHyperliquidDeployer is HyperliquidDeployer, IHyperliquidDeployer {
+    error NotService(address caller);
 
     address public itsAddress;
     address public initialDeployer;
+
+    /**
+     * @notice Modifier to restrict access to only the interchain token service
+     */
+    modifier onlyService() {
+        if (msg.sender != itsAddress) {
+            revert NotService(msg.sender);
+        }
+        _;
+    }
 
     constructor(address _itsAddress, address _initialDeployer) {
         itsAddress = _itsAddress;
@@ -24,24 +36,21 @@ contract TestHyperliquidDeployer is HyperliquidDeployer {
      * @notice Gets the deployer address stored in slot 0
      * @return The address of the deployer
      */
-    function deployer() external view returns (address) {
+    function deployer() external view override returns (address) {
         return _deployer();
     }
 
     /**
-     * @notice Override updateDeployer with test-specific authorization logic
+     * @notice Allows updating the deployer address
+     * @dev Only the interchain token service can call this function
+     * @param newDeployer The new deployer address to set
      */
-    function updateDeployer(address newDeployer) external {
-        // Test authorization: allow ITS address, current deployer, or initial deployer
-        address currentDeployer = _deployer();
-        if (msg.sender != itsAddress && msg.sender != currentDeployer && msg.sender != initialDeployer) {
-            revert NotAuthorized();
-        }
+    function updateDeployer(address newDeployer) external override onlyService {
         _setDeployer(newDeployer);
     }
 
     /**
-     * @notice Test function to directly call _setDeployer
+     * @notice Test function to directly call _setDeployer (for setup purposes)
      */
     function testSetDeployer(address newDeployer) external {
         _setDeployer(newDeployer);

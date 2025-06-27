@@ -14,14 +14,14 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * This maintains the standard InterchainToken while providing Hyperliquid compatibility.
  */
 contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHyperliquidDeployer {
-    error NotService();
+    error NotService(address caller);
 
     /**
      * @notice Modifier to restrict access to only the interchain token service
      */
-    modifier onlyInterchainTokenService() {
+    modifier onlyService() {
         if (msg.sender != interchainTokenService_) {
-            revert NotService();
+            revert NotService(msg.sender);
         }
         _;
     }
@@ -45,7 +45,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
      * @dev Only the interchain token service can call this function
      * @param newDeployer The new deployer address to set
      */
-    function updateDeployer(address newDeployer) external override onlyInterchainTokenService {
+    function updateDeployer(address newDeployer) external override onlyService {
         _setDeployer(newDeployer);
     }
 }
