@@ -7,8 +7,8 @@ const { getRandomBytes32 } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 /**
- * Helper function to extract an address from a bytes32 storage slot
- * @param {string} slotValue - The bytes32 value from storage
+ * Convert bytes32 value to EIP-55 address
+ * @param {string} bytes - The bytes32 value
  * @returns {string} The EIP-55 checksummed address
  */
 function bytes32ToAddress(slotValue) {
