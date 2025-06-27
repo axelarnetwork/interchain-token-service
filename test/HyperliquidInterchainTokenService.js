@@ -85,10 +85,9 @@ describe('Hyperliquid Interchain Token Service', () => {
 
             const newDeployer = otherWallet.address;
 
-            await expect(service.connect(operator).updateTokenDeployer(standardTokenId, newDeployer)).to.be.revertedWithCustomError(
-                service,
-                'TokenDoesNotSupportHyperliquidInterface',
-            ).withArgs(deployedStandardToken.address);
+            await expect(service.connect(operator).updateTokenDeployer(standardTokenId, newDeployer))
+                .to.be.revertedWithCustomError(service, 'TokenDoesNotSupportHyperliquidInterface')
+                .withArgs(deployedStandardToken.address);
         });
 
         it('should emit TokenDeployerUpdated event with correct parameters', async () => {

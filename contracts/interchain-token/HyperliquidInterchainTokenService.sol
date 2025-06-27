@@ -32,8 +32,9 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      * @return True if the token supports the interface
      */
     function _supportsHyperliquidInterface(address token) internal view returns (bool) {
-        (bool success, ) = token.staticcall(abi.encodeWithSelector(IHyperliquidDeployer.deployer.selector));
-        return success;
+        // Check for deployer() function
+        (bool deployerSuccess, ) = token.staticcall(abi.encodeWithSelector(IHyperliquidDeployer.deployer.selector));
+        return deployerSuccess;
     }
 
     constructor(
