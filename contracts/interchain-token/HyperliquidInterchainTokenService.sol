@@ -51,8 +51,8 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      * @param newDeployer The new deployer address
      */
     function updateTokenDeployer(bytes32 tokenId, address newDeployer) external onlyOperatorOrOwner {
-        address tokenManager = tokenManagerAddress(tokenId);
-        if (tokenManager == address(0)) revert TokenManagerDoesNotExist(tokenId);
+        address tokenManagerAddr = tokenManagerAddress(tokenId);
+        if (tokenManagerAddr == address(0)) revert TokenManagerDoesNotExist(tokenId);
 
         // Get the token address from the token manager
         address tokenAddress = registeredTokenAddress(tokenId);
