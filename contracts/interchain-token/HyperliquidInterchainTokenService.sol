@@ -71,7 +71,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
 
         address tokenAddress = registeredTokenAddress(tokenId);
 
-        // Emit event first (checks-effects-interactions pattern)
         emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
 
         // Make external call last
