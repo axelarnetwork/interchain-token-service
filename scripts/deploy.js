@@ -43,7 +43,7 @@ async function deployInterchainTokenService(
     operatorAddress = wallet.address,
 ) {
     const isHyperliquidChain = chainName.toLowerCase().includes('hyperliquid');
-    const contractName = isHyperliquidChain ? 'HyperliquidInterchainTokenService' : 'InterchainTokenService';
+    const itsContractName = isHyperliquidChain ? 'HyperliquidInterchainTokenService' : 'InterchainTokenService';
 
     const implementation = await deployContract(wallet, contractName, [
         tokenManagerDeployerAddress,
