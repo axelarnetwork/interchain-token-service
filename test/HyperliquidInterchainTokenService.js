@@ -108,6 +108,10 @@ describe('Hyperliquid Interchain Token Service', () => {
             await service.connect(wallet).transferOwnership(otherWallet.address);
             expect(await service.owner()).to.equal(otherWallet.address);
 
+            // Test that old owner cannot update deployer
+            await expect(service.connect(wallet).updateTokenDeployer(tokenId, newDeployer))
+                .to.be.revertedWithCustomError(service, 'NotOperatorOrOwner');
+
             await expect(service.connect(otherWallet).updateTokenDeployer(tokenId, newDeployer))
                 .to.emit(service, 'TokenDeployerUpdated')
                 .withArgs(testToken.address, newDeployer, otherWallet.address);
