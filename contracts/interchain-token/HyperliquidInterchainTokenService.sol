@@ -70,7 +70,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
     function updateTokenDeployer(bytes32 tokenId, address newDeployer) external onlyOperatorOrOwner {
 
         address tokenAddress = registeredTokenAddress(tokenId);
-        if (tokenAddress == address(0)) revert ZeroAddress();
 
         if (!_supportsHyperliquidInterface(tokenAddress)) {
             revert TokenDoesNotSupportHyperliquidInterface(tokenAddress);
