@@ -41,7 +41,7 @@ contract TestHyperliquidInterchainToken is HyperliquidInterchainToken {
     /**
      * @notice Test function to directly call _setDeployer (for setup purposes)
      */
-    function testSetDeployer(address newDeployer) external {
+    function setDeployer(address newDeployer) external {
         _setDeployer(newDeployer);
     }
 
