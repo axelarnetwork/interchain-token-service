@@ -10,7 +10,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * @notice Concrete implementation of HyperliquidDeployer for testing
  * @dev This contract is used to test the HyperLiquid ITS contract's updateTokenDeployer function
  */
-contract TestHyperliquidDeployer is HyperliquidDeployer, IHyperliquidDeployer {
+contract TestHyperliquidDeployer is HyperliquidInterchainToken {
     error NotService(address caller);
 
     address public itsAddress;
