@@ -105,10 +105,16 @@ describe('Hyperliquid Interchain Token Service', () => {
                 .withArgs(testToken.address, wallet.address, operator.address);
             expect(await testToken.deployer()).to.equal(wallet.address);
 
-            await expect(service.connect(operator).updateTokenDeployer(tokenId, newDeployer))
+            await service.connect(wallet).transferOwnership(otherWallet.address);
+            expect(await service.owner()).to.equal(otherWallet.address);
+
+            await expect(service.connect(otherWallet).updateTokenDeployer(tokenId, newDeployer))
                 .to.emit(service, 'TokenDeployerUpdated')
-                .withArgs(testToken.address, newDeployer, operator.address);
+                .withArgs(testToken.address, newDeployer, otherWallet.address);
             expect(await testToken.deployer()).to.equal(newDeployer);
+
+            await service.connect(otherWallet).transferOwnership(wallet.address);
+            expect(await service.owner()).to.equal(wallet.address);
 
             await expect(service.connect(wallet).updateTokenDeployer(tokenId, wallet.address))
                 .to.emit(service, 'TokenDeployerUpdated')
