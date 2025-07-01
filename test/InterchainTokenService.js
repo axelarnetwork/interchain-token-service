@@ -2927,55 +2927,6 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe('Interchain Token Migration', () => {
-        it('Should migrate a token succesfully', async () => {
-            const name = 'migrated token';
-            const symbol = 'MT';
-            const decimals = 53;
-
-            const [token, tokenManager, tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
-
-            await expect(service.migrateInterchainToken(tokenId))
-                .to.emit(token, 'RolesRemoved')
-                .withArgs(service.address, 1 << MINTER_ROLE)
-                .to.emit(token, 'RolesAdded')
-                .withArgs(tokenManager.address, 1 << MINTER_ROLE);
-        });
-
-        it('Should not be able to migrate a token twice', async () => {
-            const name = 'migrated token';
-            const symbol = 'MT';
-            const decimals = 53;
-
-            const [token, tokenManager, tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
-
-            await expect(service.migrateInterchainToken(tokenId))
-                .to.emit(token, 'RolesRemoved')
-                .withArgs(service.address, 1 << MINTER_ROLE)
-                .to.emit(token, 'RolesAdded')
-                .withArgs(tokenManager.address, 1 << MINTER_ROLE);
-
-            await expectRevert((gasOptions) => service.migrateInterchainToken(tokenId, { gasOptions }), token, 'MissingRole', [
-                service.address,
-                MINTER_ROLE,
-            ]);
-        });
-
-        it('Should not be able to migrate a token as not the owner', async () => {
-            const name = 'migrated token';
-            const symbol = 'MT';
-            const decimals = 53;
-
-            const [, , tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
-
-            await expectRevert(
-                (gasOptions) => service.connect(otherWallet).migrateInterchainToken(tokenId, gasOptions),
-                service,
-                'NotOwner',
-            );
-        });
-    });
-
     describe('Bytecode checks [ @skip-on-coverage ]', () => {
         it('Should preserve the same proxy bytecode for each EVM', async () => {
             const proxyFactory = await ethers.getContractFactory('InterchainProxy', wallet);

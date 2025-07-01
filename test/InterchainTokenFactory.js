@@ -619,25 +619,6 @@ describe('InterchainTokenFactory', () => {
             );
         });
 
-        it.skip('Should not be able to migrate a token deployed after this upgrade', async () => {
-            const salt = getRandomBytes32();
-            const name = 'migrated token';
-            const symbol = 'MT';
-            const decimals = 53;
-            const tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
-
-            await tokenFactory.deployInterchainToken(salt, name, symbol, decimals, 0, wallet.address).then((tx) => tx.wait());
-            const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
-            const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
-            const tokenAddress = await tokenManager.tokenAddress();
-            const token = await getContractAt('InterchainToken', tokenAddress, wallet);
-
-            await expectRevert((gasOptions) => service.migrateInterchainToken(tokenId, { gasOptions }), token, 'MissingRole', [
-                service.address,
-                MINTER_ROLE,
-            ]);
-        });
-
         describe('Custom Token Manager Deployment', () => {
             const tokenName = 'Token Name';
             const tokenSymbol = 'TN';

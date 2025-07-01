@@ -629,17 +629,6 @@ contract InterchainTokenService is
         }
     }
 
-    /**
-     * @notice Allows the owner to migrate minter of native interchain tokens from ITS to the corresponding token manager.
-     * @param tokenId the tokenId of the registered token.
-     * @dev TODO(hedera) should this be removed?
-     */
-    function migrateInterchainToken(bytes32 tokenId) external onlyOwner {
-        ITokenManager tokenManager_ = deployedTokenManager(tokenId);
-        address tokenAddress = tokenManager_.tokenAddress();
-        IMinter(tokenAddress).transferMintership(address(tokenManager_));
-    }
-
     /****************\
     INTERNAL FUNCTIONS
     \****************/
