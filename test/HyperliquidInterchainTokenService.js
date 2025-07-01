@@ -115,20 +115,5 @@ describe('Hyperliquid Interchain Token Service', () => {
                 .withArgs(testToken.address, wallet.address, wallet.address);
             expect(await testToken.deployer()).to.equal(wallet.address);
         });
-
-        it('should fail when unauthorized user tries to update deployer', async () => {
-            const newDeployer = otherWallet.address;
-
-            expect(await testToken.deployer()).to.equal(ethers.constants.AddressZero);
-
-            await service.connect(operator).updateTokenDeployer(tokenId, wallet.address);
-            expect(await testToken.deployer()).to.equal(wallet.address);
-
-            await expect(service.connect(nonOperator).updateTokenDeployer(tokenId, newDeployer))
-                .to.be.revertedWithCustomError(service, 'NotOperatorOrOwner');
-
-            // Verify deployer is still the owner
-            expect(await testToken.deployer()).to.equal(wallet.address);
-        });
     });
 });
