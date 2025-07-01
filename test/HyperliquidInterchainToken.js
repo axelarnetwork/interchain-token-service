@@ -94,7 +94,6 @@ describe('HyperliquidInterchainToken', () => {
 
             const updatedDeployerFromSlot0 = bytes32ToAddress(updatedSlot0);
             expect(updatedDeployerFromSlot0).to.equal(newDeployer);
-            expect(updatedDeployerFromSlot0.toLowerCase()).to.equal(newDeployer.toLowerCase());
 
             const serviceAddress = await token.interchainTokenService();
             expect(serviceAddress).to.not.equal(AddressZero);
