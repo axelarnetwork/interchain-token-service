@@ -13,12 +13,6 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  */
 contract HyperliquidInterchainTokenService is InterchainTokenService {
     /**
-     * @notice Error thrown when a token does not support the IHyperliquidDeployer interface
-     * @param token The address of the token that doesn't support the interface
-     */
-    error TokenDoesNotSupportHyperliquidInterface(address token);
-
-    /**
      * @notice Event emitted when a token deployer is updated
      * @param token The address of the token contract
      * @param newDeployer The new deployer address
@@ -68,11 +62,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      */
     function updateTokenDeployer(bytes32 tokenId, address newDeployer) external onlyOperatorOrOwner {
         address tokenAddress = registeredTokenAddress(tokenId);
-
-        // Check if the token supports the IHyperliquidDeployer interface
-        if (!_supportsHyperliquidInterface(tokenAddress)) {
-            revert TokenDoesNotSupportHyperliquidInterface(tokenAddress);
-        }
 
         emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
 

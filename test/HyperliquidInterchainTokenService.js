@@ -65,18 +65,6 @@ describe('Hyperliquid Interchain Token Service', () => {
             );
         });
 
-        it('should revert if token does not support Hyperliquid interface', async () => {
-            const salt = getRandomBytes32();
-            const customTokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
-            const TestToken = await ethers.getContractFactory('TestInterchainTokenStandard', wallet);
-            const simpleToken = await TestToken.deploy('SimpleToken', 'SIMPLE', 18, service.address, customTokenId);
-            await tokenFactory.registerCustomToken(salt, simpleToken.address, 1, wallet.address);
-            const newDeployer = otherWallet.address;
-            await expect(service.connect(operator).updateTokenDeployer(customTokenId, newDeployer))
-                .to.be.revertedWithCustomError(service, 'TokenDoesNotSupportHyperliquidInterface')
-                .withArgs(simpleToken.address);
-        });
-
         it('should emit TokenDeployerUpdated event with correct parameters', async () => {
             const newDeployer = otherWallet.address;
             const tx = await service.connect(operator).updateTokenDeployer(tokenId, newDeployer);
