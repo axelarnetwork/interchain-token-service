@@ -6,6 +6,8 @@ import { HyperliquidInterchainToken } from '../interchain-token/HyperliquidInter
 
 contract TestHyperliquidInterchainToken is HyperliquidInterchainToken {
     bool internal tokenManagerRequiresApproval_ = true;
+    address public testITSAddress;
+    address public initialDeployer;
 
     error AllowanceExceeded();
 
@@ -20,6 +22,8 @@ contract TestHyperliquidInterchainToken is HyperliquidInterchainToken {
         symbol = symbol_;
         decimals = decimals_;
         tokenId = tokenId_;
+        testITSAddress = service_;
+        initialDeployer = address(0);
         _addMinter(msg.sender);
     }
 
@@ -32,5 +36,19 @@ contract TestHyperliquidInterchainToken is HyperliquidInterchainToken {
 
     function setTokenId(bytes32 tokenId_) external {
         tokenId = tokenId_;
+    }
+
+    /**
+     * @notice Test function to directly call _setDeployer (for setup purposes)
+     */
+    function testSetDeployer(address newDeployer) external {
+        _setDeployer(newDeployer);
+    }
+
+    /**
+     * @notice Test function to update ITS address
+     */
+    function setITSAddress(address newITS) external {
+        testITSAddress = newITS;
     }
 }
