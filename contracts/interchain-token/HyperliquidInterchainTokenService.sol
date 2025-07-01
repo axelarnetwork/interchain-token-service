@@ -73,7 +73,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
 
         emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
 
-        // Make external call last
         IHyperliquidDeployer token = IHyperliquidDeployer(tokenAddress);
         token.updateDeployer(newDeployer);
     }
