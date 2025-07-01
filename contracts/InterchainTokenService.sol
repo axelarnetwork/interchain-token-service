@@ -645,7 +645,10 @@ contract InterchainTokenService is
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        (address operator, string memory chainName_, string[] memory trustedChainNames) = abi.decode(params, (address, string, string[]));
+        (address operator, string memory chainName_, string[] memory trustedChainNames, uint256 _tokenCreationPrice) = abi.decode(
+            params,
+            (address, string, string[], uint256)
+        );
         if (operator == address(0)) revert ZeroAddress();
         if (bytes(chainName_).length == 0 || keccak256(bytes(chainName_)) != chainNameHash) revert InvalidChainName();
 
@@ -661,6 +664,8 @@ contract InterchainTokenService is
                 _removeTrustedAddress(trustedChainName);
             }
         }
+
+        _setTokenCreationPrice(_tokenCreationPrice);
     }
 
     /**
