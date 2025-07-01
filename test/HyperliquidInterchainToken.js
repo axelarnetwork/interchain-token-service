@@ -200,12 +200,11 @@ describe('HyperliquidInterchainToken', () => {
                 'HyperliquidInterchainTokenServiceFactory',
             );
 
-            expect(deployment.hyperliquidInterchainToken).to.not.be.undefined;
-            expect(deployment.interchainToken).to.be.undefined;
+            expect(deployment.interchainToken).to.not.be.undefined;
             expect(deployment.interchainTokenDeployer).to.not.be.undefined;
 
             const hyperliquidImplementation = await deployment.interchainTokenDeployer.implementationAddress();
-            expect(hyperliquidImplementation).to.equal(deployment.hyperliquidInterchainToken.address);
+            expect(hyperliquidImplementation).to.equal(deployment.interchainToken.address);
 
             const salt = ethers.utils.randomBytes(32);
             const tokenId = ethers.utils.randomBytes(32);
@@ -229,7 +228,6 @@ describe('HyperliquidInterchainToken', () => {
             );
 
             expect(deployment.interchainToken).to.not.be.undefined;
-            expect(deployment.hyperliquidInterchainToken).to.be.undefined;
             expect(deployment.interchainTokenDeployer).to.not.be.undefined;
 
             const standardImplementation = await deployment.interchainTokenDeployer.implementationAddress();
