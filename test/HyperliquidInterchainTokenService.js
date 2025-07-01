@@ -33,7 +33,7 @@ describe('Hyperliquid Interchain Token Service', () => {
     describe('Hyperliquid Interchain Token Service Update Token Deployer', () => {
         beforeEach(async () => {
             const salt = getRandomBytes32();
-            await tokenFactory.deployInterchainToken(salt, 'TestToken', 'TEST', 18, 1000000, wallet.address);
+            await tokenFactory.deployInterchainToken(salt, 'TestToken', 'TEST', 18, 1000000, wallet.address).then((tx) => tx.wait());
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.registeredTokenAddress(tokenId);
             testToken = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress);
