@@ -10,6 +10,14 @@ const chains = require(`@axelar-network/axelar-chains-config/info/${env}.json`);
 const keys = readJSON(`${__dirname}/keys.json`);
 const { networks, etherscan } = importNetworks(chains, keys);
 
+if (typeof process.env.HEDERA_TESTNET_PK_HEX === 'string') {
+    networks.testnet = {
+        url: 'https://testnet.hashio.io/api',
+        accounts: [process.env.HEDERA_TESTNET_PK_HEX],
+        chainId: 296,
+    };
+}
+
 const optimizerSettings = {
     enabled: true,
     runs: 1000,
@@ -86,11 +94,6 @@ module.exports = {
                 '0x45a5a7108a18dd5013cf2d5857a28144beadc9c70b3bdbd914e38df4e804b8d8',
             ],
             chainId: 298,
-        },
-        testnet: {
-            url: 'https://testnet.hashio.io/api',
-            accounts: [process.env.HEDERA_TESTNET_PK_HEX],
-            chainId: 296,
         },
     },
     etherscan,
