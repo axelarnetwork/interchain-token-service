@@ -33,14 +33,7 @@ describe('Hyperliquid Interchain Token Service', () => {
     describe('Hyperliquid Interchain Token Service Update Token Deployer', () => {
         beforeEach(async () => {
             const salt = getRandomBytes32();
-            const tx = await tokenFactory.deployInterchainToken(
-                salt,
-                'TestToken',
-                'TEST',
-                18,
-                1000000,
-                wallet.address
-            );
+            await tokenFactory.deployInterchainToken(salt, 'TestToken', 'TEST', 18, 1000000, wallet.address);
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
             const tokenAddress = await service.registeredTokenAddress(tokenId);
             testToken = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress);
@@ -109,8 +102,10 @@ describe('Hyperliquid Interchain Token Service', () => {
             expect(await service.owner()).to.equal(otherWallet.address);
 
             // Test that old owner cannot update deployer
-            await expect(service.connect(wallet).updateTokenDeployer(tokenId, newDeployer))
-                .to.be.revertedWithCustomError(service, 'NotOperatorOrOwner');
+            await expect(service.connect(wallet).updateTokenDeployer(tokenId, newDeployer)).to.be.revertedWithCustomError(
+                service,
+                'NotOperatorOrOwner',
+            );
 
             await expect(service.connect(otherWallet).updateTokenDeployer(tokenId, newDeployer))
                 .to.emit(service, 'TokenDeployerUpdated')

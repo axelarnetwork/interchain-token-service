@@ -96,7 +96,9 @@ async function deployAll(
     // Determine if this is a Hyperliquid chain
     const isHyperliquidChain = chainName.toLowerCase().includes('hyperliquid');
 
-    const interchainToken = await deployContract(wallet, (isHyperliquidChain) ? 'HyperliquidInterchainToken' : 'InterchainToken', [interchainTokenServiceAddress]);
+    const interchainToken = await deployContract(wallet, isHyperliquidChain ? 'HyperliquidInterchainToken' : 'InterchainToken', [
+        interchainTokenServiceAddress,
+    ]);
     const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
 
     const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
