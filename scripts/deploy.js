@@ -136,7 +136,7 @@ async function deployAll(
         tokenFactory,
         create3Deployer,
         tokenManagerDeployer,
-        ...(isHyperliquidChain ? { hyperliquidInterchainToken: interchainToken } : { interchainToken }),
+        interchainToken,
         interchainTokenDeployer,
         tokenManager,
         tokenHandler,
