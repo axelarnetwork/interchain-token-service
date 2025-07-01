@@ -110,7 +110,7 @@ describe('HyperliquidInterchainToken', () => {
             const newTokenAddress = await hyperliquidTokenDeployer.deployedAddress(salt);
             const newToken = await ethers.getContractAt('HyperliquidInterchainToken', newTokenAddress, owner);
 
-            await hyperliquidTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18);
+            await hyperliquidTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18).then((tx) => tx.wait());
 
             const newTokenSlot0 = await provider.getStorageAt(newTokenAddress, 0);
             const newTokenDeployerFromSlot0 = bytes32ToAddress(newTokenSlot0);
@@ -156,22 +156,12 @@ describe('HyperliquidInterchainToken', () => {
             await expect(token.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(token, 'NotService');
 
             const token1 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
-            const token2 = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
 
             expect(await token1.deployer()).to.equal(AddressZero);
-            expect(await token2.deployer()).to.equal(AddressZero);
 
-            try {
-                await token1.connect(user).updateDeployer(user.address);
-                expect(await token1.deployer()).to.equal(user.address);
-                expect(await token2.deployer()).to.equal(AddressZero);
+            await expect(token1.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(token1, 'NotService');
 
-                await token2.connect(user).updateDeployer(user.address);
-                expect(await token2.deployer()).to.equal(user.address);
-            } catch (error) {
-                expect(await token1.deployer()).to.equal(AddressZero);
-                expect(await token2.deployer()).to.equal(AddressZero);
-            }
+            expect(await token1.deployer()).to.equal(AddressZero);
         });
 
         it('should handle ITS operator scenarios', async () => {
@@ -210,7 +200,7 @@ describe('HyperliquidInterchainToken', () => {
             const tokenId = ethers.utils.randomBytes(32);
             const tokenAddress = await deployment.interchainTokenDeployer.deployedAddress(salt);
 
-            await deployment.interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18);
+            await deployment.interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18).then((tx) => tx.wait());
 
             const token = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress, owner);
             const deployer = await token.deployer();
@@ -237,7 +227,7 @@ describe('HyperliquidInterchainToken', () => {
             const tokenId = ethers.utils.randomBytes(32);
             const tokenAddress = await deployment.interchainTokenDeployer.deployedAddress(salt);
 
-            await deployment.interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18);
+            await deployment.interchainTokenDeployer.deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18).then((tx) => tx.wait());
 
             const token = await ethers.getContractAt('InterchainToken', tokenAddress, owner);
 
