@@ -23,7 +23,6 @@ contract TestHyperliquidInterchainToken is HyperliquidInterchainToken {
         _addMinter(msg.sender);
     }
 
-    // You can add new helper/test functions here, but do not override parent functions.
     function burnFrom(address account, uint256 amount) external {
         uint256 currentAllowance = allowance[account][msg.sender];
         if (currentAllowance < amount) revert AllowanceExceeded();

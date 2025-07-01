@@ -32,7 +32,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      * @return True if the token supports the interface
      */
     function _supportsHyperliquidInterface(address token) internal view returns (bool) {
-        // Check for deployer() function
         (bool deployerSuccess, ) = token.staticcall(abi.encodeWithSelector(IHyperliquidDeployer.deployer.selector));
         return deployerSuccess;
     }
@@ -68,8 +67,12 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      * @param newDeployer The new deployer address
      */
     function updateTokenDeployer(bytes32 tokenId, address newDeployer) external onlyOperatorOrOwner {
-
         address tokenAddress = registeredTokenAddress(tokenId);
+
+        // Check if the token supports the IHyperliquidDeployer interface
+        if (!_supportsHyperliquidInterface(tokenAddress)) {
+            revert TokenDoesNotSupportHyperliquidInterface(tokenAddress);
+        }
 
         emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
 
