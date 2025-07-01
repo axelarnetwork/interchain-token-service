@@ -172,7 +172,6 @@ async function deployAll(
         create3Deployer,
         tokenManagerDeployer,
         interchainToken,
-        hyperliquidInterchainToken,
         interchainTokenDeployer,
         tokenManager,
         tokenHandler,
