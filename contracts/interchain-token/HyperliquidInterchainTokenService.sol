@@ -71,10 +71,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
 
         address tokenAddress = registeredTokenAddress(tokenId);
 
-        if (!_supportsHyperliquidInterface(tokenAddress)) {
-            revert TokenDoesNotSupportHyperliquidInterface(tokenAddress);
-        }
-
         // Emit event first (checks-effects-interactions pattern)
         emit TokenDeployerUpdated(tokenAddress, newDeployer, msg.sender);
 
