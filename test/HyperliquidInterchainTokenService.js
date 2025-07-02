@@ -7,13 +7,13 @@ const { getRandomBytes32 } = require('./utils');
 const { deployAll } = require('../scripts/deploy');
 const { ITS_HUB_ADDRESS } = require('./constants');
 
-describe('Hyperliquid Interchain Token Service', () => {
-    let wallet, otherWallet, operator, nonOperator;
+describe('HyperliquidInterchainTokenService', () => {
+    let wallet, otherWallet, operator;
     let service, tokenFactory;
     let testToken, tokenId;
 
     before(async () => {
-        [wallet, otherWallet, operator, nonOperator] = await ethers.getSigners();
+        [wallet, otherWallet, operator] = await ethers.getSigners();
 
         const deployment = await deployAll(
             wallet,
@@ -39,23 +39,6 @@ describe('Hyperliquid Interchain Token Service', () => {
             testToken = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress);
         });
 
-        it('should handle authorization and update token deployer', async () => {
-            const newDeployer = otherWallet.address;
-            await expect(service.connect(operator).updateTokenDeployer(tokenId, newDeployer))
-                .to.emit(service, 'TokenDeployerUpdated')
-                .withArgs(testToken.address, newDeployer, operator.address);
-            expect(await testToken.deployer()).to.equal(newDeployer);
-            const newDeployer2 = nonOperator.address;
-            await expect(service.connect(wallet).updateTokenDeployer(tokenId, newDeployer2))
-                .to.emit(service, 'TokenDeployerUpdated')
-                .withArgs(testToken.address, newDeployer2, wallet.address);
-            expect(await testToken.deployer()).to.equal(newDeployer2);
-            await expect(service.connect(nonOperator).updateTokenDeployer(tokenId, newDeployer)).to.be.revertedWithCustomError(
-                service,
-                'NotOperatorOrOwner',
-            );
-        });
-
         it('should revert if token manager does not exist', async () => {
             const nonExistentTokenId = getRandomBytes32();
             const newDeployer = otherWallet.address;
@@ -63,17 +46,6 @@ describe('Hyperliquid Interchain Token Service', () => {
                 service,
                 'TokenManagerDoesNotExist',
             );
-        });
-
-        it('should emit TokenDeployerUpdated event with correct parameters', async () => {
-            const newDeployer = otherWallet.address;
-            const tx = await service.connect(operator).updateTokenDeployer(tokenId, newDeployer);
-            const receipt = await tx.wait();
-            const event = receipt.events?.find((e) => e.event === 'TokenDeployerUpdated');
-            expect(event).to.not.be.undefined;
-            expect(event.args.token).to.equal(testToken.address);
-            expect(event.args.newDeployer).to.equal(newDeployer);
-            expect(event.args.operator).to.equal(operator.address);
         });
 
         it('should update deployer from owner to a new owner and back to original owner', async () => {
@@ -89,12 +61,6 @@ describe('Hyperliquid Interchain Token Service', () => {
             await service.connect(wallet).transferOwnership(otherWallet.address);
             expect(await service.owner()).to.equal(otherWallet.address);
 
-            // Test that old owner cannot update deployer
-            await expect(service.connect(wallet).updateTokenDeployer(tokenId, newDeployer)).to.be.revertedWithCustomError(
-                service,
-                'NotOperatorOrOwner',
-            );
-
             await expect(service.connect(otherWallet).updateTokenDeployer(tokenId, newDeployer))
                 .to.emit(service, 'TokenDeployerUpdated')
                 .withArgs(testToken.address, newDeployer, otherWallet.address);
@@ -107,6 +73,25 @@ describe('Hyperliquid Interchain Token Service', () => {
                 .to.emit(service, 'TokenDeployerUpdated')
                 .withArgs(testToken.address, wallet.address, wallet.address);
             expect(await testToken.deployer()).to.equal(wallet.address);
+        });
+
+        it('should revert once owner is not operator and cannot update deployer', async () => {
+            const newDeployer = otherWallet.address;
+
+            expect(await testToken.deployer()).to.equal(ethers.constants.AddressZero);
+
+            await expect(service.connect(operator).updateTokenDeployer(tokenId, wallet.address))
+                .to.emit(service, 'TokenDeployerUpdated')
+                .withArgs(testToken.address, wallet.address, operator.address);
+            expect(await testToken.deployer()).to.equal(wallet.address);
+
+            await service.connect(wallet).transferOwnership(otherWallet.address);
+            expect(await service.owner()).to.equal(otherWallet.address);
+
+            await expect(service.connect(wallet).updateTokenDeployer(tokenId, newDeployer)).to.be.revertedWithCustomError(
+                service,
+                'NotOperatorOrOwner',
+            );
         });
     });
 });

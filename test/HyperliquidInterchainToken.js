@@ -27,7 +27,6 @@ describe('HyperliquidInterchainToken', () => {
     const name = 'HyperliquidToken';
     const symbol = 'HLT';
     const decimals = 18;
-    const mintAmount = 123;
 
     let token;
     let owner;
@@ -39,7 +38,7 @@ describe('HyperliquidInterchainToken', () => {
         owner = wallets[0];
         user = wallets[1];
 
-        token = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
+        hyperliquidInterchainToken = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
         hyperliquidInterchainTokenDeployer = await deployContract(owner, 'InterchainTokenDeployer', [hyperliquidInterchainToken.address]);
 
         const salt = getRandomBytes32();
@@ -122,7 +121,7 @@ describe('HyperliquidInterchainToken', () => {
                 await token.connect(owner).updateDeployer(addr);
                 expect(await token.deployer()).to.equal(addr);
 
-                const updatedSlot0 = await provider.getStorageAt(token.address, 0);
+                const updatedSlot0 = await provider.getStorageAt(tokenAddress, 0);
                 const updatedDeployerFromSlot0 = bytes32ToAddress(updatedSlot0);
                 expect(updatedDeployerFromSlot0.toLowerCase()).to.equal(addr.toLowerCase());
             }
@@ -136,21 +135,23 @@ describe('HyperliquidInterchainToken', () => {
             expect(deployerFromContractZero).to.equal(AddressZero);
         });
 
-        it('should handle authorization and access control', async () => {
+        it('should revert when non-owner calls updateDeployer', async () => {
+            const newDeployer = user.address;
+            await expect(token.connect(user).updateDeployer(newDeployer)).to.be.revertedWithCustomError(token, 'NotService');
+        });
+
+        it('should revert when non-owner calls updateDeployer after deployer has been set', async () => {
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
             expect(await token.deployer()).to.equal(newDeployer);
+
             await expect(token.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(token, 'NotService');
         });
 
-        it('should prevent unauthorized deployer updates on fresh token deployment', async () => {
-            const token = await deployContract(owner, 'HyperliquidInterchainToken', [owner.address]);
-
-            expect(await token.deployer()).to.equal(AddressZero);
-
-            await expect(token.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(token, 'NotService');
-
-            expect(await token.deployer()).to.equal(AddressZero);
+        it('should allow owner to update deployer successfully', async () => {
+            const newDeployer = user.address;
+            await token.connect(owner).updateDeployer(newDeployer);
+            expect(await token.deployer()).to.equal(newDeployer);
         });
     });
 });
