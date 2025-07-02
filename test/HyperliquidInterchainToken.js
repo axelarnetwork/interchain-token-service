@@ -5,12 +5,11 @@ const {
     constants: { AddressZero },
     getContractAt,
     utils: { keccak256 },
+    provider,
 } = ethers;
 const { expect } = require('chai');
 const { getRandomBytes32, getEVMVersion } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
-
-const provider = ethers.provider;
 
 /**
  * Convert bytes32 value to EIP-55 address
@@ -149,7 +148,7 @@ describe('HyperliquidInterchainToken', () => {
             await expect(token.connect(user).updateDeployer(user.address)).to.be.revertedWithCustomError(token, 'NotService');
         });
 
-        it('should allow owner to update deployer successfully', async () => {
+        it('should allow the service to update deployer successfully', async () => {
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
             expect(await token.deployer()).to.equal(newDeployer);
