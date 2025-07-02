@@ -34,7 +34,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
 
     /**
      * @notice Gets the deployer address stored in slot 0
-     * @return deployerAddr The address of the deployer
+     * @return deployerAddress The address of the deployer
      */
     function deployer() external view override returns (address deployerAddress) {
         return _deployer();
