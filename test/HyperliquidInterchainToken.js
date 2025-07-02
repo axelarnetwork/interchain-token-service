@@ -4,9 +4,10 @@ const { ethers } = require('hardhat');
 const {
     constants: { AddressZero },
     getContractAt,
+    utils: { keccak256 },
 } = ethers;
 const { expect } = require('chai');
-const { getRandomBytes32 } = require('./utils');
+const { getRandomBytes32, getEVMVersion} = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 const provider = ethers.provider;
@@ -152,6 +153,20 @@ describe('HyperliquidInterchainToken', () => {
             const newDeployer = user.address;
             await token.connect(owner).updateDeployer(newDeployer);
             expect(await token.deployer()).to.equal(newDeployer);
+        });
+    });
+
+    describe('Bytecode checks [ @skip-on-coverage ]', () => {
+        it('Should preserve the same bytecode', async () => {
+            const contract = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
+            const contractBytecode = contract.bytecode;
+            const contractBytecodeHash = keccak256(contractBytecode);
+
+            const expected = {
+                london: '0x4f8c7fe60a682456463ec110bfb42c230eb586a43148a93473b1aea18b7c55db',
+            }[getEVMVersion()];
+
+            expect(contractBytecodeHash).to.be.equal(expected);
         });
     });
 });
