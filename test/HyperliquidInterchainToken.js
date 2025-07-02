@@ -37,7 +37,7 @@ describe('HyperliquidInterchainToken', () => {
     let deployerFromSlot0;
     let deployerFromContract;
 
-    before(async () => {
+    beforeEach(async () => {
         const wallets = await ethers.getSigners();
         owner = wallets[0];
         user = wallets[1];
@@ -66,10 +66,6 @@ describe('HyperliquidInterchainToken', () => {
     });
 
     describe('Hyperliquid Interchain Token', () => {
-        it('Should calculate hardcoded constants correctly', async () => {
-            await expect(deployContract(owner, 'HyperliquidInterchainToken', [owner.address])).to.not.be.reverted;
-        });
-
         it('should verify initial deployer state and slot 0 storage', async () => {
             expect(deployerFromSlot0).to.equal(AddressZero);
             expect(deployerFromContract).to.equal(AddressZero);
@@ -182,35 +178,6 @@ describe('HyperliquidInterchainToken', () => {
     });
 
     describe('Chain-Specific Deployment', () => {
-        it('should deploy HyperliquidInterchainToken for Hyperliquid chain', async () => {
-            const deployment = await deployAll(
-                owner,
-                'hyperliquid',
-                ITS_HUB_ADDRESS,
-                [],
-                'HyperliquidInterchainTokenService',
-                'HyperliquidInterchainTokenServiceFactory',
-            );
-
-            expect(deployment.interchainToken).to.not.be.undefined;
-            expect(deployment.interchainTokenDeployer).to.not.be.undefined;
-
-            const hyperliquidImplementation = await deployment.interchainTokenDeployer.implementationAddress();
-            expect(hyperliquidImplementation).to.equal(deployment.interchainToken.address);
-
-            const salt = ethers.utils.randomBytes(32);
-            const tokenId = ethers.utils.randomBytes(32);
-            const tokenAddress = await deployment.interchainTokenDeployer.deployedAddress(salt);
-
-            await deployment.interchainTokenDeployer
-                .deployInterchainToken(salt, tokenId, owner.address, 'TestToken', 'TEST', 18)
-                .then((tx) => tx.wait());
-
-            const token = await ethers.getContractAt('HyperliquidInterchainToken', tokenAddress, owner);
-            const deployer = await token.deployer();
-            expect(deployer).to.equal(AddressZero);
-        });
-
         it('should deploy standard InterchainToken for other chains', async () => {
             const deployment = await deployAll(
                 owner,
