@@ -7,7 +7,7 @@ const {
     utils: { keccak256 },
 } = ethers;
 const { expect } = require('chai');
-const { getRandomBytes32, getEVMVersion} = require('./utils');
+const { getRandomBytes32, getEVMVersion } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 const provider = ethers.provider;
