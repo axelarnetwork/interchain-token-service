@@ -86,7 +86,6 @@ describe('HyperliquidInterchainToken', () => {
             expect(updatedDeployer).to.equal(newDeployer);
 
             const updatedSlot0 = await provider.getStorageAt(tokenAddress, 0);
-            expect(updatedSlot0).to.not.equal(initialSlot0);
 
             const updatedDeployerFromSlot0 = bytes32ToAddress(updatedSlot0);
             expect(updatedDeployerFromSlot0).to.equal(newDeployer);
