@@ -8,12 +8,12 @@ const { deployAll } = require('../scripts/deploy');
 const { ITS_HUB_ADDRESS } = require('./constants');
 
 describe('HyperliquidInterchainTokenService', () => {
-    let wallet, otherWallet, operator;
+    let wallet, otherWallet, operator, nonAuthorizedWallet;
     let service, tokenFactory;
     let testToken, tokenId;
 
     before(async () => {
-        [wallet, otherWallet, operator] = await ethers.getSigners();
+        [wallet, otherWallet, operator, nonAuthorizedWallet] = await ethers.getSigners();
 
         const deployment = await deployAll(
             wallet,
@@ -89,6 +89,14 @@ describe('HyperliquidInterchainTokenService', () => {
             expect(await service.owner()).to.equal(otherWallet.address);
 
             await expect(service.connect(wallet).updateTokenDeployer(tokenId, newDeployer)).to.be.revertedWithCustomError(
+                service,
+                'NotOperatorOrOwner',
+            );
+        });
+
+        it('should revert when called by non-owner and non-operator wallet', async () => {
+            const newDeployer = otherWallet.address;
+            await expect(service.connect(nonAuthorizedWallet).updateTokenDeployer(tokenId, newDeployer)).to.be.revertedWithCustomError(
                 service,
                 'NotOperatorOrOwner',
             );
