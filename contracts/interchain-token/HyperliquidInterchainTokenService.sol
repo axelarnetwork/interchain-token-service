@@ -20,16 +20,6 @@ contract HyperliquidInterchainTokenService is InterchainTokenService {
      */
     event TokenDeployerUpdated(address indexed token, address indexed newDeployer, address indexed operator);
 
-    /**
-     * @notice Checks if a token supports the IHyperliquidDeployer interface
-     * @param token The token address to check
-     * @return True if the token supports the interface
-     */
-    function _supportsHyperliquidInterface(address token) internal view returns (bool) {
-        (bool deployerSuccess, ) = token.staticcall(abi.encodeWithSelector(IHyperliquidDeployer.deployer.selector));
-        return deployerSuccess;
-    }
-
     constructor(
         address tokenManagerDeployer_,
         address interchainTokenDeployer_,
