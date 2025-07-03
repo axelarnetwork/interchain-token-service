@@ -420,7 +420,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
             name = fTokenInfo.tokenInfo.token.name;
             symbol = fTokenInfo.tokenInfo.token.symbol;
             int32 htsDecimals = fTokenInfo.decimals;
-            if (decimals < 0 || htsDecimals > int32(uint32(type(uint8).max))) {
+            if (htsDecimals > int32(uint32(type(uint8).max))) {
                 revert HTS.InvalidTokenDecimals();
             }
             decimals = uint8(uint32(htsDecimals));
