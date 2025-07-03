@@ -2,7 +2,11 @@
 
 ## Overview
 
-ITS contracts in this repo are modified to support Hedera Token Service. All new interchain tokens will be created via HTS, while existing HTS and ERC20 tokens are supported for registration. New HTS Interchain tokens will have `InterchainTokenService` as the sole Supply Key ("MinterBurner" equivalent in Hedera) and Treasury (the contract that gets the newly minted coins). After minting, the Treasury transfers the tokens to the designated account. Before burning, the tokens are transfered back to the Treasury. ITS uses typical `allowance` and `transferFrom` to move tokens before burning. ITS keeps track of minters and allows for external minting and burning (see `TokenMinter.sol`). Certain ITS features are not supported due to HTS limitations, such as initial supply.
+ITS contracts in this repo are modified to support Hedera Token Service. All new interchain tokens will be created via HTS, while existing HTS and ERC20 tokens are supported for registration.
+
+ew HTS Interchain tokens will have their Token Manager as the sole Supply Key ("MinterBurner" equivalent in Hedera) and Treasury (the contract that gets the newly minted coins). After minting, the Treasury transfers the tokens to the designated account. Before burning, the tokens are transfered back to the Treasury. Token Managers use typical `allowance` and `transferFrom` to move tokens before burning. Token Manager keeps track of minters and allows for external minting and burning (see `Minter.sol`). Certain ITS features are not supported due to HTS limitations, such as initial supply.
+
+Since the `createFungibleToken` precompile in Hedera requires a fee to be sent as value, an `WHBAR` contract (`WETH` equivalent) is deployed to hold the HBAR used for token creation. `InterchainTokenService` is funded with WHBAR, and before `TokenManager` deployment ITS approves the Token Manager for a given amount, since the address is deterministic. `TokenManagerProxy`, during constructing transfers the amount to itself and withdraws it, forwarding it to `InterchainTokenDeployer`, who finally calls the precompile and sends the fee.
 
 ### Hedera-related Notes
 
@@ -18,13 +22,11 @@ ITS contracts in this repo are modified to support Hedera Token Service. All new
 
 ### ITS-related Notes
 
+- `MINT_BURN` and `MINT_BURN_FROM` Token Manager types are currently unsupported, due to missing support of transferring the Treasury role. If this gets supported in the future, the `TokenManager` can be upgraded.
+- When registering a canonical token, only the `TokenManager` is associated with the token.
 - `InterchainTokenDeployer.sol` `deployedAddress` is not supported, since HTS tokens don't have deterministic addresses.
 - `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `registeredTokenAddress` should be used instead.
 - `transmitInterchainTransfer` was removed from `InterchainTokenService.sol` since it's meant to be called from an `InterchainToken` contract, which is not used.
 - When creating a new interchain token, `InterchainTokenService` and `TokenManager` are associated with the token.
-- When deploying a new interchain token, a Hedera-specific token-creation fee must be sent as value. For this reason, the `deployInterchainToken` method is payable.
 - `initialSupply` isn't supported when deploying a new interchain token. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation.
 - Both HTS tokens and ERC20 tokens are supported for registration.
-- When registering a canonical token, only the `TokenManager` is associated with the token.
-- `TokenHandler`'s `_giveInterchainToken` and `_takeInterchainToken` interact with the HTS directly — it is assumed the methods are called by the `InterchainTokenService` contract. `TokenManager` is still used for ERC20 tokens, lock-unlock and flow limits.
-- `MINT_BURN` and `MINT_BURN_FROM` Token Manager types are currently unsupported, due to missing support of transferring the Treasury role. If this gets supported in the future, the `TokenManager` can be upgraded.
