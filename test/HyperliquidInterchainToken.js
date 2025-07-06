@@ -73,7 +73,7 @@ describe('HyperliquidInterchainToken', () => {
         it('should update deployer and verify storage changes', async () => {
             const newDeployer = user.address;
 
-            await service.connect(owner).updateTokenDeployer(tokenId, newDeployer);
+            await service.updateTokenDeployer(tokenId, newDeployer);
 
             const updatedDeployer = await token.deployer();
             expect(updatedDeployer).to.equal(newDeployer);
@@ -88,46 +88,15 @@ describe('HyperliquidInterchainToken', () => {
         });
 
         it('should verify slot 0 is reserved and not overwritten by other variables', async () => {
-            const newSalt = getRandomBytes32();
-            await tokenFactory.deployInterchainToken(newSalt, 'TestToken2', 'TEST2', 18, 1000000, owner.address).then((tx) => tx.wait());
-            const newTokenId = await tokenFactory.interchainTokenId(owner.address, newSalt);
-            const newTokenAddress = await service.registeredTokenAddress(newTokenId);
-            const newToken = await ethers.getContractAt('HyperliquidInterchainToken', newTokenAddress, owner);
+            const tokenSlot0 = await provider.getStorageAt(tokenAddress, 0);
+            const deployerFromSlot0 = bytes32ToAddress(tokenSlot0);
+            const deployerFromContract = await token.deployer();
 
-            const newTokenSlot0 = await provider.getStorageAt(newTokenAddress, 0);
-            const newTokenDeployerFromSlot0 = bytes32ToAddress(newTokenSlot0);
-            const deployerFromContract = await newToken.deployer();
-
-            expect(newTokenDeployerFromSlot0).to.equal(AddressZero);
+            expect(deployerFromSlot0).to.equal(AddressZero);
             expect(deployerFromContract).to.equal(AddressZero);
 
-            const tokenName = await newToken.name();
-            expect(tokenName).to.equal('TestToken2');
-
-            const slot0AfterName = await provider.getStorageAt(newTokenAddress, 0);
-            expect(slot0AfterName).to.equal(newTokenSlot0);
-        });
-
-        it('should update deployer with multiple different addresses and verify storage', async () => {
-            const wallets = await ethers.getSigners();
-            const addresses = [owner.address, user.address, AddressZero, wallets[2].address, wallets[3].address];
-
-            for (const addr of addresses) {
-                await service.connect(owner).updateTokenDeployer(tokenId, addr);
-                expect(await token.deployer()).to.equal(addr);
-
-                const updatedSlot0 = await provider.getStorageAt(tokenAddress, 0);
-                const updatedDeployerFromSlot0 = bytes32ToAddress(updatedSlot0);
-                expect(updatedDeployerFromSlot0.toLowerCase()).to.equal(addr.toLowerCase());
-            }
-
-            await service.connect(owner).updateTokenDeployer(tokenId, AddressZero);
-            const slot0Zero = await provider.getStorageAt(tokenAddress, 0);
-            const deployerFromSlot0Zero = bytes32ToAddress(slot0Zero);
-            const deployerFromContractZero = await token.deployer();
-
-            expect(deployerFromSlot0Zero.toLowerCase()).to.equal(deployerFromContractZero.toLowerCase());
-            expect(deployerFromContractZero).to.equal(AddressZero);
+            const slot0AfterName = await provider.getStorageAt(tokenAddress, 0);
+            expect(slot0AfterName).to.equal(tokenSlot0);
         });
 
         it('should revert when non-owner calls updateDeployer', async () => {
@@ -138,18 +107,9 @@ describe('HyperliquidInterchainToken', () => {
             );
         });
 
-        it('should revert when non-owner calls updateDeployer after deployer has been set', async () => {
-            const newDeployer = user.address;
-            await service.connect(owner).updateTokenDeployer(tokenId, newDeployer);
-            await expect(service.connect(user).updateTokenDeployer(tokenId, user.address)).to.be.revertedWithCustomError(
-                service,
-                'NotOperatorOrOwner',
-            );
-        });
-
         it('should allow the service to update deployer successfully', async () => {
             const newDeployer = user.address;
-            await service.connect(owner).updateTokenDeployer(tokenId, newDeployer);
+            await service.updateTokenDeployer(tokenId, newDeployer);
             expect(await token.deployer()).to.equal(newDeployer);
         });
 

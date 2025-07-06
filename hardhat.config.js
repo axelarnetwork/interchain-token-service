@@ -69,6 +69,7 @@ module.exports = {
                   'contracts/proxies/InterchainProxy.sol': fixedContractCompilerSettings,
                   'contracts/proxies/TokenManagerProxy.sol': fixedContractCompilerSettings,
                   'contracts/interchain-token/InterchainToken.sol': fixedContractCompilerSettings,
+                  'contracts/interchain-token/HyperliquidInterchainToken.sol': fixedContractCompilerSettings,
                   'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
                   'contracts/InterchainTokenService.sol': itsCompilerSettings,
               },
