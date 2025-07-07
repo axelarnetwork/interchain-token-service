@@ -12,7 +12,7 @@ describe('HyperliquidInterchainTokenService', () => {
     let service, tokenFactory;
     let testToken, tokenId;
 
-    before(async () => {
+    beforeEach(async () => {
         [wallet, otherWallet, operator] = await ethers.getSigners();
 
         const deployment = await deployAll(
@@ -32,12 +32,6 @@ describe('HyperliquidInterchainTokenService', () => {
 
     describe('Hyperliquid Interchain Token Service Update Token Deployer', () => {
         beforeEach(async () => {
-            const currentOwner = await service.owner();
-
-            if (currentOwner !== wallet.address) {
-                await service.connect(ethers.provider.getSigner(currentOwner)).transferOwnership(wallet.address);
-            }
-
             const salt = getRandomBytes32();
             await tokenFactory.deployInterchainToken(salt, 'TestToken', 'TEST', 18, 1000000, wallet.address).then((tx) => tx.wait());
             tokenId = await tokenFactory.interchainTokenId(wallet.address, salt);
