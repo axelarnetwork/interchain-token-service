@@ -124,7 +124,7 @@ describe('HyperliquidInterchainToken', () => {
     describe('Bytecode checks [ @skip-on-coverage ]', () => {
         // This test ensures the contract bytecode remains consistent across deployments
         // to allow for upgradability of ITS without breaking existing tokens
-        it('Should preserve the same bytecode', async () => {
+        it('should preserve the same bytecode', async () => {
             const contract = await ethers.getContractFactory('HyperliquidInterchainToken', owner);
             const contractBytecode = contract.bytecode;
             const contractBytecodeHash = keccak256(contractBytecode);
