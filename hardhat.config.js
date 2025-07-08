@@ -12,7 +12,7 @@ const { networks, etherscan } = importNetworks(chains, keys);
 
 const optimizerSettings = {
     enabled: true,
-    runs: 1000,
+    runs: 800,
     details: {
         peephole: process.env.COVERAGE === undefined,
         inliner: process.env.COVERAGE === undefined,
@@ -69,6 +69,7 @@ module.exports = {
                   'contracts/proxies/InterchainProxy.sol': fixedContractCompilerSettings,
                   'contracts/proxies/TokenManagerProxy.sol': fixedContractCompilerSettings,
                   'contracts/interchain-token/InterchainToken.sol': fixedContractCompilerSettings,
+                  'contracts/interchain-token/HyperliquidInterchainToken.sol': fixedContractCompilerSettings,
                   'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
                   'contracts/InterchainTokenService.sol': itsCompilerSettings,
               },

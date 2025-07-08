@@ -42,7 +42,10 @@ async function deployInterchainTokenService(
     ownerAddress = wallet.address,
     operatorAddress = wallet.address,
 ) {
-    const implementation = await deployContract(wallet, 'InterchainTokenService', [
+    const isHyperliquidChain = chainName.toLowerCase().includes('hyperliquid');
+    const itsContractName = isHyperliquidChain ? 'HyperliquidInterchainTokenService' : 'InterchainTokenService';
+
+    const implementation = await deployContract(wallet, itsContractName, [
         tokenManagerDeployerAddress,
         interchainTokenDeployerAddress,
         gatewayAddress,
@@ -89,8 +92,15 @@ async function deployAll(
 
     const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
     const tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-    const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
+
+    // Determine if this is a Hyperliquid chain
+    const isHyperliquidChain = chainName.toLowerCase().includes('hyperliquid');
+
+    const interchainToken = await deployContract(wallet, isHyperliquidChain ? 'HyperliquidInterchainToken' : 'InterchainToken', [
+        interchainTokenServiceAddress,
+    ]);
     const interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
+
     const tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
     const tokenHandler = await deployContract(wallet, 'TokenHandler', []);
 
