@@ -1,5 +1,11 @@
 # @axelar-network/interchain-token-service
 
+## 2.1.1
+
+### Patch Changes
+
+-   673d4c6: remove automatic migration of tokens since all of them have been manually migrated.
+
 ## 2.1.0
 
 ### Minor Changes
