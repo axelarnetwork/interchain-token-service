@@ -113,7 +113,7 @@ describe('HyperliquidInterchainToken', () => {
             const contractBytecodeHash = keccak256(contractBytecode);
 
             const expected = {
-                london: '0xf52c6baa47966cdcec00b35269446367b3936656225bab569309b1d35f8d3f44',
+                london: '0x2456fae42ec7ec89b700bffb6762d11a7e0364851a65d014e5d550c8450039ac',
             }[getEVMVersion()];
 
             expect(contractBytecodeHash).to.be.equal(expected);
