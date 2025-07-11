@@ -45,7 +45,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
         assembly {
             value := sload(slot)
         }
-        return address(uint160(uint256(value)));
+        return _deployer(address(uint160(uint256(value))));
     }
 
     /**
@@ -54,6 +54,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
      * @param newDeployer The new deployer address to set
      */
     function updateDeployer(address newDeployer) external override onlyService {
+        _setDeployer(newDeployer);
         bytes32 slot = CURRENT_DEPLOYER_SLOT;
         assembly {
             sstore(slot, newDeployer)
