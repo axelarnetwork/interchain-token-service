@@ -9,12 +9,15 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 /**
  * @title HyperliquidInterchainToken
  * @notice This contract implements an interchain token with Hyperliquid-specific modifications.
- * @dev Inherits from HyperLiquidDeployer first to ensure slot 0 is properly reserved,
+ * @dev Inherits from HyperLiquidDeployer to use keccak256-based storage slots for deployer addresses,
  * then from InterchainToken for standard functionality.
  * This maintains the standard InterchainToken while providing Hyperliquid compatibility.
  */
 contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHyperliquidDeployer {
     error NotService(address caller);
+
+    /// bytes32(uint256(keccak256('hyperliquid-interchain-token-deployer')) - 1)
+    bytes32 private constant CURRENT_DEPLOYER_SLOT = 0x8f802fa116fa5e7a7e0f94874e9214762d5a91faa240ab5140b3a79fbca28666;
 
     /**
      * @notice Modifier to restrict access to only the interchain token service
@@ -33,11 +36,16 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
     constructor(address interchainTokenServiceAddress) InterchainToken(interchainTokenServiceAddress) {}
 
     /**
-     * @notice Gets the deployer address stored in slot 0
-     * @return deployerAddr The address of the deployer
+     * @notice Gets the current active deployer address
+     * @return deployerAddr The address of the current deployer
      */
     function deployer() external view override returns (address deployerAddr) {
-        return _deployer();
+        bytes32 slot = CURRENT_DEPLOYER_SLOT;
+        bytes32 value;
+        assembly {
+            value := sload(slot)
+        }
+        return address(uint160(uint256(value)));
     }
 
     /**
@@ -47,5 +55,9 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
      */
     function updateDeployer(address newDeployer) external override onlyService {
         _setDeployer(newDeployer);
+        bytes32 slot = CURRENT_DEPLOYER_SLOT;
+        assembly {
+            sstore(slot, newDeployer)
+        }
     }
 }
