@@ -17,7 +17,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
     error NotService(address caller);
 
     /// bytes32(uint256(keccak256('hyperliquid-interchain-token-deployer')) - 1)
-    bytes32 private constant CURRENT_DEPLOYER_SLOT = 0x8f802fa116fa5e7a7e0f94874e9214762d5a91faa240ab5140b3a79fbca28666;
+    bytes32 private constant CURRENT_DEPLOYER_SLOT = keccak256("HyperCore deployer");
 
     /**
      * @notice Modifier to restrict access to only the interchain token service
