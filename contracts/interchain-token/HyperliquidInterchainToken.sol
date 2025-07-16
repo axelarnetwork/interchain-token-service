@@ -9,7 +9,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 /**
  * @title HyperliquidInterchainToken
  * @notice This contract implements an interchain token with Hyperliquid-specific modifications.
- * @dev Inherits from HyperLiquidDeployer to use keccak256-based storage slots for deployer addresses,
+ * @dev Inherits from HyperLiquidDeployer to allow storing a deployer address in the token to a custom storage slot,
  * then from InterchainToken for standard functionality.
  * This maintains the standard InterchainToken while providing Hyperliquid compatibility.
  */
