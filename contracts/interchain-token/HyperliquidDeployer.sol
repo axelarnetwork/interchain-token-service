@@ -13,26 +13,26 @@ pragma solidity ^0.8.0;
  * in the calculated storage slot of the ERC20 token deployed in Hyperliquid EVM via create2 mechanism.
  */
 abstract contract HyperliquidDeployer {
+    // Hyperliquid Specific Storage Slot
+    bytes32 private constant DEPLOYER_SLOT = keccak256('HyperCore deployer');
+
     /**
-     * @notice Gets the deployer address stored in the calculated storage slot
-     * @param deployerAddr The address to get the deployer for
-     * @return The address of the deployer (returns address(0) if not set)
+     * @notice Gets the deployer address stored in the deployer slot
+     * @return deployerAddr The address of the deployer
      */
-    function _deployer(address deployerAddr) internal view virtual returns (address) {
-        bytes32 slot = keccak256(abi.encodePacked(deployerAddr));
-        bytes32 value;
+    function _deployer() internal view virtual returns (address deployerAddr) {
+        bytes32 slot = DEPLOYER_SLOT;
         assembly {
-            value := sload(slot)
+            deployerAddr := sload(slot)
         }
-        return address(uint160(uint256(value)));
     }
 
     /**
-     * @notice Internal function to set the deployer address in the calculated storage slot
+     * @notice Internal function to set the deployer address in the deployer slot
      * @param deployerAddr The address to store as deployer
      */
     function _setDeployer(address deployerAddr) internal {
-        bytes32 slot = keccak256(abi.encodePacked(deployerAddr));
+        bytes32 slot = DEPLOYER_SLOT;
         assembly {
             sstore(slot, deployerAddr)
         }

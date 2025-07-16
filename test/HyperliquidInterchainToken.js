@@ -4,7 +4,7 @@ const { ethers } = require('hardhat');
 const {
     constants: { AddressZero },
     getContractAt,
-    utils: { keccak256 },
+    utils: { keccak256, toUtf8Bytes },
     provider,
 } = ethers;
 const { expect } = require('chai');
@@ -12,8 +12,9 @@ const { getRandomBytes32, getEVMVersion } = require('./utils');
 const { deployAll } = require('../scripts/deploy');
 const { ITS_HUB_ADDRESS } = require('./constants');
 
-// Precalculated storage slot: bytes32(uint256(keccak256('hyperliquid-interchain-token-deployer')) - 1)
-const CURRENT_DEPLOYER_SLOT = '0x8f802fa116fa5e7a7e0f94874e9214762d5a91faa240ab5140b3a79fbca28666';
+function getDeployerStorageSlot() {
+    return keccak256(toUtf8Bytes('HyperCore deployer'));
+}
 
 /**
  * Convert bytes32 value to EIP-55 address
@@ -60,7 +61,8 @@ describe('HyperliquidInterchainToken', () => {
 
     describe('Hyperliquid Interchain Token', () => {
         it('should verify initial deployer state', async () => {
-            const deployerFromSlot = await provider.getStorageAt(tokenAddress, CURRENT_DEPLOYER_SLOT);
+            const deployerSlot = getDeployerStorageSlot();
+            const deployerFromSlot = await provider.getStorageAt(tokenAddress, deployerSlot);
             const deployerFromSlotAddress = bytes32ToAddress(deployerFromSlot);
             const deployerFromContract = await token.deployer();
 
@@ -77,7 +79,8 @@ describe('HyperliquidInterchainToken', () => {
             const updatedDeployer = await token.deployer();
             expect(updatedDeployer).to.equal(newDeployer);
 
-            const updatedDeployerSlot = await provider.getStorageAt(tokenAddress, CURRENT_DEPLOYER_SLOT);
+            const deployerSlot = getDeployerStorageSlot();
+            const updatedDeployerSlot = await provider.getStorageAt(tokenAddress, deployerSlot);
             const updatedDeployerFromSlot = bytes32ToAddress(updatedDeployerSlot);
             expect(updatedDeployerFromSlot).to.equal(newDeployer);
         });
@@ -113,7 +116,7 @@ describe('HyperliquidInterchainToken', () => {
             const contractBytecodeHash = keccak256(contractBytecode);
 
             const expected = {
-                london: '0x25afc741b7f4d71ff3d3e1f693c6c21b5cf17f838e32bbc9ad1bcede844b6844',
+                london: '0x132a6aecbbe303ae1412b354c4ce463671455a0d637239021b57e7c9dc36d3aa',
             }[getEVMVersion()];
 
             expect(contractBytecodeHash).to.be.equal(expected);

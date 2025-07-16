@@ -16,9 +16,6 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHyperliquidDeployer {
     error NotService(address caller);
 
-    /// bytes32(uint256(keccak256('hyperliquid-interchain-token-deployer')) - 1)
-    bytes32 private constant CURRENT_DEPLOYER_SLOT = keccak256("HyperCore deployer");
-
     /**
      * @notice Modifier to restrict access to only the interchain token service
      */
@@ -40,12 +37,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
      * @return deployerAddr The address of the current deployer
      */
     function deployer() external view override returns (address deployerAddr) {
-        bytes32 slot = CURRENT_DEPLOYER_SLOT;
-        bytes32 value;
-        assembly {
-            value := sload(slot)
-        }
-        return _deployer(address(uint160(uint256(value))));
+        return _deployer();
     }
 
     /**
@@ -55,9 +47,5 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
      */
     function updateDeployer(address newDeployer) external override onlyService {
         _setDeployer(newDeployer);
-        bytes32 slot = CURRENT_DEPLOYER_SLOT;
-        assembly {
-            sstore(slot, newDeployer)
-        }
     }
 }
