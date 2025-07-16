@@ -13,7 +13,7 @@ pragma solidity ^0.8.0;
  * in the calculated storage slot of the ERC20 token deployed in Hyperliquid EVM via create2 mechanism.
  */
 abstract contract HyperliquidDeployer {
-    // Hyperliquid Specific Storage Slot
+    /// @dev Hyperliquid Deployer Storage Slot: https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/hyperevm/hypercore-less-than-greater-than-hyperevm-transfers#linking-core-and-evm-spot-assets
     bytes32 private constant DEPLOYER_SLOT = keccak256('HyperCore deployer');
 
     /**
