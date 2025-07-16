@@ -33,8 +33,8 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
     constructor(address interchainTokenServiceAddress) InterchainToken(interchainTokenServiceAddress) {}
 
     /**
-     * @notice Gets the current active deployer address
-     * @return deployerAddr The address of the current deployer
+     * @notice Gets the deployer address
+     * @return deployerAddr The address of the deployer
      */
     function deployer() external view override returns (address deployerAddr) {
         return _deployer();
