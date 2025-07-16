@@ -12,7 +12,7 @@ const { getRandomBytes32, getEVMVersion } = require('./utils');
 const { deployAll } = require('../scripts/deploy');
 const { ITS_HUB_ADDRESS } = require('./constants');
 
-function getDeployerStorageSlot() {
+function deployerStorageSlot() {
     return keccak256(toUtf8Bytes('HyperCore deployer'));
 }
 
@@ -61,8 +61,7 @@ describe('HyperliquidInterchainToken', () => {
 
     describe('Hyperliquid Interchain Token', () => {
         it('should verify initial deployer state', async () => {
-            const deployerSlot = getDeployerStorageSlot();
-            const deployerFromSlot = await provider.getStorageAt(tokenAddress, deployerSlot);
+            const deployerFromSlot = await provider.getStorageAt(tokenAddress, deployerStorageSlot());
             const deployerFromSlotAddress = bytes32ToAddress(deployerFromSlot);
             const deployerFromContract = await token.deployer();
 
@@ -79,8 +78,7 @@ describe('HyperliquidInterchainToken', () => {
             const updatedDeployer = await token.deployer();
             expect(updatedDeployer).to.equal(newDeployer);
 
-            const deployerSlot = getDeployerStorageSlot();
-            const updatedDeployerSlot = await provider.getStorageAt(tokenAddress, deployerSlot);
+            const updatedDeployerSlot = await provider.getStorageAt(tokenAddress, deployerStorageSlot());
             const updatedDeployerFromSlot = bytes32ToAddress(updatedDeployerSlot);
             expect(updatedDeployerFromSlot).to.equal(newDeployer);
         });
