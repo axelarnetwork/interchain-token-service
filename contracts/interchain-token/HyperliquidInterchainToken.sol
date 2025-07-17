@@ -9,7 +9,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 /**
  * @title HyperliquidInterchainToken
  * @notice This contract implements an interchain token with Hyperliquid-specific modifications.
- * @dev Inherits from HyperLiquidDeployer first to ensure slot 0 is properly reserved,
+ * @dev Inherits from HyperliquidDeployer to allow storing a deployer address in the token to a custom storage slot,
  * then from InterchainToken for standard functionality.
  * This maintains the standard InterchainToken while providing Hyperliquid compatibility.
  */
@@ -33,7 +33,7 @@ contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHy
     constructor(address interchainTokenServiceAddress) InterchainToken(interchainTokenServiceAddress) {}
 
     /**
-     * @notice Gets the deployer address stored in slot 0
+     * @notice Gets the deployer address
      * @return deployerAddr The address of the deployer
      */
     function deployer() external view override returns (address deployerAddr) {
