@@ -10,14 +10,6 @@ const chains = require(`@axelar-network/axelar-chains-config/info/${env}.json`);
 const keys = readJSON(`${__dirname}/keys.json`);
 const { networks, etherscan } = importNetworks(chains, keys);
 
-if (typeof process.env.HEDERA_TESTNET_PK_HEX === 'string') {
-    networks.testnet = {
-        url: 'https://testnet.hashio.io/api',
-        accounts: [process.env.HEDERA_TESTNET_PK_HEX],
-        chainId: 296,
-    };
-}
-
 const optimizerSettings = {
     enabled: true,
     runs: 1000,
@@ -83,11 +75,16 @@ module.exports = {
                   'contracts/InterchainTokenService.sol': itsCompilerSettings,
               },
     },
-    defaultNetwork: 'local',
+    defaultNetwork: 'hedera-local',
     networks: {
         ...networks,
-        local: {
-            url: process.env.HEDERA_RPC_URL ?? 'http://localhost:7546',
+        'hedera-local': {
+            url: process.env.HEDERA_LOCAL_RPC_URL ?? 'http://localhost:7546',
+            consensusUrl: process.env.HEDERA_LOCAL_CONSENSUS_URL ?? 'http://localhost:50211',
+            nodeId: process.env.HEDERA_LOCAL_NODE_ID ?? '0.0.3',
+            operatorKey: process.env.HEDERA_PK ?? '0x105d050185ccb907fba04dd92d8de9e32c18305e097ab41dadda21489a211524',
+            operatorId: process.env.HEDERA_ACCOUNT_ID ?? '0.0.1012',
+            name: 'Hedera Local',
             accounts: [
                 '0x105d050185ccb907fba04dd92d8de9e32c18305e097ab41dadda21489a211524',
                 '0x2e1d968b041d84dd120a5860cee60cd83f9374ef527ca86996317ada3d0d03e7',

@@ -1,5 +1,7 @@
 'use strict';
 
+const { BigNumber } = require('@ethersproject/bignumber');
+
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN = 1;
 const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER = 2;
@@ -34,6 +36,8 @@ const DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN_WITH_ORIGINAL_CHAIN = 'deployRemo
 const INTERCHAIN_TRANSFER = 'interchainTransfer(bytes32,string,bytes,uint256)';
 const INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE = 'interchainTransfer(bytes32,string,bytes,uint256,bytes,uint256)';
 
+const MAX_INT64 = BigNumber.from('0x7FFFFFFFFFFFFFFF');
+
 module.exports = {
     MESSAGE_TYPE_INTERCHAIN_TRANSFER,
     MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
@@ -60,4 +64,5 @@ module.exports = {
     DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN_WITH_ORIGINAL_CHAIN,
     INTERCHAIN_TRANSFER,
     INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE,
+    MAX_INT64,
 };

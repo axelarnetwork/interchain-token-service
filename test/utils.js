@@ -133,18 +133,21 @@ const gasReporter = (contact) => (tx, message) => {
     if (process.env.REPORT_GAS === undefined) return tx;
 
     if (message) {
-        tx.then((tx) =>
-            tx.wait().then((receipt) => {
+        tx.then((tx) => {
+            console.log(tx);
+            return tx.wait().then((receipt) => {
                 if (!gasReports[contact]) gasReports[contact] = {};
                 gasReports[contact][message] = receipt.gasUsed.toNumber();
-            }),
-        );
+            });
+        });
     }
 
     if (!gasReportScheduled) {
         gasReportScheduled = true;
         process.on('exit', writeGasReport);
     }
+
+    console.log({ tx });
 
     return tx;
 };

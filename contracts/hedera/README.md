@@ -2,11 +2,12 @@
 
 ## Overview
 
-ITS contracts in this repo are modified to support Hedera Token Service. All new interchain tokens will be created via HTS, while existing HTS and ERC20 tokens are supported for registration.
+ITS contracts in this repo are modified to support Hedera Token Service. All new Interchain Token will be created via HTS, while existing HTS and ERC20 tokens are supported for registration.
 
-ew HTS Interchain tokens will have their Token Manager as the sole Supply Key ("MinterBurner" equivalent in Hedera) and Treasury (the contract that gets the newly minted coins). After minting, the Treasury transfers the tokens to the designated account. Before burning, the tokens are transfered back to the Treasury. Token Managers use typical `allowance` and `transferFrom` to move tokens before burning. Token Manager keeps track of minters and allows for external minting and burning (see `Minter.sol`). Certain ITS features are not supported due to HTS limitations, such as initial supply.
+New HTS Interchain Tokens will have their Token Manager as the sole Supply Key ("MinterBurner" equivalent in Hedera) and Treasury (the contract that gets the newly minted coins). After minting, the Treasury transfers the tokens to the designated account. Before burning, the tokens are transfered back to the Treasury. Token Managers use typical `allowance` and `transferFrom` to move tokens before burning. Token Manager keeps track of minters and allows for external minting and burning (see `Minter.sol`). Certain ITS features are not supported due to HTS limitations, such as deploying a new Interchain Token with initial supply.
 
-Since the `createFungibleToken` precompile in Hedera requires a fee to be sent as value, an `WHBAR` contract (`WETH` equivalent) is deployed to hold the HBAR used for token creation. `InterchainTokenService` is funded with WHBAR, and before `TokenManager` deployment ITS approves the Token Manager for a given amount, since the address is deterministic. `TokenManagerProxy`, during constructing transfers the amount to itself and withdraws it, forwarding it to `InterchainTokenDeployer`, who finally calls the precompile and sends the fee.
+Since the `createFungibleToken` precompile in Hedera requires a fee to be sent as value, an `WHBAR` contract (`WETH` equivalent) is used to hold the HBAR used for token creation. `InterchainTokenService` transfers certain amount of `WHBAR` to the newly deploying `TokenManagerProxy` contract. The `TokenManagerProxy` contract, during constructor, withdraws HBAR from `WHBAR`, and sends it to `InterchainTokenDeployer`, which finally uses it to pay for the token creation.
+
 
 ### Hedera-related Notes
 

@@ -15,7 +15,6 @@ async function fundWithWHBAR(whbar, targetAddress, amount, wallet) {
     const depositTx = await whbar.connect(wallet).deposit({ value: amount });
     await depositTx.wait();
 
-    console.log('Deposited funds.');
     const ownBalance = await whbar.balanceOf(wallet.address);
     console.log(`${wallet.address} WHBAR balance: ${ethers.utils.formatUnits(ownBalance, 8)} WHBAR`);
 

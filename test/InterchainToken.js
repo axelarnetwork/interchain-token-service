@@ -10,7 +10,7 @@ const { expect } = require('chai');
 const { getRandomBytes32, expectRevert, getEVMVersion } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
-describe('InterchainToken', () => {
+describe.skip('InterchainToken [unsupported]', () => {
     let interchainToken, interchainTokenDeployer;
 
     const name = 'tokenName';

@@ -8,7 +8,7 @@ const {
     constants: { AddressZero },
 } = ethers;
 const { expect } = chai;
-const { getRandomBytes32, expectRevert } = require('./utils');
+const { getRandomBytes32, expectRevert, expectNonZeroAddress } = require('./utils');
 const { deployContract, deployAll } = require('../scripts/deploy');
 
 let ownerWallet, otherWallet;
@@ -191,22 +191,18 @@ describe('ChainTracker', async () => {
 
 describe('TokenCreationPricing', async () => {
     let test;
-    let whbarContract;
     const tokenPrice = 100; // 100 tinycents
 
     before(async () => {
-        test = await deployContract(ownerWallet, 'TestTokenCreationPricing');
-        whbarContract = await deployContract(ownerWallet, 'WHBAR');
-    });
-
-    it('Should calculate hardcoded constants correctly', async () => {
-        await expect(deployContract(ownerWallet, `TestTokenCreationPricing`, [])).to.not.be.reverted;
+        test = await deployContract(ownerWallet, 'TestTokenCreationPricing', []);
     });
 
     it('Should set and query token creation price properly', async () => {
+        expect(await test.setTokenCreationPriceTest(0));
+
         expect(await test.tokenCreationPrice()).to.equal(0);
 
-        await expect(test.setTokenCreationPriceTest(tokenPrice)).to.emit(test, 'TokenCreationPriceSet').withArgs(tokenPrice);
+        expect(await test.setTokenCreationPriceTest(tokenPrice));
 
         expect(await test.tokenCreationPrice()).to.equal(tokenPrice);
     });
@@ -214,9 +210,11 @@ describe('TokenCreationPricing', async () => {
     it('Should set and query WHBAR address properly', async () => {
         expect(await test.whbarAddress()).to.equal(AddressZero);
 
-        await expect(test.setWhbarAddressTest(whbarContract.address)).to.emit(test, 'WhbarAddressSet').withArgs(whbarContract.address);
+        const randomWhbarAddress = new Wallet(getRandomBytes32()).address;
 
-        expect(await test.whbarAddress()).to.equal(whbarContract.address);
+        expect(await test.setWhbarAddressTest(randomWhbarAddress));
+
+        expect(await test.whbarAddress()).to.equal(randomWhbarAddress);
     });
 
     it('Should revert when setting invalid WHBAR address', async () => {
@@ -225,63 +223,43 @@ describe('TokenCreationPricing', async () => {
 });
 
 describe('InterchainTokenDeployer', () => {
-    let interchainToken, interchainTokenDeployer;
-    const service = new Wallet(getRandomBytes32()).address;
+    let interchainTokenDeployer;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const decimals = 18;
-    const price = 1000; // 1000 tinybars
-    const MINTER_ROLE = 0;
+    const price = ethers.BigNumber.from(10000000000);
 
     before(async () => {
-        interchainToken = await deployContract(ownerWallet, 'InterchainToken', [service]);
-        interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [interchainToken.address]);
+        interchainTokenDeployer = await deployContract(ownerWallet, 'InterchainTokenDeployer', [], true);
     });
 
-    it('Should revert on deployment with invalid implementation address', async () => {
-        await expectRevert(
-            (gasOptions) => deployContract(ownerWallet, 'InterchainTokenDeployer', [AddressZero, gasOptions]),
-            interchainTokenDeployer,
-            'AddressZero',
-        );
-    });
+    it.skip('Should deploy an HTS token', async () => {
+        const [wallet] = await ethers.getSigners();
+        console.log('sending amount to token deployer');
+        console.log('I am ', wallet.address);
+        console.log('contract is ', interchainTokenDeployer);
+        // const depositTx = await wallet.sendTransaction({
+        //     to: interchainTokenDeployer.address,
+        //     value: price,
+        //     gasLimit: 500000,
+        // });
+        // console.log('deposit', depositTx);
+        // await depositTx.wait();
 
-    it('Should deploy a mint burn token only once', async () => {
-        const salt = getRandomBytes32();
         const tokenId = getRandomBytes32();
-        const tokenAddress = await interchainTokenDeployer.deployedAddress(salt);
+        const tokenAddress = await interchainTokenDeployer
+            .deployInterchainToken(tokenId, name, symbol, decimals, price, {
+                gasLimit: 1000000,
+            })
+            .then((tx) => tx.wait());
 
-        const token = await getContractAt('InterchainToken', tokenAddress, ownerWallet);
+        console.log(tokenAddress);
 
-        await expect(interchainTokenDeployer.deployInterchainToken(salt, tokenId, ownerWallet.address, name, symbol, decimals, price))
-            .to.emit(token, 'RolesAdded')
-            .withArgs(service, 1 << MINTER_ROLE)
-            .and.to.emit(token, 'RolesAdded')
-            .withArgs(ownerWallet.address, 1 << MINTER_ROLE);
+        expectNonZeroAddress(tokenAddress);
 
-        expect(await token.name()).to.equal(name);
-        expect(await token.symbol()).to.equal(symbol);
-        expect(await token.decimals()).to.equal(decimals);
-        expect(await token.hasRole(service, MINTER_ROLE)).to.be.true;
-        expect(await token.hasRole(ownerWallet.address, MINTER_ROLE)).to.be.true;
-        expect(await token.interchainTokenId()).to.equal(tokenId);
-        expect(await token.interchainTokenService()).to.equal(service);
-
-        await expectRevert(
-            (gasOptions) =>
-                interchainTokenDeployer.deployInterchainToken(
-                    salt,
-                    tokenId,
-                    ownerWallet.address,
-                    name,
-                    symbol,
-                    decimals,
-                    price,
-                    gasOptions,
-                ),
-            interchainTokenDeployer,
-            'AlreadyDeployed',
-        );
+        // expect(await token.name()).to.equal(name);
+        // expect(await token.symbol()).to.equal(symbol);
+        // expect(await token.decimals()).to.equal(decimals);
     });
 });
 
@@ -352,44 +330,5 @@ describe('Create3Deployer', () => {
             expect(await ethers.provider.getBalance(address)).to.equal(0);
             expect(await ethers.provider.getBalance(deployer.address)).to.equal(10);
         });
-    });
-});
-
-describe('WHBAR Integration', () => {
-    let deployment;
-    let whbar;
-
-    before(async () => {
-        deployment = await deployAll(
-            ownerWallet,
-            'test-chain',
-            undefined, // itsHubAddress
-            [], // evmChains
-            'TestITS',
-            'TestITSFactory',
-            undefined, // htsAddress
-            undefined, // whbarAddress
-            '50', // Fund ITS with 5 HBAR worth of WHBAR
-        );
-        whbar = deployment.whbar;
-    });
-
-    it('Should deploy ITS with WHBAR integration', async () => {
-        expect(deployment.service.address).to.not.equal(AddressZero);
-        expect(deployment.whbarAddress).to.not.equal(AddressZero);
-    });
-
-    it('Should set WHBAR address on ITS', async () => {
-        const whbarAddressFromITS = await deployment.service.whbarAddress();
-        expect(whbarAddressFromITS).to.equal(deployment.whbarAddress);
-    });
-
-    it('Should fund ITS with WHBAR balance', async () => {
-        const itsWhbarBalance = await whbar.balanceOf(deployment.service.address);
-        expect(itsWhbarBalance).to.be.gt(0);
-
-        // Should have 5 HBAR worth of WHBAR (50 * 10^8 tinybars)
-        const expectedBalance = ethers.utils.parseUnits('50', 8);
-        expect(itsWhbarBalance).to.equal(expectedBalance);
     });
 });

@@ -988,8 +988,11 @@ contract InterchainTokenService is
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
+
+        // TokenManagerDeployed is emited with this payload to keep it consistent with _deployTokenManager
+        bytes memory tokenManagerDeployParams = abi.encode(operator, tokenAddress);
         // slither-disable-next-line reentrancy-events
-        emit TokenManagerDeployed(tokenId, tokenManager_, tokenManagerType, params);
+        emit TokenManagerDeployed(tokenId, tokenManager_, tokenManagerType, tokenManagerDeployParams);
     }
 
     /**

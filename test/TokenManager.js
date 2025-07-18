@@ -11,6 +11,7 @@ const { expectRevert, getEVMVersion } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
 describe('Token Manager', () => {
+    const MINTER_ROLE = 0;
     const FLOW_LIMITER_ROLE = 2;
     let owner, other;
     let TestTokenManager;
@@ -18,7 +19,7 @@ describe('Token Manager', () => {
     before(async () => {
         [owner, other] = await ethers.getSigners();
 
-        TestTokenManager = await deployContract(owner, `TestTokenManager`, [other.address]);
+        TestTokenManager = await deployContract(owner, `TestTokenManager`, [other.address], true);
     });
 
     it('Should revert on token manager deployment with invalid service address', async () => {
@@ -65,8 +66,8 @@ describe('Token Manager', () => {
         await expectRevert(
             (gasOptions) => TestTokenManager.mintToken(other.address, owner.address, 1234, gasOptions),
             TestTokenManager,
-            'NotService',
-            [owner.address],
+            'MissingRole',
+            [owner.address, MINTER_ROLE],
         );
     });
 
@@ -74,8 +75,8 @@ describe('Token Manager', () => {
         await expectRevert(
             (gasOptions) => TestTokenManager.burnToken(other.address, owner.address, 1234, gasOptions),
             TestTokenManager,
-            'NotService',
-            [owner.address],
+            'MissingRole',
+            [owner.address, MINTER_ROLE],
         );
     });
 
@@ -92,7 +93,7 @@ describe('Token Manager', () => {
             const proxyBytecodeHash = keccak256(proxyBytecode);
 
             const expected = {
-                london: '0x8080880884e00735cc1a34bdf5c1ea6c023db60a01cfa1e951ca41ecf5fd8836',
+                london: '0x0ac950376eb76906473d551108bbf9b43939c9ac67f03d1fae3c91878ae66ff7',
             }[getEVMVersion()];
 
             expect(proxyBytecodeHash).to.be.equal(expected);
