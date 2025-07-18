@@ -13,7 +13,6 @@ const { deployHTS } = require('./deploy-hts');
 const { deployWHBAR, fundWithWHBAR } = require('./deploy-whbar');
 
 const HTS_LIBRARY_NAME = 'contracts/hedera/HTS.sol:HTS';
-const DEPLOYMENT_FILE = path.join(__dirname, '..', 'deployment.json');
 
 // List of contracts that depend on HTS library
 const HTS_DEPENDENT_CONTRACTS = [
@@ -33,68 +32,6 @@ const deploymentContext = {
     whbarAddress: null,
     contracts: {},
 };
-
-// Load deployment state from file
-function loadDeploymentState() {
-    try {
-        if (fs.existsSync(DEPLOYMENT_FILE)) {
-            const data = JSON.parse(fs.readFileSync(DEPLOYMENT_FILE, 'utf8'));
-            deploymentContext.htsAddress = data.htsAddress || null;
-            deploymentContext.whbarAddress = data.whbarAddress || null;
-            deploymentContext.contracts = data.contracts || {};
-            console.log(`\tLoaded deployment state`);
-            console.log(`\t- HTS Address: ${deploymentContext.htsAddress}`);
-            console.log(`\t- WHBAR Address: ${deploymentContext.whbarAddress}`);
-            console.log(`\t- Contracts: ${Object.keys(deploymentContext.contracts).length} found`);
-        }
-    } catch (error) {
-        console.warn('Failed to load deployment state:', error.message);
-    }
-}
-
-loadDeploymentState();
-
-// Save deployment state to file
-function saveDeploymentState() {
-    try {
-        let data = {};
-
-        if (fs.existsSync(DEPLOYMENT_FILE)) {
-            data = JSON.parse(fs.readFileSync(DEPLOYMENT_FILE, 'utf8'));
-        }
-
-        data = {
-            htsAddress: deploymentContext.htsAddress ?? data.htsAddress,
-            whbarAddress: deploymentContext.whbarAddress ?? data.whbarAddress,
-            contracts: { ...data.contracts, ...deploymentContext.contracts },
-        };
-
-        fs.writeFileSync(DEPLOYMENT_FILE, JSON.stringify(data, null, 2));
-        console.log(`Deployment state saved to ${DEPLOYMENT_FILE}`);
-    } catch (error) {
-        console.error('Failed to save deployment state:', error.message);
-    }
-}
-
-function hasCompleteDeployment() {
-    const requiredContracts = [
-        'InterchainTokenServiceProxy',
-        'InterchainTokenFactoryProxy',
-        'MockGateway',
-        'AxelarGasService',
-        'Create3Deployer',
-        'TokenManagerDeployer',
-        'InterchainTokenDeployer',
-        'TokenManager',
-        'TokenHandler',
-    ];
-
-    return (
-        requiredContracts.every((contract) => deploymentContext.contracts[contract]) &&
-        deploymentContext.htsAddress &&
-        deploymentContext.whbarAddress
-    );
-}
 
 async function deployContract(wallet, contractName, args = [], usePredeployed = false) {
     const libraries = {};
@@ -167,11 +104,6 @@ async function deployInterchainTokenService(
         ownerAddress,
         defaultAbiCoder.encode(['address', 'string', 'string[]'], [operatorAddress, chainName, evmChains]),
     ]);
-    console.log(`Deployed InterchainTokenServiceProxy to ${proxy.address}`);
-
-    // Store proxy address in deployment context
-    deploymentContext.contracts['InterchainTokenServiceProxy'] = proxy.address;
-    saveDeploymentState();
 
     const service = new Contract(proxy.address, implementation.interface, wallet);
     return service;
@@ -184,11 +116,6 @@ async function deployInterchainTokenFactory(wallet, create3DeployerAddress, inte
         wallet.address,
         '0x',
     ]);
-    console.log(`Deployed InterchainTokenFactoryProxy to ${proxy.address}`);
-
-    // Store proxy address in deployment context
-    deploymentContext.contracts['InterchainTokenFactoryProxy'] = proxy.address;
-    saveDeploymentState();
 
     const factory = new Contract(proxy.address, implementation.interface, wallet);
     return factory;
@@ -205,80 +132,14 @@ async function deployAll(
     whbarAddress = null,
     fundingAmount = '300', // Default 300 HBAR funding for ITS
 ) {
-    // Initialize deployment context with network info
-    deploymentContext.chainName = chainName;
-    deploymentContext.network = await wallet.provider.getNetwork().then((n) => n.name);
-
-    // Load existing deployment state
-    loadDeploymentState();
-
     // Override with provided addresses if specified
     if (htsAddress) deploymentContext.htsAddress = htsAddress;
     if (whbarAddress) deploymentContext.whbarAddress = whbarAddress;
 
-    // Check if we have a complete deployment
-    if (hasCompleteDeployment()) {
-        console.log('Found complete deployment, reusing all contracts...');
-
-        // Instantiate existing contracts
-        const service = await ethers.getContractAt(
-            'InterchainTokenService',
-            deploymentContext.contracts['InterchainTokenServiceProxy'],
-            wallet,
-        );
-        const gateway = await ethers.getContractAt('MockGateway', deploymentContext.contracts['MockGateway'], wallet);
-        const gasService = await ethers.getContractAt('AxelarGasService', deploymentContext.contracts['AxelarGasService'], wallet);
-        const tokenFactory = await ethers.getContractAt(
-            'InterchainTokenFactory',
-            deploymentContext.contracts['InterchainTokenFactoryProxy'],
-            wallet,
-        );
-        const create3Deployer = new Contract(deploymentContext.contracts['Create3Deployer'], Create3Deployer.abi, wallet);
-        const tokenManagerDeployer = await ethers.getContractAt(
-            'TokenManagerDeployer',
-            deploymentContext.contracts['TokenManagerDeployer'],
-            wallet,
-        );
-        const interchainTokenDeployer = await ethers.getContractAt(
-            'InterchainTokenDeployer',
-            deploymentContext.contracts['InterchainTokenDeployer'],
-            wallet,
-        );
-        const tokenManager = await ethers.getContractAt('TokenManager', deploymentContext.contracts['TokenManager'], wallet);
-        const tokenHandler = await ethers.getContractAt('TokenHandler', deploymentContext.contracts['TokenHandler'], wallet);
-        const whbar = await ethers.getContractAt('WHBAR', deploymentContext.whbarAddress, wallet);
-
-        console.log('All contracts reused from existing deployment');
-
-        return {
-            service,
-            gateway,
-            gasService,
-            tokenFactory,
-            create3Deployer,
-            tokenManagerDeployer,
-            interchainTokenDeployer,
-            tokenManager,
-            tokenHandler,
-            htsAddress: deploymentContext.htsAddress,
-            whbarAddress: deploymentContext.whbarAddress,
-            whbar,
-        };
-    }
-
-    // Deploy Create3Deployer or use existing
-    let create3Deployer;
-    if (deploymentContext.contracts['Create3Deployer']) {
-        console.log(`Using existing Create3Deployer at ${deploymentContext.contracts['Create3Deployer']}`);
-        create3Deployer = new Contract(deploymentContext.contracts['Create3Deployer'], Create3Deployer.abi, wallet);
-    } else {
-        create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
-            .deploy()
-            .then((d) => d.deployed());
-        console.log(`Deployed Create3Deployer to ${create3Deployer.address}`);
-        deploymentContext.contracts['Create3Deployer'] = create3Deployer.address;
-        saveDeploymentState();
-    }
+    // Deploy Create3Deployer
+    const create3Deployer = await new ethers.ContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet)
+        .deploy()
+        .then((d) => d.deployed());
 
     const gateway = await deployMockGateway(wallet);
     const gasService = await deployGasService(wallet);
@@ -289,9 +150,7 @@ async function deployAll(
     if (!deploymentContext.whbarAddress) {
         whbar = await deployWHBAR(wallet);
         deploymentContext.whbarAddress = whbar.address;
-        saveDeploymentState();
     } else {
-        console.log('Using existing WHBAR at:', deploymentContext.whbarAddress);
         whbar = await ethers.getContractAt('WHBAR', deploymentContext.whbarAddress, wallet);
     }
 

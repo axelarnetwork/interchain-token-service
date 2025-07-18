@@ -216,7 +216,7 @@ library HTS {
         }
     }
 
-    ///  Associates the provided account with the provided tokens. Must be signed by the provided
+    ///  Associates the provided account with the provided token. Must be signed by the provided
     ///  Account's key or called from the accounts contract key
     ///  If the provided account is not found, the transaction will resolve to INVALID_ACCOUNT_ID.
     ///  If the provided account has been deleted, the transaction will resolve to ACCOUNT_DELETED.

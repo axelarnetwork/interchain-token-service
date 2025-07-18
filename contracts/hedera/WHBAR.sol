@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
+// Copied from https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/wrapped-tokens/WHBAR.sol
+// Unmodified except the solidity version.
 contract WHBAR {
     string public name = 'Wrapped HBAR';
     string public symbol = 'WHBAR';

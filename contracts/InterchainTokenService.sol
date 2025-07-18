@@ -943,6 +943,9 @@ contract InterchainTokenService is
     /**
      * @notice Deploys a token manager.
      * @param tokenId The ID of the token.
+     * @param name Name of the token.
+     * @param symbol Symbol of the token.
+     * @param decimals Decimals of the token.
      * @param operator The operator of the token manager.
      */
     function _deployTokenManagerWithInterchainToken(

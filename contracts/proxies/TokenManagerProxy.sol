@@ -37,7 +37,7 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerType, ITokenManagerProxy {
      * @param tokenId The identifier for the token.
      * @param params The initialization parameters for the token manager contract.
      */
-    constructor(address interchainTokenService_, uint256 implementationType_, bytes32 tokenId, bytes memory params) payable {
+    constructor(address interchainTokenService_, uint256 implementationType_, bytes32 tokenId, bytes memory params) {
         if (interchainTokenService_ == address(0)) revert ZeroAddress();
 
         interchainTokenService = interchainTokenService_;

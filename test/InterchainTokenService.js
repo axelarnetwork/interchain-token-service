@@ -61,7 +61,7 @@ const hederaClient = HederaClient.forNetwork({
 });
 hederaClient.setOperator(hederaOperatorId, hederaPk);
 
-console.log(`Using Hedera Client Configuration:`);
+console.log(`  Using Hedera Client Configuration:`);
 console.log(`\tMirror Node URL: ${network.config.url}`);
 console.log(`\tConsensus URL: ${hederaConsensusUrl}`);
 console.log(`\tOperator PK: ${network.config.operatorKey}`);
@@ -623,7 +623,8 @@ describe.only('Interchain Token Service', () => {
             expect(tokenManagerImplementation).to.eq(tokenManager.address);
         });
 
-        it.skip('Should revert on TokenManagerProxy deployment with invalid constructor parameters', async () => {
+        // TODO(hedera) fix this test
+        it.skip('Should revert on TokenManagerProxy deployment with invalid constructor parameters [todo(hedera)]', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const validParams = defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]);

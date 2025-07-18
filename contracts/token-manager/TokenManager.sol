@@ -96,7 +96,6 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
 
     /**
      * @notice Reverts if the token manager type is not supported, or if the token is not supported.
-     * If the token is a supported HTS token, the Token Manager will associate itself with the token.
      * @param tokenAddress_ The address of the token to check.
      * @param implementationType_ The implementation type to check.
      * @return isHtsToken True if the token is an HTS token, false otherwise.

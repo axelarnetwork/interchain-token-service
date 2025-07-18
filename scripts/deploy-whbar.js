@@ -15,9 +15,6 @@ async function fundWithWHBAR(whbar, targetAddress, amount, wallet) {
     const depositTx = await whbar.connect(wallet).deposit({ value: amount });
     await depositTx.wait();
 
-    const ownBalance = await whbar.balanceOf(wallet.address);
-    console.log(`${wallet.address} WHBAR balance: ${ethers.utils.formatUnits(ownBalance, 8)} WHBAR`);
-
     // Transfer WHBAR if target is different from wallet
     if (targetAddress.toLowerCase() !== wallet.address.toLowerCase()) {
         // See https://docs.hedera.com/hedera/core-concepts/smart-contracts/wrapped-hbar-whbar
