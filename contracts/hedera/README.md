@@ -32,5 +32,5 @@ The responsibility of keeping ITS funded on the WHBAR contract lies with the dep
 - `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `registeredTokenAddress` should be used instead.
 - `transmitInterchainTransfer` was removed from `InterchainTokenService.sol` since it's meant to be called from an `InterchainToken` contract, which is not used.
 - When creating a new interchain token, `InterchainTokenService` and `TokenManager` are associated with the token.
-- `initialSupply` isn't supported when deploying a new interchain token. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation.
+- `initialSupply` isn't supported when deploying a new interchain token. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation. (TODO explain why auto associations aren't used.)
 - Both HTS tokens and ERC20 tokens are supported for registration.
