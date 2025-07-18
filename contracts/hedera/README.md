@@ -10,6 +10,8 @@ Since the `createFungibleToken` precompile in Hedera requires a fee to be sent a
 
 The responsibility of keeping ITS funded on the WHBAR contract lies with the deployer, it is assumed that a top-up mechanism is in place to ensure the contract has enough WHBAR to create new tokens.
 
+![Deploy New Interchain Token Flow](./diagrams/deploy_interchain_token.png)
+
 ### Hedera-related Notes
 
 - Hedera contract and token "rent" and "expiry" are disabled on Hedera and not supported in this implementation.
