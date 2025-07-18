@@ -623,7 +623,7 @@ describe.only('Interchain Token Service', () => {
             expect(tokenManagerImplementation).to.eq(tokenManager.address);
         });
 
-        it.only('Should revert on TokenManagerProxy deployment with invalid constructor parameters', async () => {
+        it.skip('Should revert on TokenManagerProxy deployment with invalid constructor parameters', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const validParams = defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]);

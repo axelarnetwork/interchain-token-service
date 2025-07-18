@@ -8,6 +8,7 @@ New HTS Interchain Tokens will have their Token Manager as the sole Supply Key (
 
 Since the `createFungibleToken` precompile in Hedera requires a fee to be sent as value, an `WHBAR` contract (`WETH` equivalent) is used to hold the HBAR used for token creation. `InterchainTokenService` transfers certain amount of `WHBAR` to the newly deploying `TokenManagerProxy` contract. The `TokenManagerProxy` contract, during constructor, withdraws HBAR from `WHBAR`, and sends it to `InterchainTokenDeployer`, which finally uses it to pay for the token creation.
 
+The responsibility of keeping ITS funded on the WHBAR contract lies with the deployer, it is assumed that a top-up mechanism is in place to ensure the contract has enough WHBAR to create new tokens.
 
 ### Hedera-related Notes
 
