@@ -510,7 +510,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
     }
 
     /**
-     * @notice Register an existing ERC20 token under a `tokenId` computed from the provided `salt`.
+     * @notice Register an existing ERC20 or HTS token under a `tokenId` computed from the provided `salt`.
      * A token metadata registration message will also be sent to the ITS Hub.
      * This token can then be linked to remote tokens on different chains by submitting the `linkToken` function from the same `msg.sender` and using the same `salt`.
      * @dev This function is marked as payable since it can be called within a multicall with other payable methods.
