@@ -18,10 +18,6 @@ library HTS {
     address private constant PRECOMPILE = address(0x167);
     address private constant EXCHANGE_RATE_PRECOMPILE = address(0x168);
 
-    // 1 whole is divided into 100_000_000 tiny parts
-    // Applicable for tinybars and tinycents - used for exchange rate calculations
-    uint256 constant TINY_PARTS_PER_WHOLE = 100_000_000;
-
     // See `TokenKey` struct, `keyType`.
     // 0th bit: adminKey
     uint256 private constant ADMIN_KEY_BIT = 1 << 0;
@@ -247,18 +243,22 @@ library HTS {
 
     //
     // Exchange rate functionality
+    // See https://github.com/hashgraph/hedera-smart-contracts/blob/b4365714dccdd7e949c84fb325e8e878c60ddc91/contracts/system-contracts/exchange-rate/IExchangeRate.sol
     //
 
-    function centsToTinybars(uint256 cents) public returns (uint256 tinybars) {
-        uint256 tinycents = cents * TINY_PARTS_PER_WHOLE;
-
-        (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE.call(
-            abi.encodeWithSelector(IExchangeRate.tinycentsToTinybars.selector, tinycents)
-        );
-        require(success);
-        tinybars = abi.decode(result, (uint256));
-    }
-
+    // Given a value in tinycents (1e-8 US cents or 1e-10 USD), returns the
+    // equivalent value in tinybars (1e-8 HBAR) at the current exchange rate
+    // stored in system file 0.0.112.
+    //
+    // This rate is a weighted median of the the recent" HBAR-USD exchange
+    // rate on major exchanges, but should _not_ be treated as a live price
+    // oracle! It is important primarily because the network will use it to
+    // compute the tinybar fees for the active transaction.
+    //
+    // So a "self-funding" contract can use this rate to compute how much
+    // tinybar its users must send to cover the Hedera fees for the transaction.
+    //
+    // See https://github.com/hashgraph/hedera-smart-contracts/blob/b4365714dccdd7e949c84fb325e8e878c60ddc91/contracts/system-contracts/exchange-rate/IExchangeRate.sol#L16
     function tinycentsToTinybars(uint256 tinycents) public returns (uint256 tinybars) {
         if (tinycents == 0) {
             return 0;
