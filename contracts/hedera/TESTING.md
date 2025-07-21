@@ -4,6 +4,8 @@ Follow [instructions for setting up a local Hedera devnet](https://github.com/hi
 
 If starting the local node on a server, you can use the `--host` option to specify the host address. For example, `hedera start --dev --verbose=trace --host=<host>`. Before that, make the following env var available: `export DOCKER_LOCAL_MIRROR_NODE_URL="http://<host>:5551"` to be able to inspect the local node in the Hedera explorer, available at `http://<host>:8090`.
 
+Keep in mind test suites might take a while to run on the Hedera Local Node, sometimes a few dozen minutes.
+
 ## Test Configuration
 
 Create a `.env` file in the root directory with the following content:
