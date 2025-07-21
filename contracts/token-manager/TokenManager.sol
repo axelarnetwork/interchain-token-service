@@ -158,12 +158,9 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
         }
 
         /**
-         * @dev Set the token service as a minter to allow it to mint and burn tokens.
-         * Also add the provided address as a minter. If `address(0)` was provided,
+         * Add the provided address as a minter. If `address(0)` was provided,
          * add it as a minter to allow anyone to easily check that no custom minter was set.
          */
-        // TODO(hedera) should we add the service as a minter?
-        _addMinter(interchainTokenService);
         _addMinter(operator);
 
         // If an operator is not provided, set `address(0)` as the operator.
