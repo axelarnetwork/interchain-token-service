@@ -955,6 +955,9 @@ contract InterchainTokenService is
         uint8 decimals,
         bytes memory operator
     ) internal {
+        if (bytes(name).length == 0) revert EmptyTokenName();
+        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
+
         // Price in tinybars
         uint256 tokenCreatePrice = _tokenCreationPriceTinybars();
 

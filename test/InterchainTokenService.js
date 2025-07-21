@@ -46,32 +46,12 @@ const {
     INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE,
 } = require('./constants');
 
-const { createHtsToken } = require('../scripts/create-hts-token');
-
-const { Client: HederaClient, PrivateKey: HederaPrivateKey, AccountId: HederaAccountId } = require('@hashgraph/sdk');
-
-const hederaConsensusUrl = network.config.consensusUrl;
-const hederaPk = HederaPrivateKey.fromStringECDSA(network.config.operatorKey);
-const hederaOperatorId = HederaAccountId.fromString(network.config.operatorId);
-const hederaNodeId = HederaAccountId.fromString(network.config.nodeId);
-
-const hederaConsensusHost = hederaConsensusUrl.replace('http://', '').replace('https://', '');
-const hederaClient = HederaClient.forNetwork({
-    [hederaConsensusHost]: hederaNodeId,
-});
-hederaClient.setOperator(hederaOperatorId, hederaPk);
-
-console.log(`  Using Hedera Client Configuration:`);
-console.log(`\tMirror Node URL: ${network.config.url}`);
-console.log(`\tConsensus URL: ${hederaConsensusUrl}`);
-console.log(`\tOperator PK: ${network.config.operatorKey}`);
-console.log(`\tOperator ID: ${hederaOperatorId.toString()}`);
-console.log(`\tOperator Address: ${hederaOperatorId.toSolidityAddress()}`);
-console.log(`\tNode ID: ${hederaNodeId.toString()}`);
+const { createHtsToken } = require('../scripts/create-hts-token.js');
+const { hederaClientFromHardhatConfig } = require('../scripts/hedera-client.js');
 
 const reportGas = gasReporter('Interchain Token Service');
 
-describe.only('Interchain Token Service', () => {
+describe('Interchain Token Service', () => {
     let wallet, otherWallet;
     let service, gateway, gasService, testErc20Token;
 
@@ -80,6 +60,13 @@ describe.only('Interchain Token Service', () => {
     let interchainTokenDeployer;
     let tokenManager;
     let tokenHandler;
+
+    let hederaClient, hederaPk;
+    before(() => {
+        const hederaClientInfo = hederaClientFromHardhatConfig(network.config);
+        hederaClient = hederaClientInfo.hederaClient;
+        hederaPk = hederaClientInfo.hederaPk;
+    });
 
     const chainName = 'Test';
     const deploymentKey = 'InterchainTokenService';
