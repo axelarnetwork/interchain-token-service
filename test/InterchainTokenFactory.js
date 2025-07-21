@@ -39,7 +39,7 @@ const { hederaClientFromHardhatConfig } = require('../scripts/hedera-client.js')
 
 const reportGas = gasReporter('Interchain Token Factory');
 
-describe.only('InterchainTokenFactory', () => {
+describe('InterchainTokenFactory', () => {
     let wallet, otherWallet;
     let service, gateway, gasService, tokenFactory;
     const chainName = 'Test';

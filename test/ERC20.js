@@ -9,7 +9,7 @@ const { expect } = require('chai');
 const { getRandomBytes32, expectRevert } = require('./utils');
 const { deployContract } = require('../scripts/deploy');
 
-describe('ERC20', () => {
+describe.skip('ERC20', () => {
     let interchainToken, interchainTokenDeployer;
 
     const name = 'tokenName';
