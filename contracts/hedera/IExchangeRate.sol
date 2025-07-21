@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// Copied from: https://github.com/hashgraph/hedera-smart-contracts/blob/b4365714dccdd7e949c84fb325e8e878c60ddc91/contracts/system-contracts/exchange-rate/IExchangeRate.sol
 interface IExchangeRate {
     // Given a value in tinycents (1e-8 US cents or 1e-10 USD), returns the
     // equivalent value in tinybars (1e-8 HBAR) at the current exchange rate

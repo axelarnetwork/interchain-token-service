@@ -35,7 +35,8 @@ contract TokenCreationPricing is ITokenCreationPricing {
     function _tokenCreationPriceTinybars() internal returns (uint256 price) {
         uint256 priceTinycents = _tokenCreationPricingStorage().tokenCreationPrice;
 
-        // TODO(hedera) explain why + 1 (for rounding)
+        // Add 1 tinybar to ensure we meet the minimum value after rounding from
+        // USD → HBAR (avoids underpayment due to truncation)
         price = HTS.tinycentsToTinybars(priceTinycents) + 1;
     }
 
