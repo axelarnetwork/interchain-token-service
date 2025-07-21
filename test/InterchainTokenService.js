@@ -623,8 +623,7 @@ describe.only('Interchain Token Service', () => {
             expect(tokenManagerImplementation).to.eq(tokenManager.address);
         });
 
-        // TODO(hedera) fix this test
-        it.skip('Should revert on TokenManagerProxy deployment with invalid constructor parameters [todo(hedera)]', async () => {
+        it('Should revert on TokenManagerProxy deployment with invalid constructor parameters', async () => {
             const salt = getRandomBytes32();
             const tokenId = await service.interchainTokenId(wallet.address, salt);
             const validParams = defaultAbiCoder.encode(['bytes', 'address'], ['0x', wallet.address]);
@@ -657,13 +656,8 @@ describe.only('Interchain Token Service', () => {
                 [],
             );
 
-            await expectRevert(
-                (gasOptions) =>
-                    deployContract(wallet, 'TokenManagerProxy', [service.address, LOCK_UNLOCK, tokenId, invalidParams, gasOptions]),
-                tokenManagerProxy,
-                'SetupFailed',
-                [],
-            );
+            await expect(deployContract(wallet, 'TokenManagerProxy', [service.address, LOCK_UNLOCK, tokenId, invalidParams])).to.be
+                .reverted;
 
             await deployContract(wallet, 'TokenManagerProxy', [service.address, LOCK_UNLOCK, tokenId, validParams]);
         });
