@@ -127,7 +127,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
      * @param name The name of the token.
      * @param symbol The symbol of the token.
      * @param decimals The number of decimals for the token.
-     * @param initialSupply The amount of tokens to mint initially (can be zero), allocated to the msg.sender.
+     * @param initialSupply The amount of tokens to mint initially (can be zero), allocated to the msg.sender. Not supported for HTS tokens.
      * @param minter The address to receive the minter and operator role of the token, in addition to ITS. If it is set to `address(0)`,
      * the additional minter isn't set, and can't be added later. This allows creating tokens that are managed only by ITS, reducing trust assumptions.
      * Reverts if the minter is the ITS address since it's already added as a minter.

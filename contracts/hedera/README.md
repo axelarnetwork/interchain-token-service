@@ -12,6 +12,18 @@ The responsibility of keeping ITS funded on the WHBAR contract lies with the dep
 
 ![Deploy New Interchain Token Flow](./diagrams/deploy_interchain_token.png)
 
+### Deploying with Initial Supply
+
+Initial supply is not supported when deploying a new Interchain Token on Hedera. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation.
+
+However there is an [Automatic Token Associations](https://docs.hedera.com/hedera/core-concepts/accounts/account-properties#automatic-token-associations) feature in Hedera, which allows accounts to approve a number of automatic token associations (airdrops) without needing to explicitly associate with each token. The only way to reliably tell if an account can receive a new token is by reading the property for the account and checking if the value is `-1` (unlimited associations).
+
+There is an optimistic approach to this, where it is assumed the account has unlimited associations and can receive the token. However if the transaction reverts due to it not being able to receive the token, [gas will be nonetheless charged](https://docs.hedera.com/hedera/core-concepts/smart-contracts/gas-and-fees). This is undesirable, since Hedera charges at minimum 80% of the gas limit.
+
+Another approach is to have the Relayer [check](https://docs.hedera.com/hedera/sdks-and-apis/rest-api/accounts#get-api-v1-accounts-idoraliasorevmaddress) if the account can receive the token before deploying it, but this requires customisations to the Relayer, which is again not desirable.
+
+This behaviour can be changed in the future by upgrading the `InterchainTokenFactory` contract to support initial supply, but for now it is not supported.
+
 ### Hedera-related Notes
 
 - Hedera contract and token "rent" and "expiry" are disabled on Hedera and not supported in this implementation.
@@ -31,6 +43,5 @@ The responsibility of keeping ITS funded on the WHBAR contract lies with the dep
 - `InterchainTokenDeployer.sol` `deployedAddress` is not supported, since HTS tokens don't have deterministic addresses.
 - `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `registeredTokenAddress` should be used instead.
 - `transmitInterchainTransfer` was removed from `InterchainTokenService.sol` since it's meant to be called from an `InterchainToken` contract, which is not used.
-- When creating a new interchain token, `InterchainTokenService` and `TokenManager` are associated with the token.
-- `initialSupply` isn't supported when deploying a new interchain token. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation. (TODO explain why auto associations aren't used.)
+- When creating a new interchain token, `TokenManager` is automatically associated with the token, as the creator.
 - Both HTS tokens and ERC20 tokens are supported for registration.
