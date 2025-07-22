@@ -22,8 +22,6 @@ async function createHtsToken(hederaClient, operatorPk, name, symbol, decimals =
     const tokenId = tokenCreateRx.tokenId;
     const tokenAddress = `0x${tokenId.toSolidityAddress().toLowerCase()}`;
 
-    // console.log(`Token created: ${tokenId.toString()} (EVM Address: ${tokenAddress})`);
-
     return [tokenAddress, tokenId];
 }
 

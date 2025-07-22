@@ -1,17 +1,6 @@
 require('dotenv').config();
 
-const { Client, PrivateKey, TokenAssociateTransaction, TokenId, AccountId } = require('@hashgraph/sdk');
-
-// Configure accounts and client
-const accPk = PrivateKey.fromStringECDSA(process.env.HEDERA_PK);
-console.log('Account EVM address: 0x%s', accPk.publicKey.toEvmAddress());
-
-// const accId = accPk.toAccountId(0, 0);
-const accId = AccountId.fromString('0.0.1012');
-console.log('Account ID: ', accId.toString());
-
-// TODO allow change from local node to testnet/mainnet
-const client = Client.forLocalNode().setOperator(accId, accPk);
+const { Client, PrivateKey, TokenAssociateTransaction, AccountAllowanceApproveTransaction, TokenId, AccountId } = require('@hashgraph/sdk');
 
 /**
  * Convert EVM address to Hedera token ID format
@@ -37,9 +26,21 @@ async function associateToken(client, tokenId, accountId, privateKey) {
     const submitTx = await signTx.execute(client);
     const receipt = await submitTx.getReceipt(client);
 
-    console.log('Token associated with account successfully');
-    console.log('Receipt status:', receipt.status.toString());
+    console.log(`Token ${tokenId.toSolidityAddress()} associated with account ${accountId.toSolidityAddress()} successfully`);
 
+    return receipt;
+}
+
+async function approveToken(client, ownerPrivateKey, tokenId, ownerId, spenderId, amount) {
+    const tx = new AccountAllowanceApproveTransaction().approveTokenAllowance(tokenId, ownerId, spenderId, amount);
+
+    const signTx = await tx.sign(ownerPrivateKey);
+    const submitTx = await signTx.execute(client);
+    const receipt = await submitTx.getReceipt(client);
+
+    console.log(
+        `Token allowance approved: ${amount} of token ${tokenId.toSolidityAddress()} from ${ownerId.toSolidityAddress()} to ${spenderId.toSolidityAddress()}`,
+    );
     return receipt;
 }
 
@@ -52,6 +53,17 @@ async function main() {
         console.error('Example: node token-associate.js 0x52C2B8');
         process.exit(1);
     }
+
+    // Configure accounts and client
+    const accPk = PrivateKey.fromStringECDSA(process.env.HEDERA_PK);
+    console.log('Account EVM address: 0x%s', accPk.publicKey.toEvmAddress());
+
+    // const accId = accPk.toAccountId(0, 0);
+    const accId = AccountId.fromString('0.0.1012');
+    console.log('Account ID: ', accId.toString());
+
+    // TODO allow change from local node to testnet/mainnet
+    const client = Client.forLocalNode().setOperator(accId, accPk);
 
     const tokenEvmAddress = args[0];
 
@@ -74,6 +86,7 @@ async function main() {
 // Export functions for use as module
 module.exports = {
     associateToken,
+    approveToken,
     evmAddressToTokenId,
 };
 

@@ -1,13 +1,13 @@
-const { Client: HederaClient, PrivateKey: HederaPrivateKey, AccountId: HederaAccountId } = require('@hashgraph/sdk');
+const { Client, PrivateKey, AccountId } = require('@hashgraph/sdk');
 
 function hederaClientFromHardhatConfig(networkConfig) {
     const hederaConsensusUrl = networkConfig.consensusUrl;
-    const hederaPk = HederaPrivateKey.fromStringECDSA(networkConfig.operatorKey);
-    const hederaOperatorId = HederaAccountId.fromString(networkConfig.operatorId);
-    const hederaNodeId = HederaAccountId.fromString(networkConfig.nodeId);
+    const hederaPk = PrivateKey.fromStringECDSA(networkConfig.operatorKey);
+    const hederaOperatorId = AccountId.fromString(networkConfig.operatorId);
+    const hederaNodeId = AccountId.fromString(networkConfig.nodeId);
 
     const hederaConsensusHost = hederaConsensusUrl.replace('http://', '').replace('https://', '');
-    const hederaClient = HederaClient.forNetwork({
+    const hederaClient = Client.forNetwork({
         [hederaConsensusHost]: hederaNodeId,
     });
     hederaClient.setOperator(hederaOperatorId, hederaPk);
@@ -17,7 +17,6 @@ function hederaClientFromHardhatConfig(networkConfig) {
     console.log(`\tConsensus URL: ${hederaConsensusUrl}`);
     console.log(`\tOperator PK: ${networkConfig.operatorKey}`);
     console.log(`\tOperator ID: ${hederaOperatorId.toString()}`);
-    console.log(`\tOperator Address: ${hederaOperatorId.toSolidityAddress()}`);
     console.log(`\tNode ID: ${hederaNodeId.toString()}`);
 
     return { hederaClient, hederaPk, hederaOperatorId };

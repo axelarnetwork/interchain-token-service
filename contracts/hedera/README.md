@@ -18,7 +18,7 @@ The responsibility of keeping ITS funded on the WHBAR contract lies with the dep
 
 ### Deploying with Initial Supply
 
-Initial supply is not supported when deploying a new Interchain Token on Hedera. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation.
+Initial supply is currently not supported when deploying a new Interchain Token on Hedera. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation. Associating an account using a smart contract [is not supported](https://hedera.com/blog/get-ready-for-the-updated-security-model-of-the-hedera-smart-contract-service-by-july-2023).
 
 However there is an [Automatic Token Associations](https://docs.hedera.com/hedera/core-concepts/accounts/account-properties#automatic-token-associations) feature in Hedera, which allows accounts to approve a number of automatic token associations (airdrops) without needing to explicitly associate with each token. The only way to reliably tell if an account can receive a new token is by reading the property for the account and checking if the value is `-1` (unlimited associations).
 
@@ -28,16 +28,34 @@ Another approach is to have the Relayer [check](https://docs.hedera.com/hedera/s
 
 This behaviour can be changed in the future by upgrading the `InterchainTokenFactory` contract to support initial supply, but for now it is not supported.
 
+### Hedera Tokens as ERC20
+
+Hedera tokens support so-called facades, which allow them to be used as ERC20 tokens. A number of standard methods are supported, like `name`, `balanceOf`, `transfer`, `transferFrom`, `approve`, `allowance`, etc. See [hip-218](https://hips.hedera.com/hip/hip-218) and [hip-376](https://hips.hedera.com/hip/hip-376). `mint` and `burn` are not supported.
+
+Unlike a regular ERC20 token, HTS tokens don't emit `Transfer` to and from the zero address on mint and burn.
+
+Association-related methods are also supported, like `associate`, `dissociate`, and `isAssociated`. See [hip-719](https://hips.hedera.com/hip/hip-719) for more details.
+
+### `InterchainTokenExecutable`
+
+To receive tokens, an `InterchainTokenExecutable` contract needs to previously be associated with the token. The mechanism is left to the end contract, but one possible way is to have a function like so:
+
+```solidity
+function associateWithToken(address tokenAddress_) external {
+    IHRC719(tokenAddress_).associate();
+}
+```
+
+It uses the [`IHRC719`](./IHRC719.sol) interface to call the `associate` method on the token contract, which will associate the contract with the token. There is no need to interact with the `HTS` library or the precompile directly, as the `IHRC719` interface abstracts that away.
+
 ### Hedera-related Notes
 
 - Hedera contract and token "rent" and "expiry" are disabled on Hedera and not supported in this implementation.
-- `IERC20` standard methods are supported, including `allowance` and `approve`. See [hip-218](https://hips.hedera.com/hip/hip-218) and [hip-376](https://hips.hedera.com/hip/hip-376). `mint` and `burn` are not supported.
-- Unlike an EVM token, the [maximum supply for an HTS token is 2^63](https://docs.hedera.com/hedera/sdks-and-apis/sdks/token-service/define-a-token#token-properties). There's planned support for decimal translation in ITS.
+- Unlike a regular ERC20 token, the [maximum supply for an HTS token is 2^63](https://docs.hedera.com/hedera/sdks-and-apis/sdks/token-service/define-a-token#token-properties). There's planned support for decimal translation in ITS.
 - HTS tokens with the following keys are not supported by ITS: `kycKey`, `wipeKey`, `freezeKey`, `pauseKey`. `adminKey` can update existing keys, but cannot add new keys if they were not set during the creation of the token ([see here](https://docs.hedera.com/hedera/sdks-and-apis/sdks/token-service/update-a-token)).
 - `HTS.sol` library is a subset of the Hedera provided system library [HederaTokenService](https://github.com/hashgraph/hedera-smart-contracts/blob/bc3a549c0ca062c51b0045fd1916fdaa0558a360/contracts/system-contracts/hedera-token-service/HederaTokenService.sol). Functions are modified to revert instead of returning response codes.
 - Currently new tokens created via HTS EVM system contract can have **only one** Supply Key (Minter).
 - Currently new tokens created via HTS EVM system contract must have the Treasury be the creator of the token.
-- `createFungibleToken` in `HTS.sol` uses `msg.value` to pay for token creation, alongside regular gas fee.
 - `WHBAR` contracts used can be found [here](https://docs.hedera.com/hedera/core-concepts/smart-contracts/wrapped-hbar-whbar#contract-deployments).
 
 ### ITS-related Notes
