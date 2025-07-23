@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { Client, PrivateKey, TokenAssociateTransaction, AccountAllowanceApproveTransaction, TokenId, AccountId } = require('@hashgraph/sdk');
+const { Client, PrivateKey, TokenAssociateTransaction, TokenId, AccountId } = require('@hashgraph/sdk');
 
 /**
  * Convert EVM address to Hedera token ID format
@@ -26,21 +26,8 @@ async function associateToken(client, tokenId, accountId, privateKey) {
     const submitTx = await signTx.execute(client);
     const receipt = await submitTx.getReceipt(client);
 
-    console.log(`Token ${tokenId.toSolidityAddress()} associated with account ${accountId.toSolidityAddress()} successfully`);
+    // console.log(`Token ${tokenId.toSolidityAddress()} associated with account ${accountId.toSolidityAddress()} successfully`);
 
-    return receipt;
-}
-
-async function approveToken(client, ownerPrivateKey, tokenId, ownerId, spenderId, amount) {
-    const tx = new AccountAllowanceApproveTransaction().approveTokenAllowance(tokenId, ownerId, spenderId, amount);
-
-    const signTx = await tx.sign(ownerPrivateKey);
-    const submitTx = await signTx.execute(client);
-    const receipt = await submitTx.getReceipt(client);
-
-    console.log(
-        `Token allowance approved: ${amount} of token ${tokenId.toSolidityAddress()} from ${ownerId.toSolidityAddress()} to ${spenderId.toSolidityAddress()}`,
-    );
     return receipt;
 }
 
@@ -86,7 +73,6 @@ async function main() {
 // Export functions for use as module
 module.exports = {
     associateToken,
-    approveToken,
     evmAddressToTokenId,
 };
 

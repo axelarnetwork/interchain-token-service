@@ -34,20 +34,18 @@ const {
     ITS_HUB_ADDRESS,
     DEPLOY_REMOTE_INTERCHAIN_TOKEN,
     DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN,
-    DEPLOY_REMOTE_INTERCHAIN_TOKEN_WITH_MINTER,
     INTERCHAIN_TRANSFER,
     INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE,
     MAX_INT64,
 } = require('./constants');
 
 const { createHtsToken } = require('../scripts/create-hts-token.js');
-const { evmAddressToTokenId, associateToken, approveToken } = require('../scripts/token-associate.js');
+const { evmAddressToTokenId, associateToken } = require('../scripts/token-associate.js');
 const { hederaClientFromHardhatConfig } = require('../scripts/hedera-client.js');
 
-describe.only('Interchain Token Service Full Flow', () => {
+describe('Interchain Token Service Full Flow', () => {
     let wallet;
     let service, gateway, gasService, tokenFactory, tokenId;
-    let serviceHederaId;
     const name = 'tokenName';
     const symbol = 'tokenSymbol';
     const otherChains = ['chain 1', 'chain 2'];
@@ -848,7 +846,8 @@ describe.only('Interchain Token Service Full Flow', () => {
      * - Transfer token via native method on the token
      * - Transfer tokens via ITS between chains after deployment
      */
-    describe.only('New Interchain token via ITS Hub', () => {
+    // Hedera ✅
+    describe('New Interchain token via ITS Hub', () => {
         let token;
         let tokenId;
         let executable;
@@ -881,51 +880,17 @@ describe.only('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction[DEPLOY_REMOTE_INTERCHAIN_TOKEN_WITH_MINTER](
-                    salt,
-                    minter,
-                    otherChains[i],
-                    minter,
-                    gasValues[i],
-                );
+                tx = await tokenFactory.populateTransaction[DEPLOY_REMOTE_INTERCHAIN_TOKEN](salt, otherChains[i], gasValues[i]);
                 calls.push(tx.data);
                 value += gasValues[i];
             }
 
             const payloads = otherChains.map((chain) =>
-                encodeSendHubMessage(chain, encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, minter)),
+                encodeSendHubMessage(chain, encodeDeployInterchainTokenMessage(tokenId, name, symbol, decimals, '0x')),
             );
-            console.log(payloads);
             const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
 
             const multicall = await tokenFactory.multicall(calls, { value: value * 10 ** 10 });
-
-            const receipt = await multicall.wait();
-            // console.log(receipt);
-
-            // Log expected values
-            console.log('Expected args for first NativeGasPaidForContractCall:', [
-                service.address,
-                ITS_HUB_CHAIN,
-                ITS_HUB_ADDRESS,
-                payloads[0].payloadHash,
-                gasValues[0].toString(),
-                wallet.address,
-            ]);
-
-            // Log actual events
-            const gasEvents = receipt.logs
-                .filter((log) => log.address === gasService.address)
-                .map((log) => gasService.interface.parseLog(log))
-                .filter((event) => event.name === 'NativeGasPaidForContractCall');
-
-            console.log('Actual NativeGasPaidForContractCall events:');
-            gasEvents.forEach((event, i) => {
-                console.log(
-                    `Event ${i}:`,
-                    event.args.map((arg) => arg.toString()),
-                );
-            });
 
             await expect(multicall)
                 .to.emit(service, 'InterchainTokenDeployed')
@@ -938,13 +903,13 @@ describe.only('Interchain Token Service Full Flow', () => {
                     return true;
                 })
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, name, symbol, decimals, minter, otherChains[0])
+                .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[0])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloads[0].payloadHash, gasValues[0], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloads[0].payloadHash, payloads[0].payload)
                 .and.to.emit(service, 'InterchainTokenDeploymentStarted')
-                .withArgs(tokenId, name, symbol, decimals, minter, otherChains[1])
+                .withArgs(tokenId, name, symbol, decimals, '0x', otherChains[1])
                 .and.to.emit(gasService, 'NativeGasPaidForContractCall')
                 .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloads[1].payloadHash, gasValues[1], wallet.address)
                 .and.to.emit(gateway, 'ContractCall')
