@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { InterchainToken } from './InterchainToken.sol';
+import { InterchainToken } from '../interchain-token/InterchainToken.sol';
 import { HyperliquidDeployer } from './HyperliquidDeployer.sol';
 import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
 
@@ -13,7 +13,7 @@ import { IHyperliquidDeployer } from '../interfaces/IHyperliquidDeployer.sol';
  * then from InterchainToken for standard functionality.
  * This maintains the standard InterchainToken while providing Hyperliquid compatibility.
  */
-contract HyperliquidInterchainToken is HyperliquidDeployer, InterchainToken, IHyperliquidDeployer {
+contract HyperliquidInterchainToken is InterchainToken, HyperliquidDeployer, IHyperliquidDeployer {
     error NotService(address caller);
 
     /**
