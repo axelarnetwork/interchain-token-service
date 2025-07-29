@@ -128,7 +128,7 @@ interface IInterchainTokenFactory is ITokenManagerType, IUpgradable, IMulticall 
     /**
      * @notice Deploys a remote interchain token on a specified destination chain.
      * @param salt The unique salt for deploying the token.
-     * @param minter The minter of the interchain token on the current chain. If the token has no minter other than ITS, then no minter can be set on the interchain token on the destination chain, and `deployRemoteInterchainToken` must be used instead.
+     * @param minter The minter of the interchain token on the current chain. If the token has no minter other than the token manager, then no minter can be set on the interchain token on the destination chain, and `deployRemoteInterchainToken` must be used instead.
      * @param destinationChain The name of the destination chain.
      * @param destinationMinter The address to receive the minter and operator role of the token on the destination chain. This can be arbitrary bytes
      * since the encoding of the account is dependent on the destination chain. The `minter` must have approved a custom `destinationMinter` via `approveDeployRemoteInterchainToken` beforehand. If this is empty, then the `minter` of the token on the current chain
