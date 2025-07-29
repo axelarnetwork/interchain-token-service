@@ -8,9 +8,9 @@ const {
     provider,
 } = ethers;
 const { expect } = require('chai');
-const { getRandomBytes32, getEVMVersion } = require('./utils');
-const { deployAll } = require('../scripts/deploy');
-const { ITS_HUB_ADDRESS } = require('./constants');
+const { getRandomBytes32, getEVMVersion } = require('../utils');
+const { deployAll } = require('../../scripts/deploy');
+const { ITS_HUB_ADDRESS } = require('../constants');
 
 function deployerStorageSlot() {
     return keccak256(toUtf8Bytes('HyperCore deployer'));

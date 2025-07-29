@@ -3,9 +3,9 @@
 const chai = require('chai');
 const { expect } = chai;
 const { ethers } = require('hardhat');
-const { getRandomBytes32 } = require('./utils');
-const { deployAll } = require('../scripts/deploy');
-const { ITS_HUB_ADDRESS } = require('./constants');
+const { getRandomBytes32 } = require('../utils');
+const { deployAll } = require('../../scripts/deploy');
+const { ITS_HUB_ADDRESS } = require('../constants');
 
 describe('HyperliquidInterchainTokenService', () => {
     let wallet, otherWallet, operator;
