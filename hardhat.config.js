@@ -12,7 +12,7 @@ const { networks, etherscan } = importNetworks(chains, keys);
 
 const optimizerSettings = {
     enabled: true,
-    runs: 800,
+    runs: 1000,
     details: {
         peephole: process.env.COVERAGE === undefined,
         inliner: process.env.COVERAGE === undefined,
@@ -66,12 +66,18 @@ module.exports = {
         overrides: process.env.NO_OVERRIDES
             ? {}
             : {
+                  // Fix the proxy bytecodes
                   'contracts/proxies/InterchainProxy.sol': fixedContractCompilerSettings,
                   'contracts/proxies/TokenManagerProxy.sol': fixedContractCompilerSettings,
+
+                  // Fix the InterchainToken bytecode to avoid having multiple token versions in the wild
                   'contracts/interchain-token/InterchainToken.sol': fixedContractCompilerSettings,
-                  'contracts/interchain-token/HyperliquidInterchainToken.sol': fixedContractCompilerSettings,
+                  'contracts/hyperliquid/HyperliquidInterchainToken.sol': fixedContractCompilerSettings,
+
+                  // Reduce bytecode size for ITS contracts to stay under the limit
                   'contracts/test/TestInterchainTokenService.sol': itsCompilerSettings,
                   'contracts/InterchainTokenService.sol': itsCompilerSettings,
+                  'contracts/hyperliquid/HyperliquidInterchainTokenService.sol': itsCompilerSettings,
               },
     },
     defaultNetwork: 'hardhat',
