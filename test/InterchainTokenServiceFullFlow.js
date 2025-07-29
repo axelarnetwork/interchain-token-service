@@ -31,8 +31,6 @@ const {
     MINTER_ROLE,
     ITS_HUB_CHAIN,
     ITS_HUB_ADDRESS,
-    DEPLOY_REMOTE_INTERCHAIN_TOKEN,
-    DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN,
     INTERCHAIN_TRANSFER,
     INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE,
 } = require('./constants');
@@ -80,7 +78,7 @@ describe('Interchain Token Service Full Flow', () => {
             let value = 0;
 
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction[DEPLOY_REMOTE_CANONICAL_INTERCHAIN_TOKEN](
+                tx = await tokenFactory.populateTransaction.deployRemoteCanonicalInterchainToken(
                     token.address,
                     otherChains[i],
                     gasValues[i],
@@ -526,7 +524,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction[DEPLOY_REMOTE_INTERCHAIN_TOKEN](salt, otherChains[i], gasValues[i]);
+                tx = await tokenFactory.populateTransaction.deployRemoteInterchainToken(salt, otherChains[i], gasValues[i]);
                 calls.push(tx.data);
                 value += gasValues[i];
             }
@@ -740,7 +738,7 @@ describe('Interchain Token Service Full Flow', () => {
 
             // Deploy a linked Interchain token to remote chains.
             for (const i in otherChains) {
-                tx = await tokenFactory.populateTransaction[DEPLOY_REMOTE_INTERCHAIN_TOKEN](salt, otherChains[i], gasValues[i]);
+                tx = await tokenFactory.populateTransaction.deployRemoteInterchainToken(salt, otherChains[i], gasValues[i]);
                 calls.push(tx.data);
                 value += gasValues[i];
             }
