@@ -87,6 +87,14 @@ interface IInterchainTokenService is
         TokenManagerType indexed tokenManagerType,
         bytes params
     );
+    event LinkTokenReceived(
+        bytes32 indexed tokenId,
+        string sourceChain,
+        bytes sourceTokenAddress,
+        bytes destinationTokenAddress,
+        TokenManagerType indexed tokenManagerType,
+        bytes params
+    );
     event InterchainTokenDeploymentStarted(
         bytes32 indexed tokenId,
         string tokenName,

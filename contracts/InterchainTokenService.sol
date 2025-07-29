@@ -749,11 +749,19 @@ contract InterchainTokenService is
     /**
      * @notice Processes a deploy token manager payload.
      */
-    function _processLinkTokenPayload(bytes memory payload) internal {
-        (, bytes32 tokenId, TokenManagerType tokenManagerType, , bytes memory destinationTokenAddress, bytes memory linkParams) = abi
-            .decode(payload, (uint256, bytes32, TokenManagerType, bytes, bytes, bytes));
+    function _processLinkTokenPayload(string memory sourceChain, bytes memory payload) internal {
+        (
+            ,
+            bytes32 tokenId,
+            TokenManagerType tokenManagerType,
+            bytes memory sourceTokenAddress,
+            bytes memory destinationTokenAddress,
+            bytes memory linkParams
+        ) = abi.decode(payload, (uint256, bytes32, TokenManagerType, bytes, bytes, bytes));
 
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
+
+        emit LinkTokenReceived(tokenId, sourceChain, sourceTokenAddress, destinationTokenAddress, tokenManagerType, linkParams);
 
         _deployTokenManager(tokenId, tokenManagerType, destinationTokenAddress.toAddress(), linkParams);
     }
@@ -849,7 +857,7 @@ contract InterchainTokenService is
         } else if (messageType == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
             _processDeployInterchainTokenPayload(payload);
         } else if (messageType == MESSAGE_TYPE_LINK_TOKEN) {
-            _processLinkTokenPayload(payload);
+            _processLinkTokenPayload(originalSourceChain, payload);
         } else {
             revert InvalidMessageType(messageType);
         }
