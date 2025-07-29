@@ -1,5 +1,19 @@
 # @axelar-network/interchain-token-service
 
+## 2.2.0
+
+### Minor Changes
+
+-   43df942: emit LinkTokenReceived event when receiving link token msg
+-   df79b4e: Introduce Hyperliquid specific contracts to support setting deployer address for interchain tokens.
+-   dd40188: Route everything through the ITS Hub, and only accept calls routed through the ITS Hub.
+-   e92c4c9: Deprecated ITS Factory methods deployRemoteInterchainToken and deployRemoteCanonicalInterchainToken were removed
+-   f77b330: remove automatic migration of tokens since all of them have been manually migrated.
+
+### Patch Changes
+
+-   5c3e16a: Removed MetadataVersion as only the contract call format is supported.
+
 ## 2.1.0
 
 ### Minor Changes
