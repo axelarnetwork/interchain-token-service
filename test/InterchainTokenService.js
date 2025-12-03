@@ -646,6 +646,8 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Owner or Operator functions', () => {
+        const chain = 'Test';
+
         it('Should revert on set pause status when not called by the owner or operator', async () => {
             await expectRevert(
                 (gasOptions) => service.connect(otherWallet).setPauseStatus(true, gasOptions),
@@ -653,6 +655,32 @@ describe('Interchain Token Service', () => {
                 'NotOperatorOrOwner',
                 [otherWallet.address],
             );
+        });
+
+        it('Should revert on set trusted chain when not called by the owner or operator', async () => {
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).setTrustedChain(chain, gasOptions),
+                service,
+                'NotOperatorOrOwner',
+                [otherWallet.address],
+            );
+        });
+
+        it('Should set trusted chain', async () => {
+            await expect(service.setTrustedChain(chain)).to.emit(service, 'TrustedChainSet').withArgs(chain);
+        });
+
+        it('Should revert on remove trusted chain when not called by the owner or operator', async () => {
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).removeTrustedChain(chain, gasOptions),
+                service,
+                'NotOperatorOrOwner',
+                [otherWallet.address],
+            );
+        });
+
+        it('Should remove trusted chain', async () => {
+            await expect(service.removeTrustedChain(chain)).to.emit(service, 'TrustedChainRemoved').withArgs(chain);
         });
     });
 
@@ -669,36 +697,6 @@ describe('Interchain Token Service', () => {
                 service,
                 'NotOwner',
             );
-        });
-    });
-
-    describe('Operator functions', () => {
-        const chain = 'Test';
-
-        it('Should revert on set trusted chain when not called by the owner', async () => {
-            await expectRevert(
-                (gasOptions) => service.connect(otherWallet).setTrustedChain(chain, gasOptions),
-                service,
-                'NotOperatorOrOwner',
-                [otherWallet.address],
-            );
-        });
-
-        it('Should set trusted chain', async () => {
-            await expect(service.setTrustedChain(chain)).to.emit(service, 'TrustedChainSet').withArgs(chain);
-        });
-
-        it('Should revert on remove trusted address when not called by the owner', async () => {
-            await expectRevert(
-                (gasOptions) => service.connect(otherWallet).removeTrustedChain(chain, gasOptions),
-                service,
-                'NotOperatorOrOwner',
-                [otherWallet.address],
-            );
-        });
-
-        it('Should remove trusted address', async () => {
-            await expect(service.removeTrustedChain(chain)).to.emit(service, 'TrustedChainRemoved').withArgs(chain);
         });
     });
 
