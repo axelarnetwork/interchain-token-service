@@ -640,10 +640,10 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Allows the owner to pause/unpause the token service.
+     * @notice Allows the owner or an operator to pause/unpause the token service.
      * @param paused Boolean value representing whether to pause or unpause.
      */
-    function setPauseStatus(bool paused) external onlyOwner {
+    function setPauseStatus(bool paused) external onlyOperatorOrOwner {
         if (paused) {
             _pause();
         } else {
