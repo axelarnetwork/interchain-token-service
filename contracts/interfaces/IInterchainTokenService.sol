@@ -307,7 +307,7 @@ interface IInterchainTokenService is
     function setFlowLimits(bytes32[] calldata tokenIds, uint256[] calldata flowLimits) external;
 
     /**
-     * @notice Allows the owner to pause/unpause the token service.
+     * @notice Allows the owner or an operator to pause/unpause the token service.
      * @param paused whether to pause or unpause.
      */
     function setPauseStatus(bool paused) external;
