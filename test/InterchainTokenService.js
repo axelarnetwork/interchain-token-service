@@ -645,13 +645,29 @@ describe('Interchain Token Service', () => {
         });
     });
 
-    describe('Owner functions', () => {
+    describe('Owner or Operator functions', () => {
         it('Should revert on set pause status when not called by the owner or operator', async () => {
             await expectRevert(
                 (gasOptions) => service.connect(otherWallet).setPauseStatus(true, gasOptions),
                 service,
                 'NotOperatorOrOwner',
                 [otherWallet.address],
+            );
+        });
+    });
+
+    describe('Owner functions', () => {
+        it('Should not be able to migrate a token as not the owner', async () => {
+            const name = 'migrated token';
+            const symbol = 'MT';
+            const decimals = 53;
+
+            const [, , tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
+
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).migrateInterchainToken(tokenId, gasOptions),
+                service,
+                'NotOwner',
             );
         });
     });
@@ -2977,20 +2993,6 @@ describe('Interchain Token Service', () => {
                 service.address,
                 MINTER_ROLE,
             ]);
-        });
-
-        it('Should not be able to migrate a token as not the owner', async () => {
-            const name = 'migrated token';
-            const symbol = 'MT';
-            const decimals = 53;
-
-            const [, , tokenId] = await deployFunctions.interchainToken(service, name, symbol, decimals, service.address);
-
-            await expectRevert(
-                (gasOptions) => service.connect(otherWallet).migrateInterchainToken(tokenId, gasOptions),
-                service,
-                'NotOwner',
-            );
         });
     });
 
