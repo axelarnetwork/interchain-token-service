@@ -657,6 +657,30 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should allow the owner to pause and unpause the service', async () => {
+            await service.setPauseStatus(true).then((tx) => tx.wait());
+            expect(await service.paused()).to.be.true;
+
+            await service.setPauseStatus(false).then((tx) => tx.wait());
+            expect(await service.paused()).to.be.false;
+        });
+
+        it('Should allow the operator to pause and unpause the service', async () => {
+            // Transfer operatorship to otherWallet
+            await service.transferOperatorship(otherWallet.address).then((tx) => tx.wait());
+
+            // Operator should be able to pause
+            await service.connect(otherWallet).setPauseStatus(true).then((tx) => tx.wait());
+            expect(await service.paused()).to.be.true;
+
+            // Operator should be able to unpause
+            await service.connect(otherWallet).setPauseStatus(false).then((tx) => tx.wait());
+            expect(await service.paused()).to.be.false;
+
+            // Transfer operatorship back to wallet
+            await service.connect(otherWallet).transferOperatorship(wallet.address).then((tx) => tx.wait());
+        });
+
         it('Should revert on set trusted chain when not called by the owner or operator', async () => {
             await expectRevert(
                 (gasOptions) => service.connect(otherWallet).setTrustedChain(chain, gasOptions),
