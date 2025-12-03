@@ -646,8 +646,13 @@ describe('Interchain Token Service', () => {
     });
 
     describe('Owner functions', () => {
-        it('Should revert on set pause status when not called by the owner', async () => {
-            await expectRevert((gasOptions) => service.connect(otherWallet).setPauseStatus(true, gasOptions), service, 'NotOwner');
+        it('Should revert on set pause status when not called by the owner or operator', async () => {
+            await expectRevert(
+                (gasOptions) => service.connect(otherWallet).setPauseStatus(true, gasOptions),
+                service,
+                'NotOperatorOrOwner',
+                [otherWallet.address],
+            );
         });
     });
 
