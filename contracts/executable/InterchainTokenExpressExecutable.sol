@@ -10,6 +10,11 @@ import { InterchainTokenExecutable } from './InterchainTokenExecutable.sol';
  * @notice Abstract contract that defines an interface for executing express logic in the context of interchain token operations.
  * @dev This contract extends `InterchainTokenExecutable` to provide express execution capabilities. It is intended to be inherited by contracts
  * that implement express logic for interchain token actions. This contract will only be called by the interchain token service.
+ *
+ * IMPORTANT: Express execute can be called by anyone willing to pay for the tokens upfront.
+ * This means the parameters passed to express execute are NOT validated by the GMP gateway.
+ * Only the token transfer itself should be considered to have value. The payload and any other metadata
+ * should NOT be used for anything critical beyond manipulating the received tokens.
  */
 abstract contract InterchainTokenExpressExecutable is IInterchainTokenExpressExecutable, InterchainTokenExecutable {
     bytes32 internal constant EXPRESS_EXECUTE_SUCCESS = keccak256('its-express-execute-success');

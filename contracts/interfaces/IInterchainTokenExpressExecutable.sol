@@ -7,6 +7,10 @@ import { IInterchainTokenExecutable } from './IInterchainTokenExecutable.sol';
 /**
  * @title IInterchainTokenExpressExecutable
  * @notice Contracts should implement this interface to accept express calls from the InterchainTokenService.
+ * @dev IMPORTANT: Express execute can be called by anyone willing to pay for the tokens upfront.
+ * This means the parameters passed to express execute are NOT validated by the GMP gateway.
+ * Only the token transfer itself should be considered to have value. The payload and any other metadata
+ * should NOT be used for anything critical beyond manipulating the received tokens.
  */
 interface IInterchainTokenExpressExecutable is IInterchainTokenExecutable {
     /**
