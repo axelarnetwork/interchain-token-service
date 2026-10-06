@@ -888,6 +888,14 @@ describe('Interchain Token Service', () => {
                 .to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
         });
+
+        it('Should revert on registering token metadata if paused', async () => {
+            await service.setPauseStatus(true).then((tx) => tx.wait());
+
+            await expectRevert((gasOptions) => service.registerTokenMetadata(token.address, 0, gasOptions), service, 'Pause');
+
+            await service.setPauseStatus(false).then((tx) => tx.wait());
+        });
     });
 
     describe('Custom Token Manager Deployment', () => {
