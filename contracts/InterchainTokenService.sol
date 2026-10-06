@@ -276,7 +276,7 @@ contract InterchainTokenService is
      * @param tokenAddress The address of the token.
      * @param gasValue The cross-chain gas value for sending the registration message to ITS Hub.
      */
-    function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable {
+    function registerTokenMetadata(address tokenAddress, uint256 gasValue) external payable whenNotPaused {
         if (tokenAddress == address(0)) revert EmptyTokenAddress();
 
         uint8 decimals = IERC20Named(tokenAddress).decimals();
@@ -374,7 +374,8 @@ contract InterchainTokenService is
 
     /**
      * @notice Used to deploy an interchain token alongside a TokenManager in another chain.
-     * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
+     * @dev The caller is expected to attach at least `gasValue` of native token. This is not enforced on-chain: `gasValue` is paid out of
+     * this contract's own balance, which is not expected to hold funds. `gasValue` exists because this function can be
      * part of a multicall involving multiple functions that could make remote contract calls.
      * If minter is empty bytes, no additional minter is set on the token, only ITS is allowed to mint.
      * If the token is being deployed on the current chain, minter should correspond to an EVM address (as bytes).
