@@ -733,6 +733,8 @@ contract InterchainTokenService is
         );
 
         if (data.length != 0) {
+            if (destinationAddress.code.length == 0) revert NotContract(destinationAddress);
+
             bytes32 result = IInterchainTokenExecutable(destinationAddress).executeWithInterchainToken(
                 commandId,
                 sourceChain,
@@ -897,6 +899,8 @@ contract InterchainTokenService is
         );
 
         if (data.length != 0) {
+            if (destinationAddress.code.length == 0) revert NotContract(destinationAddress);
+
             bytes32 result = IInterchainTokenExpressExecutable(destinationAddress).expressExecuteWithInterchainToken(
                 commandId,
                 sourceChain,

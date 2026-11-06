@@ -38,6 +38,7 @@ interface IInterchainTokenService is
     error TokenManagerDoesNotExist(bytes32 tokenId);
     error ExecuteWithInterchainTokenFailed(address contractAddress);
     error ExpressExecuteWithInterchainTokenFailed(address contractAddress);
+    error NotContract(address destinationAddress);
     error TokenManagerDeploymentFailed(bytes error);
     error InterchainTokenDeploymentFailed(bytes error);
     error InvalidMessageType(uint256 messageType);
