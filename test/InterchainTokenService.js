@@ -1947,6 +1947,26 @@ describe('Interchain Token Service', () => {
             );
         });
 
+        it('Should revert if execute with interchain token targets an address without code', async () => {
+            const [token, tokenManager, tokenId] = await deployFunctions.lockUnlock(service, 'Test Token Lock Unlock', 'TT', 12, amount);
+            await token.transfer(tokenManager.address, amount).then((tx) => tx.wait());
+
+            const msg = 'lock/unlock';
+            const data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, msg]);
+            const { payload } = encodeReceiveHubMessage(
+                sourceChain,
+                encodeInterchainTransferMessage(tokenId, sourceAddressForService, otherWallet.address, amount, data),
+            );
+            const commandId = await approveContractCall(gateway, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, service.address, payload);
+
+            await expectRevert(
+                (gasOptions) => service.execute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload, gasOptions),
+                service,
+                'NotContract',
+                [otherWallet.address],
+            );
+        });
+
         it('Should revert with UntrustedChain when the message type is RECEIVE_FROM_HUB and untrusted original source chain', async () => {
             const data = '0x';
             const { payload } = encodeReceiveHubMessage('untrustedSourceChain', data);
@@ -2312,6 +2332,20 @@ describe('Interchain Token Service', () => {
                 service,
                 'ExpressExecuteWithInterchainTokenFailed',
                 [invalidExecutable.address],
+            );
+        });
+
+        it('Should revert on express execute with token if destination has no code', async () => {
+            const { payload } = encodeReceiveHubMessage(
+                sourceChain,
+                encodeInterchainTransferMessage(tokenId, sourceAddress, otherWallet.address, amount, data),
+            );
+
+            await expectRevert(
+                (gasOptions) => service.expressExecute(commandId, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payload, gasOptions),
+                service,
+                'NotContract',
+                [otherWallet.address],
             );
         });
 
